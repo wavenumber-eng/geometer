@@ -1,7 +1,7 @@
 // Generated from wn_geometer_contract_catalog.a0.json. Do not edit.
 
 export const NORMALIZED_CONTRACT_CATALOG_SHA256 =
-  "197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" as const;
+  "a8c0c77000c376613d20f6968bb2a7c0fea38b4b829ab02b0f13e453a9dfd297" as const;
 
 export const operationCatalog = {
   "geometry.analytic_planar_boolean_batch.a0": {
@@ -94,6 +94,32 @@ export const operationCatalog = {
     outputAttachments: [],
     documentation:
       "Project STEP model bytes through the selected polygonal, exact, or Fast HLR backend.",
+  },
+  "geometry.model_tessellation.a0": {
+    identity: "geometry.model_tessellation.a0",
+    requestContract: "geometry.model_tessellation.request.a0",
+    resultContract: "geometry.model_tessellation.result.a0",
+    runtimeAvailable: true,
+    nativeRuntimeAvailable: false,
+    runtimeDispatch: "logical_dto",
+    inputAttachments: [
+      {
+        name: "model",
+        required: true,
+        media_types: ["application/step", "model/step"],
+        max_bytes: 268435456,
+      },
+    ],
+    outputAttachments: [
+      {
+        name: "mesh_collection",
+        required: true,
+        media_types: ["application/vnd.wavenumber.geometer.mesh-collection+json"],
+        max_bytes: 268435456,
+      },
+    ],
+    documentation:
+      "Tessellate STEP bytes to bounded colored meshes for native GPU and illustration consumers.",
   },
   "geometry.step_topology.analyze_recovery.a0": {
     identity: "geometry.step_topology.analyze_recovery.a0",

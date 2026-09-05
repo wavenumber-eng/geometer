@@ -775,6 +775,21 @@ struct IpcReasonA0
     std::optional<std::string> reason{};
 };
 
+enum class ModelRootPlacement
+{
+    strip,
+    preserve,
+};
+
+struct ModelTessellationRequestA0
+{
+    std::string schema = "geometry.model_tessellation.request.a0";
+    std::optional<double> linear_deflection_mm{};
+    std::optional<double> angular_deflection_rad{};
+    std::optional<ModelRootPlacement> root_placement{};
+    std::optional<std::uint32_t> max_triangles{};
+};
+
 enum class ModelFormat
 {
     step,
@@ -1236,9 +1251,9 @@ struct StepTopologyAnalyzeRecoveryRequestA0
 };
 
 using IpcRequestValueA0 = std::variant<
-    ModelBoundsOptionsA0, HlrProjectionOptionsA0, PackedAttachmentProjectionA0,
-    StepTopologyOpenRequestA0, StepTopologyCloseRequestA0, StepTopologyInspectRequestA0,
-    StepTopologyRenderRequestA0, StepTopologyResolveHitRequestA0,
+    ModelTessellationRequestA0, ModelBoundsOptionsA0, HlrProjectionOptionsA0,
+    PackedAttachmentProjectionA0, StepTopologyOpenRequestA0, StepTopologyCloseRequestA0,
+    StepTopologyInspectRequestA0, StepTopologyRenderRequestA0, StepTopologyResolveHitRequestA0,
     StepTopologyApplyLogicalGroupsRequestA0, StepTopologyApplyMetadataProbesRequestA0,
     StepTopologyCheckpointEditJournalRequestA0, StepTopologyApplyHierarchyRequestA0,
     StepTopologySaveRequestA0, StepTopologyRestoreRequestA0, StepTopologyAnalyzeRecoveryRequestA0>;
@@ -1402,6 +1417,31 @@ struct ModelBoundsResultA0
     ModelBoundsSource source{};
     ModelBoundsValues bounds{};
     ModelBoundsTimings timings{};
+};
+
+struct MeshCollectionA0
+{
+    std::string schema = "geometry.mesh_collection.a0";
+    std::string length_unit = "millimeter";
+    std::vector<MeshIllustrationMesh> meshes{};
+};
+
+struct MeshCollectionAttachment
+{
+    std::string attachment = "mesh_collection";
+    std::string schema = "geometry.mesh_collection.a0";
+    std::uint32_t byte_length{};
+    std::string sha256{};
+};
+
+struct ModelTessellationResultA0
+{
+    std::string schema = "geometry.model_tessellation.result.a0";
+    MeshCollectionAttachment mesh_collection{};
+    std::string source_sha256{};
+    std::uint32_t meshes{};
+    std::uint32_t triangles{};
+    std::vector<std::string> warnings{};
 };
 
 struct OperationFailureA0
@@ -1894,13 +1934,13 @@ struct StepTopologyAnalyzeRecoveryResultA0
 };
 
 using OperationResultValueA0 =
-    std::variant<ModelBoundsResultA0, HlrProjectionResultA0, PackedAttachmentProjectionA0,
-                 StepTopologyOpenResultA0, StepTopologyCloseResultA0, StepTopologyInspectResultA0,
-                 StepTopologyRenderResultA0, StepTopologyResolveHitResultA0,
-                 StepTopologyApplyLogicalGroupsResultA0, StepTopologyApplyMetadataProbesResultA0,
-                 StepTopologyCheckpointEditJournalResultA0, StepTopologyApplyHierarchyResultA0,
-                 StepTopologySaveResultA0, StepTopologyRestoreResultA0,
-                 StepTopologyAnalyzeRecoveryResultA0>;
+    std::variant<ModelTessellationResultA0, ModelBoundsResultA0, HlrProjectionResultA0,
+                 PackedAttachmentProjectionA0, StepTopologyOpenResultA0, StepTopologyCloseResultA0,
+                 StepTopologyInspectResultA0, StepTopologyRenderResultA0,
+                 StepTopologyResolveHitResultA0, StepTopologyApplyLogicalGroupsResultA0,
+                 StepTopologyApplyMetadataProbesResultA0, StepTopologyCheckpointEditJournalResultA0,
+                 StepTopologyApplyHierarchyResultA0, StepTopologySaveResultA0,
+                 StepTopologyRestoreResultA0, StepTopologyAnalyzeRecoveryResultA0>;
 
 struct OperationSuccessA0
 {
@@ -1987,6 +2027,20 @@ bool encode_json(const ModelBoundsOptionsA0& value, std::string* json,
 bool decode_json(const unsigned char* data, std::size_t size, ModelBoundsResultA0* value,
                  ContractError* error = nullptr);
 bool encode_json(const ModelBoundsResultA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, MeshCollectionA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const MeshCollectionA0& value, std::string* json, ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, ModelTessellationRequestA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const ModelTessellationRequestA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, ModelTessellationResultA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const ModelTessellationResultA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, OperationOutcomeA0* value,

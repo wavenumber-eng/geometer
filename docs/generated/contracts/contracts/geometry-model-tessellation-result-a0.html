@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="a8c0c77000c376613d20f6968bb2a7c0fea38b4b829ab02b0f13e453a9dfd297">
+  <title>geometry.model_tessellation.result.a0 — Geometer</title>
+  <link rel="stylesheet" href="../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="a8c0c77000c376613d20f6968bb2a7c0fea38b4b829ab02b0f13e453a9dfd297" data-page-kind="contract" data-contract-identity="geometry.model_tessellation.result.a0" data-promotion-status="pilot_candidate">
+<main>
+<header>
+  <p class="page-type">Contract root</p>
+  <h1><code>geometry.model_tessellation.result.a0</code></h1>
+  <p class="lede"></p>
+</header>
+<nav class="nav" aria-label="Contract navigation"><a href="../index.html">All contracts</a><a href="../../../../contracts/geometer/generated/schema/ModelTessellationResultA0.json">JSON Schema</a><a href="../../../../src/tsp/geometer/main.tsp">TypeSpec entry point</a><a href="../../../design/contract-semantics.md">Compatibility policy</a></nav>
+<aside class="callout"><strong>Generated, not authored.</strong> Edit TypeSpec and regenerate. Lifecycle evidence remains in the promotion manifest.</aside>
+
+<section><h2>Identity</h2><table><tbody>
+<tr><th>Contract</th><td><code>geometry.model_tessellation.result.a0</code></td></tr>
+<tr><th>Schema</th><td><code>urn:wavenumber:schema:geometer:geometry.model_tessellation.result:a0</code></td></tr>
+<tr><th>Declaration</th><td><code>Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationResultA0</code></td></tr>
+<tr><th>Lifecycle</th><td><span class="status">pilot_candidate</span></td></tr>
+<tr><th>Maturity</th><td>See interface support policy; promotion is not maturity</td></tr>
+<tr><th>Current authority</th><td><code>typespec_candidate</code></td></tr>
+</tbody></table></section>
+<section class="model-section"><h2>Declarations <span class="tag">2</span></h2><details open id="declaration-wavenumber-geometer-contracts-modeltessellationa0-modeltessellationresulta0"><summary><h2><code>ModelTessellationResultA0</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>schema</code></td><td>required</td><td><code>&quot;geometry.model_tessellation.result.a0&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>mesh_collection</code></td><td>required</td><td><code><a href="#declaration-wavenumber-geometer-contracts-modeltessellationa0-meshcollectionattachment">MeshCollectionAttachment</a></code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>source_sha256</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=64</code> <code>max_length=64</code></td><td></td></tr>
+<tr><td><code>meshes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=1</code> <code>max_value=65536</code></td><td></td></tr>
+<tr><td><code>triangles</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=1</code> <code>max_value=2000000</code></td><td></td></tr>
+<tr><td><code>warnings</code></td><td>required</td><td><code>string[]</code></td><td>—</td><td><code>max_items=256</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-modeltessellationa0-meshcollectionattachment"><summary><h2><code>MeshCollectionAttachment</code> <span class="tag">model</span></h2></summary><p>UTF-8 JSON attachment governed by geometry.mesh_collection.a0, not an opaque mesh format.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>attachment</code></td><td>required</td><td><code>&quot;mesh_collection&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>schema</code></td><td>required</td><td><code>&quot;geometry.mesh_collection.a0&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>byte_length</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=1</code> <code>max_value=268435456</code></td><td></td></tr>
+<tr><td><code>sha256</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=64</code> <code>max_length=64</code></td><td></td></tr></tbody></table></details></section>
+</main>
+</body>
+</html>

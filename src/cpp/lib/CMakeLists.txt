@@ -46,6 +46,8 @@ set(GEOMETER_LIB_SOURCES
     mesh_shadow_outline.cpp
     mesh_hlr_projection.cpp
     model_bounds.cpp
+    model_tessellation.cpp
+    model_tessellation_operation.cpp
     model_bounds_options_json.cpp
     operation_c_api.cpp
     operation_registry.cpp

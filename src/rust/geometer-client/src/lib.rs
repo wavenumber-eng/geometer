@@ -9,6 +9,7 @@ pub mod ipc;
 mod model_bounds;
 mod operation_validation;
 mod session_validation;
+mod tessellation;
 
 pub use analytic_packet_a0::{
     AnalyticPacketError, AnalyticPacketErrorKind,
@@ -24,5 +25,6 @@ pub use indexed_mesh_packet_a0::{
     IndexedTriangleMeshA0, encode_indexed_triangle_mesh_a0_packet,
 };
 pub use model_bounds::ModelBoundsRequest;
+pub use tessellation::{ModelTessellation, ModelTessellationRequest};
 
 pub const IPC_IDENTITY: &str = "a0";

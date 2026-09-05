@@ -21,12 +21,17 @@ from ._api import (
     write_planar_step,
 )
 from ._errors import GeometerError
+from ._tessellation import ModelTessellation
 from ._analytic_packet_a0 import (
     AnalyticPacketError,
     decode_analytic_planar_boolean_batch_result_a0_packet,
     encode_analytic_planar_boolean_batch_request_a0_packet,
 )
 from ._generated.contracts.models import (
+    MeshCollectionA0,
+    ModelRootPlacement,
+    ModelTessellationRequestA0,
+    ModelTessellationResultA0,
     AnalyticPlanarBooleanBatchRequestA0,
     AnalyticPlanarBooleanBatchResultA0,
     AnalyticPlanarBooleanJob,
@@ -91,6 +96,11 @@ from ._types import (
 )
 
 __all__ = [
+    "MeshCollectionA0",
+    "ModelRootPlacement",
+    "ModelTessellation",
+    "ModelTessellationRequestA0",
+    "ModelTessellationResultA0",
     "AnalyticPlanarBooleanBatchRequestA0",
     "AnalyticPlanarBooleanBatchResultA0",
     "AnalyticPlanarBooleanJob",

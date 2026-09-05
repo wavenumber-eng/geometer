@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <meta name="wn-catalog-sha256" content="a8c0c77000c376613d20f6968bb2a7c0fea38b4b829ab02b0f13e453a9dfd297">
   <title>Calling The Geometer Executable — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="a8c0c77000c376613d20f6968bb2a7c0fea38b4b829ab02b0f13e453a9dfd297" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../design/executable-ipc.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="calling-the-geometer-executable">Calling The Geometer Executable</h1></header>
 <p>Use persistent IPC when an application wants to reuse one geometry process and
@@ -71,6 +71,9 @@ with geometer.GeometerClient() as client:
     print(result.schema)
 </code></pre>
 <p>For STEP HLR, call <code>client.model_hlr_projection(step_bytes, options)</code>.
+Feature builds additionally expose typed <code>model_tessellation</code> in Rust and Python
+for <a href="model-tessellation-a0.html">colored model meshes</a>; use its matching catalog
+and executable, not the older released binary.
 The file-oriented <code>geometer.model_bounds(...)</code> helper does not demonstrate
 persistent IPC; use the Node example above for the generated bounds operation.</p>
 <h2 id="request-lifecycle-and-failures">Request Lifecycle And Failures</h2>

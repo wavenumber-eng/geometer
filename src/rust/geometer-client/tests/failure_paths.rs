@@ -240,6 +240,9 @@ async fn wait_bounded(child: &mut Child) -> std::process::ExitStatus {
 }
 
 fn native_executable(root: &Path) -> PathBuf {
+    if let Some(path) = std::env::var_os("GEOMETER_EXECUTABLE") {
+        return PathBuf::from(path);
+    }
     root.join("dist/native")
         .join(platform_name())
         .join(executable_name("geometer"))

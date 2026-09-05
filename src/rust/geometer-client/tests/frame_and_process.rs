@@ -709,6 +709,9 @@ fn analytic_request_attachment(data: Vec<u8>) -> ipc::Attachment {
 }
 
 fn native_executable(root: &Path) -> PathBuf {
+    if let Some(path) = std::env::var_os("GEOMETER_EXECUTABLE") {
+        return PathBuf::from(path);
+    }
     let platform = if cfg!(windows) {
         "windows-x64"
     } else if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
@@ -877,4 +880,45 @@ fn repository_root() -> PathBuf {
         .join("../../..")
         .canonicalize()
         .unwrap()
+}
+
+#[tokio::test]
+async fn typed_tessellation_preserves_colors_and_rejects_limits_without_poisoning() {
+    let root = repository_root();
+    let client = GeometerClient::spawn(native_executable(&root), "tessellation-test", "a0")
+        .await
+        .unwrap();
+    let model =
+        std::fs::read(root.join("tests/fixtures/step/embedded_models/SOT-23.STEP")).unwrap();
+    let request = geometer_client::ModelTessellationRequest::step(model);
+    let first = client.model_tessellation(request.clone()).await.unwrap();
+    let second = client.model_tessellation(request.clone()).await.unwrap();
+    assert_eq!(first.mesh_collection, second.mesh_collection);
+    assert_eq!(first.metadata, second.metadata);
+    assert_eq!(first.mesh_collection.length_unit, "millimeter");
+    assert!(first.metadata.triangles > 0);
+    let color = &first.mesh_collection.meshes[0].materials[0].color;
+    assert!(
+        first
+            .mesh_collection
+            .meshes
+            .iter()
+            .any(|mesh| mesh.materials[0].color != *color)
+    );
+    let mut limited = request.clone();
+    limited.options.max_triangles = Some(1);
+    assert!(matches!(
+        client.model_tessellation(limited).await,
+        Err(GeometerClientError::Operation { .. })
+    ));
+    assert!(matches!(
+        client
+            .model_tessellation(geometer_client::ModelTessellationRequest::step(
+                b"bad STEP".to_vec()
+            ))
+            .await,
+        Err(GeometerClientError::Operation { .. })
+    ));
+    assert!(client.model_tessellation(request).await.is_ok());
+    client.close().await.unwrap();
 }

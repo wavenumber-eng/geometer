@@ -8,6 +8,11 @@ pub fn decode_logical_request(
     data: &[u8],
 ) -> Result<contracts::IpcRequestValueA0, contracts::ContractError> {
     match contract {
+        "geometry.model_tessellation.request.a0" => {
+            Ok(contracts::IpcRequestValueA0::ModelTessellation(
+                contracts::decode_json::<contracts::ModelTessellationRequestA0>(data)?,
+            ))
+        }
         "geometry.model_bounds.options.a0" => Ok(contracts::IpcRequestValueA0::LogicalDto(
             contracts::decode_json::<contracts::ModelBoundsOptionsA0>(data)?,
         )),
@@ -87,6 +92,9 @@ pub fn decode_logical_request(
 
 pub fn logical_request_contract(value: &contracts::IpcRequestValueA0) -> Option<&'static str> {
     match value {
+        contracts::IpcRequestValueA0::ModelTessellation(_) => {
+            Some("geometry.model_tessellation.request.a0")
+        }
         contracts::IpcRequestValueA0::LogicalDto(_) => Some("geometry.model_bounds.options.a0"),
         contracts::IpcRequestValueA0::HlrProjection(_) => {
             Some("geometry.hlr_projection.options.a0")
@@ -133,6 +141,9 @@ pub fn logical_request_contract(value: &contracts::IpcRequestValueA0) -> Option<
 
 pub fn logical_result_contract(value: &contracts::OperationResultValueA0) -> Option<&'static str> {
     match value {
+        contracts::OperationResultValueA0::ModelTessellation(_) => {
+            Some("geometry.model_tessellation.result.a0")
+        }
         contracts::OperationResultValueA0::ModelBounds(_) => Some("geometry.model_bounds.a0"),
         contracts::OperationResultValueA0::HlrProjection(_) => {
             Some("geometry.hlr_projection.result.a0")

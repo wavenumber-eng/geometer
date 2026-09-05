@@ -63,6 +63,12 @@ catalog, then regenerate all bindings, rather than add handwritten Rust
 dispatch cases. Attachment and runtime-availability checks still use the
 negotiated operation declaration; packed packet dispatch stays separate.
 
+The feature-build `model_tessellation()` facade returns colored millimeter
+meshes through a generated attachment contract. See
+[model tessellation A0](model-tessellation-a0.md) for defaults, limits and current
+release-qualification status. It requires a matching feature executable; it is
+not present in the released 2026.9.4 binary.
+
 ## Client lifecycle
 
 `GeometerClient::spawn()` starts an explicit executable path, sends `hello`,

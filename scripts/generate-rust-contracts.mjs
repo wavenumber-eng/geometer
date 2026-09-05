@@ -72,7 +72,7 @@ async function emit(name, content) {
 function generateDispatch() {
   const variantsFor = (unionName) => {
     const union = modelCatalog.declarations.find((item) => shortName(item.name) === unionName);
-    if (!union || union.kind !== "union") throw new Error(`Missing IPC union ${unionName}`);
+    if (union?.kind !== "union") throw new Error(`Missing IPC union ${unionName}`);
     return union.variants.map((variant) => {
       const rootRecord = codecRoots.find((item) => item.name === variant.type.target);
       if (!rootRecord && variant.type.target?.endsWith(".PackedAttachmentProjectionA0"))

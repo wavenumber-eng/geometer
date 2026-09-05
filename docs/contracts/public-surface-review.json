@@ -4,7 +4,7 @@
   "files": [
     {
       "path": "python/geometer/__init__.py",
-      "sha256": "b249a061ffdea335454eea3bdcc8cc8533da9cba90a22b3bcefaf6ce6891aac0"
+      "sha256": "ec316d82daf3e0a6f4f2ff5ae1a5b79c1298179877cb39552c80240b4b2e27d1"
     },
     {
       "path": "python/geometer/_analytic_packet_a0.py",
@@ -44,11 +44,15 @@
     },
     {
       "path": "python/geometer/_ipc_client.py",
-      "sha256": "6f3cc4932477f827e3a08e2ebb3765f5ecd1b977e1c71b0a7974dc8342868cff"
+      "sha256": "0f35e0238da8e5294bfb3524fa466b2f082b700b9e54c61560b85cf599b2227f"
     },
     {
       "path": "python/geometer/_paths.py",
       "sha256": "6b569596b99728553d76847ed884997b8241fb7d0c7589a7e63c0f369a9a326a"
+    },
+    {
+      "path": "python/geometer/_tessellation.py",
+      "sha256": "8d3d9cf945273cc514a36704b3099c787c750c024200db28f8cbe0de9f052f88"
     },
     {
       "path": "python/geometer/_topology_worker_posix_launcher.py",
@@ -96,7 +100,7 @@
     },
     {
       "path": "src/cpp/lib/CMakeLists.txt",
-      "sha256": "afea02da379134e455a97ca4ae19155ea1db299878c818be75b77a35bb1e4950"
+      "sha256": "b807fcf5246a1241aa13c1bd300441100ca405a7321edea464d81524d7b76b70"
     },
     {
       "path": "src/cpp/lib/geometer.h",
@@ -311,6 +315,10 @@
       "sha256": "4df5a5a5414803d32be57073a4ff5c3f96639b99d9f24d4dbb0e1a911e7d3d46"
     },
     {
+      "path": "src/cpp/lib/geometer/model_tessellation.h",
+      "sha256": "c12256ac89f303c0f2221f8eb412707b687b5d73350d7c396928f0e88cb2603c"
+    },
+    {
       "path": "src/cpp/lib/geometer/operation_registry.h",
       "sha256": "5f75c439b212717186cbd5c785ca42d35f9187d848a0c814b27a7e71f079b950"
     },
@@ -384,7 +392,7 @@
     },
     {
       "path": "src/cpp/lib/operation_registry.cpp",
-      "sha256": "33b14d79aff1c8cb015b4c3dee1b5a54b0e67c52aafb0409b9e95421c597cb34"
+      "sha256": "582ba38ed13d54bc0c7093dde3bad1caf79d6be09bf45d86473ab06c3ed153e9"
     },
     {
       "path": "src/cpp/lib/projection_options_json.cpp",
@@ -456,7 +464,7 @@
     },
     {
       "path": "src/rust/geometer-client/src/client_tests.rs",
-      "sha256": "3fa2863350c07464ca67af9a3faa035c9123dc062a66b919d3bf61c06a5fb7f9"
+      "sha256": "d83c5c2e8ae0b019f3bfae5021fe686d1cc20bbcece4b103bfda48608d39a559"
     },
     {
       "path": "src/rust/geometer-client/src/hlr.rs",
@@ -472,7 +480,7 @@
     },
     {
       "path": "src/rust/geometer-client/src/lib.rs",
-      "sha256": "1e43c0e62d16219ab0282212cb32829d5257b4ad9a210aecec181aaf0717f942"
+      "sha256": "f3bf8d913625ce622e8de3e78b8efa6faf0a64ade99dfd808a773e50613e7d68"
     },
     {
       "path": "src/rust/geometer-client/src/model_bounds.rs",
@@ -489,6 +497,14 @@
     {
       "path": "src/rust/geometer-client/src/session_validation.rs",
       "sha256": "961a4d5d3b53c2a2940e6b794861e77e0daad7927682c8c552545ed393b17255"
+    },
+    {
+      "path": "src/rust/geometer-client/src/tessellation.rs",
+      "sha256": "1799c4d9fef9c24d6578c650de4faaa5f230031ef7fb4f7492d41e10a2c4e719"
+    },
+    {
+      "path": "src/rust/geometer-client/src/tessellation/tests.rs",
+      "sha256": "7de3eb6263a0e0617e67bc5d0603e72483205866ea4e513a8da0d4ae17a0f753"
     },
     {
       "path": "src/ts/geometer/analytic-packet-a0-common.ts",

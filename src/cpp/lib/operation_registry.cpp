@@ -6,6 +6,7 @@
 #include "geometer/projection.h"
 #include "geometer/projection_options_json.h"
 #include "geometer/sha256.h"
+#include "model_tessellation_operation.h"
 
 #include <algorithm>
 #include <array>
@@ -434,6 +435,11 @@ void execute_operation(const std::string& operation_id, const unsigned char* req
                             "/attachments"));
             return;
         }
+    }
+    if (operation_id == "geometry.model_tessellation.a0")
+    {
+        execute_model_tessellation(request_json, request_json_size, attachments, execution);
+        return;
     }
     if (operation_id == analytic_operation_detail::kOperationId)
     {

@@ -60,6 +60,8 @@ from ._generated.contracts.operations import expected_operation_catalog
 from ._paths import executable_path
 
 if TYPE_CHECKING:
+    from ._tessellation import ModelTessellation
+    from ._generated.contracts.models import ModelTessellationRequestA0
     from ._indexed_mesh_packet_a0 import IndexedTriangleMeshA0
     from ._generated.contracts.models import (
         AnalyticPlanarBooleanBatchRequestA0,
@@ -428,6 +430,18 @@ class _GeometerIpcExecution(_GeometerIpcSession):
         except Exception as error:
             client._terminate()
             raise GeometerIpcProtocolError("analytic response contains an invalid packed result") from error
+
+    def model_tessellation(
+        self,
+        model: bytes,
+        options: ModelTessellationRequestA0 | None = None,
+        *,
+        timeout: float | None = None,
+    ) -> ModelTessellation:
+        """Tessellate STEP bytes into the shared colored millimeter mesh contract."""
+        from ._tessellation import model_tessellation
+
+        return model_tessellation(cast("GeometerIpcClient", self), model, options, timeout)
 
     def model_hlr_projection(
         self,

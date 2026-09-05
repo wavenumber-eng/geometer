@@ -692,6 +692,17 @@ export interface IpcReasonA0 {
   readonly reason?: string;
 }
 
+export type ModelRootPlacement = "strip" | "preserve";
+
+/** Stateless STEP tessellation; component placement is retained in either root mode. */
+export interface ModelTessellationRequestA0 {
+  readonly schema: "geometry.model_tessellation.request.a0";
+  readonly linear_deflection_mm?: number;
+  readonly angular_deflection_rad?: number;
+  readonly root_placement?: ModelRootPlacement;
+  readonly max_triangles?: number;
+}
+
 /** Canonical model source format. Compatibility readers may additionally accept STEP. */
 export type ModelFormat = "step";
 
@@ -1121,6 +1132,7 @@ export interface StepTopologyAnalyzeRecoveryRequestA0 {
 A variant is callable only when the negotiated runtime catalog advertises
 its operation; structural presence does not imply runtime availability. */
 export type IpcRequestValueA0 =
+  | ModelTessellationRequestA0
   | ModelBoundsOptionsA0
   | HlrProjectionOptionsA0
   | PackedAttachmentProjectionA0
@@ -1301,6 +1313,30 @@ export interface ModelBoundsResultA0 {
   readonly source: ModelBoundsSource;
   readonly bounds: ModelBoundsValues;
   readonly timings: ModelBoundsTimings;
+}
+
+/** Shared colored indexed meshes. Coordinates and matrix translations are millimeters. */
+export interface MeshCollectionA0 {
+  readonly schema: "geometry.mesh_collection.a0";
+  readonly length_unit: "millimeter";
+  readonly meshes: readonly MeshIllustrationMesh[];
+}
+
+/** UTF-8 JSON attachment governed by geometry.mesh_collection.a0, not an opaque mesh format. */
+export interface MeshCollectionAttachment {
+  readonly attachment: "mesh_collection";
+  readonly schema: "geometry.mesh_collection.a0";
+  readonly byte_length: number;
+  readonly sha256: string;
+}
+
+export interface ModelTessellationResultA0 {
+  readonly schema: "geometry.model_tessellation.result.a0";
+  readonly mesh_collection: MeshCollectionAttachment;
+  readonly source_sha256: string;
+  readonly meshes: number;
+  readonly triangles: number;
+  readonly warnings: readonly string[];
 }
 
 /** A rejected or failed operation with governed diagnostics. */
@@ -1720,6 +1756,7 @@ export interface StepTopologyAnalyzeRecoveryResultA0 {
 to a runtime-unavailable experimental operation and is not an availability
 claim; the negotiated operation catalog remains authoritative. */
 export type OperationResultValueA0 =
+  | ModelTessellationResultA0
   | ModelBoundsResultA0
   | HlrProjectionResultA0
   | PackedAttachmentProjectionA0

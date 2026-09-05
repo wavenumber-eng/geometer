@@ -1086,6 +1086,33 @@ pilot_required = true
 compatibility = "Canonical result shared by model and indexed-mesh operations; geometry.projection.b0 and legacy C ABI result identities remain supported. Timing fields are nondeterministic."
 
 [[contracts]]
+id = "geometry.mesh_collection.a0"
+kind = "result"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/model-tessellation-a0.tsp"
+pilot_required = true
+compatibility = "Additive mesh collection with millimeter positions and shared illustration mesh/material DTOs; transported as bounded UTF-8 JSON attachment."
+
+[[contracts]]
+id = "geometry.model_tessellation.request.a0"
+kind = "request"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/model-tessellation-a0.tsp"
+pilot_required = true
+compatibility = "Additive stateless STEP tessellation; explicit root placement with strip default matching existing GLB conversion."
+
+[[contracts]]
+id = "geometry.model_tessellation.result.a0"
+kind = "result"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/model-tessellation-a0.tsp"
+pilot_required = true
+compatibility = "Additive typed descriptor for geometry.mesh_collection.a0 attachment; source/content digests and bounded counts."
+
+[[contracts]]
 id = "geometry.mesh_illustration.input.a0"
 kind = "request"
 status = "pilot_candidate"
@@ -1371,6 +1398,16 @@ cli_names = ["mesh_hlr_projection_json"]
 compatibility_cli_names = []
 
 [[operations]]
+id = "geometry.model_tessellation.a0"
+status = "pilot_candidate"
+request_contract = "geometry.model_tessellation.request.a0"
+result_contract = "geometry.model_tessellation.result.a0"
+input_attachments = ["model"]
+output_attachments = ["mesh_collection"]
+cli_names = []
+compatibility_cli_names = []
+
+[[operations]]
 id = "geometry.model_to_glb.a0"
 status = "inventory_only"
 request_contract = "geometry.step_to_glb.options.a0"
@@ -1514,7 +1551,7 @@ performance_qualification_default_request = "tests/contracts/vectors/analytic/cr
 real_board_packet_provenance = "docs/contracts/analytic-real-board-packet-provenance.toml"
 real_board_packet_provenance_sha256 = "3e465a113fb4edb7667b9b76e684337f1062f76e3456b7a5ef0404f82034d7c2"
 real_board_packet_provenance_test = "tests/python/test_contract_promotion_manifest.py"
-real_board_packet_provenance_test_sha256 = "c7d509d1b6dbd86f6948f52616d343ca28a5aa23b9c5effa572a737fda64ba52"
+real_board_packet_provenance_test_sha256 = "f8343be9f19ded57b2b767056956e5dcc56012d033911cc5ea31d1261ca1125d"
 real_board_packet_provenance_status = "public_mit_redistribution_authorized_rt_generated_local_qualified_loz_pending"
 real_board_packet_case_ids = ["rt_super_c1_pwr4", "loz_old_man_curved_copper"]
 real_board_packet_source_sha256 = ["90545409b6ce16e0b636fce3176c90b73be301d03f0a9e32c4ab21a42ad14aca", "377d5a05ed24137ea603d11c663d52ae48849b378534b346010936b826eb2375"]

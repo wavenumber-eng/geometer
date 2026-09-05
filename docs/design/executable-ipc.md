@@ -53,6 +53,9 @@ with geometer.GeometerClient() as client:
 ```
 
 For STEP HLR, call `client.model_hlr_projection(step_bytes, options)`.
+Feature builds additionally expose typed `model_tessellation` in Rust and Python
+for [colored model meshes](model-tessellation-a0.md); use its matching catalog
+and executable, not the older released binary.
 The file-oriented `geometer.model_bounds(...)` helper does not demonstrate
 persistent IPC; use the Node example above for the generated bounds operation.
 

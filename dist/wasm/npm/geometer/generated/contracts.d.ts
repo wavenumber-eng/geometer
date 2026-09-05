@@ -519,6 +519,15 @@ export interface IpcProtocolErrorA0 {
 export interface IpcReasonA0 {
     readonly reason?: string;
 }
+export type ModelRootPlacement = "strip" | "preserve";
+/** Stateless STEP tessellation; component placement is retained in either root mode. */
+export interface ModelTessellationRequestA0 {
+    readonly schema: "geometry.model_tessellation.request.a0";
+    readonly linear_deflection_mm?: number;
+    readonly angular_deflection_rad?: number;
+    readonly root_placement?: ModelRootPlacement;
+    readonly max_triangles?: number;
+}
 /** Canonical model source format. Compatibility readers may additionally accept STEP. */
 export type ModelFormat = "step";
 /** Row-major affine 4x4 matrix. Semantic validation requires final row [0,0,0,1]. */
@@ -860,7 +869,7 @@ export interface StepTopologyAnalyzeRecoveryRequestA0 {
 /** Structurally representable request payloads for executable IPC A0.
 A variant is callable only when the negotiated runtime catalog advertises
 its operation; structural presence does not imply runtime availability. */
-export type IpcRequestValueA0 = ModelBoundsOptionsA0 | HlrProjectionOptionsA0 | PackedAttachmentProjectionA0 | StepTopologyOpenRequestA0 | StepTopologyCloseRequestA0 | StepTopologyInspectRequestA0 | StepTopologyRenderRequestA0 | StepTopologyResolveHitRequestA0 | StepTopologyApplyLogicalGroupsRequestA0 | StepTopologyApplyMetadataProbesRequestA0 | StepTopologyCheckpointEditJournalRequestA0 | StepTopologyApplyHierarchyRequestA0 | StepTopologySaveRequestA0 | StepTopologyRestoreRequestA0 | StepTopologyAnalyzeRecoveryRequestA0;
+export type IpcRequestValueA0 = ModelTessellationRequestA0 | ModelBoundsOptionsA0 | HlrProjectionOptionsA0 | PackedAttachmentProjectionA0 | StepTopologyOpenRequestA0 | StepTopologyCloseRequestA0 | StepTopologyInspectRequestA0 | StepTopologyRenderRequestA0 | StepTopologyResolveHitRequestA0 | StepTopologyApplyLogicalGroupsRequestA0 | StepTopologyApplyMetadataProbesRequestA0 | StepTopologyCheckpointEditJournalRequestA0 | StepTopologyApplyHierarchyRequestA0 | StepTopologySaveRequestA0 | StepTopologyRestoreRequestA0 | StepTopologyAnalyzeRecoveryRequestA0;
 export interface IpcRequestA0 {
     readonly operation: string;
     readonly request: IpcRequestValueA0;
@@ -1006,6 +1015,27 @@ export interface ModelBoundsResultA0 {
     readonly source: ModelBoundsSource;
     readonly bounds: ModelBoundsValues;
     readonly timings: ModelBoundsTimings;
+}
+/** Shared colored indexed meshes. Coordinates and matrix translations are millimeters. */
+export interface MeshCollectionA0 {
+    readonly schema: "geometry.mesh_collection.a0";
+    readonly length_unit: "millimeter";
+    readonly meshes: readonly MeshIllustrationMesh[];
+}
+/** UTF-8 JSON attachment governed by geometry.mesh_collection.a0, not an opaque mesh format. */
+export interface MeshCollectionAttachment {
+    readonly attachment: "mesh_collection";
+    readonly schema: "geometry.mesh_collection.a0";
+    readonly byte_length: number;
+    readonly sha256: string;
+}
+export interface ModelTessellationResultA0 {
+    readonly schema: "geometry.model_tessellation.result.a0";
+    readonly mesh_collection: MeshCollectionAttachment;
+    readonly source_sha256: string;
+    readonly meshes: number;
+    readonly triangles: number;
+    readonly warnings: readonly string[];
 }
 /** A rejected or failed operation with governed diagnostics. */
 export interface OperationFailureA0 {
@@ -1343,7 +1373,7 @@ export interface StepTopologyAnalyzeRecoveryResultA0 {
 /** Structurally representable operation results. A result variant may belong
 to a runtime-unavailable experimental operation and is not an availability
 claim; the negotiated operation catalog remains authoritative. */
-export type OperationResultValueA0 = ModelBoundsResultA0 | HlrProjectionResultA0 | PackedAttachmentProjectionA0 | StepTopologyOpenResultA0 | StepTopologyCloseResultA0 | StepTopologyInspectResultA0 | StepTopologyRenderResultA0 | StepTopologyResolveHitResultA0 | StepTopologyApplyLogicalGroupsResultA0 | StepTopologyApplyMetadataProbesResultA0 | StepTopologyCheckpointEditJournalResultA0 | StepTopologyApplyHierarchyResultA0 | StepTopologySaveResultA0 | StepTopologyRestoreResultA0 | StepTopologyAnalyzeRecoveryResultA0;
+export type OperationResultValueA0 = ModelTessellationResultA0 | ModelBoundsResultA0 | HlrProjectionResultA0 | PackedAttachmentProjectionA0 | StepTopologyOpenResultA0 | StepTopologyCloseResultA0 | StepTopologyInspectResultA0 | StepTopologyRenderResultA0 | StepTopologyResolveHitResultA0 | StepTopologyApplyLogicalGroupsResultA0 | StepTopologyApplyMetadataProbesResultA0 | StepTopologyCheckpointEditJournalResultA0 | StepTopologyApplyHierarchyResultA0 | StepTopologySaveResultA0 | StepTopologyRestoreResultA0 | StepTopologyAnalyzeRecoveryResultA0;
 /** A completed operation with its operation-specific result. */
 export interface OperationSuccessA0 {
     readonly operation: string;

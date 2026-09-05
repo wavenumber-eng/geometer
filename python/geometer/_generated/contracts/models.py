@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Literal, TypeAlias
 
-NORMALIZED_CATALOG_SHA256 = "197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e"
+NORMALIZED_CATALOG_SHA256 = "a8c0c77000c376613d20f6968bb2a7c0fea38b4b829ab02b0f13e453a9dfd297"
 
 JobId: TypeAlias = int
 
@@ -799,6 +799,21 @@ class IpcReasonA0:
     reason: str | None = None
 
 
+class ModelRootPlacement(str, Enum):
+    STRIP = "strip"
+    PRESERVE = "preserve"
+
+
+# Stateless STEP tessellation; component placement is retained in either root mode.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ModelTessellationRequestA0:
+    schema: Literal["geometry.model_tessellation.request.a0"]
+    linear_deflection_mm: float | None = None
+    angular_deflection_rad: float | None = None
+    root_placement: ModelRootPlacement | None = None
+    max_triangles: int | None = None
+
+
 # Canonical model source format. Compatibility readers may additionally accept STEP.
 class ModelFormat(str, Enum):
     STEP = "step"
@@ -1282,7 +1297,8 @@ class StepTopologyAnalyzeRecoveryRequestA0:
 
 # Structurally representable request payloads for executable IPC A0. A variant is callable only when the negotiated runtime catalog advertises its operation; structural presence does not imply runtime availability.
 IpcRequestValueA0: TypeAlias = (
-    ModelBoundsOptionsA0
+    ModelTessellationRequestA0
+    | ModelBoundsOptionsA0
     | HlrProjectionOptionsA0
     | PackedAttachmentProjectionA0
     | StepTopologyOpenRequestA0
@@ -1473,6 +1489,33 @@ class ModelBoundsResultA0:
     source: ModelBoundsSource
     bounds: ModelBoundsValues
     timings: ModelBoundsTimings
+
+
+# Shared colored indexed meshes. Coordinates and matrix translations are millimeters.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshCollectionA0:
+    schema: Literal["geometry.mesh_collection.a0"]
+    length_unit: Literal["millimeter"]
+    meshes: tuple[MeshIllustrationMesh, ...]
+
+
+# UTF-8 JSON attachment governed by geometry.mesh_collection.a0, not an opaque mesh format.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshCollectionAttachment:
+    attachment: Literal["mesh_collection"]
+    schema: Literal["geometry.mesh_collection.a0"]
+    byte_length: int
+    sha256: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ModelTessellationResultA0:
+    schema: Literal["geometry.model_tessellation.result.a0"]
+    mesh_collection: MeshCollectionAttachment
+    source_sha256: str
+    meshes: int
+    triangles: int
+    warnings: tuple[str, ...]
 
 
 # A rejected or failed operation with governed diagnostics.
@@ -1960,7 +2003,8 @@ class StepTopologyAnalyzeRecoveryResultA0:
 
 # Structurally representable operation results. A result variant may belong to a runtime-unavailable experimental operation and is not an availability claim; the negotiated operation catalog remains authoritative.
 OperationResultValueA0: TypeAlias = (
-    ModelBoundsResultA0
+    ModelTessellationResultA0
+    | ModelBoundsResultA0
     | HlrProjectionResultA0
     | PackedAttachmentProjectionA0
     | StepTopologyOpenResultA0
@@ -2038,6 +2082,10 @@ MODEL_TYPES = {
     "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsSource": ModelBoundsSource,
     "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsTimings": ModelBoundsTimings,
     "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsValues": ModelBoundsValues,
+    "Wavenumber.Geometer.Contracts.ModelTessellationA0.MeshCollectionA0": MeshCollectionA0,
+    "Wavenumber.Geometer.Contracts.ModelTessellationA0.MeshCollectionAttachment": MeshCollectionAttachment,
+    "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationRequestA0": ModelTessellationRequestA0,
+    "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationResultA0": ModelTessellationResultA0,
     "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationFailureA0": OperationFailureA0,
     "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationSuccessA0": OperationSuccessA0,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.AttachMetadataProbeCommand": AttachMetadataProbeCommand,
@@ -2145,6 +2193,7 @@ ENUM_TYPES = {
     "Wavenumber.Geometer.Contracts.IpcA0.IpcRuntimeDispatchA0": IpcRuntimeDispatchA0,
     "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationShading": MeshIllustrationShading,
     "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelFormat": ModelFormat,
+    "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelRootPlacement": ModelRootPlacement,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.CarrierSupportState": CarrierSupportState,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.HierarchyNodeKind": HierarchyNodeKind,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.HierarchySourceKind": HierarchySourceKind,

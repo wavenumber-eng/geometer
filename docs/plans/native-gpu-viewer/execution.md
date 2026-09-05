@@ -51,3 +51,36 @@ RUST_001 Cargo coverage; no GUI dependencies enter that lane.
 
 Remaining: new native contracts/implementation, Rust shell and native API
 integration, Python facade, parity fixtures and platform/user acceptance.
+
+## Slice 2: stateless colored native tessellation
+
+Implemented TypeSpec `geometry.mesh_collection.a0` and tessellation request,
+result and operation declarations, generated across all existing projections.
+Native C++ uses an in-memory STEPCAF reader and XCAF/RWMesh iterators to preserve
+source styles, transforms, reflected winding and normals. Rust and Python expose
+typed methods and verify attachment hashes, source hash, layout, counts and caps.
+
+Reviewer findings resolved: force document units to mm; reject external STEP
+references before transfer; distinguish valid refinement/reuse meshing flags
+from partial/failure states. A newly exposed invalid-STEP case also required
+routing OCCT diagnostics to stderr during IPC to preserve binary framing.
+
+Focused evidence: CTest direct-link unit-state, external-reference and mesher
+status checks (0.11s); 30 Rust library + 11 live process + 3 dispatch tests
+(0.20s runtime); two Python live/metadata tests (0.29s); all 130 contract vectors,
+generated freshness, Clippy, Ruff, Pyright and Rust structural hygiene. Local
+Windows executable is in `out/docs-cleanup/native-build/src/cpp/cli/geometer.exe`;
+compiled distributions remain unchanged. The new generated catalog is not
+compatible with the old released binary; process tests use explicit feature
+executable overrides. No OCCT rebuild, public upload or four-platform approval.
+
+This is a necessary STEP/colored-mesh boundary, not native illustration itself.
+Full native compositor parity, Rust GPU UI and Python illustration remain open.
+
+Contract-inventory maintenance: historical topology evidence still records its
+original catalog digest. The test now removes only this additive tessellation
+namespace/operation/union variants and reconstructs the exact original catalog
+digest, proving preexisting definitions unchanged without rewriting evidence.
+Generated C++ membership checks ignore formatter-only adjacent literal/space
+changes. The provenance-test file lock was refreshed for those inventory-only
+edits; solver evidence and its source hashes are unchanged.

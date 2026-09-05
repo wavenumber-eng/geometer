@@ -623,6 +623,12 @@ configure_geometer_fixture_test(geometer_model_bounds_test
 
 add_test(NAME geometer_model_bounds_test COMMAND geometer_model_bounds_test)
 
+add_executable(geometer_model_tessellation_test model_tessellation_test.cpp)
+target_link_libraries(geometer_model_tessellation_test PRIVATE geometer_lib)
+configure_geometer_fixture_test(geometer_model_tessellation_test
+    tests/fixtures/step/embedded_models/SOT-23.STEP)
+add_test(NAME geometer_model_tessellation_test COMMAND geometer_model_tessellation_test)
+
 add_executable(geometer_operation_contract_test
     operation_contract_topology_semantics.cpp
     operation_contract_test.cpp

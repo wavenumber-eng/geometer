@@ -6,6 +6,10 @@
 #include "geometer/operation_transport.h"
 #include "geometer/version.h"
 
+#include <Message.hxx>
+#include <Message_Messenger.hxx>
+#include <Message_PrinterOStream.hxx>
+
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
@@ -36,6 +40,27 @@ namespace geometer::ipc_a0
 {
 namespace
 {
+
+// The process owns stdio while serving IPC. OCCT diagnostics must never enter
+// stdout, including parser errors before a STEP model has transferred.
+class IpcKernelDiagnostics
+{
+  public:
+    IpcKernelDiagnostics() : saved_(Message::DefaultMessenger()->Printers())
+    {
+        auto printer = new Message_PrinterOStream("cerr", true);
+        printer->SetToColorize(false);
+        Message::DefaultMessenger()->ChangePrinters().Clear();
+        Message::DefaultMessenger()->AddPrinter(printer);
+    }
+    ~IpcKernelDiagnostics()
+    {
+        Message::DefaultMessenger()->ChangePrinters() = saved_;
+    }
+
+  private:
+    NCollection_Sequence<Handle(Message_Printer)> saved_;
+};
 
 constexpr std::size_t kMaxQueuedRequests = 8U;
 constexpr std::size_t kMaxResidentBytes = 512U * 1024U * 1024U;
@@ -754,6 +779,7 @@ int fail_connection(const std::shared_ptr<SharedState>& shared, std::uint64_t id
 
 int serve_stdio_impl(const testing::ServerOptions& options)
 {
+    const IpcKernelDiagnostics diagnostics;
 #ifdef _WIN32
     if (_setmode(_fileno(stdin), _O_BINARY) == -1 || _setmode(_fileno(stdout), _O_BINARY) == -1)
     {

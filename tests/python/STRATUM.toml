@@ -19,6 +19,7 @@ objectives = [
     "Require native runtime distributions to exclude build-only static libraries.",
     "Verify the fast-HLR baseline harness records reproducible statistics over the governed fixture subset.",
     "Verify canonical indexed-mesh packets and the typed Fast HLR IPC path.",
+    "Verify colored native STEP tessellation through generated mesh attachments and typed clients.",
 ]
 
 [[subtests]]
@@ -153,3 +154,10 @@ file = "test_indexed_mesh_packet_a0.py"
 name = "Indexed Mesh Packet A0"
 description = "Checks canonical indexed-triangle-mesh encoding, strict decoding, and invalid mesh rejection."
 test_case_type = "unit"
+
+[[subtests]]
+id = "PY_020"
+file = "test_model_tessellation.py"
+name = "Native Colored Model Tessellation"
+description = "Checks deterministic colored STEP meshes, limits, recoverable operation failure and attachment metadata validation."
+test_case_type = "integration"

@@ -179,6 +179,14 @@ bool write_IpcProtocolErrorA0(rapidjson::Writer<rapidjson::StringBuffer>&,
 bool decode_IpcReasonA0(const rapidjson::Value&, IpcReasonA0*, const std::string&, ContractError*);
 bool write_IpcReasonA0(rapidjson::Writer<rapidjson::StringBuffer>&, const IpcReasonA0&,
                        ContractError*);
+bool decode_ModelRootPlacement(const rapidjson::Value&, ModelRootPlacement*, const std::string&,
+                               ContractError*);
+bool write_ModelRootPlacement(rapidjson::Writer<rapidjson::StringBuffer>&,
+                              const ModelRootPlacement&, ContractError*);
+bool decode_ModelTessellationRequestA0(const rapidjson::Value&, ModelTessellationRequestA0*,
+                                       const std::string&, ContractError*);
+bool write_ModelTessellationRequestA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                      const ModelTessellationRequestA0&, ContractError*);
 bool decode_ModelFormat(const rapidjson::Value&, ModelFormat*, const std::string&, ContractError*);
 bool write_ModelFormat(rapidjson::Writer<rapidjson::StringBuffer>&, const ModelFormat&,
                        ContractError*);
@@ -518,6 +526,18 @@ bool decode_ModelBoundsResultA0(const rapidjson::Value&, ModelBoundsResultA0*, c
                                 ContractError*);
 bool write_ModelBoundsResultA0(rapidjson::Writer<rapidjson::StringBuffer>&,
                                const ModelBoundsResultA0&, ContractError*);
+bool decode_MeshCollectionA0(const rapidjson::Value&, MeshCollectionA0*, const std::string&,
+                             ContractError*);
+bool write_MeshCollectionA0(rapidjson::Writer<rapidjson::StringBuffer>&, const MeshCollectionA0&,
+                            ContractError*);
+bool decode_MeshCollectionAttachment(const rapidjson::Value&, MeshCollectionAttachment*,
+                                     const std::string&, ContractError*);
+bool write_MeshCollectionAttachment(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                    const MeshCollectionAttachment&, ContractError*);
+bool decode_ModelTessellationResultA0(const rapidjson::Value&, ModelTessellationResultA0*,
+                                      const std::string&, ContractError*);
+bool write_ModelTessellationResultA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                     const ModelTessellationResultA0&, ContractError*);
 bool decode_OperationFailureA0(const rapidjson::Value&, OperationFailureA0*, const std::string&,
                                ContractError*);
 bool write_OperationFailureA0(rapidjson::Writer<rapidjson::StringBuffer>&,
@@ -4573,6 +4593,149 @@ bool write_IpcReasonA0(rapidjson::Writer<rapidjson::StringBuffer>& writer, const
     {
         writer.Key("reason");
         if (!write_string(writer, *value.reason, error, 0U, 1024U))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_ModelRootPlacement(const rapidjson::Value& value, ModelRootPlacement* out,
+                               const std::string& path, ContractError* error)
+{
+    if (!value.IsString())
+        return fail(error, "geometer.contract.type_mismatch", path, "Expected a string enum.");
+    const std::string text(value.GetString(), value.GetStringLength());
+    if (text == "strip")
+    {
+        *out = ModelRootPlacement::strip;
+        return true;
+    }
+    if (text == "preserve")
+    {
+        *out = ModelRootPlacement::preserve;
+        return true;
+    }
+    return fail(error, "geometer.contract.enum_mismatch", path, "Unknown enum value.");
+}
+
+bool write_ModelRootPlacement(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                              const ModelRootPlacement& value, ContractError* error)
+{
+    switch (value)
+    {
+    case ModelRootPlacement::strip:
+        writer.String("strip");
+        return true;
+    case ModelRootPlacement::preserve:
+        writer.String("preserve");
+        return true;
+    }
+    return fail(error, "geometer.contract.enum_mismatch", "", "Unknown enum value.");
+}
+
+bool decode_ModelTessellationRequestA0(const rapidjson::Value& value,
+                                       ModelTessellationRequestA0* out, const std::string& path,
+                                       ContractError* error)
+{
+    static const char* const names[] = {"schema", "linear_deflection_mm", "angular_deflection_rad",
+                                        "root_placement", "max_triangles"};
+    if (!validate_object(value, names, 5U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("schema");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "schema"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->schema, child_path(path, "schema"), error,
+                                   "geometry.model_tessellation.request.a0"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("linear_deflection_mm");
+        if (member != value.MemberEnd())
+        {
+            double decoded{};
+            if (!decode_double(member->value, &decoded, child_path(path, "linear_deflection_mm"),
+                               error, 0.000001, 1000, false, false))
+                return false;
+            out->linear_deflection_mm = std::move(decoded);
+        }
+        else
+            out->linear_deflection_mm.reset();
+    }
+    {
+        const auto member = value.FindMember("angular_deflection_rad");
+        if (member != value.MemberEnd())
+        {
+            double decoded{};
+            if (!decode_double(member->value, &decoded, child_path(path, "angular_deflection_rad"),
+                               error, 0.000001, 3.141592653589793, false, false))
+                return false;
+            out->angular_deflection_rad = std::move(decoded);
+        }
+        else
+            out->angular_deflection_rad.reset();
+    }
+    {
+        const auto member = value.FindMember("root_placement");
+        if (member != value.MemberEnd())
+        {
+            ModelRootPlacement decoded{};
+            if (!decode_ModelRootPlacement(member->value, &decoded,
+                                           child_path(path, "root_placement"), error))
+                return false;
+            out->root_placement = std::move(decoded);
+        }
+        else
+            out->root_placement.reset();
+    }
+    {
+        const auto member = value.FindMember("max_triangles");
+        if (member != value.MemberEnd())
+        {
+            std::uint32_t decoded{};
+            if (!decode_uint32(member->value, &decoded, child_path(path, "max_triangles"), error,
+                               1ULL, 2000000ULL))
+                return false;
+            out->max_triangles = std::move(decoded);
+        }
+        else
+            out->max_triangles.reset();
+    }
+    return true;
+}
+
+bool write_ModelTessellationRequestA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                      const ModelTessellationRequestA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("schema");
+    if (!write_literal_string(writer, value.schema, error,
+                              "geometry.model_tessellation.request.a0"))
+        return false;
+    if (value.linear_deflection_mm.has_value())
+    {
+        writer.Key("linear_deflection_mm");
+        if (!write_double(writer, *value.linear_deflection_mm, error, 0.000001, 1000, false, false))
+            return false;
+    }
+    if (value.angular_deflection_rad.has_value())
+    {
+        writer.Key("angular_deflection_rad");
+        if (!write_double(writer, *value.angular_deflection_rad, error, 0.000001, 3.141592653589793,
+                          false, false))
+            return false;
+    }
+    if (value.root_placement.has_value())
+    {
+        writer.Key("root_placement");
+        if (!write_ModelRootPlacement(writer, *value.root_placement, error))
+            return false;
+    }
+    if (value.max_triangles.has_value())
+    {
+        writer.Key("max_triangles");
+        if (!write_uint32(writer, *value.max_triangles, error, 1ULL, 2000000ULL))
             return false;
     }
     writer.EndObject();
@@ -8688,11 +8851,20 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
                               const std::string& path, ContractError* error)
 {
     {
+        ModelTessellationRequestA0 candidate{};
+        ContractError ignored;
+        if (decode_ModelTessellationRequestA0(value, &candidate, path, &ignored))
+        {
+            *out = IpcRequestValueA0(std::in_place_index<0>, std::move(candidate));
+            return true;
+        }
+    }
+    {
         ModelBoundsOptionsA0 candidate{};
         ContractError ignored;
         if (decode_ModelBoundsOptionsA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<0>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<1>, std::move(candidate));
             return true;
         }
     }
@@ -8701,7 +8873,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_HlrProjectionOptionsA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<1>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<2>, std::move(candidate));
             return true;
         }
     }
@@ -8710,7 +8882,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_PackedAttachmentProjectionA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<2>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<3>, std::move(candidate));
             return true;
         }
     }
@@ -8719,7 +8891,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyOpenRequestA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<3>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<4>, std::move(candidate));
             return true;
         }
     }
@@ -8728,7 +8900,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyCloseRequestA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<4>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<5>, std::move(candidate));
             return true;
         }
     }
@@ -8737,7 +8909,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyInspectRequestA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<5>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<6>, std::move(candidate));
             return true;
         }
     }
@@ -8746,7 +8918,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyRenderRequestA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<6>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<7>, std::move(candidate));
             return true;
         }
     }
@@ -8755,7 +8927,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyResolveHitRequestA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<7>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<8>, std::move(candidate));
             return true;
         }
     }
@@ -8764,7 +8936,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyApplyLogicalGroupsRequestA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<8>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<9>, std::move(candidate));
             return true;
         }
     }
@@ -8773,7 +8945,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyApplyMetadataProbesRequestA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<9>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<10>, std::move(candidate));
             return true;
         }
     }
@@ -8782,7 +8954,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyCheckpointEditJournalRequestA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<10>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<11>, std::move(candidate));
             return true;
         }
     }
@@ -8791,7 +8963,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyApplyHierarchyRequestA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<11>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<12>, std::move(candidate));
             return true;
         }
     }
@@ -8800,7 +8972,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologySaveRequestA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<12>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<13>, std::move(candidate));
             return true;
         }
     }
@@ -8809,7 +8981,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyRestoreRequestA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<13>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<14>, std::move(candidate));
             return true;
         }
     }
@@ -8818,7 +8990,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyAnalyzeRecoveryRequestA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<14>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<15>, std::move(candidate));
             return true;
         }
     }
@@ -8832,35 +9004,37 @@ bool write_IpcRequestValueA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
     switch (value.index())
     {
     case 0:
-        return write_ModelBoundsOptionsA0(writer, std::get<0>(value), error);
+        return write_ModelTessellationRequestA0(writer, std::get<0>(value), error);
     case 1:
-        return write_HlrProjectionOptionsA0(writer, std::get<1>(value), error);
+        return write_ModelBoundsOptionsA0(writer, std::get<1>(value), error);
     case 2:
-        return write_PackedAttachmentProjectionA0(writer, std::get<2>(value), error);
+        return write_HlrProjectionOptionsA0(writer, std::get<2>(value), error);
     case 3:
-        return write_StepTopologyOpenRequestA0(writer, std::get<3>(value), error);
+        return write_PackedAttachmentProjectionA0(writer, std::get<3>(value), error);
     case 4:
-        return write_StepTopologyCloseRequestA0(writer, std::get<4>(value), error);
+        return write_StepTopologyOpenRequestA0(writer, std::get<4>(value), error);
     case 5:
-        return write_StepTopologyInspectRequestA0(writer, std::get<5>(value), error);
+        return write_StepTopologyCloseRequestA0(writer, std::get<5>(value), error);
     case 6:
-        return write_StepTopologyRenderRequestA0(writer, std::get<6>(value), error);
+        return write_StepTopologyInspectRequestA0(writer, std::get<6>(value), error);
     case 7:
-        return write_StepTopologyResolveHitRequestA0(writer, std::get<7>(value), error);
+        return write_StepTopologyRenderRequestA0(writer, std::get<7>(value), error);
     case 8:
-        return write_StepTopologyApplyLogicalGroupsRequestA0(writer, std::get<8>(value), error);
+        return write_StepTopologyResolveHitRequestA0(writer, std::get<8>(value), error);
     case 9:
-        return write_StepTopologyApplyMetadataProbesRequestA0(writer, std::get<9>(value), error);
+        return write_StepTopologyApplyLogicalGroupsRequestA0(writer, std::get<9>(value), error);
     case 10:
-        return write_StepTopologyCheckpointEditJournalRequestA0(writer, std::get<10>(value), error);
+        return write_StepTopologyApplyMetadataProbesRequestA0(writer, std::get<10>(value), error);
     case 11:
-        return write_StepTopologyApplyHierarchyRequestA0(writer, std::get<11>(value), error);
+        return write_StepTopologyCheckpointEditJournalRequestA0(writer, std::get<11>(value), error);
     case 12:
-        return write_StepTopologySaveRequestA0(writer, std::get<12>(value), error);
+        return write_StepTopologyApplyHierarchyRequestA0(writer, std::get<12>(value), error);
     case 13:
-        return write_StepTopologyRestoreRequestA0(writer, std::get<13>(value), error);
+        return write_StepTopologySaveRequestA0(writer, std::get<13>(value), error);
     case 14:
-        return write_StepTopologyAnalyzeRecoveryRequestA0(writer, std::get<14>(value), error);
+        return write_StepTopologyRestoreRequestA0(writer, std::get<14>(value), error);
+    case 15:
+        return write_StepTopologyAnalyzeRecoveryRequestA0(writer, std::get<15>(value), error);
     default:
         return fail(error, "geometer.contract.union_mismatch", "", "Unknown union variant.");
     }
@@ -10581,6 +10755,214 @@ bool write_ModelBoundsResultA0(rapidjson::Writer<rapidjson::StringBuffer>& write
         return false;
     writer.Key("timings");
     if (!write_ModelBoundsTimings(writer, value.timings, error))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_MeshCollectionA0(const rapidjson::Value& value, MeshCollectionA0* out,
+                             const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"schema", "length_unit", "meshes"};
+    if (!validate_object(value, names, 3U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("schema");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "schema"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->schema, child_path(path, "schema"), error,
+                                   "geometry.mesh_collection.a0"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("length_unit");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "length_unit"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->length_unit,
+                                   child_path(path, "length_unit"), error, "millimeter"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("meshes");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "meshes"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->meshes, child_path(path, "meshes"), error, 1U,
+                          65536U, decode_MeshIllustrationMesh))
+            return false;
+    }
+    return true;
+}
+
+bool write_MeshCollectionA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                            const MeshCollectionA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("schema");
+    if (!write_literal_string(writer, value.schema, error, "geometry.mesh_collection.a0"))
+        return false;
+    writer.Key("length_unit");
+    if (!write_literal_string(writer, value.length_unit, error, "millimeter"))
+        return false;
+    writer.Key("meshes");
+    if (!write_array(writer, value.meshes, error, 1U, 65536U, write_MeshIllustrationMesh))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_MeshCollectionAttachment(const rapidjson::Value& value, MeshCollectionAttachment* out,
+                                     const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"attachment", "schema", "byte_length", "sha256"};
+    if (!validate_object(value, names, 4U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("attachment");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "attachment"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->attachment, child_path(path, "attachment"),
+                                   error, "mesh_collection"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("schema");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "schema"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->schema, child_path(path, "schema"), error,
+                                   "geometry.mesh_collection.a0"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("byte_length");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "byte_length"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->byte_length, child_path(path, "byte_length"), error,
+                           1ULL, 268435456ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("sha256");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "sha256"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->sha256, child_path(path, "sha256"), error, 64U,
+                           64U))
+            return false;
+    }
+    return true;
+}
+
+bool write_MeshCollectionAttachment(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                    const MeshCollectionAttachment& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("attachment");
+    if (!write_literal_string(writer, value.attachment, error, "mesh_collection"))
+        return false;
+    writer.Key("schema");
+    if (!write_literal_string(writer, value.schema, error, "geometry.mesh_collection.a0"))
+        return false;
+    writer.Key("byte_length");
+    if (!write_uint32(writer, value.byte_length, error, 1ULL, 268435456ULL))
+        return false;
+    writer.Key("sha256");
+    if (!write_string(writer, value.sha256, error, 64U, 64U))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_ModelTessellationResultA0(const rapidjson::Value& value, ModelTessellationResultA0* out,
+                                      const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"schema", "mesh_collection", "source_sha256",
+                                        "meshes", "triangles",       "warnings"};
+    if (!validate_object(value, names, 6U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("schema");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "schema"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->schema, child_path(path, "schema"), error,
+                                   "geometry.model_tessellation.result.a0"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("mesh_collection");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "mesh_collection"), "Required field is missing.");
+        if (!decode_MeshCollectionAttachment(member->value, &out->mesh_collection,
+                                             child_path(path, "mesh_collection"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("source_sha256");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "source_sha256"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->source_sha256, child_path(path, "source_sha256"),
+                           error, 64U, 64U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("meshes");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "meshes"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->meshes, child_path(path, "meshes"), error, 1ULL,
+                           65536ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("triangles");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "triangles"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->triangles, child_path(path, "triangles"), error,
+                           1ULL, 2000000ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("warnings");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "warnings"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->warnings, child_path(path, "warnings"), error, 0U,
+                          256U, decode_string_item))
+            return false;
+    }
+    return true;
+}
+
+bool write_ModelTessellationResultA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                     const ModelTessellationResultA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("schema");
+    if (!write_literal_string(writer, value.schema, error, "geometry.model_tessellation.result.a0"))
+        return false;
+    writer.Key("mesh_collection");
+    if (!write_MeshCollectionAttachment(writer, value.mesh_collection, error))
+        return false;
+    writer.Key("source_sha256");
+    if (!write_string(writer, value.source_sha256, error, 64U, 64U))
+        return false;
+    writer.Key("meshes");
+    if (!write_uint32(writer, value.meshes, error, 1ULL, 65536ULL))
+        return false;
+    writer.Key("triangles");
+    if (!write_uint32(writer, value.triangles, error, 1ULL, 2000000ULL))
+        return false;
+    writer.Key("warnings");
+    if (!write_array(writer, value.warnings, error, 0U, 256U, write_string_item))
         return false;
     writer.EndObject();
     return true;
@@ -14888,12 +15270,21 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
     int matches = 0;
     OperationResultValueA0 selected{};
     {
+        ModelTessellationResultA0 candidate{};
+        ContractError ignored;
+        if (decode_ModelTessellationResultA0(value, &candidate, path, &ignored))
+        {
+            ++matches;
+            selected = OperationResultValueA0(std::in_place_index<0>, std::move(candidate));
+        }
+    }
+    {
         ModelBoundsResultA0 candidate{};
         ContractError ignored;
         if (decode_ModelBoundsResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<0>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<1>, std::move(candidate));
         }
     }
     {
@@ -14902,7 +15293,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_HlrProjectionResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<1>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<2>, std::move(candidate));
         }
     }
     {
@@ -14911,7 +15302,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_PackedAttachmentProjectionA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<2>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<3>, std::move(candidate));
         }
     }
     {
@@ -14920,7 +15311,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyOpenResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<3>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<4>, std::move(candidate));
         }
     }
     {
@@ -14929,7 +15320,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyCloseResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<4>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<5>, std::move(candidate));
         }
     }
     {
@@ -14938,7 +15329,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyInspectResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<5>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<6>, std::move(candidate));
         }
     }
     {
@@ -14947,7 +15338,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyRenderResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<6>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<7>, std::move(candidate));
         }
     }
     {
@@ -14956,7 +15347,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyResolveHitResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<7>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<8>, std::move(candidate));
         }
     }
     {
@@ -14965,7 +15356,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyApplyLogicalGroupsResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<8>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<9>, std::move(candidate));
         }
     }
     {
@@ -14974,7 +15365,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyApplyMetadataProbesResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<9>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<10>, std::move(candidate));
         }
     }
     {
@@ -14983,7 +15374,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyCheckpointEditJournalResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<10>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<11>, std::move(candidate));
         }
     }
     {
@@ -14992,7 +15383,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyApplyHierarchyResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<11>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<12>, std::move(candidate));
         }
     }
     {
@@ -15001,7 +15392,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologySaveResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<12>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<13>, std::move(candidate));
         }
     }
     {
@@ -15010,7 +15401,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyRestoreResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<13>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<14>, std::move(candidate));
         }
     }
     {
@@ -15019,7 +15410,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyAnalyzeRecoveryResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<14>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<15>, std::move(candidate));
         }
     }
     if (matches != 1)
@@ -15035,35 +15426,37 @@ bool write_OperationResultValueA0(rapidjson::Writer<rapidjson::StringBuffer>& wr
     switch (value.index())
     {
     case 0:
-        return write_ModelBoundsResultA0(writer, std::get<0>(value), error);
+        return write_ModelTessellationResultA0(writer, std::get<0>(value), error);
     case 1:
-        return write_HlrProjectionResultA0(writer, std::get<1>(value), error);
+        return write_ModelBoundsResultA0(writer, std::get<1>(value), error);
     case 2:
-        return write_PackedAttachmentProjectionA0(writer, std::get<2>(value), error);
+        return write_HlrProjectionResultA0(writer, std::get<2>(value), error);
     case 3:
-        return write_StepTopologyOpenResultA0(writer, std::get<3>(value), error);
+        return write_PackedAttachmentProjectionA0(writer, std::get<3>(value), error);
     case 4:
-        return write_StepTopologyCloseResultA0(writer, std::get<4>(value), error);
+        return write_StepTopologyOpenResultA0(writer, std::get<4>(value), error);
     case 5:
-        return write_StepTopologyInspectResultA0(writer, std::get<5>(value), error);
+        return write_StepTopologyCloseResultA0(writer, std::get<5>(value), error);
     case 6:
-        return write_StepTopologyRenderResultA0(writer, std::get<6>(value), error);
+        return write_StepTopologyInspectResultA0(writer, std::get<6>(value), error);
     case 7:
-        return write_StepTopologyResolveHitResultA0(writer, std::get<7>(value), error);
+        return write_StepTopologyRenderResultA0(writer, std::get<7>(value), error);
     case 8:
-        return write_StepTopologyApplyLogicalGroupsResultA0(writer, std::get<8>(value), error);
+        return write_StepTopologyResolveHitResultA0(writer, std::get<8>(value), error);
     case 9:
-        return write_StepTopologyApplyMetadataProbesResultA0(writer, std::get<9>(value), error);
+        return write_StepTopologyApplyLogicalGroupsResultA0(writer, std::get<9>(value), error);
     case 10:
-        return write_StepTopologyCheckpointEditJournalResultA0(writer, std::get<10>(value), error);
+        return write_StepTopologyApplyMetadataProbesResultA0(writer, std::get<10>(value), error);
     case 11:
-        return write_StepTopologyApplyHierarchyResultA0(writer, std::get<11>(value), error);
+        return write_StepTopologyCheckpointEditJournalResultA0(writer, std::get<11>(value), error);
     case 12:
-        return write_StepTopologySaveResultA0(writer, std::get<12>(value), error);
+        return write_StepTopologyApplyHierarchyResultA0(writer, std::get<12>(value), error);
     case 13:
-        return write_StepTopologyRestoreResultA0(writer, std::get<13>(value), error);
+        return write_StepTopologySaveResultA0(writer, std::get<13>(value), error);
     case 14:
-        return write_StepTopologyAnalyzeRecoveryResultA0(writer, std::get<14>(value), error);
+        return write_StepTopologyRestoreResultA0(writer, std::get<14>(value), error);
+    case 15:
+        return write_StepTopologyAnalyzeRecoveryResultA0(writer, std::get<15>(value), error);
     default:
         return fail(error, "geometer.contract.union_mismatch", "", "Unknown union variant.");
     }
@@ -15556,6 +15949,71 @@ bool decode_json(const unsigned char* data, std::size_t size, ModelBoundsResultA
 bool encode_json(const ModelBoundsResultA0& value, std::string* json, ContractError* error)
 {
     return encode_root<ModelBoundsResultA0>(value, write_ModelBoundsResultA0, json, error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size, MeshCollectionA0* value,
+                 ContractError* error)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, &document, error))
+        return false;
+    MeshCollectionA0 decoded{};
+    if (!decode_MeshCollectionA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const MeshCollectionA0& value, std::string* json, ContractError* error)
+{
+    return encode_root<MeshCollectionA0>(value, write_MeshCollectionA0, json, error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size, ModelTessellationRequestA0* value,
+                 ContractError* error)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, &document, error))
+        return false;
+    ModelTessellationRequestA0 decoded{};
+    if (!decode_ModelTessellationRequestA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const ModelTessellationRequestA0& value, std::string* json, ContractError* error)
+{
+    return encode_root<ModelTessellationRequestA0>(value, write_ModelTessellationRequestA0, json,
+                                                   error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size, ModelTessellationResultA0* value,
+                 ContractError* error)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, &document, error))
+        return false;
+    ModelTessellationResultA0 decoded{};
+    if (!decode_ModelTessellationResultA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const ModelTessellationResultA0& value, std::string* json, ContractError* error)
+{
+    return encode_root<ModelTessellationResultA0>(value, write_ModelTessellationResultA0, json,
+                                                  error);
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, OperationOutcomeA0* value,

@@ -466,6 +466,7 @@ def _assert_contract_and_operation_inventory(manifest: dict[str, Any]) -> None:
     assert {item["id"] for item in operations if item["status"] == "pilot_candidate"} == {
         "geometry.model_hlr_projection.a0",
         "geometry.mesh_hlr_projection.a0",
+        "geometry.model_tessellation.a0",
     }
     assert {item["id"] for item in operations if item["status"] == "promoted"} == {"geometry.model_bounds.a0"}
     assert_step_topology_inventory(manifest, contracts, operations)
@@ -584,8 +585,8 @@ def _assert_candidate_projection_surfaces(manifest: dict[str, Any]) -> None:
     assert "decode_AnalyticPlanarBoolean" not in cpp_contract_json
     assert "write_AnalyticPlanarBoolean" not in cpp_contract_json
     assert "using OperationResultValueA0 =" in cpp_contract_header
-    assert "ModelBoundsResultA0, HlrProjectionResultA0, PackedAttachmentProjectionA0" in cpp_contract_header
-    assert "PackedAttachmentProjectionA0,\n                 StepTopologyOpenResultA0" in cpp_contract_header
+    assert "ModelBoundsResultA0, HlrProjectionResultA0, PackedAttachmentProjectionA0" in " ".join(cpp_contract_header.split())
+    assert "PackedAttachmentProjectionA0, StepTopologyOpenResultA0" in " ".join(cpp_contract_header.split())
     assert "StepTopologyAnalyzeRecoveryResultA0>;" in cpp_contract_header
     assert "holds_alternative<contracts::AnalyticPlanarBoolean" not in cpp_operation_catalog
     rust_contracts = (ROOT / "src/rust/geometer-client/src/generated/contracts.rs").read_text(encoding="utf-8")

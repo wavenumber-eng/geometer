@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.model_tessellation.result:a0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.model_tessellation.result.a0"
+    },
+    "mesh_collection": {
+      "$ref": "#/$defs/MeshCollectionAttachment"
+    },
+    "source_sha256": {
+      "type": "string",
+      "minLength": 64,
+      "maxLength": 64
+    },
+    "meshes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65536
+    },
+    "triangles": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2000000
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 256
+    }
+  },
+  "required": [
+    "schema",
+    "mesh_collection",
+    "source_sha256",
+    "meshes",
+    "triangles",
+    "warnings"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "$defs": {
+    "MeshCollectionAttachment": {
+      "type": "object",
+      "properties": {
+        "attachment": {
+          "type": "string",
+          "const": "mesh_collection"
+        },
+        "schema": {
+          "type": "string",
+          "const": "geometry.mesh_collection.a0"
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 268435456
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "attachment",
+        "schema",
+        "byte_length",
+        "sha256"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "UTF-8 JSON attachment governed by geometry.mesh_collection.a0, not an opaque mesh format."
+    }
+  }
+}

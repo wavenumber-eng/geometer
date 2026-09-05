@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.mesh_collection:a0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.mesh_collection.a0"
+    },
+    "length_unit": {
+      "type": "string",
+      "const": "millimeter"
+    },
+    "meshes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/MeshIllustrationMesh"
+      },
+      "minItems": 1,
+      "maxItems": 65536
+    }
+  },
+  "required": [
+    "schema",
+    "length_unit",
+    "meshes"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Shared colored indexed meshes. Coordinates and matrix translations are millimeters.",
+  "$defs": {
+    "MeshIllustrationMesh": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "positions": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 9,
+          "maxItems": 6000000
+        },
+        "normals": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 6000000
+        },
+        "indices": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4294967295
+          },
+          "maxItems": 6000000
+        },
+        "matrix": {
+          "$ref": "#/$defs/IllustrationMatrix4x4"
+        },
+        "materials": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MeshIllustrationMaterial"
+          },
+          "minItems": 1,
+          "maxItems": 65536
+        },
+        "triangle_material_indices": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4294967295
+          },
+          "maxItems": 2000000
+        },
+        "double_sided": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "positions",
+        "materials"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "IllustrationMatrix4x4": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 16,
+      "maxItems": 16
+    },
+    "MeshIllustrationMaterial": {
+      "type": "object",
+      "properties": {
+        "color": {
+          "$ref": "#/$defs/IllustrationVector3",
+          "description": "sRGB channels in the inclusive range [0, 1]."
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 1024
+        }
+      },
+      "required": [
+        "color"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "IllustrationVector3": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3
+    }
+  }
+}

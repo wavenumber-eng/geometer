@@ -84,3 +84,28 @@ digest, proving preexisting definitions unchanged without rewriting evidence.
 Generated C++ membership checks ignore formatter-only adjacent literal/space
 changes. The provenance-test file lock was refreshed for those inventory-only
 edits; solver evidence and its source hashes are unchanged.
+
+## Slice 3: native illustration value renderer
+
+Implemented focused native preparation, math/style, grid/visibility, fusion,
+coplanar layering, line chaining and SVG modules using existing TypeSpec-generated
+A0 input/style/result values. No handwritten parallel public DTO or JavaScript
+runtime. Native executable illustration dispatch is still the next slice.
+
+Independent review found output-size accounting, decimal halfway rounding,
+XML text and finite-intermediate issues. Fixes enforce a complete SVG cap,
+ECMAScript decimal rounding, shared TypeScript/C++ XML hardening and explicit
+overflow rejection. Follow-up review added Unicode CSS whitespace/case-folding
+parity and registered differential coverage through CTest and the TypeScript
+Rack lane. Shared fixtures compare exact A0 results and SVG, repeat native
+renders, parse all SVG documents, and include the colored SOT-23 STEP workflow.
+
+Native limits fail explicitly rather than switching renderers. They bound
+accepted work/output, not peak process memory. This source-only direct-link
+checkpoint does not claim released IPC/client availability or macOS/Linux
+runtime qualification. No OCCT rebuild or published binary replacement.
+
+Final review approved the core checkpoint and independently reran both CTests:
+40 exact parity/determinism cases plus native smoke passed (about 1 second).
+Existing TypeScript illustration validation, all 130 contract vectors,
+generated freshness, documentation checks and touched-file formatting passed.

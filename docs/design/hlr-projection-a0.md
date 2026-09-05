@@ -21,6 +21,10 @@ raster comparator. Mesh illustration is also independent: it consumes mesh and
 linework geometry, applies presentation policy, and produces SVG or Canvas
 output.
 
+An unreleased [native C++ illustration implementation](mesh-illustration-native.md)
+now reuses the same generated A0 values. This does not yet make illustration an
+executable/Rust/Python operation or change released browser availability.
+
 Generated field/type references are available for the
 [options contract](../generated/contracts/contracts/geometry-hlr-projection-options-a0.html),
 [result contract](../generated/contracts/contracts/geometry-hlr-projection-result-a0.html),

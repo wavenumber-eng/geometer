@@ -1,0 +1,156 @@
+#include "geometer/mesh_illustration.h"
+#include "geometer/model_tessellation.h"
+#include "mesh_illustration_internal.h"
+#include "mesh_illustration_svg.h"
+
+#include <fstream>
+#include <iostream>
+#include <iterator>
+#include <stdexcept>
+
+namespace
+{
+void require(bool condition, const char* message)
+{
+    if (!condition)
+        throw std::runtime_error(message);
+}
+
+geometer::contracts::MeshIllustrationInputA0 fixture()
+{
+    geometer::contracts::MeshIllustrationInputA0 input;
+    geometer::contracts::MeshIllustrationMesh mesh;
+    mesh.id = "square";
+    mesh.positions = {0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0};
+    mesh.indices = std::vector<std::uint32_t>{0, 1, 2, 0, 2, 3};
+    mesh.materials.push_back({{.2, .7, .62}, {}, {}});
+    input.meshes.push_back(mesh);
+    input.view.direction = {0, 0, 1};
+    input.view.up = {0, 1, 0};
+    return input;
+}
+
+void smoke()
+{
+    auto input = fixture();
+    geometer::contracts::MeshIllustrationResultA0 result, repeated;
+    geometer::Status status;
+    require(geometer::illustrate_mesh(input, &result, &status) == 0, status.message.c_str());
+    require(result.stats.triangles == 2 && result.stats.surface_draws == 1, "square fusion failed");
+    require(result.stats.outlines == 0 && result.stats.creases == 0, "open edges became outlines");
+    require(result.svg.find("<path") != std::string::npos, "missing fused SVG path");
+    require(geometer::illustrate_mesh(input, &repeated, &status) == 0 && result.svg == repeated.svg,
+            "SVG not deterministic");
+    input.prepare.emplace();
+    input.prepare->max_triangles = 1;
+    require(geometer::illustrate_mesh(input, &result, &status) == 102 && result.svg.empty(),
+            "triangle limit leaked partial SVG");
+    input.prepare.reset();
+    input.view.up = input.view.direction;
+    require(geometer::illustrate_mesh(input, &result, &status) != 0 && result.svg.empty(),
+            "parallel view vectors accepted");
+    require(geometer::illustration_detail::js_round(-.5) == 0, "negative JS rounding mismatch");
+    require(geometer::illustration_detail::number_text(.000001) == "0.000001",
+            "JS number formatting");
+    require(geometer::illustration_detail::number_text(.5001220703125) == "0.500122070313",
+            "ECMAScript precision halfway rounding mismatch");
+    require(geometer::illustration_detail::fixed_text(.5001220703125) == "0.500122070313",
+            "ECMAScript fixed halfway rounding mismatch");
+    std::string bounded;
+    geometer::illustration_detail::append_bounded(bounded, "abcd", 4);
+    bool rejected = false;
+    try
+    {
+        geometer::illustration_detail::append_bounded(bounded, "\n", 4);
+    }
+    catch (const geometer::illustration_detail::ResourceLimit&)
+    {
+        rejected = true;
+    }
+    require(rejected && bounded == "abcd", "bounded append exceeded exact capacity");
+    rejected = false;
+    try
+    {
+        geometer::illustration_detail::append_bounded(bounded, "x", 3);
+    }
+    catch (const geometer::illustration_detail::ResourceLimit&)
+    {
+        rejected = true;
+    }
+    require(rejected, "bounded append subtraction underflow");
+    input = fixture();
+    input.svg.emplace();
+    input.svg->title = "a]]>b";
+    require(geometer::illustrate_mesh(input, &result, &status) == 0 &&
+                result.svg.find("a]]&gt;b") != std::string::npos,
+            "invalid XML text delimiter");
+    input.svg->title = "bad\x01title";
+    require(geometer::illustrate_mesh(input, &result, &status) != 0 && result.svg.empty(),
+            "invalid XML control accepted");
+    input = fixture();
+    input.prepare.emplace();
+    input.prepare->weld_tolerance = 1e308;
+    for (std::size_t i = 2; i < input.meshes[0].positions.size(); i += 3)
+        input.meshes[0].positions[i] = 1e308;
+    require(geometer::illustrate_mesh(input, &result, &status) != 0 && result.svg.empty(),
+            "overflowing mean depth accepted");
+    input = fixture();
+    input.meshes[0].matrix =
+        std::vector<double>{1, 0, 0, 1e308, 0, 1, 0, 1e308, 0, 0, 1, 0, 0, 0, 0, 1};
+    require(geometer::illustrate_mesh(input, &result, &status) != 0 && result.svg.empty(),
+            "overflowing homogeneous divisor accepted");
+}
+} // namespace
+
+int main(int argc, char** argv)
+{
+    try
+    {
+        if (argc == 1)
+        {
+            smoke();
+            return 0;
+        }
+        if (argc == 3 && std::string(argv[1]) == "--step")
+        {
+            std::ifstream file(argv[2], std::ios::binary);
+            require(file.good(), "Cannot read STEP fixture");
+            const std::string bytes{std::istreambuf_iterator<char>(file), {}};
+            geometer::contracts::MeshCollectionA0 meshes;
+            geometer::Status status;
+            require(geometer::model_tessellation_from_bytes(
+                        reinterpret_cast<const unsigned char*>(bytes.data()), bytes.size(), {},
+                        &meshes, &status) == 0,
+                    status.message.c_str());
+            std::string output;
+            geometer::contracts::ContractError error;
+            require(geometer::contracts::encode_json(meshes, &output, &error),
+                    error.message.c_str());
+            std::cout << output;
+            return 0;
+        }
+        if (argc != 2)
+            throw std::runtime_error("Expected one governed input JSON fixture path.");
+        std::ifstream file(argv[1], std::ios::binary);
+        require(file.good(), "Cannot read input fixture");
+        const std::string bytes{std::istreambuf_iterator<char>(file), {}};
+        geometer::contracts::MeshIllustrationInputA0 input;
+        geometer::contracts::ContractError error;
+        require(
+            geometer::contracts::decode_json(reinterpret_cast<const unsigned char*>(bytes.data()),
+                                             bytes.size(), &input, &error),
+            error.message.c_str());
+        geometer::contracts::MeshIllustrationResultA0 result;
+        geometer::Status status;
+        require(geometer::illustrate_mesh(input, &result, &status) == 0, status.message.c_str());
+        std::string output;
+        require(geometer::contracts::encode_json(result, &output, &error), error.message.c_str());
+        std::cout << output;
+        return 0;
+    }
+    catch (const std::exception& error)
+    {
+        std::cerr << error.what() << '\n';
+        return 1;
+    }
+}

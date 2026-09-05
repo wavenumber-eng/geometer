@@ -1392,7 +1392,19 @@ function numberText(value) {
     return Object.is(rounded, -0) ? "0" : String(rounded);
 }
 function escapeXml(value) {
-    return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll('"', "&quot;");
+    for (const character of value) {
+        const code = character.codePointAt(0);
+        if ((code < 0x20 && code !== 9 && code !== 10 && code !== 13) ||
+            (code >= 0xd800 && code <= 0xdfff) ||
+            code === 0xfffe ||
+            code === 0xffff)
+            throw new Error("Illustration SVG text contains an invalid XML character.");
+    }
+    return value
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
 }
 function safeCssColor(value) {
     const color = value.trim();

@@ -11,6 +11,7 @@ measurements and abandoned approaches live in [research](../research/README.md).
 - [Interface policy and versioning](interface-policy.md)
 - [STEP geometry](step-geometry.md) and [planar geometry](planar-geometry.md)
 - [Colored model tessellation A0 (development candidate)](model-tessellation-a0.md)
+- [Native mesh illustration (development candidate)](mesh-illustration-native.md)
 - [Python package](python-package.md)
 - [CLI commands](cli.md)
 - [Executable IPC consumer guide](executable-ipc.md) and [A0 wire protocol](executable-ipc-a0.md)

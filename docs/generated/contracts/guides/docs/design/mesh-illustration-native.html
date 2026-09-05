@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="a8c0c77000c376613d20f6968bb2a7c0fea38b4b829ab02b0f13e453a9dfd297">
+  <title>Native mesh illustration (development candidate) — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="a8c0c77000c376613d20f6968bb2a7c0fea38b4b829ab02b0f13e453a9dfd297" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../design/mesh-illustration-native.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="native-mesh-illustration-development-candidate">Native mesh illustration (development candidate)</h1></header>
+<h2 id="availability-and-authority">Availability and authority</h2>
+<p>The source branch provides <code>geometer::illustrate_mesh</code> in
+<code>geometer/mesh_illustration.h</code>, linked through <code>geometer_lib</code>. It performs CPU
+vector illustration without a JavaScript engine, browser, GPU or WASM runtime.
+This is an <strong>unreleased direct C++ API</strong>. It is not yet an executable IPC
+operation or a Rust/Python illustration method. Do not infer availability in
+released binaries from the generated illustration DTOs.</p>
+<p>Public input, style and result values come from the existing TypeSpec
+<a href="../../../../../../src/tsp/geometer/operations/mesh-illustration-a0.tsp"><code>mesh-illustration-a0.tsp</code></a>.
+The C++ API uses those generated structures directly. Its private scene,
+visibility graph and drawing commands are implementation details, not new wire
+formats. The existing <a href="hlr-projection-a0.html">browser API</a> remains supported.</p>
+<h2 id="calling-the-value-api">Calling the value API</h2>
+<pre><code class="language-cpp">#include &quot;geometer/mesh_illustration.h&quot;
+#include &quot;geometer/model_tessellation.h&quot;
+
+geometer::contracts::MeshCollectionA0 collection;
+geometer::Status status;
+int code = geometer::model_tessellation_from_bytes(
+    step_bytes.data(), step_bytes.size(), {}, &amp;collection, &amp;status);
+if (code != 0) { /* report status.message and stop */ }
+
+geometer::contracts::MeshIllustrationInputA0 input;
+input.meshes = std::move(collection.meshes);
+input.view.direction = {0, 0, 1};
+input.view.up = {0, 1, 0};
+geometer::contracts::MeshIllustrationResultA0 result;
+code = geometer::illustrate_mesh(input, &amp;result, &amp;status);
+if (code != 0) { /* report status.message and stop */ }
+// result.svg is vector XML; result.stats and result.warnings are generated A0 values.
+</code></pre>
+<p>See <a href="model-tessellation-a0.html">colored tessellation</a> for millimeter units,
+placement, materials and STEP security policy. The illustration operation itself
+accepts meshes, not files. It never reads local paths or fetches external assets.</p>
+<h2 id="rendering-semantics">Rendering semantics</h2>
+<p>The native implementation follows the production TypeScript renderer:</p>
+<ul>
+<li>Orthographic direction/up basis, optional horizontal reflection and
+column-major mesh transforms; reflected winding and inverse-transpose normals.</li>
+<li>sRGB source materials, opacity, and presence-preserving A0 style defaults;
+unlit, flat, Lambert, banded and toon shading.</li>
+<li>Overlap-based visibility constraints, stable strongly connected component
+ordering, safe adjacent-surface fusion and coplanar material layers.</li>
+<li>Closed-mesh silhouettes and shared creases. Open triangle-soup edges do not
+automatically become outlines.</li>
+<li>Integer-grid SVG coordinates, six-percent padding, stable CSS classes,
+background/title options and chained line paths.</li>
+</ul>
+<p>This pure API does not compute or accept optional CAD HLR layers yet. In
+particular, <code>show_hlr_outline</code> and <code>show_hlr_detail</code> do not request extra HLR
+computation. Native Fast HLR composition needs a separate governed wrapper;
+the browser's <code>illustrated-hlr</code> composition is not silently substituted.</p>
+<p>SVG text escapes XML delimiters and rejects XML 1.0 forbidden characters or
+invalid Unicode. That hardening is shared with TypeScript. CSS color validation
+matches ECMAScript whitespace/case-folding semantics and rejects unsafe CSS to
+the established black fallback. Decimal output uses JavaScript-compatible
+halfway rounding rather than C++ formatting's ties-to-even behavior.</p>
+<h2 id="errors-and-resource-limits">Errors and resource limits</h2>
+<p>The function returns zero on success; nonzero status clears the result,
+including SVG. Invalid generated DTOs, invalid view bases, numeric overflow and
+invalid XML text fail explicitly. Out-of-range or degenerate triangles retain
+the browser warning-and-skip policy; warnings are capped at 256 entries.</p>
+<p>The generated prepare option defaults to 750,000 source triangles and allows
+at most 2,000,000. Native processing additionally rejects more than 20,000,000
+candidate/simplification work items, 4,000,000 visibility constraints or stored
+same-style overlaps, and complete SVG documents larger than 256 MiB. These
+limits return status 102; there is no approximate-renderer fallback.</p>
+<p>These are accepted-work/output limits, not a hard peak-memory or CPU sandbox.
+Generated value validation serializes input; scene/graph/SVG assembly allocates
+intermediate storage. Callers processing untrusted inputs should use the
+managed executable boundary with process limits once its adapter is available.</p>
+<h2 id="focused-conformance-evidence">Focused conformance evidence</h2>
+<p>The native CTest smoke covers successful fusion, determinism, triangle caps,
+invalid views, exact output-cap boundaries, decimal halfway rounding, XML text
+and extreme finite inputs. <code>geometer_mesh_illustration_parity</code> compares the
+entire generated result and SVG byte-for-byte with TypeScript, repeats native
+calls for determinism, and parses every SVG with an XML parser.</p>
+<p>Shared fixtures cover shading modes, views, colors, transforms, reflection,
+normals, opacity, fusion, material inlays/holes, overlapping triangle soup,
+warnings, Unicode CSS, title/viewport options and the colored SOT-23 STEP model.
+Windows has local conformance evidence. macOS/Linux runtime qualification,
+executable/Rust/Python integration and GUI acceptance remain open.</p>
+<pre><code class="language-powershell">cmake --build build --target geometer_mesh_illustration_test
+ctest --test-dir build -R geometer_mesh_illustration --output-on-failure
+</code></pre>
+<p>The differential CTest is registered when Node is present. It uses CMake's
+Python interpreter for XML parsing. The TypeScript Rack lane also runs it when
+<code>GEOMETER_REQUIRE_NATIVE_TEST_SERVERS=1</code>; set <code>GEOMETER_ILLUSTRATION_TEST</code> for
+non-default build locations. Contract tooling/Node must be installed for parity
+qualification; passing the native-only smoke is not full conformance evidence.</p>
+
+</main>
+</body>
+</html>

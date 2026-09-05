@@ -11,7 +11,8 @@
 <body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="a8c0c77000c376613d20f6968bb2a7c0fea38b4b829ab02b0f13e453a9dfd297" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../contracts/public-entrypoints.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="public-entry-point-reconciliation">Public Entry-Point Reconciliation</h1></header>
-<p>Reviewed against <code>v2026-09-04</code>. This maps semantic operations separately from
+<p>Release baseline <code>v2026-09-04</code>, with explicitly labeled native development
+additions below. This maps semantic operations separately from
 aliases, byte projections and implementation helpers. The
 <a href="../../../coverage.html">generated inventory</a> supplies individual
 operation/root identities; the <a href="../../../../../contracts/public-surface-review.json">source review lock</a>
@@ -83,10 +84,16 @@ in that boundary requires documentation review, not automatic promotion.</p>
 <td>Wave 0 preserves each operation's availability. Save/analyze-recovery/apply-hierarchy are not executable capabilities.</td>
 </tr>
 <tr>
-<td>Browser mesh illustration</td>
-<td>Browser TypeScript renderer and <code>illustrated-hlr</code> composition, not a C++ solver/IPC operation</td>
-<td><code>mesh-illustration</code> and <code>illustrated-hlr</code> package exports</td>
-<td>Generated options/result roots already exist; render behavior remains handwritten TS. No automatic native adapter.</td>
+<td>Colored model tessellation (development)</td>
+<td><code>model_tessellation.h</code>; governed native IPC operation</td>
+<td>Typed Rust/Python executable methods</td>
+<td>Generated mesh collection/request/result/operation; unreleased candidate.</td>
+</tr>
+<tr>
+<td>Mesh illustration</td>
+<td>Browser TypeScript renderer and <code>illustrated-hlr</code> composition; unreleased direct C++ <code>mesh_illustration.h</code> API</td>
+<td>Existing browser exports; native IPC/Rust/Python illustration not yet available</td>
+<td>Existing generated A0 input/style/result reused directly by C++; native renderer parity is under qualification. See <a href="../design/mesh-illustration-native.html">native boundary</a>.</td>
 </tr>
 </tbody>
 </table>

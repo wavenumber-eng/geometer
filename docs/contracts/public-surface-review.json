@@ -100,7 +100,7 @@
     },
     {
       "path": "src/cpp/lib/CMakeLists.txt",
-      "sha256": "b807fcf5246a1241aa13c1bd300441100ca405a7321edea464d81524d7b76b70"
+      "sha256": "1219b46c83d37dd6ad22faf6b20201322cc8c22a626d340bb0779fda7593489b"
     },
     {
       "path": "src/cpp/lib/geometer.h",
@@ -301,6 +301,10 @@
     {
       "path": "src/cpp/lib/geometer/ipc_a0_server.h",
       "sha256": "1f26c734b6ecfbf8ca6b3bbcaba76c2f0e2bb7874eb167238bc97abb94927736"
+    },
+    {
+      "path": "src/cpp/lib/geometer/mesh_illustration.h",
+      "sha256": "df46eacb9f4171a4873ac52b8d32f531a2f2f2a9e27ce4b3fdcc967903fb3289"
     },
     {
       "path": "src/cpp/lib/geometer/model.h",
@@ -556,7 +560,7 @@
     },
     {
       "path": "src/ts/geometer/mesh-illustration.ts",
-      "sha256": "7cfa0246da506e739b7ed110eb0c77f04c1fac9084a78864cdf6cc0916e271ed"
+      "sha256": "cf08d689bc770ddb9929a41e40a570da6b67644234aca3b35e9b6776af6304c6"
     },
     {
       "path": "src/ts/geometer/node-process-a0.ts",

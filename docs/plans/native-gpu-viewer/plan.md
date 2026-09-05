@@ -255,6 +255,14 @@ executable catalog, Rust and Python invocation. Prioritize illustration, Fast
 HLR and the model/mesh path needed by these consumers. Record other gaps as
 follow-ups; this is not an implicit implementation of every TypeSpec migration.
 
+Native demo inclusion in GitHub releases is a deferred user decision, not an
+approved deliverable or a prerequisite for this plan's implementation closeout.
+Build/test artifacts and the Mac handoff remain in scope. Do not automatically
+add demo release uploads, installers, signing/notarization, or a bundled kernel
+distribution. Preserve current repository artifact policy and existing demos;
+this decision does not remove already committed C++ outputs. Keep artifact
+layout and executable discovery suitable for later optional release packaging.
+
 Retain the existing C++ example identity/build target where practical. Keep
 Geometer generic; do not import PCB/application policy. Do not rebuild or alter
 geometry algorithms, migrate every operation to TypeSpec, prune other demos,

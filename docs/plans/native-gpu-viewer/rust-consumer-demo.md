@@ -33,6 +33,26 @@ invent an ad-hoc native bridge just to get a first picture on screen.
 
 ## Visible Demonstration
 
+### Executable Discovery And Deferred Distribution
+
+The app needs a compatible native Geometer executable (`geometer.exe` on
+Windows, `geometer` on macOS). Reuse the client's maintained discovery/process
+logic, support an explicit path override for development, and offer a
+"Locate Geometer..." picker when unresolved. Show the selected path, version,
+ABI, connection status and negotiated capabilities. Missing or incompatible
+executables and unavailable illustration operations need actionable messages,
+not silent renderer fallback or an automatic download.
+
+A colocated/bundled executable can become the distribution default if packaging
+is later approved; explicit user configuration should take precedence. Do not
+require bundling to run the development demo, and do not assume one exists.
+The user will decide later whether native demos belong in GitHub releases.
+No demo publication, installer, signing or automatic kernel bundling is
+authorized by this plan. Test artifacts and Mac handoff builds are distinct
+from public release assets.
+
+### Workflow
+
 - Open representative STEP bytes and show executable version, ABI/catalog
   compatibility and available capabilities.
 - GPU-render a model with hardware depth, stable orbit/pan/zoom and explicit

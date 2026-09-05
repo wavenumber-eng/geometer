@@ -18,6 +18,10 @@ Validate the Rust/wgpu executable-backed app first. The C++/SDL GPU direct-link
 app is a separate later task with a distinct binary and acceptance record.
 Do not treat a pass in one as evidence for the other.
 
+These are validation/handoff artifacts. The user has deferred deciding whether
+native demos will be included in GitHub releases; do not infer public upload,
+signing/notarization or bundled-kernel distribution authorization from this task.
+
 ## Inputs The Implementer Must Supply
 
 - Exact feature-complete commit, macOS arm64 build artifact and SHA-256 manifest.

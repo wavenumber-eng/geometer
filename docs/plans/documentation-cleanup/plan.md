@@ -34,6 +34,30 @@ status = "pending"
 depends_on = ["baseline-inventory"]
 
 [[steps]]
+id = "alx-generation-assessment"
+title = "Assess ALX HTML generation, shared presentation, and Geometer generation gaps"
+status = "done"
+depends_on = ["baseline-inventory"]
+
+[[steps]]
+id = "all-operation-typespec-roadmap"
+title = "Specify migration waves for every operation, including logical contracts, packed codecs, and executable adapters"
+status = "pending"
+depends_on = ["contract-authority-matrix", "alx-generation-assessment"]
+
+[[steps]]
+id = "shared-html-presentation"
+title = "Align Geometer documentation with the ALX shared stylesheet and reusable page components"
+status = "pending"
+depends_on = ["documentation-taxonomy", "alx-generation-assessment"]
+
+[[steps]]
+id = "generated-html-expansion"
+title = "Generate operation coverage, packet references, relationships, and documentation indexes from governed sources"
+status = "pending"
+depends_on = ["contract-authority-matrix", "shared-html-presentation", "all-operation-typespec-roadmap"]
+
+[[steps]]
 id = "design-doc-cleanup"
 title = "Keep interface specifications in design and relocate research, evidence, and maintainer procedures"
 status = "pending"
@@ -61,7 +85,7 @@ depends_on = ["demo-disposition-review", "readme-refresh"]
 id = "documentation-drift-gates"
 title = "Add lightweight checks for links, interface inventory freshness, maturity labels, and demo registration"
 status = "pending"
-depends_on = ["design-doc-cleanup", "ipc-consumer-guide", "demo-cleanup"]
+depends_on = ["design-doc-cleanup", "ipc-consumer-guide", "demo-cleanup", "generated-html-expansion"]
 
 [[steps]]
 id = "closeout"
@@ -90,6 +114,16 @@ title = "Every callable operation and packet has one documented authority and an
 status = "pending"
 
 [[exit_criteria]]
+id = "typespec-migration-roadmap"
+title = "Every operation has a concrete TypeSpec migration wave, compatibility gate, and generated-code boundary; packed codec gaps are explicit"
+status = "pending"
+
+[[exit_criteria]]
+id = "generated-html"
+title = "Generatable reference and index pages derive from governed inputs, show runtime and maturity accurately, and share the ALX presentation system"
+status = "pending"
+
+[[exit_criteria]]
 id = "demos"
 title = "Every retained demo has an owner, maturity, build command, output, automated check, and last-verified release"
 status = "pending"
@@ -109,7 +143,7 @@ status = "pending"
 
 ## Objective
 
-Make Geometer's documentation accurately answer four questions without
+Make Geometer's documentation accurately answer six questions without
 requiring repository archaeology:
 
 1. What does Geometer support, and at what maturity?
@@ -117,10 +151,21 @@ requiring repository archaeology:
 3. Which schemas and packets are governed by TypeSpec, and which are not?
 4. Which examples and demos are current, experimental, historical, or safe to
    remove?
+5. How can every operation acquire TypeSpec-generated structural contracts,
+   client bindings, and reference documentation?
+6. Which documentation can be generated automatically with the same shared
+   HTML presentation as ALX?
 
-This is primarily a documentation and information-architecture effort. It must
-not redesign geometry behavior or migrate contracts merely to make the
-documentation look uniform.
+This effort includes documentation cleanup, generated HTML and shared styling,
+and assessment of the migration to TypeSpec for all operations. The migration
+assessment must produce concrete implementation waves and acceptance gates.
+Changing solver behavior or implementing all contract migrations is follow-on
+work; it is not implied by completing this documentation plan.
+
+The [TypeSpec and ALX generation assessment](typespec-html-assessment.md)
+records the inspected source paths, migration proposal, HTML generation
+opportunities, and stylesheet comparison. Its recommendations are incorporated
+into the steps and exit criteria above.
 
 ## Baseline
 
@@ -192,6 +237,9 @@ checklist before moving anything.
 - `typespec-toolchain.md` to contract-authoring/developer documentation, leaving
   a short authority link in the design index.
 - `generated-contract-reference.md` to contract documentation.
+- Keep one authored source per guide; generate its HTML presentation and shared
+  navigation where practical. Generated reference pages must remain visibly
+  distinct from authored intent and historical research.
 - `model-bounds-contract-compatibility.md`,
   `geom-a0-contract-alignment.md`, and `transport-design-review.md` to dated
   compatibility or historical review records.
@@ -296,6 +344,20 @@ Explicitly document the layered exceptions:
   independently versioned.
 - Legacy JSON batch and file-oriented CLI formats are not made TypeSpec-owned by
   being callable from the same executable.
+
+These classifications describe the migration starting point. The target is
+TypeSpec-generated structural contracts and operation metadata for every public
+operation, with the remaining packed codec generation assessed explicitly.
+Follow the migration waves in the linked assessment; do not count a generic
+JSON object or opaque byte attachment as complete payload coverage. Preserve
+the existing packet bytes and legacy client behavior during migration, or
+record an intentional versioned contract change.
+
+The HTML expansion can proceed before runtime migration. Generate coverage and
+gap pages for inventoried operations, clearly identifying those that are not
+yet TypeSpec-backed or callable through IPC. Extend Geometer's existing HTML
+generator and ALX-derived styling rather than introducing a parallel reference
+site with independent operation lists.
 
 Audit whether `src/tsp/geometer/analytic-candidate.tsp` still has a distinct
 purpose now that `main.tsp` imports the analytic declarations. Remove it only if

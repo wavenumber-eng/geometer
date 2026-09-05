@@ -17,15 +17,57 @@ depends_on = ["baseline-inventory", "rust-demo-scope"]
 
 [[steps]]
 id = "rust-demo-scope"
-title = "Decide whether the Rust/wgpu API demonstration is separate or replaces the C++ viewer"
-status = "pending"
+title = "Retain separate direct-linked C++ and executable-backed Rust demos; prioritize Rust"
+status = "done"
 depends_on = ["baseline-inventory"]
 
 [[steps]]
-id = "gpu-foundation"
-title = "Pin docking-capable ImGui and implement SDL GPU plus reproducible platform shaders"
+id = "native-illustration-windows"
+title = "Accept the native Windows operation and typed Rust STEP/mesh workflow from the upstream owner"
 status = "pending"
 depends_on = ["architecture-and-parity"]
+
+[[steps]]
+id = "rust-demo-foundation"
+title = "Build the Rust/wgpu shell, responsive controls and managed GeometerClient connection"
+status = "pending"
+depends_on = ["architecture-and-parity"]
+
+[[steps]]
+id = "rust-demo-integration"
+title = "Demonstrate typed native geometry and illustration with progress, GPU preview and JSON/SVG exports"
+status = "pending"
+depends_on = ["rust-demo-foundation", "native-illustration-windows"]
+
+[[steps]]
+id = "rust-windows-acceptance"
+title = "Validate the priority Windows Rust API demonstration with the user"
+status = "pending"
+depends_on = ["rust-demo-integration"]
+
+[[steps]]
+id = "python-native-illustration"
+title = "Accept required executable-backed Python illustration methods and installed-package tests"
+status = "pending"
+depends_on = ["native-illustration-windows"]
+
+[[steps]]
+id = "rust-macos-build-path"
+title = "Prepare a macOS arm64 Rust/wgpu build and compatible native executable"
+status = "pending"
+depends_on = ["rust-demo-foundation"]
+
+[[steps]]
+id = "rust-macos-agent-validation"
+title = "Have a separate Mac agent validate the matching Rust demo through the native client"
+status = "pending"
+depends_on = ["rust-macos-build-path", "rust-windows-acceptance"]
+
+[[steps]]
+id = "gpu-foundation"
+title = "Later C++ track: pin docking-capable ImGui and implement SDL GPU/shaders"
+status = "pending"
+depends_on = ["architecture-and-parity", "rust-windows-acceptance"]
 
 [[steps]]
 id = "viewport-camera"
@@ -55,7 +97,7 @@ depends_on = ["viewport-camera", "background-jobs"]
 id = "native-illustration-api"
 title = "Accept governed native illustration with typed Rust/Python APIs and complete STEP workflows"
 status = "pending"
-depends_on = ["baseline-inventory"]
+depends_on = ["native-illustration-windows", "python-native-illustration"]
 
 [[steps]]
 id = "illustration-integration"
@@ -65,19 +107,19 @@ depends_on = ["geometry-svg-exports", "architecture-and-parity", "native-illustr
 
 [[steps]]
 id = "windows-acceptance"
-title = "Validate the Windows application, exports and responsive controls with the user"
+title = "Validate the later direct-linked C++ Windows viewer with the user"
 status = "pending"
 depends_on = ["illustration-integration", "dock-layout"]
 
 [[steps]]
 id = "macos-build-path"
-title = "Produce a reproducible macOS arm64 Metal build and handoff package"
+title = "Produce the later C++ macOS arm64 Metal build and handoff package"
 status = "pending"
 depends_on = ["viewport-camera", "dock-layout"]
 
 [[steps]]
 id = "macos-agent-validation"
-title = "Have a separate Mac-equipped agent verify the matching feature-complete build"
+title = "Have a separate Mac-equipped agent verify the later C++ build"
 status = "pending"
 depends_on = ["macos-build-path", "windows-acceptance"]
 
@@ -85,13 +127,13 @@ depends_on = ["macos-build-path", "windows-acceptance"]
 id = "design-doc-intent-audit"
 title = "Audit durable design and requirements against user intent and actual implementation"
 status = "pending"
-depends_on = ["windows-acceptance", "macos-agent-validation"]
+depends_on = ["rust-windows-acceptance", "rust-macos-agent-validation", "native-illustration-api", "windows-acceptance", "macos-agent-validation"]
 
 [[steps]]
 id = "test-runtime-impact-audit"
 title = "Review changed tests, Rack registration and measured fast versus GUI-lane costs"
 status = "pending"
-depends_on = ["windows-acceptance", "macos-agent-validation"]
+depends_on = ["rust-windows-acceptance", "rust-macos-agent-validation", "native-illustration-api", "windows-acceptance", "macos-agent-validation"]
 
 [[steps]]
 id = "external-review"
@@ -104,6 +146,11 @@ id = "closeout"
 title = "Record durable decisions, platform evidence and release-facing changes; retire this plan"
 status = "pending"
 depends_on = ["external-review"]
+
+[[exit_criteria]]
+id = "rust-consumer-proof"
+title = "The separate Rust/wgpu app demonstrates typed GeometerClient calls to the native executable without direct kernel linkage"
+status = "pending"
 
 [[exit_criteria]]
 id = "gpu-camera"
@@ -156,13 +203,16 @@ title = "Independent implementation review has no unresolved blocking findings"
 status = "pending"
 +++
 
-# Native GPU Viewer Development Plan
+# Native API And GPU Demonstrations Development Plan
 
 ## Objective And Scope
 
-Turn the C++ HLR preview into a useful native counterpart to Geometer's web
-demonstrations: a real GPU-rendered model, comfortable controls, responsive
-geometry computation, and reusable geometry/SVG outputs. Windows x64 is the
+Prioritize callable native Geometer APIs and a Rust/wgpu demonstration of the
+public executable-backed client. Retain the C++ viewer as a separate example
+of direct native linking; its planned SDL GPU upgrade is the later track.
+Both illustrate related workflows, not interchangeable integration boundaries.
+The shared goals are a real GPU model, comfortable controls, responsive
+geometry computation and reusable geometry/SVG outputs. Windows x64 is the
 primary development and user-acceptance platform. Establish the macOS arm64
 Metal build early; a separate Mac-equipped agent performs runtime validation.
 Windows work need not wait for that agent, but a Mac build is not a Mac pass.
@@ -179,11 +229,31 @@ replaces this plan's earlier helper-runtime/native-port choice. GPU, docking,
 camera, loading and HLR exports can proceed independently; illustration
 integration waits for that API's reviewed contract and verified implementation.
 
-Python exposure is required alongside Rust. The user also proposed a
-[Rust/wgpu consumer demonstration](rust-consumer-demo.md). Its placement is
-awaiting the user's separate-versus-replacement choice; do not start two full
-viewer implementations by assumption. The existing SDL/C++ sections below
-remain the original proposal until that architecture choice is resolved.
+Python exposure is required alongside Rust. The user confirmed that the
+[Rust/wgpu consumer demonstration](rust-consumer-demo.md) is a separate app,
+not a replacement: it calls `geometer.exe` through `geometer-client`; the C++
+app demonstrates direct linking. Rust and native API availability take priority.
+
+Delivery order:
+
+1. Reconcile published API availability and agree the upstream native
+   illustration/STEP/client contracts. Implement/accept the Windows executable
+   and Rust client slice first; generated DTOs do not count as runtime support.
+2. Build the Rust/wgpu app and prove the complete typed geometry/illustration
+   workflow on Windows. Its shell may develop alongside API work, but fixture
+   mockups alone are not consumer acceptance.
+3. Complete required Python exposure and four-platform native API qualification;
+   prepare the Rust Mac build early and hand it to a separate Mac agent. Do not
+   block the first Windows Rust checkpoint on later C++ UI work or completion of
+   every platform's qualification. Record incomplete platform support honestly.
+4. Continue the direct-linked C++/SDL GPU upgrade after the Rust Windows
+   milestone. Share requirements/fixtures/output expectations, not a compulsory
+   shared UI implementation. Preserve both demos and their distinct purposes.
+
+The availability audit maps advertised/published operations to native C++,
+executable catalog, Rust and Python invocation. Prioritize illustration, Fast
+HLR and the model/mesh path needed by these consumers. Record other gaps as
+follow-ups; this is not an implicit implementation of every TypeSpec migration.
 
 Retain the existing C++ example identity/build target where practical. Keep
 Geometer generic; do not import PCB/application policy. Do not rebuild or alter
@@ -204,7 +274,18 @@ completed or superseded by this implementation plan.
 | Shared illustration | `src/ts/geometer/illustrated-hlr.ts` combines native/WASM Fast HLR with `createIllustrator`. `mesh-illustration.ts` owns preparation, visibility ordering, filled surfaces, fusion, coplanar layering, shading and SVG serialization. Canvas is a separate presentation path. |
 | Platforms | Existing CI includes macOS arm64 and Windows native builds. Explicitly enable/package the optional example and required shaders; kernel CI alone does not establish viewer coverage. |
 
-## Proposed Architecture
+## Rust-First Architecture And Later C++ Track
+
+The priority app uses Rust/wgpu and public `geometer-client` async methods;
+Geometer runs in its owned native subprocess. Keep GPU/UI dependencies out of
+the client crate and OCCT/C++ linkage out of the app. Choose the Rust UI/docking
+integration in the architecture step, carrying forward the left/right controls,
+results area, DPI sizing and progress requirements below. See the Rust brief
+for process lifecycle and exact consumer proof. It is not required to use the
+Dear ImGui/SDL integration written for the C++ app.
+
+The following renderer-specific design applies to the later C++ track; common
+camera, output, progress and UI behavior applies to both apps.
 
 Keep Dear ImGui for UI and SDL3 for windows/input; replace the OpenGL renderer
 integration with SDL GPU for both ImGui and the 3D viewport. Windows uses D3D12;
@@ -279,7 +360,12 @@ exact and older outline modes available for comparison.
 
 ## Loading, Recompute And Progress
 
-Move file loading, STEP parsing/meshing and Geometer computation off the UI
+For Rust, run public async client calls without blocking the wgpu/UI event
+loop; results cross back through revision-tagged messages. Use the client's
+existing process ownership, timeout and queued-cancellation behavior. Do not
+replace it with a new subprocess or handwritten wire layer in the demo.
+
+For the later C++ direct-link demo, move file loading, STEP parsing/meshing and Geometer computation off the UI
 thread. Keep ImGui/SDL GPU access on the UI thread. Prefer a serialized worker
 for the existing native value APIs initially; pass immutable inputs/results
 and avoid concurrent mutation of OCCT/model state. Prepared-mesh reuse may be
@@ -373,7 +459,10 @@ and default-off behavior; they are not silently promoted by adding native UI.
 
 ## Windows First; Mac Build And Separate Validation
 
-Deliver a Windows vertical slice first: hardware-depth model, stable camera,
+Deliver the Rust Windows/API vertical slice first. Prepare its Cargo/wgpu Mac
+build during Windows development and hand off the same feature-complete
+revision for separate-agent validation. For the later C++ track, deliver
+hardware-depth model, stable camera,
 controls dock and busy loading. Then add exports and illustration. Prepare the
 macOS CMake/Metal/shader path once the first renderer/layout slice builds; do not
 wait for every Windows polish item to discover Mac compile problems.
@@ -388,7 +477,8 @@ CI/cache conventions and Node-24-capable workflow actions if workflows change.
 The [Mac agent handoff](macos-validation.md) defines artifact identity, commands,
 interactive checks and reporting. Initially target macOS arm64, matching current
 CI; Intel/universal distribution and public notarization are separate decisions.
-A matching feature-complete build must reach that agent after Windows acceptance.
+A matching feature-complete build of each app must reach that agent after its
+Windows acceptance; validate Rust first and do not conflate the two binaries.
 Record build success separately from actual Metal/UI/export observations.
 
 ## Focused Acceptance And Closeout

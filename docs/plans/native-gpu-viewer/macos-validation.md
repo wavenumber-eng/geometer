@@ -2,11 +2,11 @@
 type = "plan_log"
 id = "geometer-native-gpu-viewer-macos-handoff"
 plan_id = "geometer-native-gpu-viewer"
-step_id = "macos-agent-validation"
+step_id = "rust-macos-agent-validation"
 created = "2026-09-05"
 +++
 
-# Mac Agent Validation Handoff
+# Mac Agent Validation Handoff: Rust First, C++ Later
 
 Prepared handoff template, not evidence of a build or completed test. The user
 authorized Windows-first development and a separate agent's Mac testing. Assign
@@ -14,15 +14,23 @@ this bounded task to an agent with an actual Mac after artifacts are available;
 another Windows agent cannot certify Metal execution. Do not dispatch builds or
 modify other repositories merely to draft this plan.
 
+Validate the Rust/wgpu executable-backed app first. The C++/SDL GPU direct-link
+app is a separate later task with a distinct binary and acceptance record.
+Do not treat a pass in one as evidence for the other.
+
 ## Inputs The Implementer Must Supply
 
 - Exact feature-complete commit, macOS arm64 build artifact and SHA-256 manifest.
-- OS/deployment minimum, architecture, SDL/ImGui pins and Metal shader formats.
-- Reproducible CMake preset/commands, required build tools and dependency-cache
+- OS/deployment minimum, architecture, and the applicable Rust/wgpu/UI or
+  SDL/ImGui pins and Metal shader configuration.
+- Reproducible Cargo commands/lock/toolchain for Rust, CMake presets for the
+  later C++ app, required build tools and dependency-cache
   instructions; packaged shaders/native dependencies, licenses and launcher paths.
 - Native illustration API revision, compatible Geometer executable and negotiated
   operation catalog, with no JavaScript runtime or browser/WASM workaround.
   The API's four-platform acceptance is separate from this Mac GUI check.
+- For Rust, exact `geometer-client` and executable revisions plus proof that
+  requests use the public client rather than direct Geometer/OCCT linkage.
 - Matching Windows results and SOT-23, one larger existing STEP fixture and the
   colored-material illustration fixture, with exact paths and source hashes.
 - Geometry JSON, linework SVG, illustrated SVG and style JSON reference outputs.

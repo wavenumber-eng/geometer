@@ -14,6 +14,12 @@ available API, an assigned external issue, or implementation completed here.
 Baseline checked in this worktree: Geometer 2026.9.4. Reconcile against the
 other agent's actual revision before implementing overlapping work.
 
+User priority: expose the published capabilities in native modes, with Rust
+first and Python also required. Begin with Windows native/Rust integration;
+complete all four native platforms for issue closeout. The Rust/wgpu app is
+the priority consumer demonstration and is separate from the later direct-linked
+C++ viewer. Neither renderer work nor C++ UI polish should block this API work.
+
 ## Problem
 
 Geometer provides supported illustration through the TypeScript package:
@@ -101,6 +107,12 @@ instance transforms and winding/mirror semantics. The existing indexed-mesh
 HLR packet is not automatically a complete colored illustration transport.
 Inventory its fields before reuse; do not lose normals/materials/transforms
 by treating an opaque mesh attachment as complete contract coverage.
+
+The Rust GPU preview also needs typed access to renderable model/mesh data.
+If the chosen model-illustration operation returns only SVG, define the
+supported typed Rust route for tessellated/colorized geometry or a standard
+model asset alongside it. Reuse/publish an appropriate existing capability;
+do not leave the demo dependent on a private GLB conversion subprocess call.
 
 Mesh-only acceptance is insufficient: provide Rust and Python STEP-bytes-to-SVG
 examples and integration tests on the selected supported composition. Keep intermediate

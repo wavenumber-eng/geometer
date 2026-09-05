@@ -46,6 +46,12 @@ status = "pending"
 depends_on = ["contract-authority-matrix", "alx-generation-assessment"]
 
 [[steps]]
+id = "planning-external-review"
+title = "Independently review this plan and resolve findings before implementation"
+status = "done"
+depends_on = ["baseline-inventory", "alx-generation-assessment"]
+
+[[steps]]
 id = "shared-html-presentation"
 title = "Align Geometer documentation with the ALX shared stylesheet and reusable page components"
 status = "pending"
@@ -88,10 +94,28 @@ status = "pending"
 depends_on = ["design-doc-cleanup", "ipc-consumer-guide", "demo-cleanup", "generated-html-expansion"]
 
 [[steps]]
+id = "design-doc-intent-audit"
+title = "Verify durable design documentation matches user intent and implemented behavior"
+status = "pending"
+depends_on = ["documentation-drift-gates"]
+
+[[steps]]
+id = "test-runtime-impact-audit"
+title = "List new or changed tests and review runtime impact against the test strategy"
+status = "pending"
+depends_on = ["documentation-drift-gates"]
+
+[[steps]]
+id = "external-review"
+title = "Independently review completed cleanup after design-intent and test-runtime audits"
+status = "pending"
+depends_on = ["planning-external-review", "design-doc-intent-audit", "test-runtime-impact-audit"]
+
+[[steps]]
 id = "closeout"
 title = "Update durable docs, record release-facing changes, and remove this completed plan"
 status = "pending"
-depends_on = ["documentation-drift-gates"]
+depends_on = ["external-review"]
 
 [[exit_criteria]]
 id = "readme"
@@ -137,6 +161,21 @@ status = "pending"
 id = "freshness"
 title = "Documentation and generated-contract checks fail on stale links, stale inventories, or undocumented public surfaces"
 status = "pending"
+
+[[exit_criteria]]
+id = "design-doc-intent-audit"
+title = "Required design documents match user intent and implemented behavior"
+status = "pending"
+
+[[exit_criteria]]
+id = "test-runtime-impact-audit"
+title = "New tests are listed and runtime impact is reviewed"
+status = "pending"
+
+[[exit_criteria]]
+id = "external-review"
+title = "Independent review of the completed cleanup has no unresolved blocking findings"
+status = "pending"
 +++
 
 # Geometer Documentation Cleanup Plan
@@ -166,6 +205,11 @@ The [TypeSpec and ALX generation assessment](typespec-html-assessment.md)
 records the inspected source paths, migration proposal, HTML generation
 opportunities, and stylesheet comparison. Its recommendations are incorporated
 into the steps and exit criteria above.
+
+The [independent planning review](external-review.md) records review findings
+and their resolution. This planning review is separate from the required
+closeout review of the implemented cleanup; it does not mark that future gate
+complete.
 
 ## Baseline
 
@@ -325,7 +369,9 @@ Produce one authority matrix with these columns:
 | Field | Meaning |
 | --- | --- |
 | Operation identity | Stable callable identity, if one exists. |
-| Maturity/runtime | Promoted, pilot, experimental, inventory-only; portable, native-only, or unavailable. |
+| Structural lifecycle | Promoted, pilot, candidate, or inventory-only. |
+| Solver/API maturity | Supported, experimental/non-production, or historical; independent of structural promotion. |
+| Runtime availability | Portable, additional native-only, browser-only, or unavailable; record effective native availability separately. |
 | Logical request/result authority | TypeSpec source, handwritten source, or none. |
 | Transport | Persistent IPC, file CLI, C ABI, WASM, Python wrapper, or direct C++. |
 | Attachment/packet authority | Separate packet spec and magic/version where applicable. |
@@ -424,6 +470,14 @@ Add a repository-relative Markdown link check covering authored docs and
 examples. Run `npm run check:contracts` only when TypeSpec, promotion metadata,
 generated references, or package documentation changes.
 
+Validate the active plan catalog with
+`wn-dev-std plan show geometer-documentation-cleanup --root . --format json`.
+Geometer's separate `scripts/check_code_hygiene.py` currently rejects the
+existence of any `docs/plans` directory, including active plans and an empty
+parent directory. This working plan therefore blocks that hygiene check and
+its L99 release test until closeout. Do not weaken or bypass the gate, and do
+not report release signoff as passing while this plan remains.
+
 The demo audit uses committed release artifacts first:
 
 - focused TypeScript validation for model bounds and package consumers;
@@ -441,8 +495,19 @@ unrelated native or WASM outputs.
 
 ## Closeout
 
+Before final independent review, audit required design documents against user
+intent and actual interfaces. List every added or changed test, review
+`docs/test-strategy.html`, and record measured runtime impact and any caching,
+test consolidation, or slower-lane decisions. If no tests change, record that
+explicitly. Planning review is not a substitute for this implementation review.
+
 The cleanup is complete only when durable indexes, requirements, ADRs, contract
 metadata, and release notes reflect the final state; all retained examples pass
 their declared focused checks; and the full changed-link closure is valid.
 Delete `docs/plans/documentation-cleanup/` in the closing change so completed
-execution logs do not become another documentation archive.
+execution logs do not become another documentation archive. Remove the
+`docs/plans` parent only if empty, then run
+`uv run python scripts/check_code_hygiene.py` and require it to pass. Preserve
+unrelated active plans; if any remain, report the remaining release blocker
+instead of deleting them. Any eventual release still requires the repository's
+normal release signoff, beyond these focused documentation checks.

@@ -28,6 +28,13 @@ the app-window screenshot was inspected. Full mouse/docking/resize acceptance
 and macOS build/Metal testing remain pending. The 3D preview is explicitly
 opaque; native SVG preserves source opacity. Public packaging is deferred.
 
+The [Lab parity analysis](native-illustration-lab-parity.md) identifies raw
+mesh lines drawn over foreground surfaces: the browser Lab disables them and
+supplies HLR lines, whereas the initial Rust demo enabled raw overlays. Rust
+now defaults those diagnostics off and exposes supported Lab shading, color,
+line, Fast crease/seam and tessellation controls. Native combined HLR/SVG and
+experimental browser AO remain explicitly unavailable, not hidden fallbacks.
+
 | Demo / audience | Source | Verification on this host | Approved disposition: retain for now |
 | --- | --- | --- | --- |
 | Native Rust API Lab / executable-backed Rust consumers | [source](../../examples/rust/native_viewer/src/main.rs), [guide](../../examples/rust/native_viewer/README.md) | Feature native STEP/illustration/Fast HLR smoke and GPU screenshot inspected on Windows; focused camera/opaque-material/epoch/raster tests. Human UI and Mac acceptance pending. | Keep separate from direct-linked C++; optional Cargo crate, not release-packaged. |

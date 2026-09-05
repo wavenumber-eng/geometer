@@ -21,6 +21,7 @@ pub struct Model {
     pub collection: MeshCollectionA0,
     pub geometry_json: Vec<u8>,
     pub step: Vec<u8>,
+    pub mesh_options: ModelTessellationRequestA0,
 }
 
 pub struct Solution {
@@ -120,23 +121,37 @@ impl Jobs {
         });
     }
 
-    pub fn load(&self, client: GeometerClient, path: PathBuf) {
+    pub fn load(
+        &self,
+        client: GeometerClient,
+        path: PathBuf,
+        options: ModelTessellationRequestA0,
+        existing: Option<Arc<Model>>,
+    ) {
         let emit = self.emit();
         self.runtime.as_ref().unwrap().spawn(async move {
             let result = async {
                 emit(Event::Phase("Reading STEP"));
-                if tokio::fs::metadata(&path)
-                    .await
-                    .map_err(|e| e.to_string())?
-                    .len()
-                    > 256 * 1024 * 1024
+                if existing.is_none()
+                    && tokio::fs::metadata(&path)
+                        .await
+                        .map_err(|e| e.to_string())?
+                        .len()
+                        > 256 * 1024 * 1024
                 {
                     return Err("STEP exceeds the 256 MiB native attachment limit".to_owned());
                 }
-                let bytes = tokio::fs::read(&path).await.map_err(|e| e.to_string())?;
+                let bytes = if let Some(model) = existing {
+                    model.step.clone()
+                } else {
+                    tokio::fs::read(&path).await.map_err(|e| e.to_string())?
+                };
                 emit(Event::Phase("Geometer: colored tessellation"));
                 let tessellation = client
-                    .model_tessellation(ModelTessellationRequest::step(bytes.clone()))
+                    .model_tessellation(ModelTessellationRequest {
+                        model: bytes.clone(),
+                        options: options.clone(),
+                    })
                     .await
                     .map_err(error)?;
                 emit(Event::Phase("Preparing GPU mesh"));
@@ -151,6 +166,7 @@ impl Jobs {
                             collection,
                             geometry_json,
                             step: bytes,
+                            mesh_options: options,
                         }),
                         mesh,
                     ))
@@ -205,7 +221,7 @@ impl Jobs {
                         .map_err(|e| e.to_string())?;
                     let hlr_json =
                         encode_hlr_projection_result_a0_json(&hlr).map_err(|e| e.to_string())?;
-                    let hlr_images = crate::hlr::images(&hlr)?;
+                    let hlr_images = crate::hlr::images(&hlr, &style)?;
                     Ok(Arc::new(Solution {
                         result,
                         result_json,

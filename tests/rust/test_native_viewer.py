@@ -34,6 +34,10 @@ def test_viewer_format_lint_and_unit_tests() -> None:
 def test_real_window_native_outputs_and_failed_load_exit(tmp_path: Path) -> None:
     executable = os.environ["GEOMETER_EXECUTABLE"]
     subprocess.run(
+        ["cargo", "test", "--manifest-path", str(MANIFEST), "--locked", "--", "--ignored"],
+        cwd=ROOT, check=True, timeout=120,
+    )
+    subprocess.run(
         ["cargo", "build", "--manifest-path", str(MANIFEST), "--locked"],
         cwd=ROOT, check=True, timeout=600,
     )

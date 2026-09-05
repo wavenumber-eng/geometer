@@ -20,13 +20,15 @@ pub struct App {
     executable: String,
     startup_step: Option<PathBuf>,
     model: Option<Arc<Model>>,
+    remesh_source: Option<Arc<Model>>,
     solution: Option<Arc<Solution>>,
     texture: Option<egui::TextureHandle>,
     hlr_textures: Option<[egui::TextureHandle; 2]>,
     result_tab: usize,
     style: MeshIllustrationStyleA0,
-    detail_algorithm: HlrProjectionAlgorithm,
-    outline_algorithm: HlrOutlineAlgorithm,
+    hlr_options: HlrProjectionOptionsA0,
+    mesh_options: ModelTessellationRequestA0,
+    preserve_camera_on_load: bool,
     right_dock: bool,
     busy: bool,
     started: Instant,
@@ -51,7 +53,7 @@ impl App {
             .wgpu_render_state
             .clone()
             .ok_or("wgpu renderer unavailable")?;
-        let style = decode_mesh_illustration_style_a0_json(b"{}")?;
+        let style = crate::settings::lab_style();
         let mut app = Self {
             preview: Preview::new(state),
             camera: Camera::default(),
@@ -62,13 +64,15 @@ impl App {
                 .map_or(String::new(), |path| path.display().to_string()),
             startup_step: step,
             model: None,
+            remesh_source: None,
             solution: None,
             texture: None,
             hlr_textures: None,
             result_tab: 0,
             style,
-            detail_algorithm: HlrProjectionAlgorithm::Fast,
-            outline_algorithm: HlrOutlineAlgorithm::FastMeshShadow,
+            hlr_options: crate::hlr::options(&Camera::default().view()),
+            mesh_options: crate::settings::mesh_defaults(),
+            preserve_camera_on_load: false,
             right_dock: false,
             busy: false,
             started: Instant::now(),
@@ -104,6 +108,12 @@ impl App {
     }
 
     fn load(&mut self, path: PathBuf) {
+        self.start_load(path, None);
+    }
+
+    fn start_load(&mut self, path: PathBuf, existing: Option<Arc<Model>>) {
+        self.preserve_camera_on_load = existing.is_some();
+        self.remesh_source = existing.clone();
         if let Some(client) = self.client.clone() {
             self.begin("Loading STEP");
             self.model = None;
@@ -114,7 +124,8 @@ impl App {
             self.completed = None;
             self.pending = None;
             self.revision += 1;
-            self.jobs.load(client, path);
+            self.jobs
+                .load(client, path, self.mesh_options.clone(), existing);
         }
     }
 
@@ -155,7 +166,10 @@ impl App {
                         Ok((model, mesh)) => match self.preview.upload(mesh) {
                             Ok(()) => {
                                 self.model = Some(model);
-                                self.camera.fit(self.preview.bounds, self.aspect);
+                                self.remesh_source = None;
+                                if !self.preserve_camera_on_load {
+                                    self.camera.fit(self.preview.bounds, self.aspect);
+                                }
                                 self.changed();
                             }
                             Err(error) => self.error = Some(error),
@@ -213,9 +227,13 @@ impl App {
             self.pending = None;
             if let (Some(client), Some(model)) = (self.client.clone(), self.model.clone()) {
                 self.begin("Geometer: recomputing");
-                let mut options = crate::hlr::options(&self.camera.view());
-                options.projection_algorithm = Some(self.detail_algorithm.clone());
-                options.outline_algorithm = Some(self.outline_algorithm.clone());
+                let mut options = self.hlr_options.clone();
+                let view = self.camera.view();
+                options.views = Some(vec![HlrViewSpec {
+                    id: "preview".into(),
+                    direction: view.direction,
+                    up: view.up,
+                }]);
                 self.jobs.solve(
                     self.revision,
                     client,
@@ -306,9 +324,36 @@ impl App {
             ui.label(model.path.file_name().unwrap_or_default().to_string_lossy());
         }
         ui.separator();
+        let before_hlr = self.hlr_options.clone();
+        crate::settings::mesh_controls(ui, &mut self.mesh_options, &mut self.hlr_options);
+        if self.hlr_options != before_hlr {
+            self.changed();
+        }
+        if let Some(model) = self.model.clone().or_else(|| self.remesh_source.clone())
+            && (self.model.is_none() || model.mesh_options != self.mesh_options)
+        {
+            if self.model.is_none() {
+                ui.label("Original STEP retained for retessellation retry; no mesh displayed.");
+            } else {
+                ui.label("Mesh settings changed — loaded mesh is still the previous quality.");
+            }
+            if ui
+                .add_enabled(
+                    !self.busy && self.client.is_some(),
+                    egui::Button::new("Retessellate loaded STEP"),
+                )
+                .clicked()
+            {
+                self.start_load(model.path.clone(), Some(model));
+            }
+        }
+        ui.separator();
         ui.label("3D camera");
         ui.horizontal_wrapped(|ui| {
-            if ui.button("Fit").clicked() {
+            if ui
+                .add_enabled(self.model.is_some(), egui::Button::new("Fit"))
+                .clicked()
+            {
                 self.camera.fit(self.preview.bounds, self.aspect);
             }
             if ui.button("Top").clicked() {
@@ -324,51 +369,7 @@ impl App {
         });
         ui.small("Drag: orbit • right/middle drag: pan\nWheel: zoom • orbit never refits");
         ui.separator();
-        ui.label("Native illustration");
-        let before = self.style.clone();
-        let shading = self
-            .style
-            .shading
-            .get_or_insert(MeshIllustrationShading::Toon);
-        egui::ComboBox::from_id_salt("shading")
-            .selected_text(format!("{shading:?}"))
-            .width(ui.available_width())
-            .show_ui(ui, |ui| {
-                for mode in [
-                    MeshIllustrationShading::Unlit,
-                    MeshIllustrationShading::Flat,
-                    MeshIllustrationShading::Lambert,
-                    MeshIllustrationShading::Banded,
-                    MeshIllustrationShading::Toon,
-                ] {
-                    ui.selectable_value(shading, mode.clone(), format!("{mode:?}"));
-                }
-            });
-        ui.checkbox(
-            self.style.source_colors.get_or_insert(true),
-            "Source material colors",
-        );
-        ui.checkbox(
-            self.style.fuse_surfaces.get_or_insert(true),
-            "Fuse compatible surfaces",
-        );
-        ui.checkbox(
-            self.style.layer_coplanar_materials.get_or_insert(true),
-            "Coplanar material layers",
-        );
-        ui.checkbox(
-            self.style.show_outlines.get_or_insert(true),
-            "Mesh outlines",
-        );
-        ui.checkbox(self.style.show_creases.get_or_insert(true), "Mesh creases");
-        ui.checkbox(
-            self.style.transparent_background.get_or_insert(false),
-            "Transparent SVG background",
-        );
-        ui.add(
-            egui::Slider::new(self.style.ambient.get_or_insert(0.35), 0.0..=1.0).text("Ambient"),
-        );
-        if self.style != before {
+        if crate::settings::style_controls(ui, &mut self.style) {
             self.changed();
         }
         if ui
@@ -380,7 +381,9 @@ impl App {
         {
             self.changed();
         }
-        self.hlr_controls(ui);
+        if crate::settings::hlr_controls(ui, &mut self.hlr_options) {
+            self.changed();
+        }
         ui.separator();
         self.exports(ui);
         ui.separator();
@@ -438,55 +441,6 @@ impl App {
         }
     }
 
-    fn hlr_controls(&mut self, ui: &mut egui::Ui) {
-        ui.label("Independent HLR geometry");
-        let before = (
-            self.detail_algorithm.clone(),
-            self.outline_algorithm.clone(),
-        );
-        egui::ComboBox::from_id_salt("detail algorithm")
-            .selected_text(format!("Detail: {:?}", self.detail_algorithm))
-            .width(ui.available_width())
-            .show_ui(ui, |ui| {
-                for mode in [
-                    HlrProjectionAlgorithm::Fast,
-                    HlrProjectionAlgorithm::Poly,
-                    HlrProjectionAlgorithm::Exact,
-                ] {
-                    ui.selectable_value(
-                        &mut self.detail_algorithm,
-                        mode.clone(),
-                        format!("{mode:?}"),
-                    );
-                }
-            });
-        egui::ComboBox::from_id_salt("outline algorithm")
-            .selected_text(format!("Shadow: {:?}", self.outline_algorithm))
-            .width(ui.available_width())
-            .show_ui(ui, |ui| {
-                for mode in [
-                    HlrOutlineAlgorithm::FastMeshShadow,
-                    HlrOutlineAlgorithm::MeshShadow,
-                    HlrOutlineAlgorithm::HlrClose,
-                ] {
-                    ui.selectable_value(
-                        &mut self.outline_algorithm,
-                        mode.clone(),
-                        format!("{mode:?}"),
-                    );
-                }
-            });
-        if before
-            != (
-                self.detail_algorithm.clone(),
-                self.outline_algorithm.clone(),
-            )
-        {
-            self.changed();
-        }
-        ui.small("Fast is the default. Outline/detail remain separate; combined illustration/HLR SVG is a later API milestone.");
-    }
-
     fn viewport(&mut self, ui: &mut egui::Ui) {
         ui.heading("3D • opaque hardware-depth preview");
         let size = ui.available_size().max(egui::vec2(1.0, 1.0));
@@ -505,7 +459,7 @@ impl App {
         {
             self.camera.pan_pixels([delta.x, delta.y], size.y);
         }
-        if response.hovered() {
+        if response.hovered() && self.model.is_some() {
             self.camera.zoom(
                 ui.input(|input| input.smooth_scroll_delta.y),
                 self.preview.bounds,

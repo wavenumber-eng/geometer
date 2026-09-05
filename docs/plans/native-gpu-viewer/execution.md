@@ -185,3 +185,37 @@ and exports. Mac source-build/Metal instructions are prepared, but no Mac build
 or runtime is claimed. Installed Python wheel qualification, optional native
 HLR composition, four-platform release qualification and later C++ GPU work
 remain open. No release artifacts were replaced, uploaded, tagged or published.
+
+## User feedback: Lab line visibility and settings
+
+User reported illustration lines in front of foreground surfaces and requested
+comparison with the TypeScript Lab plus equivalent controls. Source analysis
+found the Lab explicitly disables raw mesh silhouettes/creases and attaches
+visibility-filtered HLR to its prepared scene. Both TS core and native renderer
+draw raw mesh strokes after all surfaces; the first Rust demo incorrectly
+enabled that diagnostic path while keeping HLR separate. Renderer parity did
+not establish Lab-workflow parity. Durable analysis and the full control map
+are in `docs/developer/native-illustration-lab-parity.md`.
+
+Rust now uses Lab shading/material/line/background defaults and disables raw
+mesh strokes by default, retaining labeled diagnostics. Added bands/key/rim,
+colors/back faces/line width, separate Fast crease (25 degrees) and experimental
+seam controls, independent HLR toggles, bbox-relative HLR quality, STEP quality
+presets/custom values and explicit Retessellate. Existing generated contracts
+carry every supported setting. Native HLR composition and browser-only
+experimental AO are explicitly unavailable; no fake wire fields or renderer
+fallback were added. Core illustration and TypeSpec contracts are unchanged.
+
+Independent review caught camera zoom clamping on zero scroll against temporary
+empty bounds during retessellation. The fix skips zero-scroll/absent-model zoom,
+disables empty-scene Fit and has a large/small-extent regression. Failed/stopped
+retessellation keeps the original STEP snapshot for retry without displaying
+stale outputs. The reviewer approved this scoped checkpoint after correction.
+
+Focused checks: seven unit tests, Clippy, opt-in native settings integration
+(same generated TS/native A0 result; raw overlays off/on; increased triangles
+for finer settings; changed detail for Fast crease 1/80 degrees; both HLR layers
+off), Rack window success/failure checks (2 passed, 14.34 seconds), Ruff/Pyright,
+documentation freshness and whitespace. A fresh app-only screenshot was
+inspected: SOT-23 rendered 220 triangles, 8,632 SVG bytes and 10,514 HLR JSON
+bytes on Radeon/Vulkan. No OCCT/native kernel rebuild or release publication.

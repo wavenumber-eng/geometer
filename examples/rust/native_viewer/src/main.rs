@@ -7,6 +7,9 @@ mod hlr;
 mod jobs;
 mod mesh;
 mod raster;
+mod settings;
+#[cfg(test)]
+mod settings_tests;
 mod smoke;
 
 fn main() -> eframe::Result {

@@ -93,8 +93,11 @@ column-major mesh transforms; reflected winding and inverse-transpose normals.</
 unlit, flat, Lambert, banded and toon shading.</li>
 <li>Overlap-based visibility constraints, stable strongly connected component
 ordering, safe adjacent-surface fusion and coplanar material layers.</li>
-<li>Closed-mesh silhouettes and shared creases. Open triangle-soup edges do not
-automatically become outlines.</li>
+<li>Raw closed-mesh silhouettes and shared creases. These diagnostic strokes
+are drawn after surfaces and are <strong>not occlusion-filtered</strong>; rear edges can
+appear over foreground faces. Open triangle-soup edges do not automatically
+become outlines. The browser Lab disables these strokes and instead supplies
+filtered HLR linework; see the <a href="../developer/native-illustration-lab-parity.html">Lab/native comparison</a>.</li>
 <li>Integer-grid SVG coordinates, six-percent padding, stable CSS classes,
 background/title options and chained line paths.</li>
 </ul>

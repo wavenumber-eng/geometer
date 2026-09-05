@@ -39,13 +39,25 @@ transparency. The native illustration and original SVG preserve source opacity.
 - Colored mesh: `geometry.model_tessellation.a0`, millimeters, stripped root
   placement, generated mesh-collection attachment.
 - Illustration: `geometry.mesh_illustration.a0`, original A0 SVG result, five
-  shading choices, material/fusion/crease/background controls.
+  shading choices, bands/ambient/key/rim, material/fusion/back-face/color/line
+  width/background controls matching the browser Lab's supported defaults.
+  Raw mesh outlines/creases are off by default and available only as diagnostic
+  controls: they are not occlusion-filtered. The Fast HLR crease slider controls
+  different geometry. See the [visibility/settings comparison](../../../docs/developer/native-illustration-lab-parity.md).
 - Independent linework: `geometry.model_hlr_projection.a0`, Fast detail and
   fast mesh shadow, same view/root-placement convention. Controls also offer
   the existing poly/exact and mesh-shadow/HLR-close selectors; the default
   remains Fast detail plus fast mesh shadow. Separate shadow/detail tabs
   display the returned polylines; they do not claim combined illustration/HLR
   SVG support. That native composition API remains separate planned work.
+- Fast crease angle, experimental seam filtering/angle/depth, layer toggles,
+  relative HLR chord/angle and STEP mesh quality presets/custom values are
+  available. STEP changes apply on the next load or explicit Retessellate;
+  the latter reuses loaded STEP bytes and preserves the camera. HLR settings
+  auto recompute. Unapplied mesh settings are labeled; mesh exports retain the
+  actually loaded tessellation. A failed/stopped retessellation retains the
+  original STEP snapshot for a coarser retry, with stale meshes/results hidden.
+  Experimental browser AO remains unavailable.
 - Export original SVG, generated illustration result/style JSON, HLR geometry
   JSON, or colored mesh-collection JSON. These are completed snapshots, not
   screenshots. Stale illustration/HLR exports are disabled until recomputation

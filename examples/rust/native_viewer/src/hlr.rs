@@ -18,13 +18,43 @@ pub fn options(view: &MeshIllustrationView) -> HlrProjectionOptionsA0 {
     options.output_bbox = Some(false);
     options.curve_mode = Some(HlrCurveMode::Polyline);
     options.strip_root_placement = Some(true);
-    options.mesh_linear_deflection = Some(0.1);
+    options.mesh_deflection_mode = Some(HlrMeshDeflectionMode::BboxRelative);
+    options.mesh_deflection_coefficient = Some(0.004);
     options.mesh_angular_deflection = Some(0.5);
-    options.mesh_relative = Some(false);
+    options.round_digits = Some(6);
+    options.union_outline_polygons = Some(true);
+    options.edge_v_sharp = Some(true);
+    options.edge_v_outline = Some(true);
+    options.edge_v_smooth = Some(false);
+    options.edge_v_sewn = Some(false);
+    options.edge_v_iso = Some(false);
+    options.edge_h_sharp = Some(false);
+    options.edge_h_outline = Some(false);
+    options.edge_h_smooth = Some(false);
+    options.edge_h_sewn = Some(false);
+    options.edge_h_iso = Some(false);
+    options.fast = Some(FastHlrOptionsA0 {
+        include_boundaries: Some(true),
+        include_creases: Some(true),
+        include_silhouettes: Some(true),
+        include_hidden: Some(false),
+        suppress_coplanar_seams: Some(false),
+        crease_angle_rad: Some(25.0_f64.to_radians()),
+        coplanar_seam_angle_rad: Some(1.0_f64.to_radians()),
+        coplanar_seam_depth_tolerance: Some(0.001),
+        weld_tolerance: None,
+        projected_tolerance: None,
+        depth_tolerance: None,
+        coplanar_seam_lateral_tolerance: None,
+        limits: None,
+    });
     options
 }
 
-pub fn images(result: &HlrProjectionResultA0) -> Result<[ColorImage; 2], String> {
+pub fn images(
+    result: &HlrProjectionResultA0,
+    style: &MeshIllustrationStyleA0,
+) -> Result<[ColorImage; 2], String> {
     let view = result.views.first().ok_or("Native HLR returned no view")?;
     let layers = [&view.modes.outline, &view.modes.detail];
     let mut bounds = [
@@ -55,15 +85,23 @@ pub fn images(result: &HlrProjectionResultA0) -> Result<[ColorImage; 2], String>
     }
     let scale = 1440.0 / span;
     let center = [(bounds[0] + bounds[2]) * 0.5, (bounds[1] + bounds[3]) * 0.5];
+    let color = |value: &str| {
+        let [r, g, b] = crate::settings::rgb(value);
+        tiny_skia::Color::from_rgba8(r, g, b, 255)
+    };
     let render = |layer: &ProjectedGeometry,
-                  color: tiny_skia::Color|
+                  color: tiny_skia::Color,
+                  width: f64|
      -> Result<ColorImage, String> {
         let mut pixels = tiny_skia::Pixmap::new(1600, 1600).ok_or("Cannot allocate HLR preview")?;
-        pixels.fill(tiny_skia::Color::WHITE);
+        if !style.transparent_background.unwrap_or(false) {
+            let [r, g, b] = crate::settings::rgb(style.background.as_deref().unwrap_or("#ffffff"));
+            pixels.fill(tiny_skia::Color::from_rgba8(r, g, b, 255));
+        }
         let mut paint = tiny_skia::Paint::default();
         paint.set_color(color);
         let stroke = tiny_skia::Stroke {
-            width: 2.0,
+            width: (width * 1440.0) as f32,
             ..Default::default()
         };
         // Batches bound temporary path storage even for large native outputs.
@@ -95,8 +133,16 @@ pub fn images(result: &HlrProjectionResultA0) -> Result<[ColorImage; 2], String>
         ))
     };
     Ok([
-        render(layers[0], tiny_skia::Color::from_rgba8(34, 105, 160, 255))?,
-        render(layers[1], tiny_skia::Color::from_rgba8(30, 35, 40, 255))?,
+        render(
+            layers[0],
+            color(style.outline_color.as_deref().unwrap_or("#17252c")),
+            style.outline_width.unwrap_or(0.006),
+        )?,
+        render(
+            layers[1],
+            color(style.crease_color.as_deref().unwrap_or("#17252c")),
+            style.crease_width.unwrap_or(0.0033),
+        )?,
     ])
 }
 

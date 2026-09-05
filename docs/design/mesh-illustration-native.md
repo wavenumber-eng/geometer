@@ -100,8 +100,11 @@ The native implementation follows the production TypeScript renderer:
   unlit, flat, Lambert, banded and toon shading.
 - Overlap-based visibility constraints, stable strongly connected component
   ordering, safe adjacent-surface fusion and coplanar material layers.
-- Closed-mesh silhouettes and shared creases. Open triangle-soup edges do not
-  automatically become outlines.
+- Raw closed-mesh silhouettes and shared creases. These diagnostic strokes
+  are drawn after surfaces and are **not occlusion-filtered**; rear edges can
+  appear over foreground faces. Open triangle-soup edges do not automatically
+  become outlines. The browser Lab disables these strokes and instead supplies
+  filtered HLR linework; see the [Lab/native comparison](../developer/native-illustration-lab-parity.md).
 - Integer-grid SVG coordinates, six-percent padding, stable CSS classes,
   background/title options and chained line paths.
 

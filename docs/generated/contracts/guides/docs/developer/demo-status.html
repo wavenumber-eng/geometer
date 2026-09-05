@@ -34,6 +34,12 @@ colored STEP triangles, native illustrated SVG and separate Fast HLR layers;
 the app-window screenshot was inspected. Full mouse/docking/resize acceptance
 and macOS build/Metal testing remain pending. The 3D preview is explicitly
 opaque; native SVG preserves source opacity. Public packaging is deferred.</p>
+<p>The <a href="native-illustration-lab-parity.html">Lab parity analysis</a> identifies raw
+mesh lines drawn over foreground surfaces: the browser Lab disables them and
+supplies HLR lines, whereas the initial Rust demo enabled raw overlays. Rust
+now defaults those diagnostics off and exposes supported Lab shading, color,
+line, Fast crease/seam and tessellation controls. Native combined HLR/SVG and
+experimental browser AO remain explicitly unavailable, not hidden fallbacks.</p>
 <table>
 <thead>
 <tr>

@@ -93,6 +93,9 @@ impl Camera {
     }
 
     pub fn zoom(&mut self, scroll: f32, bounds: Bounds) {
+        if scroll == 0.0 {
+            return;
+        }
         self.half_height = (self.half_height * (-f64::from(scroll) * 0.002).exp())
             .clamp(bounds.radius * 0.005, bounds.radius * 100.0);
     }
@@ -117,6 +120,17 @@ impl Camera {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn zero_scroll_does_not_clamp_zoom_to_temporary_empty_bounds() {
+        for extent in [1000.0, 0.00001] {
+            let mut camera = Camera {
+                half_height: extent,
+                ..Default::default()
+            };
+            camera.zoom(0.0, Bounds::default());
+            assert_eq!(camera.half_height, extent);
+        }
+    }
     #[test]
     fn orbit_retains_zoom_pan_and_orthonormal_basis() {
         let mut camera = Camera::default();

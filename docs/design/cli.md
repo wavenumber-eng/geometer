@@ -25,9 +25,11 @@ Native CLI:
 
 `serve --stdio` is a machine protocol endpoint, not an interactive command.
 stdin and stdout contain only binary `GMIPCA01` frames, while diagnostics and
-logs use stderr. Use the generated Rust client rather than writing framed bytes
-in application code. The initial live operation is
-`geometry.model_bounds.a0` with a raw STEP attachment.
+logs use stderr. Use a maintained Python, Node/TypeScript or Rust client; see
+the [IPC consumer guide](executable-ipc.md). Discover operations from the
+welcome catalog: model bounds, model/mesh HLR, the experimental analytic
+operation and an additional native-only experimental topology subset are
+implemented. Structural-only catalog declarations are not callable.
 
 Root-level `dist/geometer(.exe)` artifacts are no longer produced. Source
 checkout consumers should use `dist/native/<platform>/geometer(.exe)`.

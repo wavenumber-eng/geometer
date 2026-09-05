@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <title>Executable IPC A0 — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../design/executable-ipc-a0.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="executable-ipc-a0">Executable IPC A0</h1></header>
+<h2 id="status-and-command">Status and command</h2>
+<p>This is the implemented executable-pipe contract governed by ADR-011.
+Application authors should start with the <a href="executable-ipc.html">IPC consumer guide</a>.
+The server command is:</p>
+<pre><code class="language-powershell">geometer serve --stdio
+</code></pre>
+<p>IPC identity <code>a0</code> is independent of the release version, date-based C ABI
+generation, TypeSpec contract identities, and packed planar format versions.</p>
+<p>stdin and stdout carry frames only. stderr carries logs only. On Windows the
+server switches stdin and stdout to binary mode before reading the first byte.</p>
+<p>The TypeScript package exposes the transport-neutral frame codec at
+<code>@wavenumber/geometer/ipc-a0</code>. It accepts and returns byte chunks and has no
+Node process dependency; process spawning, supervision, operation codecs, and
+request lifecycle remain higher layers.</p>
+<h2 id="byte-order-and-frame-header">Byte order and frame header</h2>
+<p>All integer fields are unsigned little-endian. Every frame begins with this
+48-byte header:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">Offset</th>
+<th style="text-align:right">Size</th>
+<th>Field</th>
+<th>A0 value/meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">0</td>
+<td style="text-align:right">8</td>
+<td>magic</td>
+<td>ASCII <code>GMIPCA01</code></td>
+</tr>
+<tr>
+<td style="text-align:right">8</td>
+<td style="text-align:right">2</td>
+<td>header size</td>
+<td><code>48</code></td>
+</tr>
+<tr>
+<td style="text-align:right">10</td>
+<td style="text-align:right">2</td>
+<td>protocol generation</td>
+<td><code>0</code> for <code>a0</code></td>
+</tr>
+<tr>
+<td style="text-align:right">12</td>
+<td style="text-align:right">2</td>
+<td>frame kind</td>
+<td>table below</td>
+</tr>
+<tr>
+<td style="text-align:right">14</td>
+<td style="text-align:right">2</td>
+<td>flags</td>
+<td><code>0</code></td>
+</tr>
+<tr>
+<td style="text-align:right">16</td>
+<td style="text-align:right">8</td>
+<td>request id</td>
+<td>client-selected correlation id; <code>0</code> only where stated</td>
+</tr>
+<tr>
+<td style="text-align:right">24</td>
+<td style="text-align:right">4</td>
+<td>JSON size</td>
+<td>byte length of the UTF-8 JSON section</td>
+</tr>
+<tr>
+<td style="text-align:right">28</td>
+<td style="text-align:right">4</td>
+<td>attachment count</td>
+<td>number of following attachment sections</td>
+</tr>
+<tr>
+<td style="text-align:right">32</td>
+<td style="text-align:right">8</td>
+<td>attachment bytes</td>
+<td>total bytes of attachment headers, names, media types, and data</td>
+</tr>
+<tr>
+<td style="text-align:right">40</td>
+<td style="text-align:right">4</td>
+<td>reserved 0</td>
+<td><code>0</code></td>
+</tr>
+<tr>
+<td style="text-align:right">44</td>
+<td style="text-align:right">4</td>
+<td>reserved 1</td>
+<td><code>0</code></td>
+</tr>
+</tbody>
+</table>
+<p>The JSON section immediately follows the frame header. Attachment sections
+follow the JSON section. No padding or trailing frame bytes are allowed.</p>
+<p>Frame kinds are:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">Value</th>
+<th>Kind</th>
+<th>Direction</th>
+<th>Request id</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">1</td>
+<td><code>hello</code></td>
+<td>client to server</td>
+<td><code>0</code></td>
+</tr>
+<tr>
+<td style="text-align:right">2</td>
+<td><code>welcome</code></td>
+<td>server to client</td>
+<td><code>0</code></td>
+</tr>
+<tr>
+<td style="text-align:right">3</td>
+<td><code>request</code></td>
+<td>client to server</td>
+<td>nonzero and not outstanding</td>
+</tr>
+<tr>
+<td style="text-align:right">4</td>
+<td><code>response</code></td>
+<td>server to client</td>
+<td>matching request</td>
+</tr>
+<tr>
+<td style="text-align:right">5</td>
+<td><code>cancel</code></td>
+<td>client to server</td>
+<td>target request</td>
+</tr>
+<tr>
+<td style="text-align:right">6</td>
+<td><code>cancelled</code></td>
+<td>server to client</td>
+<td>target request</td>
+</tr>
+<tr>
+<td style="text-align:right">7</td>
+<td><code>cancel_rejected</code></td>
+<td>server to client</td>
+<td>target request</td>
+</tr>
+<tr>
+<td style="text-align:right">8</td>
+<td><code>shutdown</code></td>
+<td>client to server</td>
+<td><code>0</code></td>
+</tr>
+<tr>
+<td style="text-align:right">9</td>
+<td><code>shutdown_ack</code></td>
+<td>server to client</td>
+<td><code>0</code></td>
+</tr>
+<tr>
+<td style="text-align:right">10</td>
+<td><code>protocol_error</code></td>
+<td>server to client when safely writable</td>
+<td>offending id or <code>0</code></td>
+</tr>
+</tbody>
+</table>
+<p>Only <code>request</code> and <code>response</code> frames may contain attachments in A0. Control
+frames require <code>attachment_count == 0</code> and <code>attachment_bytes == 0</code>.</p>
+<p>Every frame has a nonempty strict generated JSON object. <code>hello</code>, <code>welcome</code>,
+<code>request</code>, <code>response</code>, <code>cancel</code>, <code>cancelled</code>, <code>cancel_rejected</code>, and
+<code>protocol_error</code> use their corresponding generated DTO. <code>shutdown</code> has an
+optional human reason. <code>shutdown_ack</code> contains <code>status: &quot;complete&quot;</code>,
+<code>activeRequestCompleted: bool</code>, and <code>rejectedQueuedRequestCount: u32</code>.
+<code>activeRequestCompleted</code> is true exactly when one request was in the active
+executing state at the atomic transition into <code>draining</code> and that request's
+ordinary terminal response was subsequently written and flushed before this
+acknowledgment. It is false when no request was active at that transition,
+including when a request's completion won the lock immediately beforehand.
+Thus an active request that finishes during the grace period produces true;
+successful acknowledgment cannot encode an active-at-transition request that
+did not complete.
+Unknown fields, duplicate keys, malformed UTF-8, and trailing JSON bytes are
+rejected under the common contract rules.</p>
+<h2 id="attachment-section">Attachment section</h2>
+<p>Each attachment starts with a 16-byte header:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">Offset</th>
+<th style="text-align:right">Size</th>
+<th>Field</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">0</td>
+<td style="text-align:right">2</td>
+<td>UTF-8 name size</td>
+</tr>
+<tr>
+<td style="text-align:right">2</td>
+<td style="text-align:right">2</td>
+<td>UTF-8 media type size</td>
+</tr>
+<tr>
+<td style="text-align:right">4</td>
+<td style="text-align:right">4</td>
+<td>flags, zero in A0</td>
+</tr>
+<tr>
+<td style="text-align:right">8</td>
+<td style="text-align:right">8</td>
+<td>data size</td>
+</tr>
+</tbody>
+</table>
+<p>The name bytes, media-type bytes, and raw data bytes follow immediately. Names
+must be nonempty, unique within a frame, and declared for the operation.
+Media types must be nonempty and match the catalog declaration. Names and media
+types are not NUL terminated.</p>
+<p>For example, the complete 50-byte encoding of a <code>shutdown</code> frame whose strict
+JSON object is <code>{}</code> is:</p>
+<pre><code class="language-text">47 4d 49 50 43 41 30 31  30 00  00 00  08 00  00 00
+00 00 00 00 00 00 00 00  02 00 00 00  00 00 00 00
+00 00 00 00 00 00 00 00  00 00 00 00  00 00 00 00
+7b 7d
+</code></pre>
+<p>This is header size 48, generation 0, kind 8, flags and request id zero, JSON
+size 2, no attachments, zero reserved fields, followed by the two JSON bytes.
+Governed framing vectors use this same exact-byte notation.</p>
+<h2 id="handshake">Handshake</h2>
+<p>The client sends exactly one <code>hello</code> frame before any other frame. Its generated
+JSON contains client name/version, supported protocol identities, and optional
+client capabilities. It has request id zero and no attachments.</p>
+<p>The server replies with exactly one <code>welcome</code> frame selecting <code>a0</code>. Its
+generated JSON contains:</p>
+<ul>
+<li>Geometer release version and C ABI generation;</li>
+<li>selected IPC identity <code>a0</code>;</li>
+<li>normalized operation-catalog digest;</li>
+<li>supported operation identities and attachment declarations;</li>
+<li>effective size/queue limits; and</li>
+<li>server capabilities.</li>
+</ul>
+<p>No common protocol, invalid first frame, or a second handshake is fatal. The
+server writes a protocol error when it can do so safely, then closes stdout and
+exits nonzero.</p>
+<h2 id="requests-and-responses">Requests and responses</h2>
+<p>A request id is an unsigned 64-bit nonzero value selected by the client. It
+must not already be outstanding. A normal <code>response</code>, a shutdown-rejection
+<code>response</code>, or <code>cancelled</code> is terminal. Reuse is allowed only after the client
+has received that terminal frame. <code>cancel_rejected</code> is not terminal for an
+active request. The draining state accepts no new request, so an id made
+terminal during shutdown cannot in practice be reused on that connection.</p>
+<p>The request JSON is a generated generic envelope containing the operation
+identity and its operation-specific request DTO. Raw attachment sections are
+matched by name against the envelope and catalog. The response JSON contains
+the same operation identity, <code>ok</code>, the operation-specific result when
+successful, and governed diagnostics when unsuccessful. Response attachments
+are declared by both the envelope and catalog.</p>
+<p>Malformed strict JSON, an unknown operation, attachment mismatch, or operation
+failure produces a correlated typed response when the frame itself was safely
+decoded. Corrupt framing that prevents correlation produces <code>protocol_error</code>
+when safe and otherwise closes the pipe.</p>
+<p>The connection state machine is:</p>
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>Client frames accepted</th>
+<th>Server behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>awaiting hello</td>
+<td><code>hello</code> only</td>
+<td>Select A0 and emit <code>welcome</code>, or emit a fatal protocol error.</td>
+</tr>
+<tr>
+<td>running</td>
+<td><code>request</code>, <code>cancel</code>, <code>shutdown</code></td>
+<td>Validate and enqueue, resolve cancellation, or enter draining.</td>
+</tr>
+<tr>
+<td>draining</td>
+<td>none</td>
+<td>Finish the active request under the grace policy, then acknowledge and close.</td>
+</tr>
+<tr>
+<td>closed</td>
+<td>none</td>
+<td>No further bytes are read or written.</td>
+</tr>
+</tbody>
+</table>
+<p>A frame kind sent in the wrong direction or state, a second handshake, request
+id zero where forbidden, or reuse of an outstanding request id is a fatal
+protocol error. Duplicate outstanding ids are not answered as ordinary typed
+responses because correlation would be ambiguous. An unknown or already
+terminal id in a well-formed <code>cancel</code> is instead the nonfatal correlated
+<code>cancel_rejected</code> outcome defined below.</p>
+<p>Responses may arrive out of request order. A0 geometry execution is serialized,
+so ordinary operation responses are normally in execution order, but clients
+must route exclusively by request id.</p>
+<h2 id="limits-and-allocation">Limits and allocation</h2>
+<p>The server validates the fixed header before allocating or reading variable
+payloads. A0 hard maxima are:</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th style="text-align:right">A0 maximum</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>JSON section</td>
+<td style="text-align:right">8 MiB</td>
+</tr>
+<tr>
+<td>Attachments per frame</td>
+<td style="text-align:right">16</td>
+</tr>
+<tr>
+<td>Attachment name</td>
+<td style="text-align:right">128 bytes</td>
+</tr>
+<tr>
+<td>Media type</td>
+<td style="text-align:right">128 bytes</td>
+</tr>
+<tr>
+<td>Individual attachment</td>
+<td style="text-align:right">256 MiB</td>
+</tr>
+<tr>
+<td>Complete frame</td>
+<td style="text-align:right">512 MiB</td>
+</tr>
+<tr>
+<td>Queued request count</td>
+<td style="text-align:right">8</td>
+</tr>
+<tr>
+<td>Aggregate queued bytes</td>
+<td style="text-align:right">512 MiB</td>
+</tr>
+<tr>
+<td>Aggregate resident request bytes, active plus queued</td>
+<td style="text-align:right">512 MiB</td>
+</tr>
+<tr>
+<td>Aggregate pending writer bytes</td>
+<td style="text-align:right">512 MiB</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>welcome</code> frame may advertise smaller effective values. The client obeys
+the smaller values. All additions and conversions use overflow-safe arithmetic.</p>
+<p>If a fixed header declares an impossible or oversized frame, the server does
+not drain or allocate the claimed payload. It emits a protocol error if safe and
+terminates, because resynchronization on an untrusted length is not reliable.
+Truncation, unexpected EOF within a frame, nonzero reserved fields, unsupported
+flags, request-id collision, or a mismatch between <code>attachment_count</code>,
+<code>attachment_bytes</code>, and parsed section boundaries is a fatal protocol error.</p>
+<p>After a complete request frame and unambiguous request id are safely decoded,
+malformed request JSON or UTF-8, duplicate or invalid attachment names, media
+type mismatch, unknown operation, and other operation/attachment contract
+defects produce an ordinary correlated response diagnostic. The same structural
+defect in a control frame is a fatal protocol error because no operation
+response contract applies. Direction/state and header/length violations also
+terminate the connection after an error frame when one can be written safely.</p>
+<h2 id="execution-queueing-and-writes">Execution, queueing, and writes</h2>
+<p>One worker executes at most one geometry operation at a time. The reader may
+validate and enqueue complete requests within the count and aggregate-byte
+limits. A request remains charged to the resident-input limit until execution
+is terminal and its input storage is released. Queue or resident-input
+saturation returns a correlated retryable
+<code>geometer.transport.queue_full</code> response; it never grows the queue.</p>
+<p>One writer owns stdout. All server producers submit complete logical frames to
+its bounded byte queue and apply backpressure rather than exceed the pending
+writer limit. The writer emits each header, JSON, and attachments without
+interleaving another frame, handles partial writes, and flushes after each
+complete frame. This serialization is the A0 atomic-frame guarantee; it does
+not assume an operating-system pipe write is atomically large enough for the
+frame.</p>
+<p>Broken stdin stops acceptance and begins shutdown. Broken stdout or an
+unrecoverable partial write is fatal because correlated outcomes can no longer
+be delivered. stderr logging must never write protocol bytes.</p>
+<p>The complete-frame byte count is <code>48 + json_size + attachment_bytes</code> and must
+be checked for overflow and against the frame maximum before variable payload
+allocation. Aggregate queued, resident-input, and pending-writer accounting use
+that complete-frame size, including the fixed header and JSON.</p>
+<h2 id="cancellation-and-timeout">Cancellation and timeout</h2>
+<p>A <code>cancel</code> frame uses the target operation's request id and has a generated
+control JSON body with an optional human reason.</p>
+<ul>
+<li>If the request is queued, the server removes it and emits <code>cancelled</code>. No
+later operation response is emitted.</li>
+<li>If the request is active, the server emits <code>cancel_rejected</code> with
+<code>geometer.transport.not_cancellable</code>; the original response still follows.</li>
+<li>If the id is unknown or already terminal, the server emits
+<code>cancel_rejected</code> with <code>geometer.transport.unknown_request</code>.</li>
+</ul>
+<p>Queue removal and transition to active execution share one synchronization
+boundary, so exactly one queued-cancel or active-rejection outcome wins the
+race.</p>
+<p>A client timeout is local. It may send <code>cancel</code>, continue draining the eventual
+frame, or explicitly terminate the process. Timeout alone never asserts that
+server execution stopped. Process termination fails all outstanding client
+operations.</p>
+<h2 id="shutdown">Shutdown</h2>
+<p>After <code>shutdown</code>, valid stdin EOF, or parent-requested graceful termination, the
+server records one monotonic deadline 30 seconds after the shutdown trigger and
+atomically enters <code>draining</code>. Under the same request-state lock it removes
+every queued request in FIFO acceptance order and marks it terminal. Each
+removed request produces an ordinary generated <code>response</code> frame with
+<code>ok: false</code>, no attachments, and exactly one transport diagnostic:</p>
+<ul>
+<li>code <code>geometer.transport.server_shutting_down</code>;</li>
+<li>category <code>transport</code>;</li>
+<li><code>retryable: true</code>;</li>
+<li>the request id and operation identity; and</li>
+<li>no JSON Pointer path.</li>
+</ul>
+<p>This outcome is a shutdown rejection, not cancellation; no <code>cancelled</code> or
+<code>cancel_rejected</code> frame is emitted for it. The writer receives these response
+frames in FIFO acceptance order. A queued id becomes terminal in server state
+at removal, and becomes reusable by the client only when that response is
+received. Because the connection is draining, any attempted reuse is still a
+wrong-state protocol error.</p>
+<p>The active request is allowed to finish, and its ordinary terminal response is
+submitted after all queued shutdown-rejection responses. <code>shutdown_ack</code> is
+submitted last. Successful graceful shutdown requires the writer to finish and
+flush, in this order, every queued rejection response, the active response when
+one exists, and <code>shutdown_ack</code> no later than the single deadline. Only then does
+the process close stdout and exit zero.</p>
+<p>Active completion and entry into <code>draining</code> use the request-state lock. If
+completion wins, its complete response is submitted before the shutdown
+transition and therefore precedes the queued rejection responses. If shutdown
+wins, the request is marked draining-active and its response follows all queued
+rejections as stated above. Complete frames already submitted to the writer
+before either transition retain their existing FIFO positions. In every case
+<code>shutdown_ack</code> follows every terminal request frame accepted by that
+connection.</p>
+<p>The 30-second deadline covers geometry execution, producer submission into the
+bounded writer queue, every partial stdout write, and every flush. Geometry
+completion alone does not satisfy the grace period. A client that stops reading
+stdout therefore cannot keep the process alive indefinitely.</p>
+<p>Deadline expiry and successful final-ack flush use one synchronized terminal
+state transition. The success transition wins only if the complete
+<code>shutdown_ack</code> flush finishes and acquires that state at or before the monotonic
+deadline. Otherwise expiry wins: the server logs only to stderr and forcibly
+terminates nonzero without attempting another protocol frame. A blocked writer
+must be interruptible by this forced-termination path. Any partially written
+frame and every frame not received before pipe closure are failed by the client
+as unexpected process termination; no request id from that connection may be
+reused on a replacement connection merely by assuming delivery.</p>
+<p>An explicit forced child termination is a client escalation, not an A0 control
+frame. The Rust client first attempts graceful shutdown and exposes a separate
+forced termination helper.</p>
+<h2 id="diagnostics-and-logging">Diagnostics and logging</h2>
+<p>Protocol and request diagnostics follow <code>contract-semantics.md</code>. Exact message
+text is nonbinding. Codes, category, retryability, JSON Pointer path, operation,
+and request id are governed fields.</p>
+<p>Logs include request ids and operation identities where available, but never
+raw model bytes, complete request JSON, secrets, or protocol frames.</p>
+
+</main>
+</body>
+</html>

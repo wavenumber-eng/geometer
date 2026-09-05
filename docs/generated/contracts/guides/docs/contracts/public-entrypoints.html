@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <title>Public Entry-Point Reconciliation — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../contracts/public-entrypoints.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="public-entry-point-reconciliation">Public Entry-Point Reconciliation</h1></header>
+<p>Reviewed against <code>v2026-09-04</code>. This maps semantic operations separately from
+aliases, byte projections and implementation helpers. The
+<a href="../../../coverage.html">generated inventory</a> supplies individual
+operation/root identities; the <a href="../../../../../contracts/public-surface-review.json">source review lock</a>
+records the reviewed public-source boundary. A changed or newly added source
+in that boundary requires documentation review, not automatic promotion.</p>
+<h2 id="user-facing-operation-families">User-Facing Operation Families</h2>
+<table>
+<thead>
+<tr>
+<th>Family</th>
+<th>C++ / C ABI and CLI boundary</th>
+<th>Python / TypeScript / Rust mapping</th>
+<th>TypeSpec work</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Model bounds</td>
+<td><code>model_bounds.h</code>; generic operation ABI; <code>model-bounds</code> / batch <code>model_bounds_json</code></td>
+<td>Python <code>model_bounds[_json]</code>; generic TS/Worker/IPC operation; Rust <code>ModelBoundsRequest</code></td>
+<td>Promoted generated roots; retain compatibility normalization. Wave 0 reconciliation, no new solver.</td>
+</tr>
+<tr>
+<td>Model HLR / SVG presentation</td>
+<td><code>projection.h</code>, <code>fast_hlr.h</code>; generic operation plus legacy STEP byte ABI; <code>model-project-hlr/svg</code>, STEP aliases</td>
+<td>Python <code>project_model_hlr</code>, <code>model_hlr_projection_json</code>, STEP wrappers; TS/Rust model-HLR requests</td>
+<td>A0 options/result generated pilot; legacy projection B0/SVG file boundary remains wave 3. SVG is presentation of projection, not an extra generated geometry operation.</td>
+</tr>
+<tr>
+<td>Mesh HLR</td>
+<td><code>fast_hlr.h</code>, <code>indexed_mesh_packet.h</code>; generic operation; <code>mesh-project-hlr</code> / <code>mesh_hlr_projection_json</code></td>
+<td>Python <code>GeometerClient.mesh_hlr_projection</code>; TS/Rust mesh-HLR requests</td>
+<td>Generated HLR envelope; handwritten indexed-mesh codec pilot is wave 4.</td>
+</tr>
+<tr>
+<td>Model-to-GLB</td>
+<td><code>step_to_glb.h</code>; legacy STEP byte ABI; <code>model-to-glb</code> / <code>step-to-glb</code> and batch aliases</td>
+<td>Python <code>model_to_glb</code> / <code>step_to_glb</code>; retained direct WASM export</td>
+<td>Wave 1 structural options/result descriptor and IPC adapter; preserve GLB bytes.</td>
+</tr>
+<tr>
+<td>Planar STEP synthesis</td>
+<td><code>planar_step.h</code>; <code>planar-step</code> / batch <code>planar_step</code></td>
+<td>Python <code>planar_step</code> / <code>write_planar_step</code></td>
+<td>Wave 1 request/root and STEP attachment; preserve unit/shape/alias compatibility.</td>
+</tr>
+<tr>
+<td>Planar batch solve</td>
+<td><code>planar_solve.h</code>; packed/JSON C ABI variants; <code>planar-batch-solve</code></td>
+<td>Python <code>planar_batch_solve[_json]</code>; retained WASM byte functions</td>
+<td>Wave 2 logical contracts and IPC adapter, wave 4 packed codec assessment.</td>
+</tr>
+<tr>
+<td>Triangulation, Clipper2 Boolean/open inflate</td>
+<td><code>planar_triangulate.h</code>, <code>clipper2_bytes.h</code>; matching C ABI and WASM functions</td>
+<td>No invented public Python/Rust convenience method; use documented existing byte boundary</td>
+<td>Wave 2, then wave 4; three distinct operation families.</td>
+</tr>
+<tr>
+<td>Analytic Boolean batch</td>
+<td><code>analytic_filtered_batch.h</code>, generic dispatch; packed request/result projections</td>
+<td>Python/TS/Rust analytic convenience calls</td>
+<td>Logical candidate generated; packed codec remains handwritten. Wave 0 inventory and wave 4 codec assessment, never a production-promotion claim.</td>
+</tr>
+<tr>
+<td>Topology sessions and mutations</td>
+<td><code>step_topology_session.h</code>; nine native IPC operations and three structural-only declarations</td>
+<td>Generic generated clients plus native Node research reference</td>
+<td>Wave 0 preserves each operation's availability. Save/analyze-recovery/apply-hierarchy are not executable capabilities.</td>
+</tr>
+<tr>
+<td>Browser mesh illustration</td>
+<td>Browser TypeScript renderer and <code>illustrated-hlr</code> composition, not a C++ solver/IPC operation</td>
+<td><code>mesh-illustration</code> and <code>illustrated-hlr</code> package exports</td>
+<td>Generated options/result roots already exist; render behavior remains handwritten TS. No automatic native adapter.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="helpers-aliases-and-ownership-are-not-additional-wire-operations">Helpers, Aliases And Ownership Are Not Additional Wire Operations</h2>
+<ul>
+<li><code>planar_contours.h</code> exposes a direct C++ contour-building helper used by HLR.
+Its native value structures remain handwritten. If offered as an independent
+portable operation, include its structural request/result in wave 2 before
+exposing an adapter; do not silently count it as already TypeSpec-covered.</li>
+<li><code>analytic_*.h</code> lowering, arrangement, lineage, numeric filters and packet
+components implement the analytic family. <code>exact_*.h</code> exposes non-primary
+experimental algebra/oracle components, not an alternative production IPC
+operation catalog. Preserve their code and evidence; generating solver
+internals is outside structural-contract migration.</li>
+<li><code>step_topology_hierarchy.h</code> and <code>step_topology_recovery.h</code> expose native value
+models independently of their currently unavailable wire declarations.</li>
+<li>Model/status/version/SHA utilities, allocation/free functions, frame codecs,
+Worker hosts and process supervision are support APIs. They retain their
+explicit ownership/lifecycle contracts; they are not geometry jobs.</li>
+<li>Python <code>run_batch</code>, <code>GeometerBatchRunner</code> and batch dataclasses compose the
+legacy batch file protocol. CLI <code>init-request</code> is a request-file authoring
+utility. Their file schema/alias normalization belongs to wave 3.</li>
+<li>TypeScript <code>.</code>, <code>./contracts</code>, <code>./analytic-packet-a0</code>, <code>./ipc-a0</code>,
+<code>./ipc-client-a0</code>, <code>./illustrated-hlr</code>, <code>./mesh-illustration</code>,
+<code>./node-process-a0</code>, <code>./wasm</code>, <code>./worker</code>, and <code>./worker-host</code> export
+mappings are owned by the package manifest. Root wildcard re-exports do not
+create new semantic operations.</li>
+<li>Rust exposes generated contracts, model-bounds/HLR request conveniences,
+analytic and indexed-mesh codecs, IPC and its client. Python's public
+<code>__all__</code> and TypeScript/Rust export sources remain review boundaries, not
+evidence that every client implementation is generated.</li>
+</ul>
+<h2 id="drift-gate-and-migration-acceptance">Drift Gate And Migration Acceptance</h2>
+<p><code>node scripts/check-public-surface-docs.mjs</code> compares the reviewed source
+inventory and normalized source digests, detecting additions, removals and
+changes in public headers, client sources, export manifests and CLI/registry
+boundaries. Existing promotion tests additionally check C ABI/WASM exports
+and dispatch aliases. This intentionally conservative gate may also request
+review for an implementation-only change; a hash is not proof of semantic
+documentation completeness.</p>
+<p>After inspecting the changed API against this map and its normative reference,
+explicitly refresh the lock with <code>--refresh</code> and commit the reviewed document
+and lock together. Normal HTML generation never updates the lock. Generated
+language internals remain covered by the contract freshness pipeline instead.</p>
+<p>The migration roadmap covers all inventoried user-facing families above.
+Each future migration must still compare fields, aliases, presence/default
+semantics, error behavior and exact packet bytes. Structural-only declarations,
+opaque payloads and public native helper structures remain visible exceptions;
+do not claim that all public operations are already TypeSpec-generated.</p>
+
+</main>
+</body>
+</html>

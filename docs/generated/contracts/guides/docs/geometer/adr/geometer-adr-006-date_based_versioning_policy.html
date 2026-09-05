@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <title>ADR 006: Date-Based Versioning Policy — Geometer</title>
+  <link rel="stylesheet" href="../../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../../guides.html">Documentation index</a><a href="../../../../../../geometer/adr/geometer-adr-006-date_based_versioning_policy.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="adr-006-date-based-versioning-policy">ADR 006: Date-Based Versioning Policy</h1></header>
+<h2 id="status">Status</h2>
+<p>Accepted</p>
+<h2 id="context">Context</h2>
+<p>Geometer uses PyPI releases and downstream consumption by internal Monkey
+tools. Those tools use date-oriented release names, and the release date is more
+meaningful for this workflow than semantic major/minor/patch numbers.</p>
+<p>Different consumers need different version formats:</p>
+<ul>
+<li>humans prefer zero-padded calendar dates;</li>
+<li>PyPI requires PEP 440-compatible normalized versions and removes leading
+zeros from release segments;</li>
+<li>CMake <code>project(VERSION ...)</code> accepts numeric dotted versions, not arbitrary
+development strings;</li>
+<li>C and C++ callers sometimes need cheap numeric comparisons for ABI/runtime
+checks.</li>
+</ul>
+<p>Optional build timestamps or build numbers may become useful later, but they
+are not needed to define the release policy now.</p>
+<h2 id="decision">Decision</h2>
+<p>Geometer releases use a UTC date as the release identity.</p>
+<p>Human-facing Git tags, release names, and planning milestones use the
+zero-padded form:</p>
+<pre><code class="language-text">vYYYY-MM-DD
+</code></pre>
+<p>Same-day follow-up releases append a monotonically increasing serial:</p>
+<pre><code class="language-text">vYYYY-MM-DD-N
+</code></pre>
+<p>Packaging and build-tool versions use the dotted PEP 440/CMake-compatible form:</p>
+<pre><code class="language-text">YYYY.M.D
+</code></pre>
+<p>Same-day follow-up releases use:</p>
+<pre><code class="language-text">YYYY.M.D.N
+</code></pre>
+<p>This four-component identity applies to the CMake/runtime and Python package.
+Strict SemVer client packages such as npm and Cargo retain <code>YYYY.M.D</code> when a
+same-day runtime-only follow-up does not change their client API. If either
+client API changes, publish it under the next UTC date instead of inventing an
+invalid four-component SemVer.</p>
+<p>For example, the release tag <code>v2026-05-23</code> maps to package/build version
+<code>2026.5.23</code>.</p>
+<p>For example, the follow-up release tag <code>v2026-05-24-2</code> maps to package/build
+version <code>2026.5.24.2</code>.</p>
+<p>C ABI generation uses an integer date:</p>
+<pre><code class="language-text">YYYYMMDD
+</code></pre>
+<p>The ABI date changes when Geometer publishes a new C ABI generation. It is not a
+per-build timestamp and it does not include same-day release serials. Python
+and downstream tools should check both the package version and C ABI generation
+when they depend on a specific interface.</p>
+<p>All generated date/build metadata must use UTC. Local time zones must not affect
+release artifacts.</p>
+<p>The release version is the only required public package version. Development
+build numbers, seconds-since-midnight, Unix epoch seconds, CI run numbers, and
+git SHA fields are optional diagnostics that can be added later. If added, they
+should not be required for normal public package resolution.</p>
+<h2 id="implementation-direction">Implementation Direction</h2>
+<p>Add one version source of truth that can generate:</p>
+<ul>
+<li>the human release tag/date;</li>
+<li>the CMake project version;</li>
+<li><code>version_config.h</code>;</li>
+<li>the Python package version;</li>
+<li>the C ABI generation integer.</li>
+</ul>
+<p>Until that generator exists, update the root CMake version, Python package
+version, and C ABI version manually when preparing a release.</p>
+<h2 id="consequences">Consequences</h2>
+<p>The human release date keeps leading zeros where they improve readability.
+Package manager versions intentionally do not.</p>
+<p>The policy avoids maintaining separate semantic-version and date-version
+systems.</p>
+<p>Build metadata can be introduced later without changing the public release
+scheme.</p>
+<p>Downstream consumers should treat dated Geometer releases like other Monkey
+tool releases and plan migrations against a specific release date.</p>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <title>Dependency Cache — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../developer/dependency-cache.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="dependency-cache">Dependency Cache</h1></header>
+<p>Geometer may restore generated dependency install trees from the Wavenumber
+artifact cache. The cache is not a source dependency and is not a release
+artifact. It is a verified shortcut for rebuilding large dependencies such as
+OCCT.</p>
+<h2 id="scope">Scope</h2>
+<p>The public artifact hostname is <code>https://artifacts.wavenumber.net</code>. It is backed
+by the Wavenumber R2 bucket, which is intended to serve all Wavenumber projects.
+Project separation is handled by object prefixes. Separate buckets are reserved
+for cases where access policy requires hard isolation.</p>
+<h2 id="object-layout">Object Layout</h2>
+<p>Canonical prefix layout:</p>
+<pre><code class="language-text">deps/v1/&lt;project&gt;/&lt;dependency&gt;/&lt;dependency-version&gt;/&lt;target-kind&gt;/&lt;platform-tag&gt;/&lt;cache-key&gt;/
+  manifest.json
+  &lt;archive-name&gt;.zip
+  &lt;archive-name&gt;.zip.sha256
+</code></pre>
+<p>For Geometer OCCT:</p>
+<pre><code class="language-text">deps/v1/geometer/occt/V8_0_1/native/windows-x64/&lt;cache-key&gt;/
+deps/v1/geometer/occt/V8_0_1/native/linux-x64/&lt;cache-key&gt;/
+deps/v1/geometer/occt/V8_0_1/native/linux-arm64/&lt;cache-key&gt;/
+deps/v1/geometer/occt/V8_0_1/native/macos-arm64/&lt;cache-key&gt;/
+deps/v1/geometer/occt/V8_0_1/wasm/wasm-emscripten/&lt;cache-key&gt;/
+</code></pre>
+<p>The Geometer OCCT cache also checks the legacy prefix
+<code>geometer/occt/&lt;target-kind&gt;/&lt;platform-tag&gt;/&lt;cache-key&gt;/</code> while the OCCT 7.8.1
+cache remains useful for rollback or older branches.</p>
+<h2 id="cache-identity">Cache Identity</h2>
+<p>The cache key must be immutable and specific enough that restoring an archive is
+equivalent to rebuilding that dependency locally. For OCCT, the key includes:</p>
+<ul>
+<li>dependency name</li>
+<li>OCCT tag</li>
+<li>native or WASM target kind</li>
+<li>platform tag</li>
+<li>build configuration</li>
+<li>library type</li>
+<li>macOS deployment target when relevant</li>
+<li>Emscripten version for WASM</li>
+<li>recipe hash from build scripts and vendored inputs</li>
+</ul>
+<p>Changing any of those compatibility inputs creates a new key.</p>
+<h2 id="manifest">Manifest</h2>
+<p>New dependency cache manifests use schema
+<code>wavenumber.dependency_cache_manifest.a1</code>.</p>
+<p>Required concepts:</p>
+<ul>
+<li>project</li>
+<li>dependency name, version, and source repository</li>
+<li>target kind, platform tag, and toolchain when applicable</li>
+<li>build configuration and library type</li>
+<li>recipe hash</li>
+<li>archive name, size, and SHA-256</li>
+<li>producer repository, commit, workflow run, and UTC timestamp</li>
+</ul>
+<p>Legacy OCCT manifests using <code>geometry.occt_binary_cache_manifest.a0</code> are accepted
+only for existing OCCT cache compatibility.</p>
+<h2 id="access">Access</h2>
+<p>Developer machines and normal CI workflows use public HTTPS reads. Trusted
+producer workflows may use upload-capable R2 credentials. Consumers must
+validate <code>manifest.json</code> and archive SHA-256 before extracting an archive into
+<code>.deps/</code>.</p>
+<h2 id="local-state">Local State</h2>
+<p>Restored archives extract under <code>.deps/</code>. They must not be committed. Source
+build fallback remains available for new platforms, cache misses, and debugging.</p>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <title>Contract Semantics — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../design/contract-semantics.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="contract-semantics">Contract Semantics</h1></header>
+<p>ADR-010 defines structural authority and promotion. This document defines the
+cross-language semantics that generated models and conformance tests must
+preserve.</p>
+<h2 id="presence-and-null">Presence and null</h2>
+<p>An input field has three possible wire states:</p>
+<ol>
+<li>absent;</li>
+<li>present with a non-null value, including the declared default value; or</li>
+<li>present with <code>null</code> only when TypeSpec explicitly declares the field
+nullable.</li>
+</ol>
+<p>Generated decoders preserve these states. They do not turn an absent optional
+field into a present default. <code>null</code> is rejected for non-nullable fields.</p>
+<p>Generated patch models represent presence separately from the field's value.
+This is required even when a language's ordinary optional type normally
+combines absent and null.</p>
+<h2 id="defaults-and-layered-option-patches">Defaults and layered option patches</h2>
+<p>TypeSpec records canonical default intent. Effective C++ operation options are
+created only after all input layers are merged in this order:</p>
+<pre><code class="language-text">focused C++ defaults
+  &lt;- top-level batch option patch
+  &lt;- job-level option patch
+</code></pre>
+<p>Each later present field replaces the earlier value. An absent field has no
+effect. A present field whose value equals the default still replaces the
+earlier value. Compatibility aliases normalize to canonical patch fields before
+the merge. Two aliases that supply the same canonical field in one object are a
+contract error unless that compatibility adapter defines and tests an explicit
+precedence rule.</p>
+<p>Canonical request encoders omit absent optional fields. Patch encoders preserve
+all present fields, including present default-valued fields. An encoder may omit
+a present default only for a non-patch model whose generated metadata explicitly
+declares that emission policy.</p>
+<h2 id="object-and-number-policy">Object and number policy</h2>
+<p>Canonical objects are closed unless a reviewed annotation identifies an open
+extension bucket, its owner, interpretation rule, and promotion condition.
+Strict decoders reject unknown fields, duplicate object keys, malformed UTF-8,
+trailing JSON data, non-finite numbers, and values outside declared ranges.</p>
+<p>Compatibility readers may accept named aliases or legacy shapes, but must emit
+a canonical model or a path-specific diagnostic. They must not silently retain
+unknown fields in canonical output.</p>
+<h2 id="diagnostics">Diagnostics</h2>
+<p>Wire diagnostics contain:</p>
+<ul>
+<li><code>category</code>: <code>transport</code>, <code>contract</code>, or <code>operation</code>;</li>
+<li>a stable namespaced string <code>code</code>;</li>
+<li>a human-readable <code>message</code>, which is not exact compatibility text;</li>
+<li><code>retryable</code>;</li>
+<li>optional <code>path</code> as RFC 6901 JSON Pointer;</li>
+<li>optional operation identity; and</li>
+<li>optional request identifier.</li>
+</ul>
+<p>An empty JSON Pointer identifies the whole JSON document. A diagnostic without
+a meaningful document location omits <code>path</code>.</p>
+<p>Code namespaces are:</p>
+<ul>
+<li><code>geometer.transport.*</code> for framing, lifecycle, capability, and local ABI
+failures;</li>
+<li><code>geometer.contract.*</code> for strict decoding and structural validation; and</li>
+<li><code>geometer.operation.&lt;operation-name&gt;.*</code> for geometry execution outcomes.</li>
+</ul>
+<p>Existing integer <code>Status.code</code> and C ABI return codes stay local adapter
+statuses. They may map to a wire diagnostic but are never converted into a
+stable wire code merely by formatting the integer.</p>
+<h2 id="conformance-assertion-lanes">Conformance assertion lanes</h2>
+<p>Every governed vector declares exactly one primary assertion lane:</p>
+<table>
+<thead>
+<tr>
+<th>Lane</th>
+<th>Oracle</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>strict_json</code></td>
+<td>Exact UTF-8 accept/reject behavior before model construction</td>
+</tr>
+<tr>
+<td><code>schema</code></td>
+<td>Accept/reject against the generated root JSON Schema</td>
+</tr>
+<tr>
+<td><code>semantic</code></td>
+<td>Structural decoded comparison after a declared projection</td>
+</tr>
+<tr>
+<td><code>diagnostic</code></td>
+<td>Exact category, code, path, and retryability</td>
+</tr>
+<tr>
+<td><code>canonical_serialization</code></td>
+<td>Exact RFC 8785 JCS bytes where a digest is required</td>
+</tr>
+<tr>
+<td><code>transport_framing</code></td>
+<td>Exact frame/header/attachment bytes or exact rejection</td>
+</tr>
+</tbody>
+</table>
+<p>Ordinary encoder output is not assumed byte-identical across languages.
+Semantic vectors compare strings, enums, booleans, counts, and topology
+structurally. Floating-point fields declare absolute and relative tolerances.
+Negative zero is normalized only when the vector says so.</p>
+<p>Every vector lists fields excluded from semantic comparison. Nondeterministic
+timings such as <code>model_read_ms</code>, <code>bounds_ms</code>, and <code>elapsed_ms</code> are excluded by
+that explicit projection, never by a global ignore rule.</p>
+
+</main>
+</body>
+</html>

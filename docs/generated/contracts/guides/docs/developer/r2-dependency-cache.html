@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <title>Public Dependency Cache Setup — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../developer/r2-dependency-cache.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="public-dependency-cache-setup">Public Dependency Cache Setup</h1></header>
+<p>Geometer can restore prebuilt dependency install trees from the Wavenumber
+artifact cache. This avoids expensive local or CI source builds for dependencies
+such as OCCT.</p>
+<p>The cache is an optimization. Restored archives are still treated as generated
+local state under <code>.deps/</code>, and each archive is validated by manifest and
+SHA-256 before use.</p>
+<h2 id="access-model">Access Model</h2>
+<p>Normal developer machines and CI jobs use public HTTPS reads from:</p>
+<pre><code class="language-text">https://artifacts.wavenumber.net
+</code></pre>
+<p>No R2 credentials are required for ordinary cache restore. The public hostname
+is backed by the Wavenumber Cloudflare R2 bucket and exposes immutable artifact
+prefixes only.</p>
+<p>R2 credentials are reserved for private fallback testing and producer workflows.
+If credentials are issued, read-only credentials should be allowed to:</p>
+<ul>
+<li>list objects under the Wavenumber dependency-cache prefix</li>
+<li>read objects under the Wavenumber dependency-cache prefix</li>
+</ul>
+<p>Read-only credentials should not be allowed to:</p>
+<ul>
+<li>write objects</li>
+<li>delete objects</li>
+<li>change bucket policy</li>
+</ul>
+<p>Trusted GitHub producer workflows use separate upload-capable credentials.</p>
+<p>Recipe identities are derived from the structured CMake definitions that the
+build scripts emit plus explicit platform/toolchain inputs. Local paths,
+orchestration-script edits, build parallelism, and compiler patch releases do
+not rotate the key. Compiler family/major and C++ runtime ABI changes do.</p>
+<p>When a byte-relevant OCCT recipe changes, run the GitHub
+<code>OCCT Dependency Cache</code> workflow with <code>target=all</code> to build and upload the
+current platform keys before relying on fast fresh CI restores.</p>
+<h2 id="object-layout">Object Layout</h2>
+<p>The Wavenumber-wide cache bucket is <code>wn-build-deps</code>. Objects are stored under
+this layout:</p>
+<pre><code class="language-text">deps/v1/&lt;project&gt;/&lt;dependency&gt;/&lt;dependency-version&gt;/&lt;target-kind&gt;/&lt;platform-tag&gt;/&lt;cache-key&gt;/
+  manifest.json
+  &lt;archive-name&gt;.zip
+  &lt;archive-name&gt;.zip.sha256
+</code></pre>
+<p>For Geometer's OCCT cache:</p>
+<pre><code class="language-text">deps/v1/geometer/occt/V8_0_1/native/windows-x64/&lt;cache-key&gt;/
+deps/v1/geometer/occt/V8_0_1/native/linux-x64/&lt;cache-key&gt;/
+deps/v1/geometer/occt/V8_0_1/native/linux-arm64/&lt;cache-key&gt;/
+deps/v1/geometer/occt/V8_0_1/native/macos-arm64/&lt;cache-key&gt;/
+deps/v1/geometer/occt/V8_0_1/wasm/wasm-emscripten/&lt;cache-key&gt;/
+</code></pre>
+<h2 id="local-environment">Local Environment</h2>
+<p>No local <code>.env</code> is required for normal cache restore. <code>scripts/build_occt.py</code>
+and <code>scripts/build_wasm.py</code> default to the public artifact domain.</p>
+<pre><code class="language-text">GEOMETER_OCCT_BINARY=auto
+GEOMETER_OCCT_CACHE_PUBLIC_BASE_URL=https://artifacts.wavenumber.net
+</code></pre>
+<p><code>GEOMETER_OCCT_CACHE_PUBLIC_BASE_URL</code> is optional and only needed when testing a
+different artifact hostname. Set <code>GEOMETER_OCCT_PUBLIC_CACHE=off</code> to force
+source builds or signed R2-only testing.</p>
+<p>Create a local <code>.env</code> file only for upload-capable producer work or explicit
+private fallback testing. Do not commit <code>.env</code>.</p>
+<pre><code class="language-text">R2_BUCKET=wn-build-deps
+R2_ENDPOINT_URL=&lt;r2-s3-api-endpoint&gt;
+R2_ACCESS_KEY_ID=&lt;access-key-id&gt;
+R2_SECRET_ACCESS_KEY=&lt;secret-access-key&gt;
+AWS_DEFAULT_REGION=auto
+</code></pre>
+<p>Use the account-level R2 S3 endpoint for <code>R2_ENDPOINT_URL</code>; do not include the
+bucket name in the URL path. The build scripts defensively strip a trailing
+<code>/wn-build-deps</code> segment, but producer secrets should still be kept canonical.</p>
+<p>Root <code>.env</code> is a local convenience only. Move or remove it before release
+signoff because the Wavenumber standards check requires no root <code>.env</code> file to
+be present.</p>
+<p><code>GEOMETER_OCCT_BINARY</code> modes:</p>
+<ul>
+<li><code>auto</code>: use the public cache, then any configured signed R2 fallback, and
+fall back to source build on cache miss</li>
+<li><code>only</code>: require a binary cache hit and fail on cache miss</li>
+<li><code>off</code>: ignore binary caches and build from source</li>
+</ul>
+<p>Use <code>only</code> when checking that the artifact domain has the expected cache object
+without accidentally starting a long source build.</p>
+<h2 id="powershell-verification">PowerShell Verification</h2>
+<pre><code class="language-powershell">$env:GEOMETER_OCCT_BINARY = &quot;only&quot;
+python scripts\build_occt.py --print-binary-cache-key
+python scripts\build_occt.py
+</code></pre>
+<p>For WASM:</p>
+<pre><code class="language-powershell">$env:GEOMETER_OCCT_BINARY = &quot;only&quot;
+python scripts\build_wasm.py --print-occt-binary-cache-key
+python scripts\build_wasm.py --occt-only
+</code></pre>
+<h2 id="wsllinux-verification">WSL/Linux Verification</h2>
+<pre><code class="language-bash">export GEOMETER_OCCT_BINARY=only
+python scripts/build_occt.py --print-binary-cache-key
+python scripts/build_occt.py
+</code></pre>
+<p>When running WSL in the same checkout as Windows, keep uv environments separate
+so Windows and Linux do not replace each other's <code>.venv</code>:</p>
+<pre><code class="language-bash">export UV_PROJECT_ENVIRONMENT=.venv-wsl
+</code></pre>
+<p>For WASM:</p>
+<pre><code class="language-bash">export GEOMETER_OCCT_BINARY=only
+python scripts/build_wasm.py --print-occt-binary-cache-key
+python scripts/build_wasm.py --occt-only
+</code></pre>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<ul>
+<li>If the command reports a cache miss in <code>only</code> mode, check that the requested
+key exists under <code>https://artifacts.wavenumber.net/deps/v1/geometer/occt/</code>.
+The requested dependency/platform/version may not have been uploaded yet, or
+the prefix may not match.</li>
+<li>If SHA-256 validation fails, delete the local <code>.deps/</code> install tree and retry.
+Do not upload replacement objects from a developer machine.</li>
+<li>If source builds start unexpectedly, confirm <code>GEOMETER_OCCT_BINARY=only</code> while
+testing cache access.</li>
+<li>If testing signed R2 fallback, confirm <code>GEOMETER_OCCT_PUBLIC_CACHE=off</code> before
+assuming the signed credentials are being exercised.</li>
+<li>If producer uploads appear under
+<code>https://artifacts.wavenumber.net/wn-build-deps/deps/...</code>, remove the bucket
+path from the configured R2 endpoint and rerun the producer workflow.</li>
+</ul>
+
+</main>
+</body>
+</html>

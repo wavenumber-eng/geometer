@@ -23,19 +23,20 @@
 <tr><th>Schema</th><td><code>urn:wavenumber:schema:geometer:geometry.step_topology.checkpoint_edit_journal.result:a0</code></td></tr>
 <tr><th>Declaration</th><td><code>Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyCheckpointEditJournalResultA0</code></td></tr>
 <tr><th>Lifecycle</th><td><span class="status">experimental_candidate</span></td></tr>
+<tr><th>Maturity</th><td>experimental_not_production_ready</td></tr>
 <tr><th>Current authority</th><td><code>typespec_candidate</code></td></tr>
 </tbody></table></section>
 <section class="model-section"><h2>Declarations <span class="tag">6</span></h2><details open id="declaration-wavenumber-geometer-contracts-steptopologya0-steptopologycheckpointeditjournalresulta0"><summary><h2><code>StepTopologyCheckpointEditJournalResultA0</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>schema</code></td><td>required</td><td><code>&quot;geometry.step_topology.checkpoint_edit_journal.result.a0&quot;</code></td><td>—</td><td>none</td><td></td></tr>
-<tr><td><code>state</code></td><td>required</td><td><code>MutationSessionState</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>state</code></td><td>required</td><td><code><a href="#declaration-wavenumber-geometer-contracts-steptopologya0-mutationsessionstate">MutationSessionState</a></code></td><td>—</td><td>none</td><td></td></tr>
 <tr><td><code>source_sha256</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=64</code> <code>max_length=64</code></td><td></td></tr>
 <tr><td><code>source_brep_sha256</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=64</code> <code>max_length=64</code></td><td></td></tr>
 <tr><td><code>target_inventory_sha256</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=64</code> <code>max_length=64</code></td><td></td></tr>
 <tr><td><code>occt_version</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=64</code></td><td></td></tr>
 <tr><td><code>transaction_count</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=100000</code></td><td></td></tr>
-<tr><td><code>journal</code></td><td>required</td><td><code>EditJournalAttachmentDescriptor</code></td><td>—</td><td>none</td><td></td></tr>
-<tr><td><code>diagnostics</code></td><td>required</td><td><code>DiagnosticA0[]</code></td><td>—</td><td><code>max_items=256</code></td><td></td></tr></tbody></table></details>
+<tr><td><code>journal</code></td><td>required</td><td><code><a href="#declaration-wavenumber-geometer-contracts-steptopologya0-editjournalattachmentdescriptor">EditJournalAttachmentDescriptor</a></code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>diagnostics</code></td><td>required</td><td><code><a href="#declaration-wavenumber-geometer-contracts-common-diagnostica0">DiagnosticA0</a>[]</code></td><td>—</td><td><code>max_items=256</code></td><td></td></tr></tbody></table></details>
 <details open id="declaration-wavenumber-geometer-contracts-common-diagnostica0"><summary><h2><code>DiagnosticA0</code> <span class="tag">model</span></h2></summary><p>A strict cross-transport diagnostic; message text is informative rather than identity.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>code</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code></td><td>Stable namespaced diagnostic identity.</td></tr>
-<tr><td><code>category</code></td><td>required</td><td><code>DiagnosticCategory</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>category</code></td><td>required</td><td><code><a href="#declaration-wavenumber-geometer-contracts-common-diagnosticcategory">DiagnosticCategory</a></code></td><td>—</td><td>none</td><td></td></tr>
 <tr><td><code>message</code></td><td>required</td><td><code>string</code></td><td>—</td><td>none</td><td>Human-readable non-normative detail.</td></tr>
 <tr><td><code>retryable</code></td><td>required</td><td><code>boolean</code></td><td>—</td><td>none</td><td></td></tr>
 <tr><td><code>path</code></td><td>optional</td><td><code>string</code></td><td>—</td><td>none</td><td>RFC 6901 JSON Pointer when a document location is meaningful.</td></tr>
@@ -49,7 +50,7 @@
 <tr><td><code>format</code></td><td>required</td><td><code>&quot;geometer.step_topology_edit_journal.a0&quot;</code></td><td>—</td><td>none</td><td></td></tr>
 <tr><td><code>bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=1</code> <code>max_value=67108864</code></td><td></td></tr>
 <tr><td><code>sha256</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=64</code> <code>max_length=64</code></td><td></td></tr></tbody></table></details>
-<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-mutationsessionstate"><summary><h2><code>MutationSessionState</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>session</code></td><td>required</td><td><code>SessionReference</code></td><td>—</td><td>none</td><td></td></tr>
+<details open id="declaration-wavenumber-geometer-contracts-steptopologya0-mutationsessionstate"><summary><h2><code>MutationSessionState</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>session</code></td><td>required</td><td><code><a href="#declaration-wavenumber-geometer-contracts-steptopologya0-sessionreference">SessionReference</a></code></td><td>—</td><td>none</td><td></td></tr>
 <tr><td><code>edit_journal_revision</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=100000</code></td><td></td></tr>
 <tr><td><code>accounted_string_bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=16777216</code></td><td></td></tr>
 <tr><td><code>estimated_resident_bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=536870912</code></td><td></td></tr></tbody></table></details>

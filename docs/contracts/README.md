@@ -1,5 +1,13 @@
 # Geometer Contracts
 
+Start with the [current interface inventory](current-interface-inventory.md),
+[public entry-point reconciliation](public-entrypoints.md),
+[generated coverage](../generated/contracts/coverage.html),
+[TypeSpec toolchain](typespec-toolchain.md), and
+[all-operation migration roadmap](typespec-coverage-assessment.md).
+The [HTML generator guide](generated-contract-reference.md) explains local
+generation, source authority, asset licensing and deterministic checks.
+
 Geometer's maintained interface contracts are currently documented in:
 
 - `docs/design/json-formats.md`

@@ -5,7 +5,7 @@
 **Historical compatibility record.** The MATZ integration direction described
 here is no longer an active production plan. The analytic solver is retained as
 experimental and not production-ready under
-[ADR-017](../geometer/adr/geometer-adr-017-retain_analytic_planar_boolean_as_experimental.md).
+[ADR-017](../../geometer/adr/geometer-adr-017-retain_analytic_planar_boolean_as_experimental.md).
 
 Accepted for the `geom-contract-alignment` gate at commit `433bad5` by reviewer
 packet `reviewer-019ffce8-ac66-76c0-877d-3fcb5c1aa6c5`. This report compares
@@ -16,7 +16,7 @@ report, not shared runtime authority and not a promotion decision. The
 operation, packet, solver, and release remain unfrozen.
 
 The frozen inputs, source revision, and SHA-256 digests are recorded in
-[`data-models-geom-a0-2026-08-12.toml`](../contracts/compatibility/data-models-geom-a0-2026-08-12.toml).
+[`data-models-geom-a0-2026-08-12.toml`](../../contracts/compatibility/data-models-geom-a0-2026-08-12.toml).
 Geometer generation, builds, and tests do not read the sibling checkout.
 
 ## Authority Boundary

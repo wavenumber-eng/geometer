@@ -41,6 +41,7 @@ def _native_platform_directory(system: str, machine: str) -> str | None:
         "analytic_cpp_vector_validation.mjs",
         "contract_codec_validation.mjs",
         "demo_tooling_validation.mjs",
+        "documentation_reference_validation.mjs",
         "emitter_validation.mjs",
         "hlr_static_site_validation.mjs",
         "illustration_static_site_validation.mjs",

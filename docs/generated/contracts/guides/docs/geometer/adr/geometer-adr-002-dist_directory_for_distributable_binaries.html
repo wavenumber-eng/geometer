@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <title>ADR-002: dist/ directory for distributable binaries — Geometer</title>
+  <link rel="stylesheet" href="../../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../../guides.html">Documentation index</a><a href="../../../../../../geometer/adr/geometer-adr-002-dist_directory_for_distributable_binaries.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="adr-002-dist-directory-for-distributable-binaries">ADR-002: dist/ directory for distributable binaries</h1></header>
+<h2 id="status">Status</h2>
+<p>Accepted</p>
+<h2 id="context">Context</h2>
+<p>Geometer produces binaries (CLI executable, Node WASM CLI, and browser WASM C
+ABI) that need to be distributed. We need a single, known location for runtime
+outputs that can be committed to the repo and used directly by developers, CI,
+tests, and downstream projects. ADR 015 subsequently removed bare native static
+archives from this distribution surface.</p>
+<h2 id="decision">Decision</h2>
+<p>A <code>dist/</code> directory at the repo root holds distributable binaries. These are checked into git.</p>
+<p>Post-build, CMake copies outputs to grouped runtime directories under <code>dist/</code>:</p>
+<ul>
+<li><code>dist/native/&lt;platform&gt;/geometer.exe</code> (or <code>geometer</code> on Unix)</li>
+<li><code>dist/wasm/browser/geometer.js</code> and <code>dist/wasm/browser/geometer.wasm</code> for
+full browser/Web Worker integration</li>
+<li><code>dist/wasm/node-test/geometer-node-test.js</code> and
+<code>dist/wasm/node-test/geometer-node-test.wasm</code> for Node CLI parity tests</li>
+<li><code>dist/wasm/planar-browser/geometer-planar-browser.js</code> and
+<code>dist/wasm/planar-browser/geometer-planar-browser.wasm</code> for smaller
+planar-only browser/Web Worker consumers</li>
+</ul>
+<p>Root-level build artifacts such as <code>dist/geometer.exe</code> or <code>dist/geometer.js</code>
+are intentionally not produced. Source-checkout consumers must use grouped
+runtime paths. Native <code>.lib</code> and <code>.a</code> files remain in the configured CMake build
+tree and are governed by ADR 015.</p>
+<p>Generated dependency and build state remains outside version control:</p>
+<ul>
+<li><code>.deps/</code></li>
+<li><code>build/</code></li>
+<li><code>build-wasm/</code></li>
+</ul>
+<p>Tests run against the binaries in <code>dist/</code>, not the build tree. This ensures what ships is what gets tested.</p>
+<h2 id="rationale">Rationale</h2>
+<ul>
+<li>Single location for all distributable artifacts regardless of build config.</li>
+<li>Grouped paths prevent Windows, Linux, macOS, and WASM artifacts from
+overwriting each other.</li>
+<li>Committed runtime binaries allow consumers to clone and use native and WASM interfaces without building.</li>
+<li>Testing against <code>dist/</code> catches packaging and copy issues (missing files, wrong binary).</li>
+</ul>
+<h2 id="consequences">Consequences</h2>
+<ul>
+<li>Repo size grows with each binary update. Acceptable for focused, infrequent releases.</li>
+<li>Contributors must rebuild and update <code>dist/</code> when changing code.</li>
+<li><code>.gitkeep</code> preserves the directory when empty.</li>
+</ul>
+
+</main>
+</body>
+</html>

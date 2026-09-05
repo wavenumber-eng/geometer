@@ -38,7 +38,7 @@ the `appz` workspace revision
 
 | Asset | Vendored SHA-256 |
 | --- | --- |
-| `styles.css` | `5be346839f04afcfeedefe9836b360d06e38939840515d6f87ba5b4498ae51a7` |
+| `styles.css` | `378c08d0ffcee617b073c8a59563f61d840478e813d8764bc993f1a244f92d2a` |
 | `Cousine-Regular.ttf` | `1da22250675fc4c42fcf3a9736c44bc0570516105331443b663fd5cfbd1412fe` |
 | `Cousine-Bold.ttf` | `17c8a7245156d2253531c9e529474937b09d9f641c5ae7695c5e33f22822eef4` |
 | Cousine `OFL.txt` | `b81c4d4dc0a9f72c9155e78187316e016e2012a8102468804173dc61468b906d` |
@@ -98,7 +98,7 @@ contract identity, promotion status, and source catalog digest. It uses
 ## Generation and verification
 
 The pinned `npm run generate:contracts` command generates schemas, catalog, and
-HTML. It will add language projections as those slices land. Its `--check` mode
+HTML and the implemented language projections. Its `--check` mode
 fails on stale, missing, unexpected, unlinked, or externally dependent
 pages/assets.
 
@@ -111,3 +111,30 @@ Verification covers:
 - no authored-authority claims in generated pages;
 - offline rendering without CDN or sibling-repository access; and
 - browser smoke at desktop and narrow viewport sizes.
+
+## Authored Guides And Coverage
+
+The same generator also emits [operation coverage](../generated/contracts/coverage.html)
+from the complete promotion inventory, including six handwritten operation
+families absent from generic IPC. Lifecycle, maturity and effective native
+availability are reported independently.
+
+[HTML documentation navigation](../generated/contracts/guides.html) discovers
+Markdown under design, contracts, developer, decisions and requirements, plus
+the root and example indexes. The pinned development-only Markdown parser
+renders each authored source once, rewrites links between generated guides,
+and retains a link to editable Markdown. It does not infer engineering intent
+from code. The demo audit therefore has a generated HTML presentation without
+a second handwritten demo list.
+
+Generation is local and deterministic. Resource dependencies remain local;
+authored guide hyperlinks to external references are allowed but not fetched.
+The checker validates generated file inventory, local links and generated
+heading anchors. `npm run check:docs` additionally checks authored Markdown
+file links and documented disposition targets.
+
+The 2026-09-05 style refresh adopts ALX teal from the unchanged upstream asset
+at appz revision `27a6c567d69c3a61f367774aed5dcab6fc09164a`, retains OFL
+Cousine and identifier wrapping, and adds bounded coverage-table wrapping.
+Desktop (1440 px) and narrow (390 px) headless Chrome checks validated the
+coverage and IPC-guide pages without horizontal page overflow.

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <title>REQ-004: Python Package — Geometer</title>
+  <link rel="stylesheet" href="../../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../../guides.html">Documentation index</a><a href="../../../../../../geometer/requirements/geometer-req-004-python_package.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="req-004-python-package">REQ-004: Python Package</h1></header>
+<h2 id="summary">Summary</h2>
+<p>The PyPI distribution <code>wn-geometer</code> exposes the import package <code>geometer</code> and
+uses a bundled platform executable backend.</p>
+<h2 id="requirements">Requirements</h2>
+<ol>
+<li>Build a platform wheel for every released native platform.</li>
+<li>Include the platform executable under <code>geometer/native/&lt;platform&gt;/</code> inside
+the wheel.</li>
+<li>Resolve the executable from <code>GEOMETER_EXE</code>, the installed package, source
+checkout <code>dist/native/&lt;platform&gt;/</code>, or <code>PATH</code>.</li>
+<li>Expose a <code>geometer</code> console script that forwards to the bundled platform
+executable.</li>
+<li>Publish macOS arm64 wheels with a deployment target that supports current
+hosted Apple Silicon CI runners. The default release target is macOS 11.0.</li>
+<li>Do not require users to load OCCT shared libraries directly from Python.</li>
+<li>Provide public Python APIs for version, STEP HLR projection, projection JSON,
+STEP-to-GLB bytes, and batch execution.</li>
+<li>Export the governed HLR option/result types and typed persistent-client
+helpers for model and indexed-mesh HLR without removing the executable-backed
+compatibility wrappers.</li>
+<li>Validate each wheel by installing it into a clean temporary environment and
+running a no-GUI package example.</li>
+<li>Downstream users must be able to install from PyPI without local path
+overrides.</li>
+</ol>
+
+</main>
+</body>
+</html>

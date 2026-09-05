@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <title>STEP Topology Metadata Probes — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../design/step-topology-metadata-probes.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="step-topology-metadata-probes">STEP Topology Metadata Probes</h1></header>
+<p>Status: experimental carrier-research surface</p>
+<p>Date: 2026-08-23</p>
+<h2 id="purpose-and-boundary">Purpose And Boundary</h2>
+<p>Metadata probes are deliberately small namespaced key/value records used to
+measure what XCAF, XBF/XML, STEP/AP242, GLB, and sidecars can carry. They are
+not annotations, semantic features, presentation models, or the future
+<code>appz/data_models</code> contract.</p>
+<p>Probe authored ids use <code>wn.geometer.research.probe.&lt;suffix&gt;</code> and keys use
+<code>wn.geometer.research.probe.key.&lt;suffix&gt;</code>. Values are bounded strings. A probe
+can target one document, definition, root occurrence, component occurrence,
+body, face, or authored logical group.</p>
+<h2 id="transactions">Transactions</h2>
+<p>Attach, replace, and erase commands carry an expected session generation;
+replace and erase also carry the expected probe revision. All target locators,
+payload shapes, namespaces, revisions, group references, cardinality, strings,
+journal growth, and resident storage are validated before publication.
+Erase has one canonical discriminated shape: the target sentinel is
+<code>document</code>, and target/payload strings are empty. Alternate discriminants are
+rejected even when their apparent effect would be identical.</p>
+<p>Success advances the session generation and journal revision, invalidates old
+runtime/render handles, and returns all probes plus logical groups with fresh
+handles. A logical group with an attached probe cannot be erased. Any command,
+refresh, remap, allocation, or publication failure restores the prior probes,
+snapshot, handle registry, generation, journal, and accounting and clears the
+result. Native IPC encodes and validates the exact generated success outcome
+against the 8 MiB JSON ceiling before committing, so an oversized complete-state
+response cannot turn a successful mutation into a transport failure.</p>
+<h2 id="identity-and-replay">Identity And Replay</h2>
+<p>The live record stores a source-bound target class, ordinal, and evidence
+digest rather than a runtime handle. Publication resolves that record to a
+fresh handle only for the current generation. Logical-group targets use the
+group's authored research id.</p>
+<p>The edit journal records the same bounded locator evidence. Exact-source replay
+validates the STEP digest, normalized B-rep digest, complete ordered target
+inventory and occurrence parent paths, OCCT version, target class, ordinal,
+and evidence before reconstructing a command. This is strict restart replay,
+not cross-version or geometry-changing recovery.</p>
+<h2 id="evidence">Evidence</h2>
+<p><code>geometer_step_topology_logical_groups_test</code> proves:</p>
+<ul>
+<li>one atomic batch attaches probes to every supported target class;</li>
+<li>old target handles are not published after mutation;</li>
+<li>forged targets fail without mutation;</li>
+<li>attach, replace, and erase revisions replay in order;</li>
+<li>group deletion is rejected while a probe references the group and succeeds
+after that probe is removed;</li>
+<li>group and probe commands share one deterministic checkpoint; and</li>
+<li>noncanonical erase commands fail both through the direct API and after
+checksum-valid journal decoding; and</li>
+<li>the final replayed group/probe state and checkpoint bytes match the original
+while the B-rep digest remains unchanged.</li>
+</ul>
+<h2 id="deferred">Deferred</h2>
+<ul>
+<li>physical XCAF attribute placement;</li>
+<li>XBF/XML storage-driver behavior;</li>
+<li>STEP/AP242 entity and relationship projection;</li>
+<li>sidecar and GLB projection comparison;</li>
+<li>cross-version/member-level recovery; and</li>
+<li>any carrier-neutral annotation meaning.</li>
+</ul>
+
+</main>
+</body>
+</html>

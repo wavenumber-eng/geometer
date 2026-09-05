@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <title>Direct STEP Topology Render Binding Research — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../design/step-topology-render-binding.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="direct-step-topology-render-binding-research">Direct STEP Topology Render Binding Research</h1></header>
+<p>Status: experimental native value API; not a GLB or wire contract</p>
+<p>Date: 2026-08-22</p>
+<h2 id="outcome">Outcome</h2>
+<p>Geometer can now tessellate the live XCAF session while retaining an exact
+renderer-neutral relationship from an instance and mesh-local triangle ordinal
+to one occurrence, body, and face target. This establishes the geometry
+relationship before selecting a GLB metadata representation.</p>
+<p>The implementation is <code>step_topology_render_binding.cpp</code>, exposed through the
+experimental value types in <code>geometer/step_topology_session.h</code>. It produces:</p>
+<ul>
+<li>one indexed definition-local mesh for each simple shape definition;</li>
+<li>one primitive candidate and contiguous triangle span per selectable face;</li>
+<li>one render instance for every leaf root/component occurrence, with its fully
+accumulated transform;</li>
+<li>a bounded occurrence/primitive/triangle-span table; and</li>
+<li>reverse resolution from <code>(instance_index, triangle_index)</code> to live opaque
+occurrence, body, and face handles.</li>
+</ul>
+<p>Repeated occurrences share one definition mesh but retain distinct occurrence
+handles. Root placement is carried only on the instance. A render artifact is
+valid only for its session and generation; cross-session and stale-generation
+resolution fail closed.</p>
+<p>Every artifact also carries a content SHA-256 and an opaque <code>gtr_</code> seal derived
+from the session secret, generation, and content digest. Hit resolution
+recomputes that seal and validates the complete occurrence-to-definition,
+instance-to-mesh, primitive-to-span, body-to-face, and live target-kind chain.
+It rejects modified provenance, re-stamping onto another public session record,
+forged handles, reordered or duplicated bindings, gaps, and overlapping spans.
+The value artifact is therefore safe to treat as caller-mutable research input.
+The selected GLB work packet preserves equivalent checks with a second seal
+over the exact GLB bytes and this render identity.</p>
+<h2 id="coordinates-winding-and-normals">Coordinates, Winding, And Normals</h2>
+<p>OCCT transfers source geometry into its normalized millimeter working unit.
+Positions remain definition-local. The render options explicitly contain a
+row-major signed-rigid 3x4 transform from that OCCT frame to the render frame;
+scale and shear are rejected. The transform is left-multiplied with each
+accumulated occurrence transform.</p>
+<p>Reflections are supported and reported through <code>front_face_reversed</code>, allowing
+a renderer to reverse its front-face convention for that instance. Face
+orientation controls both emitted index winding and vertex-normal direction.
+The proof checks every generated box triangle has winding consistent with its
+average normal, checks a reflected coordinate frame, and checks the generated
+slab's translated/rotated source root while its mesh remains at the modelling
+origin. The reflection result proves the signed-rigid render-frame path; the
+current STEP corpus does not contain an imported mirrored assembly placement,
+so no such source-file claim is made yet.</p>
+<p>Tessellation uses explicit absolute/relative linear deflection, angular
+deflection, and serial/parallel settings. The baseline uses 0.1 mm absolute,
+0.5 radians, and serial meshing. A cancellation progress range is passed to
+OCCT and cancellation is also checked while copying every face and triangle.</p>
+<h2 id="bounds-and-failure-behavior">Bounds And Failure Behavior</h2>
+<p>Session limits independently bound render vertices, indices, primitives,
+instances, bindings, effective instanced triangles, and the conservative
+Geometer-owned render-artifact byte estimate. A face must currently belong to
+exactly one body to be selectable;
+ambiguous non-manifold ownership fails the render rather than choosing a body
+silently. Failures and cancellation clear the output artifact.</p>
+<p>The current table is deliberately internal and verbose. It duplicates the
+three opaque handles for every occurrence/face span so its size can be measured
+before choosing JSON, pagination, or a compact binary attachment. No node name,
+Three.js object id, STEP entity number, XCAF label, or traversal index is used
+as target identity.</p>
+<h2 id="corpus-measurement">Corpus Measurement</h2>
+<p>The checked fixture report
+<code>docs/reports/step-topology-fixture-baseline.json</code> now records mesh, instance,
+vertex, index, primitive, binding, geometry-triangle, instanced-triangle, and
+logical binding-table byte counts under fixed tessellation settings. The
+largest current logical table is the repeated SOIC assembly: 312 spans and
+73,632 bytes. Its 636 unique geometry triangles become 2,992 instanced
+triangles, demonstrating why definition geometry and occurrence context must
+remain separate.</p>
+<p>These measurements favor a compact indexed table over repeated JSON handle
+strings, but the encoding decision remains deferred until the GLB alternatives
+and real Three.js raycast are tested.</p>
+<h2 id="validation">Validation</h2>
+<p>The focused native test proves shared definition geometry, distinct repeated
+occurrences, exhaustive reverse resolution for every triangle, target-kind
+resolution, indexed geometry, accumulated and root transforms, orientation,
+normals, reflected coordinates, limits, cancellation, invalid coordinates,
+out-of-range hits, artifact tampering/re-stamping, and stale/cross-session
+rejection:</p>
+<pre><code class="language-powershell">cmake --build build --config Release --target `
+  geometer_step_topology_render_binding_test
+ctest --test-dir build -C Release --output-on-failure -R `
+  geometer_step_topology_render_binding_test
+</code></pre>
+<p>This renderer-neutral slice does not itself emit or parse GLB and does not
+define the later TypeSpec operation. The follow-on
+<a href="step-topology-glb-binding.html">GLB work-packet research</a> selects an encoding and
+proves it with the real pinned Three.js <code>Raycaster</code> path.</p>
+
+</main>
+</body>
+</html>

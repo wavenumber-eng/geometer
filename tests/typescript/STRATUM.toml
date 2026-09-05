@@ -6,6 +6,7 @@ runner = "pytest"
 concerns = ["typescript", "contracts", "wasm", "package"]
 
 objectives = [
+    "Keep generated documentation truthful about effective native availability, solver maturity, and handwritten migration gaps.",
     "Validate reflected Canvas arc-center and traversal branches used by the analytic polygon-pour demo.",
     "Validate generic clean-room TypeScript editor tooling for deterministic input, camera, panel, tool, animation, shortcut, and history behavior.",
     "Verify the analytic polygon-pour demo is a deterministic single HTML file with embedded theme, fonts, logo, Worker, and governed WASM bytes.",

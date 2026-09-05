@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <title>Generated Contract Reference — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../contracts/generated-contract-reference.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="generated-contract-reference">Generated Contract Reference</h1></header>
+<h2 id="implementation-status">Implementation status</h2>
+<p>Deterministic generation, complete navigation, relative-link validation,
+offline resource validation, catalog coverage, responsive CSS rules, metadata,
+and vendored-asset digest checks are implemented. Real-Chrome smoke passes at
+desktop and an emulated 390 px viewport. That pass caught and closed a narrow
+generated-identifier overflow that static resource tests did not expose.</p>
+<h2 id="purpose-and-authority">Purpose and authority</h2>
+<p>Geometer generates browsable HTML contract reference documentation from the
+normalized TypeSpec catalog. The pages are review and consumer-navigation
+artifacts; authored TypeSpec and the normalized catalog remain structural
+authority, and focused design documents remain intent authority.</p>
+<p>Generated pages live under <code>docs/generated/contracts/</code> and are committed with
+the schemas and catalog they describe. They are never hand edited.</p>
+<h2 id="wavenumber-visual-system">Wavenumber visual system</h2>
+<p>The generated site uses the same Wavenumber presentation system as
+<code>C:/eli/wn-hw/appz/data_models</code>:</p>
+<ul>
+<li>shared square-corner layout and Wavenumber color variables;</li>
+<li>Cousine with a conventional monospace fallback stack;</li>
+<li>dark headers and section summaries;</li>
+<li>table, panel, tag, callout, code, navigation, and responsive rules;</li>
+<li>the light-background Wavenumber watermark; and</li>
+<li>relative links and local assets so the site works offline.</li>
+</ul>
+<p>Geometer vendors a reviewed copy of the stylesheet and its required
+font/logo assets under <code>docs/design/</code>. A generation or documentation command
+must not read from the sibling <code>data_models</code> checkout. The initial source is
+the <code>appz</code> workspace revision
+<code>27548a16e23a8bc225fc81c047bbef8c325fb4ae</code>; its asset snapshot is:</p>
+<table>
+<thead>
+<tr>
+<th>Asset</th>
+<th>Vendored SHA-256</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>styles.css</code></td>
+<td><code>378c08d0ffcee617b073c8a59563f61d840478e813d8764bc993f1a244f92d2a</code></td>
+</tr>
+<tr>
+<td><code>Cousine-Regular.ttf</code></td>
+<td><code>1da22250675fc4c42fcf3a9736c44bc0570516105331443b663fd5cfbd1412fe</code></td>
+</tr>
+<tr>
+<td><code>Cousine-Bold.ttf</code></td>
+<td><code>17c8a7245156d2253531c9e529474937b09d9f641c5ae7695c5e33f22822eef4</code></td>
+</tr>
+<tr>
+<td>Cousine <code>OFL.txt</code></td>
+<td><code>b81c4d4dc0a9f72c9155e78187316e016e2012a8102468804173dc61468b906d</code></td>
+</tr>
+<tr>
+<td><code>wn_logo_w_text__for_light.svg</code></td>
+<td><code>87e16b5b2453ad1f9263d92953d5741a30780db02eeea0d59d61f10967c4537b</code></td>
+</tr>
+</tbody>
+</table>
+<p>The stylesheet preserves the reviewed upstream layout and component rules but
+replaces its Berkeley Mono declarations with the vendored OFL Cousine files
+and adds narrow-viewport wrapping for generated identifiers. The wrapping rule
+was added after real-browser smoke exposed horizontal overflow that static
+resource checks could not detect.
+The manifest records the unchanged upstream stylesheet digest
+<code>b0452e403db12c3fca581866b0953dbca45d751bcc83c137f0da16674859d151</code>
+and the adapted vendored digest above. A deliberate style refresh records the
+upstream workspace revision and new digests. Normal contract generation never
+silently refreshes presentation assets.</p>
+<p>The machine-readable asset lock is the <code>documentation.assets</code> table in
+<code>docs/contracts/promotion-manifest.toml</code>. Each entry records its upstream
+source, repository destination, SHA-256 digest, and lifecycle status. Every
+asset is <code>vendored</code>; tests require each destination to exist and match exactly.
+This makes the entire asset set, not only the stylesheet, part of the
+generated-reference completion gate.</p>
+<p>Font redistribution is a separate prerequisite. Although Wavenumber purchased
+Berkeley Mono for internal use, Geometer does not treat that purchase as public
+redistribution authority and will not commit those font binaries. The public
+reference instead uses <a href="https://fonts.google.com/specimen/Cousine">Cousine</a>,
+pinned to Google Fonts revision
+<code>038b637da7b3fd956a4ed93ffc607c3d5e4ce172</code> under the
+<a href="https://github.com/google/fonts/blob/038b637da7b3fd956a4ed93ffc607c3d5e4ce172/ofl/cousine/OFL.txt">SIL Open Font License 1.1</a>.
+The regular, bold, and license files are vendored together. A font can remain
+<code>vendored</code> only while its <code>redistribution_status</code> is <code>approved_open_license</code>
+and its <code>license_evidence</code> names the committed OFL file.</p>
+<h2 id="site-structure">Site structure</h2>
+<p>The generated landing page links:</p>
+<ul>
+<li>contract/model roots;</li>
+<li>operation request, response, diagnostic, and attachment types;</li>
+<li>JSON Schemas;</li>
+<li>C++, TypeScript, Rust, and Python generated package references;</li>
+<li>native, browser/WASM, and executable IPC transport documentation; and</li>
+<li>compatibility and migration notes.</li>
+</ul>
+<p>Each contract page shows identity, lifecycle/promotion status, description,
+fields, requiredness, nullability, default intent, presence/emission behavior,
+constraints, nested types, diagnostics, aliases/adapters, and source links.
+Each operation page shows request/result roots, named attachments and media
+types, supported transports, capability identity, and runnable examples.</p>
+<p>Generated HTML includes stable <code>data-*</code> markers for generator identity,
+contract identity, promotion status, and source catalog digest. It uses
+<code>data-doc-status=&quot;generated&quot;</code>, <code>data-generated=&quot;true&quot;</code>, and
+<code>data-wn-watermark=&quot;true&quot;</code> on the document body.</p>
+<h2 id="generation-and-verification">Generation and verification</h2>
+<p>The pinned <code>npm run generate:contracts</code> command generates schemas, catalog, and
+HTML and the implemented language projections. Its <code>--check</code> mode
+fails on stale, missing, unexpected, unlinked, or externally dependent
+pages/assets.</p>
+<p>Verification covers:</p>
+<ul>
+<li>deterministic bytes from the same inputs;</li>
+<li>catalog-complete contract and operation navigation;</li>
+<li>valid relative stylesheet, asset, schema, and source links;</li>
+<li>required metadata and generated warnings;</li>
+<li>no authored-authority claims in generated pages;</li>
+<li>offline rendering without CDN or sibling-repository access; and</li>
+<li>browser smoke at desktop and narrow viewport sizes.</li>
+</ul>
+<h2 id="authored-guides-and-coverage">Authored Guides And Coverage</h2>
+<p>The same generator also emits <a href="../../../coverage.html">operation coverage</a>
+from the complete promotion inventory, including six handwritten operation
+families absent from generic IPC. Lifecycle, maturity and effective native
+availability are reported independently.</p>
+<p><a href="../../../guides.html">HTML documentation navigation</a> discovers
+Markdown under design, contracts, developer, decisions and requirements, plus
+the root and example indexes. The pinned development-only Markdown parser
+renders each authored source once, rewrites links between generated guides,
+and retains a link to editable Markdown. It does not infer engineering intent
+from code. The demo audit therefore has a generated HTML presentation without
+a second handwritten demo list.</p>
+<p>Generation is local and deterministic. Resource dependencies remain local;
+authored guide hyperlinks to external references are allowed but not fetched.
+The checker validates generated file inventory, local links and generated
+heading anchors. <code>npm run check:docs</code> additionally checks authored Markdown
+file links and documented disposition targets.</p>
+<p>The 2026-09-05 style refresh adopts ALX teal from the unchanged upstream asset
+at appz revision <code>27a6c567d69c3a61f367774aed5dcab6fc09164a</code>, retains OFL
+Cousine and identifier wrapping, and adds bounded coverage-table wrapping.
+Desktop (1440 px) and narrow (390 px) headless Chrome checks validated the
+coverage and IPC-guide pages without horizontal page overflow.</p>
+
+</main>
+</body>
+</html>

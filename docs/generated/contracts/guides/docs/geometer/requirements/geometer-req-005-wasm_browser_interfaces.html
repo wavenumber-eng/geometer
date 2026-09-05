@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <title>REQ-005: WASM Browser Interfaces — Geometer</title>
+  <link rel="stylesheet" href="../../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../../guides.html">Documentation index</a><a href="../../../../../../geometer/requirements/geometer-req-005-wasm_browser_interfaces.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="req-005-wasm-browser-interfaces">REQ-005: WASM Browser Interfaces</h1></header>
+<h2 id="summary">Summary</h2>
+<p>Geometer ships browser-oriented WASM artifacts for STEP/HLR/GLB and planar-only
+workflows.</p>
+<h2 id="requirements">Requirements</h2>
+<ol>
+<li>Build the full browser/Web Worker target under <code>dist/wasm/browser/</code>.</li>
+<li>Build the Node CLI parity target under <code>dist/wasm/node-test/</code>.</li>
+<li>Build the planar-only browser target under <code>dist/wasm/planar-browser/</code>.</li>
+<li>Export version, ABI, allocation/free helpers, STEP HLR, STEP-to-GLB, and
+planar byte functions from the full browser target.</li>
+<li>Export version, ABI, allocation/free helpers, and planar byte functions from
+the planar-only browser target.</li>
+<li>Keep user-facing browser examples under <code>examples/wasm/</code>.</li>
+<li>Keep test-only validation and benchmark harnesses under <code>tests/wasm/</code>.</li>
+<li>Apply REQ-009 to distributable browser-demo sites without treating demo UI
+policy as part of the core WASM geometry interface.</li>
+<li>Export the generic operation C ABI required for model and indexed-mesh HLR
+and expose those operations through the generated TypeScript direct and
+Worker clients.</li>
+<li>Package mesh illustration as a separately named TypeScript module with the
+output boundary defined by REQ-010. A raster-HLR module is not part of the
+production browser interface.</li>
+</ol>
+
+</main>
+</body>
+</html>

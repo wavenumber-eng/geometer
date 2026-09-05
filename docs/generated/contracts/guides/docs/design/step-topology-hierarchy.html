@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <title>STEP Topology Synthetic Product Hierarchy — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../design/step-topology-hierarchy.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="step-topology-synthetic-product-hierarchy">STEP Topology Synthetic Product Hierarchy</h1></header>
+<p>Status: experimental native value model; XCAF/AP242 projection deferred</p>
+<p>Date: 2026-08-23</p>
+<h2 id="purpose-and-boundary">Purpose And Boundary</h2>
+<p>The native hierarchy policy builds a synthetic product/assembly overlay over a
+generation-bound topology snapshot. It gives flat STEP bodies an authored
+product structure without changing, splitting, sewing, fusing, duplicating, or
+relocating the source B-rep.</p>
+<p>The overlay intentionally accepts geometry ownership only from:</p>
+<ul>
+<li>a complete inspected definition; or</li>
+<li>a complete inspected body.</li>
+</ul>
+<p>Faces, shells, arbitrary face subsets, and logical groups are not product
+sources. A semantic subset of one fused body remains a logical group unless a
+separately approved geometric decomposition produces independent valid shapes.</p>
+<p>This slice is the safe mutation model, not yet a rewritten XCAF document or
+STEP file. Persistence expansion will project the independently reviewed value
+state into XCAF and AP242 and then re-run geometry and occurrence evidence.</p>
+<h2 id="state-model">State Model</h2>
+<p><code>StepTopologyHierarchyState</code> is bound to the session handle, topology
+generation, and normalized B-rep digest that created it. It contains two
+distinct concepts:</p>
+<ul>
+<li>nodes are authored products or synthetic assemblies; product nodes own one
+complete definition/body source, while assemblies own no geometry; and</li>
+<li>occurrences place one product or assembly under a parent assembly with a
+row-major signed-rigid 3x4 transform.</li>
+</ul>
+<p>Product definitions and their occurrences are never collapsed. Authored ids
+use separate <code>wn.geometer.research.product.*</code>, <code>.assembly.*</code>, and
+<code>.occurrence.*</code> namespaces. Nodes and occurrences have independent optimistic
+revisions, while the state has one transaction revision.</p>
+<h2 id="atomic-commands">Atomic Commands</h2>
+<p>One transaction can create a product, create an assembly, create an
+occurrence, reparent an occurrence, rename a node, erase an occurrence, or
+erase an unreferenced node. Commands apply to a candidate copy; the final state
+is published only when the whole transaction validates.
+Passing the same state object as both current input and result output is
+supported: failure preserves it, and success replaces it only at final
+publication.</p>
+<p>Validation rejects:</p>
+<ul>
+<li>stale topology or hierarchy revisions;</li>
+<li>stale node/occurrence revisions;</li>
+<li>duplicate or malformed authored ids;</li>
+<li>unknown or unsupported geometry sources;</li>
+<li>assigning the same source twice;</li>
+<li>assigning a complete definition and any of its bodies independently;</li>
+<li>geometry-bearing assembly nodes;</li>
+<li>missing children or non-assembly parents;</li>
+<li>assembly cycles;</li>
+<li>non-finite, scaled, sheared, or otherwise non-signed-rigid transforms;</li>
+<li>erasing referenced nodes; and</li>
+<li>command, work, topology-cardinality, occurrence-cardinality, per-string, or
+aggregate-string limit exhaustion.</li>
+</ul>
+<p>The work meter conservatively charges five projected-record touches per
+command for dual lookups plus the most expensive reference scan and vector
+shift/reallocation path. It separately charges current-state validation and
+copy, final-state validation, cycle traversal, and source inventory.
+<code>max_hierarchy_transaction_commands</code> and
+<code>max_hierarchy_transaction_work_items</code> are explicit native limits. The test
+executes erase-node with an unrelated live occurrence at the exact boundary.
+Every string field in every command is preflighted, including fields ignored by
+that command kind. This prevents transient or unused input from bypassing the
+per-string and aggregate transaction limits.</p>
+<h2 id="evidence">Evidence</h2>
+<p><code>geometer_step_topology_hierarchy_test</code> uses the curated generated fixtures and
+proves:</p>
+<ul>
+<li>the flat multi-solid STEP definition's two independent bodies become two
+products placed through a root assembly and subassembly;</li>
+<li>rename and reparent update independent revisions and preserve placement;</li>
+<li>cycles, stale revisions, ownership overlap, and non-rigid transforms fail
+without output or changes to the prior state;</li>
+<li>erasing occurrences and then nodes reverses the hierarchy and releases
+ownership for a complete-definition product;</li>
+<li>the live session generation and B-rep digest remain unchanged;</li>
+<li>a face of the fused slab cannot become a product, while its complete fused
+body can; and</li>
+<li>exact command/work limits accept while one-over limits fail before
+publication.</li>
+</ul>
+<h2 id="deferred">Deferred</h2>
+<ul>
+<li>mapping pre-existing STEP assembly occurrences into editable authored state;</li>
+<li>journal encoding and restart replay for hierarchy commands;</li>
+<li>XCAF binary/XML projection and reload;</li>
+<li>AP242 product/assembly projection and relationship checks;</li>
+<li>occurrence-specific annotations and recovery; and</li>
+<li>TypeSpec Slice B hierarchy command additions and Slice C persistence results.</li>
+</ul>
+<p>The legacy Appz glTF enrichment model was not used. The later Annotation Lab
+should consume generated contracts after projection and recovery evidence
+stabilize, not copy this C++ research structure by hand.</p>
+
+</main>
+</body>
+</html>

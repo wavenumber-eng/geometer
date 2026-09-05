@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <title>Demo And Example Audit — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../developer/demo-status.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="demo-and-example-audit">Demo And Example Audit</h1></header>
+<p>Audited 2026-09-05 using committed <code>v2026-09-04</code> Windows x64/native and
+browser artifacts. Owner for all retained entries: Geometer maintainers;
+application-specific consumers retain their own support responsibility.
+Passing a demo does not promote its solver. No demo has been deleted.</p>
+<h2 id="runtime-evidence-and-disposition">Runtime Evidence And Disposition</h2>
+<table>
+<thead>
+<tr>
+<th>Demo / audience</th>
+<th>Source</th>
+<th>Verification on this host</th>
+<th>Proposed disposition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Model bounds / generated browser consumers</td>
+<td><a href="../../../../../../examples/wasm/model_bounds_demo.html">page</a></td>
+<td>Real Worker-client validation passed; page interaction not separately tested.</td>
+<td>Keep as generated-contract pilot.</td>
+</tr>
+<tr>
+<td>HLR Lab / browser integration</td>
+<td><a href="../../../../../../examples/wasm/embedded_model_viewer.html">page</a></td>
+<td>Chrome upload, projection and SVG export passed.</td>
+<td>Keep primary browser demo.</td>
+</tr>
+<tr>
+<td>Illustration Lab / package evaluation</td>
+<td><a href="../../../../../../examples/wasm/illustration_demo.html">page</a></td>
+<td>Chrome mesh/render/upload/export passed.</td>
+<td>Keep evaluation demo; not a production renderer application.</td>
+</tr>
+<tr>
+<td>Analytic polygon pour / solver research</td>
+<td><a href="../../../../../../examples/wasm/analytic_polygon_pour_demo.html">page</a></td>
+<td>Standalone Chrome runtime test passed.</td>
+<td>Retain experimental pending disposition review.</td>
+</tr>
+<tr>
+<td>PCB polygon pour / abandoned application direction</td>
+<td><a href="../../../../../../examples/wasm/pcb_polygon_pour_demo.html">page</a></td>
+<td>Standalone interaction test passed.</td>
+<td>Archive/remove candidate, pending explicit approval and reference cleanup.</td>
+</tr>
+<tr>
+<td>Planar ring solver / packed polygon example</td>
+<td><a href="../../../../../../examples/wasm/planar_ring_solver_demo.html">page</a></td>
+<td>Headless Chrome loaded the committed standalone page and solved: 1 region, 2 holes, 27.223347 square mm, runtime 2026.9.4 / ABI 20260904.</td>
+<td>Keep provisionally as a working packed polygon example; do not prune solely for age.</td>
+</tr>
+<tr>
+<td>Native C++ HLR preview / direct embedding</td>
+<td><a href="../../../../../../examples/cpp/hlr_preview.cpp">source</a></td>
+<td>Committed Windows executable present; no unattended GUI smoke mode found. Packaging validator checks presence, not interaction.</td>
+<td>Keep pending GUI assessment; runtime not verified in this audit.</td>
+</tr>
+<tr>
+<td>Python headless HLR/SVG / Python consumers</td>
+<td><a href="../../../../../../examples/python/step_hlr_svg.py">source</a></td>
+<td>Executed against committed binary; produced projection JSON, SVG and GLB.</td>
+<td>Keep primary Python example.</td>
+</tr>
+<tr>
+<td>Python PyVista/Qt viewer / optional GUI experiment</td>
+<td><a href="../../../../../../examples/python/pyvista_hlr_viewer.py">source</a></td>
+<td>Initial isolated-environment attempt lacked dependencies. Reusing the existing primary checkout's GUI environment, with this worktree's source and committed executable selected explicitly, passed off-screen rendering: 53 meshes and expected bounds. Interactive controls remain untested.</td>
+<td>Keep optional GUI experiment; no dependency upgrade or archive required by this smoke result.</td>
+</tr>
+<tr>
+<td>Node topology reference / experimental IPC consumers</td>
+<td><a href="../../../../../../examples/node/step_topology_annotation_reference.ts">source</a>, <a href="../../../../../../examples/node/README.md">guide</a></td>
+<td>Native open/inspect/group/probe/checkpoint/restart/replay passed.</td>
+<td>Keep clearly experimental, not the introductory IPC example.</td>
+</tr>
+<tr>
+<td>Node model-bounds quick start / introductory IPC</td>
+<td><a href="../../../../../../examples/node/ipc-model-bounds.mjs">source</a></td>
+<td>Native handshake, discovery, STEP attachment, bounds and graceful close passed.</td>
+<td>Keep minimal introductory IPC example.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="reproduce-the-focused-audit">Reproduce The Focused Audit</h2>
+<p>Commands run from the repository root; no native/OCCT rebuild is required:</p>
+<pre><code class="language-powershell">uv run pytest tests/wasm/test_hlr_static_site.py tests/wasm/test_illustration_static_site.py tests/wasm/test_analytic_standalone_demo.py tests/wasm/test_pcb_standalone_demo.py -q
+node tests/typescript/worker_client_validation.mjs
+uv run python examples/python/step_hlr_svg.py tests/fixtures/step/embedded_models/SOT-23.STEP --out-dir out/docs-cleanup/python-headless
+node dist/native/examples/step-topology-annotation-reference.mjs dist/native/windows-x64/geometer.exe tests/fixtures/step/embedded_models/SOT-23.STEP
+node examples/node/ipc-model-bounds.mjs dist/native/windows-x64/geometer.exe tests/fixtures/step/embedded_models/SOT-23.STEP
+</code></pre>
+<p>The four Chrome tests passed in 25.62 seconds on this host. These observations
+are not cross-platform certification or native build attestation. GUI and
+model-bounds page-interaction limitations above remain explicit.</p>
+<p>For the successful PyVista off-screen replay, an existing GUI interpreter was
+reused without modifying its environment. <code>PYTHONPATH</code> selected this checkout's
+<code>python/</code> and <code>GEOMETER_EXE</code> selected its committed Windows executable, then
+the documented <code>--off-screen-validate</code> command produced
+<code>out/docs-cleanup/pyvista-preview.png</code>. A fresh GUI environment should use the
+locked setup below; interactive controls were not exercised.</p>
+<h2 id="build-launch-and-distribution-map">Build, Launch And Distribution Map</h2>
+<table>
+<thead>
+<tr>
+<th>Family</th>
+<th>Build when sources change</th>
+<th>Launch/output and constraints</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Model bounds</td>
+<td><code>npm run generate:contracts</code></td>
+<td>Serve repository root; <code>examples/wasm/model_bounds_demo.html</code> loads committed JS/Worker/WASM.</td>
+</tr>
+<tr>
+<td>HLR / illustration</td>
+<td><code>python scripts/build_hlr_site.py</code> / <code>python scripts/build_illustration_site.py</code></td>
+<td><code>dist/wasm/demos/hlr/</code> / <code>illustration/</code> hosted outputs; corresponding standalone HTML also committed.</td>
+</tr>
+<tr>
+<td>Analytic / PCB</td>
+<td><code>python scripts/build_analytic_polygon_pour_site.py</code> / <code>python scripts/build_pcb_polygon_pour_site.py</code></td>
+<td><code>dist/wasm/demos/analytic-polygon-pour/</code> / <code>pcb-polygon-pour/</code>; experimental hosted and single-file outputs.</td>
+</tr>
+<tr>
+<td>Planar ring</td>
+<td><code>python scripts/build_standalone_demos.py planar-ring</code></td>
+<td><code>dist/wasm/demos/planar_ring_solver_demo.html</code>; source page also works when serving repository root.</td>
+</tr>
+<tr>
+<td>Native C++ preview</td>
+<td>Optional CMake example target; <a href="../../../../../../examples/cpp/README.md">instructions</a></td>
+<td><code>dist/native/&lt;platform&gt;/geometer_hlr_preview(.exe)</code>; needs a working desktop/OpenGL stack.</td>
+</tr>
+<tr>
+<td>Python headless</td>
+<td>No demo compilation; installed package or source environment</td>
+<td>Writes JSON/SVG/GLB under selected output directory; STEP fixture required.</td>
+</tr>
+<tr>
+<td>Python GUI</td>
+<td><code>uv sync --project examples/python --locked</code></td>
+<td><a href="../../../../../../examples/python/README.md">GUI/off-screen commands</a>; optional Qt/VTK dependency install required.</td>
+</tr>
+<tr>
+<td>Node topology</td>
+<td><code>node scripts/build-node-reference-example.mjs</code></td>
+<td>Bundled <code>dist/native/examples/step-topology-annotation-reference.mjs</code>; compatible native binary required.</td>
+</tr>
+<tr>
+<td>Node quick start</td>
+<td>No compilation</td>
+<td>Source imports committed ESM client; Node 24 and compatible native binary required.</td>
+</tr>
+</tbody>
+</table>
+<p>Browser fixtures include the repository's SOT-23 and larger embedded models.
+Use <code>python -m http.server 8123 --bind 127.0.0.1</code> from the root for source
+pages, or the hosted-directory commands in <a href="browser-demos.html">demo packaging</a>.
+Rack metadata under <code>tests/wasm/</code> and <code>tests/typescript/</code> indexes existing
+coverage; Python package validation exercises the headless example. Do not
+treat registration as a successful runtime observation.</p>
+<h2 id="pruning-decision-still-required">Pruning Decision Still Required</h2>
+<p>No source or committed output is removed by this audit. Before pruning PCB,
+analytic, ring, or GUI demos, approve an explicit disposition and remove the
+complete build/test/manifest/distribution reference set. Retention of research
+evidence is separate from keeping every historical demo runnable.</p>
+
+</main>
+</body>
+</html>

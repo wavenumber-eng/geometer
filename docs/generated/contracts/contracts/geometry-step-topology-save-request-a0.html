@@ -23,11 +23,12 @@
 <tr><th>Schema</th><td><code>urn:wavenumber:schema:geometer:geometry.step_topology.save.request:a0</code></td></tr>
 <tr><th>Declaration</th><td><code>Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologySaveRequestA0</code></td></tr>
 <tr><th>Lifecycle</th><td><span class="status">experimental_candidate</span></td></tr>
+<tr><th>Maturity</th><td>experimental_not_production_ready</td></tr>
 <tr><th>Current authority</th><td><code>typespec_candidate</code></td></tr>
 </tbody></table></section>
 <section class="model-section"><h2>Declarations <span class="tag">3</span></h2><details open id="declaration-wavenumber-geometer-contracts-steptopologya0-steptopologysaverequesta0"><summary><h2><code>StepTopologySaveRequestA0</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>schema</code></td><td>required</td><td><code>&quot;geometry.step_topology.save.request.a0&quot;</code></td><td>—</td><td>none</td><td></td></tr>
-<tr><td><code>session</code></td><td>required</td><td><code>SessionReference</code></td><td>—</td><td>none</td><td></td></tr>
-<tr><td><code>carrier</code></td><td>required</td><td><code>SaveCarrier</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>session</code></td><td>required</td><td><code><a href="#declaration-wavenumber-geometer-contracts-steptopologya0-sessionreference">SessionReference</a></code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>carrier</code></td><td>required</td><td><code><a href="#declaration-wavenumber-geometer-contracts-steptopologya0-savecarrier">SaveCarrier</a></code></td><td>—</td><td>none</td><td></td></tr>
 <tr><td><code>include_diagnostics</code></td><td>required</td><td><code>boolean</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
 <details open id="declaration-wavenumber-geometer-contracts-steptopologya0-savecarrier"><summary><h2><code>SaveCarrier</code> <span class="tag">enum</span></h2></summary><p></p><table><thead><tr><th>Member</th><th>Wire value</th><th>Description</th></tr></thead><tbody><tr><td><code>xbf</code></td><td><code>xbf</code></td><td></td></tr>
 <tr><td><code>xml_xcaf</code></td><td><code>xml_xcaf</code></td><td></td></tr>

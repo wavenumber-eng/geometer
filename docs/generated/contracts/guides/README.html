@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <title>Geometer — Geometer</title>
+  <link rel="stylesheet" href="../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../guides.html">Documentation index</a><a href="../../../../README.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="geometer">Geometer</h1></header>
+<p>Geometer is a generic C++ geometry library with an executable, Python package,
+and browser WASM interfaces. It provides STEP conversion, hidden-line projection
+(HLR), planar geometry, and mesh illustration. Board/domain policy and
+application rendering decisions belong to callers, not the geometry kernel.</p>
+<h2 id="capabilities-and-maturity">Capabilities And Maturity</h2>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Use and maturity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>STEP bounds, GLB conversion, HLR, planar STEP synthesis</td>
+<td>Supported geometry APIs. Model bounds has promoted generated contracts; HLR's generated contracts remain pilots.</td>
+</tr>
+<tr>
+<td>Clipper2 Boolean/offset, planar batch solve and triangulation</td>
+<td>Supported polygonized planar workflows; packed interfaces remain handwritten.</td>
+</tr>
+<tr>
+<td>Fast vector HLR and browser mesh illustration</td>
+<td>Supported package interfaces; the demonstration applications are evaluation tools, not production renderers.</td>
+</tr>
+<tr>
+<td>Analytic line/arc planar Boolean</td>
+<td>Experimental, not production-ready. May fail closed on valid inputs. Not the dependable whole-board/layer copper-union path; prefer Clipper2 when polygonized output is suitable.</td>
+</tr>
+<tr>
+<td>Persistent STEP-topology sessions</td>
+<td>Experimental native-only subset. Structural declarations do not imply runtime availability.</td>
+</tr>
+</tbody>
+</table>
+<p>Contract promotion and solver production readiness are separate. See
+<a href="docs/contracts/README.html">contract authority</a> and
+<a href="docs/geometer/adr/geometer-adr-017-retain_analytic_planar_boolean_as_experimental.html">the analytic decision</a>.</p>
+<h2 id="choose-an-interface">Choose An Interface</h2>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Entry point</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Keep one executable running; send bytes and receive structured results</td>
+<td><a href="docs/design/executable-ipc.html">Persistent executable IPC</a>: Python, Node/TypeScript and Rust clients</td>
+</tr>
+<tr>
+<td>Convenient Python file/model operations</td>
+<td><a href="docs/design/python-package.html">Python package</a></td>
+</tr>
+<tr>
+<td>File conversion or scripting</td>
+<td><a href="docs/design/cli.html">CLI commands</a></td>
+</tr>
+<tr>
+<td>Geometry in a browser or Worker</td>
+<td><a href="docs/design/wasm.html">WASM</a> and <a href="docs/design/typescript-client.html">TypeScript clients</a></td>
+</tr>
+<tr>
+<td>Embed in native C++</td>
+<td><a href="docs/design/step-geometry.html">STEP</a> and <a href="docs/design/planar-geometry.html">planar APIs</a></td>
+</tr>
+<tr>
+<td>Manage byte buffers across a foreign-function boundary</td>
+<td><a href="docs/design/c-abi.html">C ABI</a> and <a href="docs/design/generic-operation-c-abi.html">generic operations</a></td>
+</tr>
+</tbody>
+</table>
+<p>Not every operation is exposed through IPC. Check the executable's negotiated
+catalog and the <a href="../index.html">generated operation reference</a>.</p>
+<h2 id="install-and-try">Install And Try</h2>
+<p>Install the Python distribution (import name: <code>geometer</code>):</p>
+<pre><code class="language-sh">python -m pip install wn-geometer
+geometer --version
+</code></pre>
+<p>Convert a STEP file with the executable-backed Python API:</p>
+<pre><code class="language-python">from pathlib import Path
+import geometer
+
+Path(&quot;part.glb&quot;).write_bytes(geometer.model_to_glb(Path(&quot;part.step&quot;)))
+</code></pre>
+<p>Wheels bundle the native executable and install a <code>geometer</code> console command.
+For persistent processes, use the <a href="docs/design/executable-ipc.html">IPC quick start</a>.
+Pin the package version in your application's dependency lock for repeatability.</p>
+<p>Source checkouts provide native artifacts under <code>dist/native/&lt;platform&gt;/</code>,
+browser WASM under <code>dist/wasm/browser/</code>, and the generated ESM package under
+<code>dist/wasm/npm/geometer/</code>. The ESM artifact is not a claim of npm publication.</p>
+<h2 id="documentation-and-examples">Documentation And Examples</h2>
+<p><a href="../guides.html">Browse the generated HTML documentation</a>
+or use the authored Markdown sources below.</p>
+<ul>
+<li><a href="docs/design/README.html">Interface specifications</a></li>
+<li><a href="docs/contracts/README.html">TypeSpec, contract authority and generated reference</a></li>
+<li><a href="examples/README.html">Examples and demo status</a></li>
+<li><a href="../../../research/README.md">Research and historical evidence</a></li>
+<li><a href="docs/geometer/requirements/README.html">Requirements</a> and <a href="docs/geometer/adr/README.html">decisions</a></li>
+<li><a href="docs/developer/README.html">Developer setup, builds, tests and releases</a></li>
+<li><a href="../../../releases/README.md">Release notes</a></li>
+</ul>
+<p>Start with the headless Python example or HLR Lab. Analytic and topology demos
+remain experimental; retention does not imply production support. See the
+<a href="docs/developer/demo-status.html">demo audit</a> for verification limits.</p>
+<h2 id="contributing-and-license">Contributing And License</h2>
+<p>See the developer guide for native/WASM builds and required release checks.
+OCCT is generated dependency state under <code>.deps/</code>; documentation work does
+not require rebuilding it. Releases follow
+<a href="docs/geometer/adr/geometer-adr-006-date_based_versioning_policy.html">date-based versioning</a>.</p>
+<p>MIT. See <a href="../../../../LICENSE">LICENSE</a>.</p>
+
+</main>
+</body>
+</html>

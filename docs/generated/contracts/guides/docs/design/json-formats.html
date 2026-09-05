@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <title>JSON Formats — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../design/json-formats.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="json-formats">JSON Formats</h1></header>
+<h2 id="model-bounds-options-json">Model Bounds Options JSON</h2>
+<p>Defined in <code>src/cpp/lib/geometer/model_bounds_options_json.h</code>.</p>
+<p>Accepted option keys:</p>
+<ul>
+<li><code>format</code> or <code>model_format</code>: currently only <code>step</code>.</li>
+<li><code>model_transform</code> or <code>modelTransform</code>: row-major 4x4 number matrix. A flat
+array of 16 numbers is also accepted.</li>
+</ul>
+<p>Empty or <code>null</code> JSON keeps the default options.</p>
+<h2 id="model-bounds-result-json">Model Bounds Result JSON</h2>
+<p>Model bounds JSON uses schema <code>geometry.model_bounds.a0</code>.</p>
+<p>Required top-level fields:</p>
+<ul>
+<li><code>schema</code>: currently <code>geometry.model_bounds.a0</code>.</li>
+<li><code>units</code>: currently <code>mm</code>.</li>
+<li><code>source</code>: object containing <code>format</code> and <code>hash</code>.</li>
+<li><code>bounds</code>: object containing <code>min</code>, <code>max</code>, <code>size</code>, and <code>center</code> XYZ arrays.</li>
+</ul>
+<p>The current model-bounds writer always emits these nondeterministic timing
+fields; semantic conformance excludes them only through an explicit vector
+projection:</p>
+<ul>
+<li><code>model_read_ms</code></li>
+<li><code>bounds_ms</code></li>
+</ul>
+<h2 id="step-to-glb-options-json">STEP To GLB Options JSON</h2>
+<p>Defined in <code>src/cpp/lib/geometer/step_to_glb_options_json.h</code>.</p>
+<pre><code class="language-cpp">int parse_step_to_glb_options_json(
+    const char* json,
+    StepToGlbOptions* options,
+    Status* status = nullptr
+);
+</code></pre>
+<p>Accepted option keys:</p>
+<ul>
+<li><code>linear_deflection</code>, <code>linearDeflection</code>, or <code>deflection</code>.</li>
+<li><code>angular_deflection</code>, <code>angularDeflection</code>, or <code>angular</code>.</li>
+</ul>
+<p>Both values must be positive finite numbers. Empty or <code>null</code> JSON keeps the
+default options.</p>
+<h2 id="hlr-options-json">HLR Options JSON</h2>
+<p>Defined in <code>src/cpp/lib/geometer/projection_options_json.h</code>.</p>
+<pre><code class="language-cpp">int parse_hlr_projection_options_json(
+    const char* json,
+    HlrProjectionOptions* options,
+    Status* status = nullptr
+);
+</code></pre>
+<p>Accepted option keys:</p>
+<ul>
+<li><code>views</code>: array of <code>{ id, direction, up }</code>.</li>
+<li><code>model_transform</code> or <code>modelTransform</code>: row-major 4x4 number matrix. A flat
+array of 16 numbers is also accepted.</li>
+<li><code>strip_root_placement</code> or <code>stripRootPlacement</code>: remove only free-shape root
+placements before projection, matching STEP-to-GLB's definition-local frame;
+assembly-child placements remain intact. Defaults to <code>false</code> for backward
+compatibility.</li>
+<li><code>curve_mode</code> or <code>curveMode</code>: <code>native_arcs</code>, <code>native-arcs</code>, or <code>polyline</code>.</li>
+<li><code>samples_per_curve</code> or <code>samples</code>.</li>
+<li><code>round_digits</code> or <code>roundDigits</code>.</li>
+<li><code>output_outline</code> or <code>outputOutline</code>: emit the independently composable
+outline layer; defaults to <code>true</code>.</li>
+<li><code>output_detail</code> or <code>outputDetail</code>: emit the independently composable detail
+layer; defaults to <code>true</code>.</li>
+<li><code>output_bbox</code> or <code>outputBbox</code>: emit the projected bounding-box layer;
+defaults to <code>true</code>.</li>
+<li><code>projection_algorithm</code> or <code>projectionAlgorithm</code>: <code>poly</code>, <code>exact</code>, or the
+additive versioned backend <code>fast</code>.</li>
+<li><code>mesh_linear_deflection</code> or <code>meshLinearDeflection</code>.</li>
+<li><code>mesh_angular_deflection</code> or <code>meshAngularDeflection</code>.</li>
+<li><code>mesh_relative</code> or <code>meshRelative</code>.</li>
+<li><code>mesh_deflection_mode</code> or <code>meshDeflectionMode</code>: <code>absolute</code> or
+<code>bbox-relative</code>.</li>
+<li><code>mesh_deflection_coefficient</code> or <code>meshDeflectionCoefficient</code>.</li>
+<li><code>outline_algorithm</code> or <code>outlineAlgorithm</code>: <code>hlr-close</code>, <code>mesh-shadow</code>, or
+the additive versioned backend <code>fast-mesh-shadow</code>.</li>
+<li><code>hlr_angle_tolerance</code> or <code>hlrAngleTolerance</code>.</li>
+<li><code>edge_v_sharp</code>, <code>edge_v_outline</code>, <code>edge_v_smooth</code>, <code>edge_v_sewn</code>,
+<code>edge_v_iso</code>, <code>edge_h_sharp</code>, <code>edge_h_outline</code>, <code>edge_h_smooth</code>,
+<code>edge_h_sewn</code>, and <code>edge_h_iso</code> plus camelCase aliases.</li>
+<li>legacy <code>include_visible</code> or <code>includeVisible</code>, which toggles visible sharp
+and visible outline edges together.</li>
+<li>legacy <code>include_outline</code> or <code>includeOutline</code>, which toggles visible outline
+edges.</li>
+<li><code>union_outline_polygons</code>, <code>unionOutlinePolygons</code>, or <code>unionPolygons</code>.</li>
+<li><code>fast</code>: A0 options used by <code>projection_algorithm=fast</code> and
+<code>outline_algorithm=fast-mesh-shadow</code>:
+<code>include_boundaries</code>, <code>include_creases</code>, <code>include_silhouettes</code>,
+<code>include_hidden</code>, <code>suppress_coplanar_seams</code>, <code>crease_angle_rad</code>,
+<code>weld_tolerance</code>, <code>projected_tolerance</code>, <code>depth_tolerance</code>,
+<code>coplanar_seam_angle_rad</code>, <code>coplanar_seam_depth_tolerance</code>, and
+<code>coplanar_seam_lateral_tolerance</code>, with camelCase aliases. Its
+nested <code>limits</code> object accepts <code>max_vertices</code>, <code>max_triangles</code>, <code>max_edges</code>,
+<code>max_grid_references</code>, <code>max_candidate_pairs</code>, <code>max_fragments</code>, and
+<code>max_output_segments</code>, also with camelCase aliases.</li>
+</ul>
+<p>The <code>fast</code> option block is governed by <code>geometry.hlr_projection.options.a0</code>.
+Future incompatible controls require a new contract generation; A0 cannot
+change the meaning of the OCCT-specific exact/poly flags.</p>
+<p>The browser test pages currently use the viz-compatible setting set:</p>
+<pre><code class="language-json">{
+  &quot;curve_mode&quot;: &quot;polyline&quot;,
+  &quot;samples_per_curve&quot;: 24,
+  &quot;round_digits&quot;: 3,
+  &quot;projection_algorithm&quot;: &quot;poly&quot;,
+  &quot;outline_algorithm&quot;: &quot;mesh-shadow&quot;,
+  &quot;mesh_deflection_mode&quot;: &quot;bbox-relative&quot;,
+  &quot;mesh_deflection_coefficient&quot;: 0.004,
+  &quot;edge_v_sharp&quot;: true,
+  &quot;edge_v_outline&quot;: true,
+  &quot;union_outline_polygons&quot;: true
+}
+</code></pre>
+<h2 id="hlr-projection-result-json">HLR Projection Result JSON</h2>
+<p>Projection JSON uses schema <code>geometry.projection.b0</code>.</p>
+<p>Required top-level fields:</p>
+<ul>
+<li><code>schema</code>: currently <code>geometry.projection.b0</code>.</li>
+<li><code>units</code>: currently <code>mm</code>.</li>
+<li><code>source</code>: source metadata, including <code>kind</code> and <code>hash</code>.</li>
+<li><code>views</code>: array of projected view payloads.</li>
+</ul>
+<p>Each projected view contains:</p>
+<ul>
+<li><code>id</code>, <code>direction</code>, and <code>up</code>.</li>
+<li><code>modes.outline</code>: assembly projection outline geometry.</li>
+<li><code>modes.detail</code>: HLR detail geometry.</li>
+<li><code>modes.bbox</code>: projected 3D shape bounding box geometry.</li>
+</ul>
+<p>All mode members remain present for schema compatibility. A layer disabled by
+its <code>output_*</code> option contains empty segment and arc arrays. Mesh-shadow
+outline-only requests bypass detail HLR; detail-only requests do not construct
+either outline algorithm. Combined requests keep outline and detail separate so
+callers can style and composite them independently.</p>
+<p>Segment objects contain <code>x1</code>, <code>y1</code>, <code>x2</code>, and <code>y2</code>. Arc objects contain
+<code>start</code>, <code>end</code>, <code>center</code>, <code>radius</code>, <code>extent_rad</code>, <code>ccw</code>, and <code>full_circle</code>.</p>
+<p>Optional timing fields are emitted when available:</p>
+<ul>
+<li><code>step_read_ms</code></li>
+<li><code>mesh_ms</code></li>
+<li><code>hlr_ms</code></li>
+<li><code>extract_ms</code></li>
+</ul>
+<h2 id="planar-step-request-json">Planar STEP Request JSON</h2>
+<p>Planar STEP uses schema <code>geometry.planar_step.request.a0</code>. It converts closed
+2D topology into exact OCCT wires, faces, and extruded STEP solids. The schema is
+aligned with the shared <code>Geom*</code> direction: a planar region has an <code>outer</code> ring
+and optional <code>holes</code>; rings use <code>points[]</code> with one segment per point. Segment
+endpoints are implied by adjacent points, and the final segment wraps to point
+zero.</p>
+<pre><code class="language-json">{
+  &quot;schema&quot;: &quot;geometry.planar_step.request.a0&quot;,
+  &quot;units&quot;: &quot;mm&quot;,
+  &quot;name&quot;: &quot;fixture_alignment&quot;,
+  &quot;bodies&quot;: [
+    {
+      &quot;id&quot;: &quot;copper&quot;,
+      &quot;name&quot;: &quot;copper&quot;,
+      &quot;color&quot;: &quot;#B87333&quot;,
+      &quot;z_mm&quot;: 0,
+      &quot;thickness_mm&quot;: 0.035,
+      &quot;fuse_regions&quot;: true,
+      &quot;regions&quot;: [
+        {
+          &quot;outer&quot;: {
+            &quot;points&quot;: [[0, 0], [10, 0], [10, 5], [0, 5]],
+            &quot;segments&quot;: [
+              { &quot;kind&quot;: &quot;line&quot; },
+              { &quot;kind&quot;: &quot;line&quot; },
+              { &quot;kind&quot;: &quot;line&quot; },
+              { &quot;kind&quot;: &quot;line&quot; }
+            ]
+          }
+        }
+      ],
+      &quot;cutouts&quot;: []
+    }
+  ]
+}
+</code></pre>
+<p>Accepted root <code>units</code> are <code>mm</code>, <code>nm</code>, <code>mils</code>, and <code>in</code>. Length fields also
+accept suffixes such as <code>thickness_mm</code>, <code>thickness_nm</code>, <code>radius_mm</code>, and
+<code>radius_nm</code>.</p>
+<p>Ring segments:</p>
+<ul>
+<li><code>{&quot;kind&quot;: &quot;line&quot;}</code> for straight edges.</li>
+<li><code>{&quot;kind&quot;: &quot;arc&quot;, &quot;radius_nm&quot;: 1000000, &quot;sweep&quot;: &quot;ccw&quot;}</code> for the target
+topology-first arc form.</li>
+<li><code>{&quot;kind&quot;: &quot;arc&quot;, &quot;center&quot;: [5, 2.5], &quot;sweep&quot;: &quot;cw&quot;}</code> for transitional
+center-based <code>GeomContour</code>/Altium adapters.</li>
+</ul>
+<p>The parser also accepts transitional <code>GeomContour</code> JSON with <code>start</code>,
+<code>segments[].end</code>, optional <code>segments[].center</code>, and optional
+<code>segments[].clockwise</code>. New producers should prefer the <code>points[]</code> topology
+form.</p>
+<p>Body-level <code>fuse_regions</code> can be set to <code>true</code> to union that body's closed
+regions with Geometer's Clipper2-backed planar solver before extrusion. This
+removes internal edges where same-body regions overlap, but fused output uses
+line-segment topology rather than preserving source arc segments exactly.
+<code>fuseRegions</code> and <code>fuse</code> are accepted compatibility aliases; new producers
+should write <code>fuse_regions</code>.</p>
+<h2 id="batch-request-json">Batch Request JSON</h2>
+<p>The native CLI batch command accepts <code>geometer.batch.request.a0</code>:</p>
+<pre><code class="language-json">{
+  &quot;schema&quot;: &quot;geometer.batch.request.a0&quot;,
+  &quot;version&quot;: &quot;2026.9.4&quot;,
+  &quot;abi&quot;: 20260904,
+  &quot;options&quot;: {
+    &quot;curve_mode&quot;: &quot;polyline&quot;
+  },
+  &quot;jobs&quot;: [
+    {
+      &quot;id&quot;: &quot;part-top&quot;,
+      &quot;operation&quot;: &quot;step_hlr_projection_json&quot;,
+      &quot;step_path&quot;: &quot;part.step&quot;,
+      &quot;output_path&quot;: &quot;part.top.projection.json&quot;,
+      &quot;options&quot;: {
+        &quot;views&quot;: [{ &quot;id&quot;: &quot;top&quot;, &quot;direction&quot;: [0, 0, 1], &quot;up&quot;: [0, 1, 0] }]
+      }
+    }
+  ]
+}
+</code></pre>
+<p><code>run</code> only requires the <code>jobs</code> array. <code>version</code> and <code>abi</code> are metadata written
+by <code>init-request</code>. Top-level <code>options</code> are parsed first; job-level <code>options</code>
+override them.</p>
+<p>Supported operations:</p>
+<ul>
+<li><code>model_bounds_json</code></li>
+<li><code>model_hlr_projection_json</code></li>
+<li><code>model_hlr_projection_svg</code></li>
+<li><code>model_to_glb</code></li>
+<li><code>step_hlr_projection_json</code></li>
+<li><code>step_hlr_projection_svg</code></li>
+<li><code>step_to_glb</code></li>
+<li><code>planar_step</code></li>
+</ul>
+<p>The <code>model_*</code> operations are preferred for source-model work. They currently
+accept only <code>format: &quot;step&quot;</code> and accept either <code>model_path</code> or the compatibility
+<code>step_path</code>. The <code>step_*</code> operations remain compatibility aliases.</p>
+<p><code>planar_step</code> jobs accept either:</p>
+<ul>
+<li><code>request_path</code>: path to a <code>geometry.planar_step.request.a0</code> file.</li>
+<li><code>planar_step_request</code>: inline request object.</li>
+</ul>
+<h2 id="batch-response-json">Batch Response JSON</h2>
+<p>The native CLI writes <code>geometer.batch.response.a0</code>:</p>
+<pre><code class="language-json">{
+  &quot;schema&quot;: &quot;geometer.batch.response.a0&quot;,
+  &quot;version&quot;: &quot;2026.9.4&quot;,
+  &quot;abi&quot;: 20260904,
+  &quot;ok&quot;: true,
+  &quot;jobs&quot;: [
+    {
+      &quot;id&quot;: &quot;part-top&quot;,
+      &quot;operation&quot;: &quot;step_hlr_projection_json&quot;,
+      &quot;ok&quot;: true,
+      &quot;code&quot;: 0,
+      &quot;elapsed_ms&quot;: 12.34,
+      &quot;output_path&quot;: &quot;part.top.projection.json&quot;
+    }
+  ]
+}
+</code></pre>
+<p>Failed jobs set <code>ok</code> to <code>false</code>, return a nonzero <code>code</code>, and include
+<code>message</code>.</p>
+
+</main>
+</body>
+</html>

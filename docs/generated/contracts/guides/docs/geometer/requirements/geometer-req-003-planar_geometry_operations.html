@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <title>REQ-003: Planar Geometry Operations — Geometer</title>
+  <link rel="stylesheet" href="../../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../../guides.html">Documentation index</a><a href="../../../../../../geometer/requirements/geometer-req-003-planar_geometry_operations.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="req-003-planar-geometry-operations">REQ-003: Planar Geometry Operations</h1></header>
+<h2 id="summary">Summary</h2>
+<p>Geometer provides generic 2D contour, boolean, offset, and triangulation
+operations used by projection simplification and downstream browser tools.
+The Clipper2-backed operations are the supported path for production planar
+visualization. The retained analytic line/arc solver is experimental and not
+production-ready; its implemented status records code availability, not a
+reliability guarantee. See
+<a href="../adr/geometer-adr-017-retain_analytic_planar_boolean_as_experimental.html">ADR-017</a>.</p>
+<h2 id="requirements">Requirements</h2>
+<ol>
+<li>Convert projected line segments into closed planar contour rings.</li>
+<li>Solve planar filled geometry batches from packed little-endian binary
+request packets.</li>
+<li>Support subject rings, local subtract rings, common subtract rings, open
+stroke offsets, and optional final clipping rings.</li>
+<li>Return outlines, holes, counters, and area in deterministic packed binary
+response packets.</li>
+<li>Keep packed binary packet versions explicit and documented.</li>
+<li>Make planar byte APIs available through native C++, C ABI, WASM, and CLI
+diagnostics.</li>
+<li>Retain the experimental analytic planar Boolean operation and preserve line
+and circular-arc result fragments when a job completes; polygonization is a
+consumer projection, not that operation's authoritative result.</li>
+<li>Use a speed-first filtered numeric solver as the normal experimental
+analytic path. Arbitrary-precision real-algebraic processing is not a
+required hot-path dependency.</li>
+<li>Keep the public coordinate unit and output grid at one integer nanometer,
+while applying a fixed 50 nm topology-resolution envelope. Geometry at or
+below that envelope may merge, bridge, or collapse deterministically;
+topology separated by more than 50 nm must be preserved.</li>
+<li>Keep every published analytic boundary within 50 nm Hausdorff distance of
+the resolved ideal boundary and produce equivalent decisions natively and
+under WASM.</li>
+<li>Prune curve pairs with a spatial broad phase before intersection testing,
+govern the remaining candidate-pair count per job, and exercise dense
+real-board inputs in performance qualification.</li>
+<li>Retain exact algebraic machinery only as an isolated conformance oracle,
+diagnostic tool, or measured bounded fallback. Exceeding a fallback budget
+fails the affected job and never triggers unbounded symbolic work.</li>
+<li>Do not treat the analytic operation as a dependable whole-board or
+whole-layer copper union path. Valid jobs may fail closed at documented
+numeric, topology, carrier, or resource boundaries.</li>
+<li>Prefer the Clipper2-backed planar operations for production visualization
+when sampled polygon output satisfies the consumer contract.</li>
+</ol>
+
+</main>
+</body>
+</html>

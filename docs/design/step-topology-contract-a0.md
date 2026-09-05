@@ -7,7 +7,7 @@ Date: 2026-08-22
 ## Purpose And Authority
 
 Slice A gives the native STEP/XCAF research a generated, bounded vocabulary for
-future process and TypeScript adapters. It covers open, close, paged inspection,
+native process and TypeScript adapters. It covers open, close, paged inspection,
 GLB rendering, and renderer-neutral hit resolution. It does not expose those
 operations through the generic C ABI or browser/WASM. The native executable IPC
 initially advertised open, paged inspect, render, hit resolution, and close;

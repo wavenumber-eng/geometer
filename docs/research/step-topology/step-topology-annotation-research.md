@@ -34,7 +34,7 @@ The answer is qualified yes:
   not establish third-party CAD survival.
 
 The maintained student reference is
-[`examples/node/step_topology_annotation_reference.ts`](../../examples/node/step_topology_annotation_reference.ts).
+[`examples/node/step_topology_annotation_reference.ts`](../../../examples/node/step_topology_annotation_reference.ts).
 The measured fixture baseline is
 [step-topology-fixture-baseline.md](step-topology-fixture-baseline.md), and the
 recommended later Appz slice is
@@ -133,17 +133,17 @@ as durable annotation identity.
 ## Evidence Index
 
 - [Fixture and runtime-impact baseline](step-topology-fixture-baseline.md)
-- [Native inspection and lifecycle](step-topology-native-inspection.md)
-- [GLB topology/render binding](step-topology-glb-binding.md)
-- [Logical groups](step-topology-logical-groups.md)
-- [Metadata probes](step-topology-metadata-probes.md)
-- [Edit-journal checkpoint and replay](step-topology-edit-journal.md)
-- [Synthetic hierarchy proof](step-topology-hierarchy.md)
-- [Multidimensional recovery](step-topology-recovery.md)
+- [Native inspection and lifecycle](../../design/step-topology-native-inspection.md)
+- [GLB topology/render binding](../../design/step-topology-glb-binding.md)
+- [Logical groups](../../design/step-topology-logical-groups.md)
+- [Metadata probes](../../design/step-topology-metadata-probes.md)
+- [Edit-journal checkpoint and replay](../../design/step-topology-edit-journal.md)
+- [Synthetic hierarchy proof](../../design/step-topology-hierarchy.md)
+- [Multidimensional recovery](../../design/step-topology-recovery.md)
 - [XCAF persistence](step-topology-xcaf-persistence.md)
 - [AP242 persistence](step-topology-ap242-persistence.md)
-- [Experimental contract Slice B](step-topology-contract-slice-b.md)
-- [Experimental contract Slice C](step-topology-contract-slice-c.md)
+- [Experimental contract Slice B](../../design/step-topology-contract-slice-b.md)
+- [Experimental contract Slice C](../../design/step-topology-contract-slice-c.md)
 - [Appz Annotation Lab handoff](step-topology-appz-annotation-lab-handoff.md)
 
 ## Next Authorized Boundary

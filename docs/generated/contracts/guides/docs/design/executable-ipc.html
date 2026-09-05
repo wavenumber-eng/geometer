@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <title>Calling The Geometer Executable — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../design/executable-ipc.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="calling-the-geometer-executable">Calling The Geometer Executable</h1></header>
+<p>Use persistent IPC when an application wants to reuse one geometry process and
+exchange model/mesh bytes without temporary files. Start <code>geometer serve --stdio</code>
+through a maintained client. For one-off conversions, the <a href="cli.html">file CLI</a>
+and <a href="python-package.html">Python convenience API</a> are simpler.</p>
+<h2 id="client-and-executable-selection">Client And Executable Selection</h2>
+<table>
+<thead>
+<tr>
+<th>Consumer</th>
+<th>Maintained boundary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python</td>
+<td>Public <code>geometer.GeometerClient</code>: synchronous HLR and experimental analytic convenience calls. The package resolves its bundled executable; <code>executable=</code> selects an explicit compatible binary.</td>
+</tr>
+<tr>
+<td>Node/TypeScript</td>
+<td><code>GeometerNodeProcessA0</code> from <code>@wavenumber/geometer/node-process-a0</code>: process ownership plus typed generic IPC calls.</td>
+</tr>
+<tr>
+<td>Rust</td>
+<td><code>geometer-client</code>: generated contracts and Tokio executable client; see <a href="rust-client.html">Rust client</a>.</td>
+</tr>
+<tr>
+<td>Implementing a new transport/client</td>
+<td><a href="executable-ipc-a0.html">A0 framing and lifecycle specification</a>, not a hand-built application protocol.</td>
+</tr>
+</tbody>
+</table>
+<p>Use a client and executable generated from a compatible catalog. The clients
+validate the welcome catalog/digest and effective limits; updating only a
+binary while retaining stale generated clients can fail the handshake.
+Source artifacts live at <code>dist/native/&lt;platform&gt;/geometer(.exe)</code>.</p>
+<h2 id="runnable-model-bounds-example">Runnable Model-Bounds Example</h2>
+<p>From a source checkout with Node 24 and committed release artifacts:</p>
+<pre><code class="language-powershell">node examples/node/ipc-model-bounds.mjs dist/native/windows-x64/geometer.exe tests/fixtures/step/embedded_models/SOT-23.STEP
+</code></pre>
+<p>The <a href="../../../../../../examples/node/ipc-model-bounds.mjs">example source</a> spawns the
+process, discovers the operation, sends a typed options object with a raw STEP
+attachment named <code>model</code>, checks the outcome, prints the result, and closes
+the process. Substitute your platform executable path on Linux/macOS.
+The source-checkout import points to the distributable package; installed
+package consumers use its exported package specifier above.</p>
+<h2 id="mesh-attachment-example-python">Mesh Attachment Example (Python)</h2>
+<p>The public client packs the mesh and sends a named binary attachment; JSON
+contains HLR options, not base64 geometry:</p>
+<pre><code class="language-python">import geometer
+
+mesh = geometer.IndexedTriangleMeshA0(
+    positions=(0.0, 0.0, 0.0, 10.0, 0.0, 0.0, 0.0, 10.0, 0.0),
+    indices=(0, 1, 2),
+    source_faces=(1,),
+)
+with geometer.GeometerClient() as client:
+    result = client.mesh_hlr_projection(mesh, timeout=30)
+    print(result.schema)
+</code></pre>
+<p>For STEP HLR, call <code>client.model_hlr_projection(step_bytes, options)</code>.
+The file-oriented <code>geometer.model_bounds(...)</code> helper does not demonstrate
+persistent IPC; use the Node example above for the generated bounds operation.</p>
+<h2 id="request-lifecycle-and-failures">Request Lifecycle And Failures</h2>
+<ol>
+<li>Client starts the executable with separate binary stdin/stdout and stderr.</li>
+<li><code>hello</code> / <code>welcome</code> negotiates A0, effective resource limits and operations.</li>
+<li>Each request has a correlation ID, generated JSON DTO, and declared raw
+attachments. Names, media types, lengths and operation identity must agree.</li>
+<li>The server executes serially and returns a typed outcome plus any output
+attachments. A valid failure outcome is distinct from a corrupt connection.</li>
+<li>Graceful shutdown rejects queued work with ordinary failure responses
+(<code>geometer.transport.server_shutting_down</code>), allows only the active request
+to finish, then flushes responses and acknowledgement within one 30-second
+deadline. It does not execute all accepted queued requests.</li>
+</ol>
+<p>Never decode stdout as text, merge stderr into stdout, or share the process
+pipes with a second owner. Drain stderr so logging cannot block the process.
+The maintained clients handle these details.</p>
+<p>A local timeout does not stop the geometry solver. A0 cancellation is queue
+only: active work is not interruptible. The Python client sends cancellation
+after timeout and must drain the terminal response before reuse; an immediate
+new call may report that the prior request is still draining. If a hard deadline
+requires process termination, all outstanding calls fail and a fresh handshake
+is required. Experimental topology session handles are process-local and must
+not be reused after restart.</p>
+<p>Distinguish typed operation diagnostics, local timeout, protocol violation,
+and process exit. Python exposes <code>GeometerOperationError</code>,
+<code>GeometerIpcTimeoutError</code>, <code>GeometerIpcProtocolError</code> and
+<code>GeometerIpcProcessError</code>. Do not blindly replay state-mutating operations
+after a lost response; the outcome may be unknown.</p>
+<h2 id="what-is-callable">What Is Callable?</h2>
+<p>The <a href="../../../index.html">generated operation reference</a> and
+welcome catalog distinguish portable operations, additional native-only
+experimental operations and structural-only declarations. Clipper2 packed
+entry points and legacy conversion commands are not automatically IPC
+operations. See <a href="../contracts/README.html">contract authority</a>.</p>
+<p>Analytic planar Boolean is experimental and not production-ready even though
+its packed interface is implemented. Prefer Clipper2-backed polygonized
+operations for production visualization where suitable. Protocol generation,
+release version, C ABI generation and packed-format versions are independent.</p>
+<p>Byte offsets, frame-kind values, limits, control messages and connection-fatal
+conditions belong to the <a href="executable-ipc-a0.html">normative A0 reference</a>.</p>
+
+</main>
+</body>
+</html>

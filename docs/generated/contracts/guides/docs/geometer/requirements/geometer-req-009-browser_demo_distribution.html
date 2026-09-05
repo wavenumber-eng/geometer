@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <title>REQ-009: Browser Demo Distribution — Geometer</title>
+  <link rel="stylesheet" href="../../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../../guides.html">Documentation index</a><a href="../../../../../../geometer/requirements/geometer-req-009-browser_demo_distribution.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="req-009-browser-demo-distribution">REQ-009: Browser Demo Distribution</h1></header>
+<h2 id="summary">Summary</h2>
+<p>Geometer provides reusable, locally reviewable packaging for browser demos that
+can be deployed unchanged after explicit publication approval.</p>
+<h2 id="requirements">Requirements</h2>
+<ol>
+<li>Keep maintained browser-demo source and generic TypeScript demo tooling under
+<code>examples/wasm/</code>.</li>
+<li>Put distributable demo outputs under <code>dist/wasm/demos/</code>; do not recreate
+root-level <code>dist</code> artifacts.</li>
+<li>A self-contained hosted demo must declare <code>index.html</code> as its only runtime
+file and must not depend on a network CDN, external stylesheet, import map,
+or external script.</li>
+<li>Generate deterministic SHA-256 closure metadata and Cloudflare-compatible
+security/cache headers for the hosted directory.</li>
+<li>Keep build/package operations local. Do not publish from a build script or CI
+validation job.</li>
+<li>Validate the packaged closure statically and exercise its primary workflow
+in a real browser with no unexpected external request or uncaught exception.</li>
+<li>Keep uploaded user files local to the browser unless a future requirement
+explicitly adds an upload service and its security/privacy policy.</li>
+<li>Keep reusable panel, input, and presentation behavior independent of Viz,
+board-specific policy, and Geometer core geometry semantics.</li>
+<li>Require HLR and Illustration Labs to import production package APIs and use
+the generic governed HLR operation. A packaged demo must not carry a copied
+authoritative HLR, illustration, or raster algorithm.</li>
+</ol>
+
+</main>
+</body>
+</html>

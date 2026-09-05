@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <title>Distribution Artifacts — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../design/distribution.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="distribution-artifacts">Distribution Artifacts</h1></header>
+<p>The repository policy is to commit distributable outputs in <code>dist/</code> so another
+project can clone Geometer and use the CLI/WASM artifacts without rebuilding.</p>
+<p>Persist these when publishing interface changes:</p>
+<ul>
+<li>Native CLI: <code>dist/native/&lt;platform&gt;/geometer.exe</code> or
+<code>dist/native/&lt;platform&gt;/geometer</code>.</li>
+<li>Native executable attestation:
+<code>dist/native/&lt;platform&gt;/geometer.build-attestation.json</code>.</li>
+<li>Full browser WASM C ABI: <code>dist/wasm/browser/geometer.js</code> and
+<code>dist/wasm/browser/geometer.wasm</code>.</li>
+<li>Node WASM CLI parity/test target: <code>dist/wasm/node-test/geometer-node-test.js</code>
+and <code>dist/wasm/node-test/geometer-node-test.wasm</code>, with a local CommonJS
+<code>package.json</code> boundary so the CLI runs beneath the repository's ESM root.</li>
+<li>Planar-only browser WASM C ABI optimization:
+<code>dist/wasm/planar-browser/geometer-planar-browser.js</code> and
+<code>dist/wasm/planar-browser/geometer-planar-browser.wasm</code>.</li>
+<li>Generated TypeScript ESM package: <code>dist/wasm/npm/geometer/</code> with explicit root,
+contracts, direct WASM, Worker-client, and Worker-host exports.</li>
+<li>Browser demos: self-contained HTML artifacts and deploy-unchanged static
+directories under <code>dist/wasm/demos/</code>. A single-HTML hosted directory has
+<code>index.html</code> as its only runtime file; <code>_headers</code> and <code>asset-manifest.json</code>
+are deployment and verification metadata.</li>
+</ul>
+<p>Native platform directory names use:</p>
+<ul>
+<li><code>windows-x64</code></li>
+<li><code>linux-x64</code></li>
+<li><code>linux-arm64</code></li>
+<li><code>macos-arm64</code></li>
+</ul>
+<p>Root-level build artifacts are intentionally not produced. Source-checkout
+consumers must use grouped native, npm, and WASM paths.</p>
+<p>Native <code>.lib</code> and <code>.a</code> files remain ordinary build/cache outputs under the
+configured CMake build tree. They are not committed or included in native
+runtime releases. A future native SDK must be a separately designed package
+with public headers, exported CMake targets, ABI/toolchain metadata, licenses,
+and a complete dependency-link strategy; a bare static archive is not an SDK.</p>
+<p>Demo build scripts do not publish. See
+<a href="../developer/browser-demos.html">Browser demo packaging and UI</a> for the local build, closure,
+review, and explicit publication boundary.</p>
+<p>Do not commit local generated build state:</p>
+<ul>
+<li><code>.deps/</code></li>
+<li><code>build/</code></li>
+<li><code>build-wasm/</code></li>
+</ul>
+<p>OCCT binary dependency archives may be stored in the Wavenumber R2-backed public
+artifact cache, but they remain generated dependency state. They are restored
+under <code>.deps/</code> and are not committed to <code>dist/</code>.</p>
+
+</main>
+</body>
+</html>

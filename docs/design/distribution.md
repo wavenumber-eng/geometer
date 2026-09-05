@@ -41,7 +41,7 @@ with public headers, exported CMake targets, ABI/toolchain metadata, licenses,
 and a complete dependency-link strategy; a bare static archive is not an SDK.
 
 Demo build scripts do not publish. See
-[Browser demo packaging and UI](browser-demos.md) for the local build, closure,
+[Browser demo packaging and UI](../developer/browser-demos.md) for the local build, closure,
 review, and explicit publication boundary.
 
 Do not commit local generated build state:

@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <title>TypeScript Contracts And Browser WASM Client — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../design/typescript-client.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="typescript-contracts-and-browser-wasm-client">TypeScript Contracts And Browser WASM Client</h1></header>
+<h2 id="status-and-authority">Status and authority</h2>
+<p>Model bounds, model/mesh HLR, and the analytic planar Boolean packed projection
+are implemented. Authored TypeSpec and the normalized catalog own logical wire
+structure; the separately governed analytic A0 packet owns its binary hot path.
+This package is a deterministic projection plus a transport adapter. It does
+not move geometry behavior out of C++ or replace the separately distributed
+Emscripten JavaScript and WASM artifacts.</p>
+<p>The package identity is <code>@wavenumber/geometer</code>, its module format is ESM, and
+the repository-built package artifact is <code>dist/wasm/npm/geometer/</code>. Package version
+<code>2026.9.4</code> is current and includes the Fast vector HLR, mesh-illustration, and
+resolution-bounded analytic planar Boolean surfaces. Publication remains a release action; a local
+artifact is not evidence that an npm release has occurred.</p>
+<p>The analytic surface is experimental and not production-ready. It may fail
+closed on valid inputs and is not the dependable path for whole-board or
+whole-layer copper union. Prefer the Clipper2-backed planar APIs when
+polygonized output is suitable.</p>
+<h2 id="generated-contracts-and-codecs">Generated contracts and codecs</h2>
+<p><code>scripts/generate-typescript-contracts.mjs</code> consumes only the normalized
+catalog and emits:</p>
+<ul>
+<li>documented interfaces, literal types, enums, fixed-size tuple types, and
+discriminated unions in <code>src/ts/geometer/generated/contracts.ts</code>;</li>
+<li>strict named root codecs in <code>src/ts/geometer/generated/codecs.ts</code>; and</li>
+<li>typed operation and attachment declarations in
+<code>src/ts/geometer/generated/operations.ts</code>.</li>
+</ul>
+<p>Generation fails on short-name collisions or an unsupported catalog construct.
+The codec runtime rejects invalid UTF-8, unpaired Unicode surrogates, duplicate
+object keys, trailing JSON data, non-finite numbers, missing and unknown fields,
+literal/enum mismatches, and governed length/range violations. Encoders rebuild
+objects in catalog order and preserve optional-field absence; they do not
+materialize TypeSpec default intent into option patches.</p>
+<p>The TypeScript codec vector test replays every governed pilot vector. This is
+in addition to JSON Schema, C++, and generic transport tests, not a replacement
+for their distinct assertion lanes.</p>
+<p>Packed analytic roots deliberately do not use the JSON codec runtime. Their
+generated DTO identities and integer-nanometer coordinates use <code>bigint</code>, and
+<code>analytic-packet-a0.ts</code> performs bounded binary encoding/decoding against the
+pre-release <code>GMABRQ01</code>/<code>GMABRS01</code> layout. JavaScript <code>number</code> is rejected for every
+64-bit analytic field.</p>
+<h2 id="high-level-browser-client">High-level browser client</h2>
+<p>Normal browser consumers import <code>createGeometerWasmClient</code> from
+<code>@wavenumber/geometer/wasm</code>. The adapter owns:</p>
+<ul>
+<li>capability-catalog lookup and generic ABI A0/layout negotiation;</li>
+<li>UTF-8 encoding and decoding;</li>
+<li>Emscripten allocation and freeing;</li>
+<li>wasm32 attachment descriptor layout and pointer-out fields;</li>
+<li>copying input and output attachment bytes across the heap boundary;</li>
+<li>local C ABI error decoding and governed operation outcome decoding; and</li>
+<li>operation-specific attachment name, media type, requiredness, and byte-limit
+checks before calling C++.</li>
+</ul>
+<p><code>modelBounds()</code> accepts model bytes and an optional presence-preserving options
+patch. It returns <code>ModelBoundsResultA0</code> on success and throws
+<code>GeometerOperationError</code> with governed diagnostics on an operation failure.
+<code>execute()</code> remains available for generated higher-level methods, advanced
+transport integration, and operation-by-operation promotion; applications
+should prefer the typed method for a promoted operation.</p>
+<p><code>modelHlrProjection()</code> accepts STEP bytes and preserves the established <code>poly</code>
+default. <code>meshHlrProjection()</code> accepts either an encoded indexed-mesh A0 packet
+or a structured <code>IndexedTriangleMeshA0</code>; because that source has no OCCT
+topology, omitted selectors choose Fast detail and Fast mesh-shadow. Both
+return <code>HlrProjectionResultA0</code> with independent outline, detail, and bbox
+layers. The direct WASM, dedicated Worker, and persistent IPC clients expose
+the same typed method names.</p>
+<p><code>analyticPlanarBooleanBatch()</code> accepts the generated logical request, encodes
+its packed request attachment, executes the experimental C++ solver, strictly
+decodes the packed result, and returns generated logical jobs, line/arc
+fragments, rings, regions, lineage, operand outcomes, relationships, and
+standalone job digests. The same typed method is available on the Worker
+client.</p>
+<p>The client verifies each promoted runtime operation against its generated
+request/result identities and exact input/output attachment inventory,
+including ordering, requiredness, media types, and byte limits. A module with
+an unsupported generic ABI, descriptor layout, missing operation, or mismatched
+declaration fails with an actionable <code>GeometerWasmTransportError</code> before
+geometry execution. Zero-length byte views and zero-entry descriptor arrays
+cross the ABI as the required null-pointer/zero-size pair.</p>
+<h2 id="package-exports-and-build">Package exports and build</h2>
+<p>The ESM package has explicit exports:</p>
+<table>
+<thead>
+<tr>
+<th>Export</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>@wavenumber/geometer</code></td>
+<td>Generated contracts plus high-level client</td>
+</tr>
+<tr>
+<td><code>@wavenumber/geometer/contracts</code></td>
+<td>Generated DTOs, codecs, and operation metadata</td>
+</tr>
+<tr>
+<td><code>@wavenumber/geometer/analytic-packet-a0</code></td>
+<td>Strict analytic request/result packet projection</td>
+</tr>
+<tr>
+<td><code>@wavenumber/geometer/ipc-a0</code></td>
+<td>Environment-neutral bounded executable-frame codec</td>
+</tr>
+<tr>
+<td><code>@wavenumber/geometer/ipc-client-a0</code></td>
+<td>Persistent client over injected WHATWG byte streams</td>
+</tr>
+<tr>
+<td><code>@wavenumber/geometer/illustrated-hlr</code></td>
+<td>Fast vector HLR plus mesh-illustration composition</td>
+</tr>
+<tr>
+<td><code>@wavenumber/geometer/mesh-illustration</code></td>
+<td>A0 one-shot and reusable SVG/Canvas illustration</td>
+</tr>
+<tr>
+<td><code>@wavenumber/geometer/node-process-a0</code></td>
+<td>Node child-process supervision for <code>geometer serve --stdio</code></td>
+</tr>
+<tr>
+<td><code>@wavenumber/geometer/wasm</code></td>
+<td>Direct browser/Web Worker WASM transport adapter</td>
+</tr>
+<tr>
+<td><code>@wavenumber/geometer/worker</code></td>
+<td>Correlated main-thread client for a dedicated Worker</td>
+</tr>
+<tr>
+<td><code>@wavenumber/geometer/worker-host</code></td>
+<td>Worker-side host around the direct WASM adapter</td>
+</tr>
+</tbody>
+</table>
+<p><code>scripts/build-typescript-package.mjs</code> compiles with TypeScript 5.9.3 and
+strict, exact-optional-property, and unchecked-index settings. It validates and
+atomically writes <code>dist/wasm/npm/geometer/</code>; check mode compares every artifact byte.
+<code>npm pack</code> plus a clean temporary consumer proves the package exports and
+declarations work outside repository path aliases.</p>
+<p>The IPC A0 frame export owns exact 48-byte header encoding, uint64 correlation
+ids, bounded attachment sections, segmented incremental decoding, strict UTF-8,
+and fixed-header rejection before body buffering. <code>ipc-client-a0</code> composes that
+codec with generated envelopes over injected WHATWG byte streams. It validates
+the normalized welcome digest, runtime operation declarations, effective
+limits, attachment inventories, response correlation, cancellation, and
+graceful shutdown. Request frames are encoded once, and outstanding count plus
+encoded bytes remain within the negotiated queue/resident ceilings even when a
+writer stalls. After welcome, the incremental decoder applies the negotiated
+JSON, attachment, text, and frame ceilings at header decode rather than merely
+accepting the larger A0 maxima. It still does not spawn or supervise a process.
+A Node adapter owns that platform boundary.</p>
+<p>Experimental topology DTOs and operation declarations remain generated so the
+research contract can be reviewed across languages, but the persistent client
+requires an operation to appear in the negotiated runtime catalog. The
+environment-neutral client defaults to the portable catalog, where all twelve
+topology operations fail locally. The Node process adapter selects the native
+catalog: nine operations cover open, paged inspect, render, resolve hit, close,
+logical groups, metadata probes, journal checkpoint, and exact journal restore.
+Hierarchy, general save, and recovery analysis remain structural-only. The
+adapter owns executable spawning, bounded stderr capture,
+handshake and shutdown deadlines, bounded direct-child termination with forced
+escalation, and clean-exit verification. It does not claim descendant-tree
+termination. A real SOT-23 STEP integration test exercises selection, mutation,
+checkpoint, close, exact restore, and post-restore mutation through that adapter
+and the native executable; browser entry points do not import Node modules.</p>
+<p>The runnable
+<a href="../../../../../../examples/node/step_topology_annotation_reference.ts"><code>examples/node/step_topology_annotation_reference.ts</code></a>
+reference goes one step further: it resolves an actual <code>GLTFLoader</code>/<code>Raycaster</code>
+hit, checkpoints a group and metadata probe, terminates the authoring process,
+starts a new native process, and proves exact replay by editing both restored
+records. Its generated JSON report retains digests and authored ids, not
+runtime handles or triangle locators.</p>
+<p>The Emscripten factory and <code>.wasm</code> remain separately distributed under
+<code>dist/wasm/browser/</code>. Consumers pass the factory itself and optional factory
+configuration such as <code>wasmBinary</code> or <code>locateFile</code>; the npm package does not
+embed a second copy of the geometry kernel.</p>
+<h2 id="dedicated-worker-client">Dedicated Worker client</h2>
+<p><code>createGeometerWorkerClient()</code> exposes the same typed <code>modelBounds()</code>,
+<code>modelHlrProjection()</code>, <code>meshHlrProjection()</code>, and
+<code>analyticPlanarBooleanBatch()</code> operations
+without running synchronous OCCT work on the window event loop. The A0 Worker
+protocol is package-local and has the identity
+<code>wn.geometer.wasm_worker.a0</code>. Initialization transfers an owned copy of the
+WASM bytes and returns the same capability catalog negotiated by the direct
+adapter. Requests use monotonically increasing correlation identifiers and raw
+attachment <code>ArrayBuffer</code> values rather than base64.</p>
+<p>The main-thread client preserves caller-owned input arrays: it copies each
+input into an owned buffer and transfers that buffer to the Worker. The host
+serializes operation execution within one WASM instance and transfers owned
+output attachment buffers back. It strictly re-encodes and decodes the
+generated operation outcome across the message boundary. Typed operation
+diagnostics, local C ABI transport errors, malformed messages, Worker errors,
+and message-deserialization failures remain distinct. A structurally valid
+response with an unknown or already-completed correlation identifier, or a
+non-error response kind that does not match the correlated request kind, is
+protocol corruption: the client terminates the connection and rejects every
+outstanding request.</p>
+<p><code>close()</code> immediately rejects new calls, queues a graceful shutdown after
+preceding requests, and then terminates the Worker. Concurrent <code>close()</code> calls
+share that shutdown. <code>terminate()</code> is immediate and rejects every outstanding
+request. Neither method claims cooperative cancellation inside a synchronous
+OCCT operation. Application-level pools, caching, progress reporting, retry,
+and scheduling remain consumer policy.</p>
+<p>The current Emscripten loader is a classic Worker script. A Worker entry first
+loads that factory with <code>importScripts</code>, then imports and installs
+<code>@wavenumber/geometer/worker-host</code>. The maintained TypeScript entry is
+<code>examples/wasm/model_bounds_worker.ts</code>; its committed build is
+<code>dist/wasm/demos/model_bounds_worker.js</code>.</p>
+<h2 id="pilot-example-and-verification">Pilot example and verification</h2>
+<p><code>examples/wasm/model_bounds_demo.ts</code> is the maintained model-bounds pilot. Its
+HTML creates the dedicated Worker, while the TypeScript window and Worker
+sources import only high-level package entry points. The committed JavaScript
+builds are <code>dist/wasm/demos/model_bounds_demo.js</code> and
+<code>dist/wasm/demos/model_bounds_worker.js</code>.</p>
+<p>The interactive Three.js scene uses the prepared GLB produced from the same
+SOT-23 fixture only as a display companion. The yellow volume, wireframe,
+dimension lines, labels, and inspector values are derived from the
+authoritative STEP/OCCT result. The example normalizes the meter-scaled GLB
+display mesh into the millimeter STEP frame without changing contract data.
+Its stylesheet is an explicitly identified projection of the Viz 3D visual
+system, with repository-vendored Cousine replacing the internal Berkeley Mono
+font and the governed Wavenumber logo retained as a low-opacity watermark.</p>
+<p>Verification includes:</p>
+<ul>
+<li>generated-source and package-artifact freshness;</li>
+<li>Biome formatting/lint and strict TypeScript compilation;</li>
+<li>all governed TypeScript codec vectors;</li>
+<li>sparse fixed-tuple and variable-array rejection plus null-view ABI
+marshalling regressions;</li>
+<li>a packed/install/typecheck clean consumer;</li>
+<li>a real SOT-23 browser WASM <code>model_bounds</code> round trip through the high-level
+direct client;</li>
+<li>correlated SOT-23 round trips through a real Worker thread, including
+transferable ownership, governed/local errors, graceful close, and
+post-close rejection; and</li>
+<li>deterministic protocol regressions for unknown and duplicate correlations,
+mismatched response kinds, and immediate termination of multiple outstanding
+requests; and</li>
+<li>desktop and narrow real-browser smoke of the generated documentation and
+model-bounds example.</li>
+</ul>
+<p>The HLR and Illustration Labs consume the governed HLR operations and the
+production vector-HLR and mesh-illustration package modules. No production
+raster-HLR package is currently exported. The
+<a href="../../../../../contracts/compatibility/viz-2026.6.10.toml">Viz 2026.6.10 compatibility snapshot</a>
+records the Geometer surfaces that consumer currently requires; it is a
+compatibility record, not a consumer migration plan. Application-specific
+adoption sequencing, rollout gates, worker-pool policy, and cache migration
+belong in the consuming repository.</p>
+
+</main>
+</body>
+</html>

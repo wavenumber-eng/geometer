@@ -12,25 +12,25 @@ status = "done"
 [[steps]]
 id = "documentation-taxonomy"
 title = "Define the durable documentation taxonomy and disposition every current design document"
-status = "pending"
+status = "done"
 depends_on = ["baseline-inventory"]
 
 [[steps]]
 id = "readme-refresh"
 title = "Rewrite the root README around supported capabilities, maturity, and primary entry points"
-status = "pending"
+status = "done"
 depends_on = ["documentation-taxonomy"]
 
 [[steps]]
 id = "ipc-consumer-guide"
 title = "Create a concise executable IPC consumer guide and correct the implemented protocol reference"
-status = "pending"
+status = "done"
 depends_on = ["documentation-taxonomy"]
 
 [[steps]]
 id = "contract-authority-matrix"
 title = "Document TypeSpec coverage and the authority of every logical and packed contract"
-status = "pending"
+status = "done"
 depends_on = ["baseline-inventory"]
 
 [[steps]]
@@ -42,7 +42,7 @@ depends_on = ["baseline-inventory"]
 [[steps]]
 id = "all-operation-typespec-roadmap"
 title = "Specify migration waves for every operation, including logical contracts, packed codecs, and executable adapters"
-status = "pending"
+status = "done"
 depends_on = ["contract-authority-matrix", "alx-generation-assessment"]
 
 [[steps]]
@@ -54,25 +54,25 @@ depends_on = ["baseline-inventory", "alx-generation-assessment"]
 [[steps]]
 id = "shared-html-presentation"
 title = "Align Geometer documentation with the ALX shared stylesheet and reusable page components"
-status = "pending"
+status = "done"
 depends_on = ["documentation-taxonomy", "alx-generation-assessment"]
 
 [[steps]]
 id = "generated-html-expansion"
 title = "Generate operation coverage, packet references, relationships, and documentation indexes from governed sources"
-status = "pending"
+status = "done"
 depends_on = ["contract-authority-matrix", "shared-html-presentation", "all-operation-typespec-roadmap"]
 
 [[steps]]
 id = "design-doc-cleanup"
 title = "Keep interface specifications in design and relocate research, evidence, and maintainer procedures"
-status = "pending"
+status = "done"
 depends_on = ["documentation-taxonomy", "contract-authority-matrix"]
 
 [[steps]]
 id = "demo-runtime-audit"
 title = "Run the smallest current validation for every demo and record reproducible status"
-status = "pending"
+status = "active"
 depends_on = ["baseline-inventory"]
 
 [[steps]]
@@ -179,6 +179,20 @@ status = "pending"
 +++
 
 # Geometer Documentation Cleanup Plan
+
+## Execution Checkpoint: 2026-09-05
+
+The core documentation, TypeSpec migration assessment, and generated HTML work
+is implemented. See the [execution record](execution-checkpoint.md) for focused
+test evidence and independent checkpoint review. Source/interface and demo
+registration drift checks are implemented provisionally; their plan gate waits
+for demo disposition and the final audits. Exit criteria remain pending final
+closeout verification, not an assertion that implementation has not started.
+
+The [durable demo audit](../../developer/demo-status.md) records actual runs
+and explicit limitations. Native C++ GUI interaction remains unverified and
+no demo-removal disposition has been approved. No native/WASM rebuild,
+runtime migration, pruning, public push, or release has been performed.
 
 ## Objective
 

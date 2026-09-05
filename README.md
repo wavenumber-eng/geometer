@@ -1,223 +1,86 @@
 # Geometer
 
-Focused C++ geometry library, CLI, Python package, and WASM interface built on
-OCCT. Geometer provides generic CAD/kernel operations for STEP-to-GLB
-conversion, STEP HLR projection, exact planar STEP synthesis, planar
-contouring, packed planar boolean work, Fast vector HLR for STEP or indexed
-meshes, and browser SVG/Canvas mesh illustration.
+Geometer is a generic C++ geometry library with an executable, Python package,
+and browser WASM interfaces. It provides STEP conversion, hidden-line projection
+(HLR), planar geometry, and mesh illustration. Board/domain policy and
+application rendering decisions belong to callers, not the geometry kernel.
 
-> **Experimental analytic solver:**
-> `geometry.analytic_planar_boolean_batch.a0` is available for research and
-> evaluation, but it is not production-ready and may fail closed on valid
-> inputs. Do not use it as the dependable path for whole-board or whole-layer
-> copper unions. Prefer Geometer's Clipper2-backed planar operations when
-> polygonized geometry is suitable. See
-> [ADR-017](docs/geometer/adr/geometer-adr-017-retain_analytic_planar_boolean_as_experimental.md).
+## Capabilities And Maturity
 
-## Documentation
+| Capability | Use and maturity |
+| --- | --- |
+| STEP bounds, GLB conversion, HLR, planar STEP synthesis | Supported geometry APIs. Model bounds has promoted generated contracts; HLR's generated contracts remain pilots. |
+| Clipper2 Boolean/offset, planar batch solve and triangulation | Supported polygonized planar workflows; packed interfaces remain handwritten. |
+| Fast vector HLR and browser mesh illustration | Supported package interfaces; the demonstration applications are evaluation tools, not production renderers. |
+| Analytic line/arc planar Boolean | Experimental, not production-ready. May fail closed on valid inputs. Not the dependable whole-board/layer copper-union path; prefer Clipper2 when polygonized output is suitable. |
+| Persistent STEP-topology sessions | Experimental native-only subset. Structural declarations do not imply runtime availability. |
 
-- [Developer guide](docs/developer/README.md)
-- [Setup](docs/setup.html)
-- [Architecture](docs/architecture.html)
-- [Design and interface docs](docs/design/README.md)
-- [Requirements](docs/geometer/requirements/README.md)
-- [Contracts](docs/contracts/README.md)
-- [ADRs](docs/geometer/adr/README.md)
-- [Release notes](docs/releases/README.md)
-- [Examples](examples/README.md)
+Contract promotion and solver production readiness are separate. See
+[contract authority](docs/contracts/README.md) and
+[the analytic decision](docs/geometer/adr/geometer-adr-017-retain_analytic_planar_boolean_as_experimental.md).
 
-## Build And Validate
+## Choose An Interface
 
-```bash
-uv sync --group dev
-cmake --preset default
-cmake --build build --config Release
-uv run --group dev rack run --all
-uv run pytest tests/L99_release -q
-uv run python scripts/validate_native.py
-uv run python scripts/validate_python_package.py
+| Need | Entry point |
+| --- | --- |
+| Keep one executable running; send bytes and receive structured results | [Persistent executable IPC](docs/design/executable-ipc.md): Python, Node/TypeScript and Rust clients |
+| Convenient Python file/model operations | [Python package](docs/design/python-package.md) |
+| File conversion or scripting | [CLI commands](docs/design/cli.md) |
+| Geometry in a browser or Worker | [WASM](docs/design/wasm.md) and [TypeScript clients](docs/design/typescript-client.md) |
+| Embed in native C++ | [STEP](docs/design/step-geometry.md) and [planar APIs](docs/design/planar-geometry.md) |
+| Manage byte buffers across a foreign-function boundary | [C ABI](docs/design/c-abi.md) and [generic operations](docs/design/generic-operation-c-abi.md) |
+
+Not every operation is exposed through IPC. Check the executable's negotiated
+catalog and the [generated operation reference](docs/generated/contracts/index.html).
+
+## Install And Try
+
+Install the Python distribution (import name: `geometer`):
+
+```sh
+python -m pip install wn-geometer
+geometer --version
 ```
 
-Native artifacts are copied to `dist/native/<platform>/`. Root-level
-`dist/geometer*` artifacts are intentionally not produced.
-
-OCCT is generated dependency state under `.deps/`. Build scripts first try
-verified public prebuilt OCCT archives from
-`https://artifacts.wavenumber.net` before falling back to source builds. R2
-credentials are only needed for producer uploads or private fallback testing.
-
-Build WASM artifacts:
-
-```bash
-python scripts/build_wasm.py
-```
-
-WASM artifacts are copied to:
-
-- `dist/wasm/browser/`
-- `dist/wasm/node-test/`
-- `dist/wasm/planar-browser/`
-
-Generate the TypeSpec projections, `@wavenumber/geometer` ESM package, and
-TypeScript browser example with:
-
-```bash
-npm ci
-npm run generate:contracts
-npm run check:contracts
-```
-
-The package artifact is `dist/wasm/npm/geometer/`. It exposes direct and dedicated
-Worker WASM clients; the current repository artifact is a release input, not a
-claim that the package has been published to npm.
-
-## Python Package
-
-PyPI distribution: `wn-geometer`
-
-Import package: `geometer`
-
-Install the current release:
-
-```bash
-python -m pip install wn-geometer==2026.9.4
-```
-
-Basic Python use:
+Convert a STEP file with the executable-backed Python API:
 
 ```python
 from pathlib import Path
 import geometer
 
-version = geometer.version()
-projection = geometer.project_step_hlr(
-    Path("part.step"),
-    views=[geometer.ProjectionView.top()],
-    options=geometer.HlrOptions.fast_assembly_outline(),
-)
-glb_bytes = geometer.step_to_glb(Path("part.step"))
-step_bytes = geometer.planar_step(
-    {
-        "schema": "geometry.planar_step.request.a0",
-        "units": "mm",
-        "bodies": [
-            {
-                "id": "copper",
-                "thickness_mm": 0.035,
-                "regions": [
-                    {
-                        "outer": {
-                            "points": [[0, 0], [10, 0], [10, 5], [0, 5]],
-                            "segments": [{"kind": "line"}] * 4,
-                        }
-                    }
-                ],
-            }
-        ],
-    }
-)
-geometer.write_planar_step(
-    {
-        "schema": "geometry.planar_step.request.a0",
-        "units": "mm",
-        "bodies": [
-            {
-                "id": "copper",
-                "thickness_mm": 0.035,
-                "fuse_regions": True,
-                "regions": [
-                    {
-                        "outer": {
-                            "points": [[0, 0], [10, 0], [10, 5], [0, 5]],
-                            "segments": [{"kind": "line"}] * 4,
-                        }
-                    }
-                ],
-            }
-        ],
-    },
-    "layer.step",
-)
+Path("part.glb").write_bytes(geometer.model_to_glb(Path("part.step")))
 ```
 
-The package is executable-backed. Wheels bundle the platform executable under
-`geometer/native/<platform>/` and expose a `geometer` console command in the
-install environment. Existing file-oriented helpers use the JSON batch CLI;
-the experimental analytic API exports generated integer DTOs and a synchronous
-`GeometerClient` that uses the persistent binary `serve --stdio` protocol for
-typed model/mesh HLR and strict packed analytic requests. The file-oriented
-HLR helpers and their exact/poly defaults remain supported.
+Wheels bundle the native executable and install a `geometer` console command.
+For persistent processes, use the [IPC quick start](docs/design/executable-ipc.md).
+Pin the package version in your application's dependency lock for repeatability.
 
-## CLI
+Source checkouts provide native artifacts under `dist/native/<platform>/`,
+browser WASM under `dist/wasm/browser/`, and the generated ESM package under
+`dist/wasm/npm/geometer/`. The ESM artifact is not a claim of npm publication.
 
-```bash
-geometer --version
-geometer step-to-glb input.step output.glb
-geometer step-project-hlr input.step output.json
-geometer model-project-hlr input.step output.json --projection-algorithm fast --outline-algorithm fast-mesh-shadow
-geometer mesh-project-hlr input.mesh output.json --options fast-options.json
-geometer step-project-svg input.step output.svg --mode outline --view top
-geometer planar-step planar-step-request.json output.step
-geometer init-request request.json --step input.step --operation step_hlr_projection_json --output output.json
-geometer run request.json response.json
-```
+## Documentation And Examples
 
-## Examples
+[Browse the generated HTML documentation](docs/generated/contracts/guides.html)
+or use the authored Markdown sources below.
 
-- `examples/python/step_hlr_svg.py` - no-GUI package example that writes HLR
-  projection JSON, SVG, and GLB outputs.
-- `examples/python/pyvista_hlr_viewer.py` - PyVista/Qt STEP 3D + HLR preview.
-- `examples/wasm/embedded_model_viewer.html` - browser viewer using prepared GLB
-  fixtures and the WASM HLR worker.
-- `examples/wasm/model_bounds_demo.html` - TypeScript/generated-client pilot
-  that computes STEP model bounds in a dedicated Worker and visualizes them
-  through browser WASM and Three.js.
-- `examples/wasm/illustration_demo.html` - production-package consumer for
-  mesh illustration, SVG/Canvas output, and Fast vector linework.
-- `dist/wasm/demos/analytic_polygon_pour_demo.html`,
-  `dist/wasm/demos/hlr_demo.html`, `dist/wasm/demos/illustration_demo.html`, and
-  `dist/wasm/demos/planar_ring_solver_demo.html` - one-file standalone browser
-  demos for release review. Build them through
-  `python scripts/build_standalone_demos.py all`.
-- `examples/cpp/` - native Dear ImGui + SDL3 + OpenGL HLR preview.
+- [Interface specifications](docs/design/README.md)
+- [TypeSpec, contract authority and generated reference](docs/contracts/README.md)
+- [Examples and demo status](examples/README.md)
+- [Research and historical evidence](docs/research/README.md)
+- [Requirements](docs/geometer/requirements/README.md) and [decisions](docs/geometer/adr/README.md)
+- [Developer setup, builds, tests and releases](docs/developer/README.md)
+- [Release notes](docs/releases/README.md)
 
-Serve browser examples from the repo root:
+Start with the headless Python example or HLR Lab. Analytic and topology demos
+remain experimental; retention does not imply production support. See the
+[demo audit](docs/developer/demo-status.md) for verification limits.
 
-```bash
-python -m http.server 8123 --bind 127.0.0.1
-```
+## Contributing And License
 
-Open `http://127.0.0.1:8123/examples/wasm/embedded_model_viewer.html`.
-
-The `dist/wasm/demos/*.html` files can also be opened directly from disk after
-running `python scripts/build_wasm.py` and the demo bake scripts.
-
-## Release
-
-Geometer uses date-based releases per ADR 006:
-
-- Git tag: `vYYYY-MM-DD`
-- PyPI/CMake version: `YYYY.M.D`
-- C ABI generation: `YYYYMMDD`
-
-Same-day follow-up releases append a serial to the tag and package version, for
-example `v2026-05-24-2` and `2026.5.24.2`. The C ABI generation stays at
-`YYYYMMDD` unless the C ABI generation itself changes.
-
-Before tagging, run the L99 release gate plus native and package validation:
-
-```bash
-uv sync --group dev
-uv run pytest tests/L99_release -q
-uv run python scripts/validate_native.py
-uv run python scripts/validate_python_package.py
-```
-
-The repository declares the `python-native-wasm` Wavenumber development
-standards profile. Lightweight CI runs the L99 gate on Ubuntu, Windows, and
-macOS. Full native/WASM rebuilds remain explicit validation steps because fresh
-OCCT and Emscripten dependency builds are expensive.
-
-## License
+See the developer guide for native/WASM builds and required release checks.
+OCCT is generated dependency state under `.deps/`; documentation work does
+not require rebuilding it. Releases follow
+[date-based versioning](docs/geometer/adr/geometer-adr-006-date_based_versioning_policy.md).
 
 MIT. See [LICENSE](LICENSE).

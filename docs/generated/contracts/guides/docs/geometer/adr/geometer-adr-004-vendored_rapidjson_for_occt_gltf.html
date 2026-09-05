@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <title>ADR-004: Vendor RapidJSON for OCCT glTF export — Geometer</title>
+  <link rel="stylesheet" href="../../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../../guides.html">Documentation index</a><a href="../../../../../../geometer/adr/geometer-adr-004-vendored_rapidjson_for_occt_gltf.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="adr-004-vendor-rapidjson-for-occt-gltf-export">ADR-004: Vendor RapidJSON for OCCT glTF export</h1></header>
+<h2 id="status">Status</h2>
+<p>Accepted</p>
+<h2 id="context">Context</h2>
+<p>OCCT's <code>RWGltf_CafWriter</code> requires RapidJSON when <code>USE_RAPIDJSON=ON</code>. The
+previous build flow cloned RapidJSON v1.1.0 into <code>.deps/rapidjson-src</code> and then
+patched one header after clone so OCCT would compile with modern Clang and
+Emscripten.</p>
+<p>That worked, but it left a generated third-party git checkout in <code>.deps/</code>. The
+local patch branch could not be pushed to our Geometer remote, and fresh-clone
+behavior was less obvious than it needed to be.</p>
+<h2 id="decision">Decision</h2>
+<p>Geometer vendors RapidJSON v1.1.0 under <code>third_party/rapidjson</code>.</p>
+<p>The vendored copy includes:</p>
+<ul>
+<li><code>include/rapidjson/</code></li>
+<li><code>license.txt</code></li>
+<li>upstream <code>readme.md</code></li>
+</ul>
+<p>It intentionally includes Geometer's one compatibility patch in
+<code>include/rapidjson/document.h</code>: <code>GenericStringRef::operator=</code> is deleted. That
+matches the type's const member semantics and avoids modern Clang/Emscripten
+compile errors.</p>
+<p>The native and WASM build scripts verify that the vendored header exists and
+contains the compatibility patch, then pass <code>third_party/rapidjson</code> to OCCT via
+<code>3RDPARTY_RAPIDJSON_DIR</code>.</p>
+<h2 id="consequences">Consequences</h2>
+<ul>
+<li>A fresh clone no longer needs a RapidJSON network clone.</li>
+<li><code>.deps/</code> no longer contains RapidJSON state.</li>
+<li>RapidJSON updates are explicit source updates under <code>third_party/rapidjson</code>.</li>
+<li>The RapidJSON license stays checked in with the vendored source.</li>
+</ul>
+
+</main>
+</body>
+</html>

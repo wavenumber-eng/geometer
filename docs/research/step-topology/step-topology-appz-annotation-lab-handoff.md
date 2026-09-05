@@ -109,7 +109,7 @@ pointers, invent durable meaning from `gtt_`/`gts_` values, or persist Three.js
 object ids and triangle indexes.
 
 The maintained starting point is
-[`examples/node/step_topology_annotation_reference.ts`](../../examples/node/step_topology_annotation_reference.ts).
+[`examples/node/step_topology_annotation_reference.ts`](../../../examples/node/step_topology_annotation_reference.ts).
 It is compiled and bundled to
 `dist/native/examples/step-topology-annotation-reference.mjs`, runs against the
 real native executable, and is exercised by the TypeScript Rack stratum. The
@@ -125,17 +125,17 @@ structure/topology summaries. Retain failing cases as evidence.
 ## Evidence Index
 
 - [Fixture baseline](step-topology-fixture-baseline.md)
-- [Native inspection and session model](step-topology-native-inspection.md)
-- [GLB binding](step-topology-glb-binding.md)
-- [Logical groups](step-topology-logical-groups.md)
-- [Metadata probes](step-topology-metadata-probes.md)
-- [Edit journal](step-topology-edit-journal.md)
-- [Hierarchy](step-topology-hierarchy.md)
-- [Recovery](step-topology-recovery.md)
+- [Native inspection and session model](../../design/step-topology-native-inspection.md)
+- [GLB binding](../../design/step-topology-glb-binding.md)
+- [Logical groups](../../design/step-topology-logical-groups.md)
+- [Metadata probes](../../design/step-topology-metadata-probes.md)
+- [Edit journal](../../design/step-topology-edit-journal.md)
+- [Hierarchy](../../design/step-topology-hierarchy.md)
+- [Recovery](../../design/step-topology-recovery.md)
 - [XCAF persistence](step-topology-xcaf-persistence.md)
 - [AP242 persistence](step-topology-ap242-persistence.md)
-- [Experimental contract Slice B](step-topology-contract-slice-b.md)
-- [Experimental contract Slice C](step-topology-contract-slice-c.md)
+- [Experimental contract Slice B](../../design/step-topology-contract-slice-b.md)
+- [Experimental contract Slice C](../../design/step-topology-contract-slice-c.md)
 
 ## Authorization Boundary
 

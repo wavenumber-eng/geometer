@@ -153,7 +153,7 @@ legacy_gltf_enrichment_reused = false
 
 [toolchain]
 status = "implemented"
-design = "docs/design/typespec-toolchain.md"
+design = "docs/contracts/typespec-toolchain.md"
 runtime_dependency = false
 node_major = 24
 package_manager = "npm@11.16.0"
@@ -327,7 +327,7 @@ exact_oracle_target = "geometer_exact_feasibility"
 
 [analytic_exact_backend]
 status = "implemented_non_primary_oracle"
-design = "docs/design/exact-real-algebraic-a0.md"
+design = "docs/research/analytic/exact-real-algebraic-a0.md"
 design_sha256 = "71139fbe41e98fd1c4bab70916fb4fc3f9e720f948d2629815a61bba1433fb8e"
 conformance_identity = "geometry.exact_real_algebraic.feasibility.a0"
 magic = "GEXPA001"
@@ -526,19 +526,19 @@ implementation_allowed = true
 status = "approved"
 requested_revision = "529c768e559b4c88874264748d4186e775c8a4dd"
 review_head = "b86a065c5926c35f1eee23a9ba1cef890689c7d7"
-packet = "docs/design/transport-design-review.md"
+packet = "docs/research/history/transport-design-review.md"
 packet_sha256 = "865964402ff6258151b199f748ae0754c9fc4908021af01ffc6abdb47f2013ea"
 reviewed_adr_sha256 = "d4905bda88727fadeb221a3b6c5bfb392f5e062bb6033b0cded29f59fb492de0"
 adr_sha256 = "2a69d9e05baa7894be3677d2a9c250098bd45915a7cc9d083639650d3151d7d8"
 generic_c_abi_sha256 = "1b9d02d310110530cb62c82125613865a90bcb2f9da49397ae61dbc61abcd861"
-executable_ipc_sha256 = "42c122829bca64a4d9987acdefe5d72026e3e5e3fcd2cb4a64a6083485b3dfbf"
+executable_ipc_sha256 = "06d845025d79908f0c4a092a615e1040b9e7e7672a475e26564f10f2e53af871"
 reviewer = "independent-reviewer"
 review_date = "2026-08-12"
 reviewed_revision = "529c768e559b4c88874264748d4186e775c8a4dd"
 
 [documentation]
 generated_html_root = "docs/generated/contracts"
-design = "docs/design/generated-contract-reference.md"
+design = "docs/contracts/generated-contract-reference.md"
 source_revision = "27548a16e23a8bc225fc81c047bbef8c325fb4ae"
 runtime_sibling_dependency = false
 
@@ -557,7 +557,7 @@ role = "stylesheet"
 source = "appz/data_models/docs/core/design/styles.css"
 destination = "docs/design/styles.css"
 source_sha256 = "b0452e403db12c3fca581866b0953dbca45d751bcc83c137f0da16674859d151"
-sha256 = "5be346839f04afcfeedefe9836b360d06e38939840515d6f87ba5b4498ae51a7"
+sha256 = "378c08d0ffcee617b073c8a59563f61d840478e813d8764bc993f1a244f92d2a"
 status = "vendored"
 adaptation = "Replace internally licensed Berkeley Mono declarations with OFL-1.1 Cousine; preserve the reviewed layout and component rules; add narrow generated-code wrapping verified in a real browser."
 
@@ -1440,7 +1440,7 @@ whole_layer_copper_union = "not_recommended"
 named_consumer = "appz.data_models.pcb.matz"
 compatibility_snapshot = "docs/contracts/compatibility/data-models-geom-a0-2026-08-12.toml"
 design = "docs/design/analytic-planar-boolean-a0.md"
-design_sha256 = "eda8b849f1b01261e3018ea332fba3afb8822793213377b48cf134b74323d1fa"
+design_sha256 = "40b5fd0f3ed73c6a65ea5888de2bc1c5bfeab1a6b0bf27aab38dcb80eab24ba0"
 packet_spec = "docs/design/analytic-planar-boolean-packet-a0.md"
 packet_spec_sha256 = "2d0dbf730bbeaabe9e993a2800e875be85f3a8a07b82486a27cb7b1dc096f90b"
 numeric_catalog = "docs/contracts/analytic-planar-boolean-a0-catalog.toml"
@@ -1514,7 +1514,7 @@ performance_qualification_default_request = "tests/contracts/vectors/analytic/cr
 real_board_packet_provenance = "docs/contracts/analytic-real-board-packet-provenance.toml"
 real_board_packet_provenance_sha256 = "3e465a113fb4edb7667b9b76e684337f1062f76e3456b7a5ef0404f82034d7c2"
 real_board_packet_provenance_test = "tests/python/test_contract_promotion_manifest.py"
-real_board_packet_provenance_test_sha256 = "7b35e902911b2061324d7b602f4971d1e404ad3903df272fbc82bee15a071d7c"
+real_board_packet_provenance_test_sha256 = "c7d509d1b6dbd86f6948f52616d343ca28a5aa23b9c5effa572a737fda64ba52"
 real_board_packet_provenance_status = "public_mit_redistribution_authorized_rt_generated_local_qualified_loz_pending"
 real_board_packet_case_ids = ["rt_super_c1_pwr4", "loz_old_man_curved_copper"]
 real_board_packet_source_sha256 = ["90545409b6ce16e0b636fce3176c90b73be301d03f0a9e32c4ab21a42ad14aca", "377d5a05ed24137ea603d11c663d52ae48849b378534b346010936b826eb2375"]

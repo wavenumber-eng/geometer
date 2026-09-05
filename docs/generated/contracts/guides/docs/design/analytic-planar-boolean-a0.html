@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <title>Analytic Planar Boolean A0 Interface — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../design/analytic-planar-boolean-a0.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="analytic-planar-boolean-a0-interface">Analytic Planar Boolean A0 Interface</h1></header>
+<p>The current logical and failure contract is retained here. Historical solver
+architecture, benchmarks and abandoned promotion gates are preserved in the
+<a href="../../../../../research/analytic/analytic-planar-boolean-history.md">research record</a>, not
+as production requirements. The <a href="analytic-planar-boolean-packet-a0.html">packed specification</a>
+remains the byte-layout authority.</p>
+<h2 id="status">Status</h2>
+<p><strong>Experimental; not production-ready.</strong> The implementation and public client
+surface are retained for research, diagnostics, and compatibility, but callers
+must expect valid jobs to fail closed at numeric, topology, carrier, or resource
+boundaries. Do not use this operation as the dependable path for combining an
+entire PCB, copper layer, or similarly large artwork set into one analytic
+entity. Prefer Geometer's Clipper2-backed planar operations when polygonized
+output is suitable. <a href="../geometer/adr/geometer-adr-017-retain_analytic_planar_boolean_as_experimental.html">ADR-017</a>
+governs this current maturity decision.</p>
+<p>The logical TypeSpec shapes and packed A0 record layout remain a frozen
+candidate. Their availability and wire stability do not constitute production
+support. Existing center-form
+bytes stay compatible while A0 adds an endpoint/radius authored arc variant
+whose exact center may be non-integral. The solver and numeric policy are governed under
+<a href="../geometer/adr/geometer-adr-013-filtered_resolution_bounded_planar_boolean.html">ADR-013</a> for a
+speed-first filtered implementation with a 50 nm general topology-resolution
+envelope and one reported 1 um same-width union-capsule input recovery.
+The arbitrary-precision algebraic engine is explicitly non-primary. MATZ
+accepted the original
+consumer/provider design input, and independent review approved the analytic
+architecture at normative revision
+<code>529c768e559b4c88874264748d4186e775c8a4dd</code>. The separately compiled TypeSpec
+candidate and its logical/packed reconciliation were accepted at
+<code>f4b6a9b87bf16f57ef29dae22150b16f2a742b64</code>; it remains a frozen candidate in
+the shared generated projections. ADR-017 ends the former MATZ production-
+promotion direction.</p>
+<p>The current contract authorizes raw packet goldens and generated codec work.
+The former MATZ visualization gates are retained in the research record as historical evidence,
+not as an active production-promotion plan. ADR-012 records
+the historical exact-first feasibility decision; ADR-013 supersedes it for
+the filtered implementation architecture. References to “production” in those
+historical sections describe the intended execution path and qualification
+target at the time; they do not override the experimental status above.</p>
+<p>The endpoint/radius authored variant is admitted for closed planar-region
+rings. Constant-width swept-path centerlines retain line and exact
+integer-center arc segments in A0; endpoint/radius swept offsets are a separate
+future geometry capability.</p>
+<p>The filtered solver currently certifies coincident endpoint/radius circle
+carriers only when they use the same canonical unordered endpoint pair,
+radius, and selected center side. Equivalent circles described by different
+endpoint pairs, or by mixed center-form and endpoint/radius-form arcs, may fail
+closed with the governed <code>resource_limit_exceeded</code> job diagnostic under
+ADR-013. They are never approximated or omitted from a completed result. The former
+MATZ real-board gates are historical, not production acceptance criteria;
+scalable general carrier canonicalization is
+tracked in <a href="https://github.com/wavenumber-eng/geometer/issues/21">Geometer issue #21</a>.</p>
+<p>The stable operation identity is
+<code>geometry.analytic_planar_boolean_batch.a0</code>. Friendly generated methods are
+<code>analyticPlanarBooleanBatch</code> in TypeScript and
+<code>analytic_planar_boolean_batch</code> in Python and Rust.</p>
+<h2 id="authority-and-scope">Authority And Scope</h2>
+<p>Geometer owns the generic logical contract, packed attachment format,
+normalization, provenance representation, diagnostics, solver, native/WASM
+implementation, and release. The MATZ observation manifest is a governed
+consumer input, not a proposed TypeSpec or binary schema.</p>
+<p>A0 supports:</p>
+<ul>
+<li>independent ordered Boolean jobs in one batch;</li>
+<li><code>union</code> and <code>difference</code> stages, with operands within a stage treated as an
+unordered set;</li>
+<li>topology-indexed line/circular-arc planar regions;</li>
+<li>disks, annuli, capsules, and constant-width line/circular-arc swept paths
+with round caps and joins;</li>
+<li>authoritative analytic result topology, holes, islands, provenance, and
+generic contact relationships; and</li>
+<li>native, full-browser WASM, and executable IPC execution through the generic
+operation/attachment transports.</li>
+</ul>
+<p>A0 does not support ellipses, elliptical arcs, Beziers, splines, arbitrary
+offset policy, PCB nets, layers, conductive domains, or application source
+keys. Unsupported geometry fails its isolated job. It is never silently
+sampled into lines. Existing sampled planar and Clipper2 operations remain
+unchanged.</p>
+<h2 id="logical-request">Logical Request</h2>
+<p>TypeSpec governs the logical request even though the hot wire projection is a
+packed attachment. The normalized catalog must expose both the semantic model
+and its attachment projection so generated clients do not build JSON geometry.
+The candidate entrypoint is <code>src/tsp/geometer/analytic-candidate.tsp</code>; it emits
+the logical request/result identities and marks both operation projections as
+<code>packed_attachment</code> using format
+<code>geometry.analytic_planar_boolean.packet.a0</code>. The production TypeSpec
+entrypoint remains unchanged until this candidate and the packet freeze are
+accepted.</p>
+<h3 id="identities">Identities</h3>
+<p>All caller identities are packet-local, nonzero unsigned 64-bit integers.
+Separate declared spaces exist for jobs, stages, operands, authored regions,
+rings, paths, vertices, segments, curves, compact features, and relationship
+queries. Zero is reserved. Duplicate ids, missing references, and out-of-range
+values fail batch structural validation before geometry execution.</p>
+<p>TypeScript uses <code>bigint</code> and <code>BigUint64Array</code>, never <code>number</code>, for these
+identities. Python uses a bounded <code>int</code> codec. Ids are lifting tokens; they are
+not stable application keys and do not enter MATZ hashes.</p>
+<h3 id="batch-and-jobs">Batch And Jobs</h3>
+<p>The semantic request is:</p>
+<pre><code class="language-text">AnalyticPlanarBooleanBatchRequest
+  jobs: AnalyticPlanarBooleanJob[]
+  relationshipQueries: PlanarRelationshipQuery[]
+
+AnalyticPlanarBooleanJob
+  jobId: JobId
+  stages: AnalyticPlanarBooleanStage[]
+
+AnalyticPlanarBooleanStage
+  stageId: StageId
+  operation: union | difference
+  operands: AnalyticPlanarOperand[]
+</code></pre>
+<p>The accumulator begins empty. Stages execute in request order. Operands within
+one stage are a mathematical set and are canonicalized by operand id before
+solver submission. Let <code>R(S) = closure(interior(S))</code> in the Euclidean plane.
+For the current regularized closed material <code>A</code> and the union <code>U</code> of all closed
+operand sets in a stage, union computes <code>R(A union U)</code> and difference computes
+<code>R(A set-minus U)</code>. Boundary-only remnants and zero-area components are not
+material. A zero-operand union or difference is a successful no-op. Difference
+from an empty accumulator is a successful no-effect stage. Complete
+subtraction is a successful empty result.</p>
+<h3 id="geometry">Geometry</h3>
+<p>Every coordinate is a signed integer nanometer. Positive lengths are unsigned
+integer nanometers. A0 closed-ring arcs use topology endpoints plus either an
+exact integer center or an exact positive integer radius, together with an
+explicit direction/major-arc branch; the contract carries no angle or
+trigonometric field. Open swept-path centerlines admit only line and exact
+integer-center arc segments. Consumer fixture shorthand may describe a source
+sweep in microdegrees, but the imported conformance vector freezes its expanded
+integer vertices and governed arc construction before packet encoding.</p>
+<pre><code class="language-text">PointNm
+  x: int64
+  y: int64
+
+PlanarRing
+  ringId: RingId
+  vertices: AuthoredVertex[]
+  segments: AuthoredSegment[]
+  invariant: segments.length == vertices.length
+
+PlanarPath
+  pathId: PathId
+  vertices: AuthoredVertex[]
+  segments: AuthoredPathSegment[]
+  invariant: segments.length + 1 == vertices.length
+
+AuthoredSegment
+  segmentId: SegmentId
+  curveId: CurveId
+  geometry: line | CircularArcByCenterDescriptor | CircularArcByRadiusDescriptor
+
+AuthoredPathSegment
+  segmentId: SegmentId
+  curveId: CurveId
+  geometry: line | CircularArcByCenterDescriptor
+
+CircularArcByCenterDescriptor
+  center: PointNm
+  direction: cw | ccw
+  majorArc: bool
+
+CircularArcByRadiusDescriptor
+  radiusNm: uint64
+  direction: cw | ccw
+  majorArc: bool
+</code></pre>
+<p>A topology-indexed authored arc may not be a full circle. Center form requires
+the exact integer squared distances from its center to both topology endpoints
+to be equal and nonzero. Radius form requires a nonzero chord no longer than
+the diameter; its topology endpoints, radius, direction, and major-arc branch
+select the unique authored arc even when its center is not integral. Full
+circles use compact disk/annulus features. Radius form is not admitted in an
+open <code>PlanarPath</code>.</p>
+<p>The operand union is:</p>
+<pre><code class="language-text">PlanarRegionOperand
+  regionId, outer ring, hole rings
+
+DiskOperand
+  featureId, center, radius
+
+AnnulusOperand
+  featureId, center, innerRadius, outerRadius
+
+CapsuleOperand
+  featureId, start, end, width
+
+SweptPathOperand
+  featureId, centerline path, width
+  A0 cap/join policy: round
+</code></pre>
+<p>Rectangle fixture shorthand lowers to a four-line planar region. An arc sweep
+lowers to a one-arc swept path. Compact primitive boundary roles are derived
+features of the compact source; clients are not required to serialize a
+lowered boundary ring. Result provenance may refer to a compact feature plus a
+canonical boundary role. Authored ring/path segments retain their caller ids.</p>
+<p>Input planar regions must be individually valid and non-self-intersecting.
+Each ring has at least two analytic fragments and encloses positive area; every
+hole is strictly inside its outer ring, hole interiors are pairwise disjoint,
+and hole boundaries neither touch nor cross another ring. Nested islands are
+represented as separate operands rather than nested holes in one authored
+region. A planar-region operand denotes the regularized closed outer set minus
+the union of its hole interiors. Any ambiguous or invalid containment fails the
+job. Input winding is accepted in either direction; canonical result winding
+is fixed below. Disk radius is positive. An annulus requires
+<code>0 &lt; innerRadius &lt; outerRadius</code>.</p>
+<p>Capsule endpoints must be distinct and width must be positive; its set is the
+segment Minkowski-summed with a closed disk of radius <code>width / 2</code>. A swept path
+must contain at least one nonzero segment, may not retrace or self-intersect,
+and consecutive segments may not reverse through an exact 180-degree cusp.
+Every circular centerline segment must have radius strictly greater than half
+the sweep width so both analytic offsets remain positive-radius curves. The
+regularized swept area is the Minkowski sum of the accepted centerline with a
+closed disk of radius <code>width / 2</code>; overlap between nonadjacent parts of that
+swept area is allowed and is resolved by the filtered indexed arrangement.
+Inputs outside these A0 rules fail the isolated job with <code>invalid_topology</code> or
+<code>invalid_arc</code>.</p>
+<h3 id="relationship-queries">Relationship Queries</h3>
+<p>An A0 query names two request-known job ids:</p>
+<pre><code class="language-text">PlanarRelationshipQuery
+  queryId: QueryId
+  leftJobId: JobId
+  rightJobId: JobId
+</code></pre>
+<p>Only listed pairs are evaluated. A0 does not imply all-pairs work and does not
+accept solver-generated result-region ids in the one-pass request.</p>
+<h2 id="resolution-bounded-production-normalization">Resolution-Bounded Production Normalization</h2>
+<p>The public coordinate unit and governed output grid remain one nanometer. The
+separate topology-resolution envelope is 50 nm and cannot be relaxed per
+request.</p>
+<ol>
+<li>Authored values begin as bounded integers. Working intersections carry
+conservative error bounds in job-local coordinates.</li>
+<li>Fast-path line-line, line-circle, and circle-circle construction uses
+binary64 plus outward bounds. Fixed-width wide integers certify applicable
+orientation, incidence, squared-distance, and threshold predicates without
+building symbolic roots.</li>
+<li>Nearest-nanometer, ties-away-from-zero rounding remains deterministic. A
+bounded uncertainty that cannot establish one rounding or topology outcome
+takes the governed slow path or returns <code>resource_limit_exceeded</code> for that
+job.</li>
+<li>Features, gaps, and separations at or below 50 nm may be deterministically
+merged, bridged, shortened, or collapsed. A separation or feature width
+proven greater than 50 nm must retain its topology. Threshold fixtures at
+49, 50, and 51 nm govern this boundary.</li>
+<li>Every published vertex must remain within 50 nm of its resolved analytic
+position, and every published line/arc boundary must have Hausdorff
+displacement no greater than 50 nm. A normalized radius may move by no more
+than 50 nm, subject to the same whole-arc Hausdorff bound.</li>
+<li>Distinct required vertices separated by more than 50 nm may not share one
+representative. Above that threshold a fragment may not collapse, cyclic
+order may not invert, and containment may not change.</li>
+<li>The retained exact arc checker should compare squared distances against
+squared tolerances so ordinary irrational endpoints do not force a nested
+outer square root. This is an oracle/fallback repair, not a reason to make
+the algebraic engine primary again.</li>
+</ol>
+<p>Full result circles still use the canonical two-half-arc representation below.</p>
+<h2 id="canonical-result">Canonical Result</h2>
+<p>A successful job returns an analytic planar arrangement:</p>
+<pre><code class="language-text">AnalyticPlanarBooleanJobResult
+  jobId
+  status: success
+  diagnostics
+  vertices
+  directedFragments
+  rings
+  resultRegions
+  inline source-set values (interned by the packed projection)
+  operandOutcomes
+  digestSha256 (derived from the canonical standalone job-result packet)
+
+DirectedFragment
+  start/end vertex references
+  line, or circular arc with radius, direction, and major-arc branch
+  coincident positive source set
+  surviving subtractive-effect source set
+
+ResultRegion
+  generated resultRegionId
+  outer ring
+  positive contributor source set
+</code></pre>
+<p>Generated result ids are deterministic one-based uint64 ordinals in separate
+result spaces and are meaningful only within that result packet.</p>
+<p>Canonicalization is independent of OCCT traversal and allocation:</p>
+<ul>
+<li>vertices sort by <code>(x, y, incident analytic signature, complete intersection source-set tuple sequence)</code>. The incident analytic signature is the
+lexicographically sorted sequence of
+<code>(incidenceSide, otherEndpointX, otherEndpointY, kind, direction, majorArc, radius)</code> for every semantically interned retained fragment touching the
+vertex, where <code>incidenceSide</code> is <code>0</code> for fragment start and <code>1</code> for fragment
+end. It contains no generated id or source-set handle;</li>
+<li>fragments are local analytic records and sort by <code>(start vertex key, end vertex key, kind, direction, majorArc, radius, coincident-positive source-set tuple, surviving-subtraction source-set tuple)</code>; line records use direction
+<code>not_applicable</code>, <code>majorArc = false</code>, and radius zero;</li>
+<li>an outer ring is CCW and a hole ring is CW;</li>
+<li>each ring rotates to the lexicographically least vertex/outgoing-fragment
+key;</li>
+<li>containment children sort by their canonical ring key;</li>
+<li>ring parent/depth is the sole containment authority: parent links are
+acyclic, name the smallest strict containing ring, and hole parity equals
+odd depth; every even-depth ring is the outer ring of exactly one result
+region and odd-depth rings belong to none;</li>
+<li>maximal interior-connected area components become distinct result regions,
+so point-tangent areas are separate regions sharing a vertex;</li>
+<li>shared-edge unions remove the internal seam;</li>
+<li>result regions sort by outer-ring key;</li>
+<li>source sets contain unique sorted source references, sort lexicographically
+by the complete reference tuple sequence, and are interned by full content;
+an optional internal hash never affects ids or bytes; and</li>
+<li>diagnostics, operand events, and relationship pairs sort by governed keys.</li>
+</ul>
+<p>Canonical job-result records exclude enclosing batch offsets/indices,
+relationship results, wall time, peak memory, and other telemetry. The same job
+therefore has identical canonical record bytes/digest alone or in a mixed
+batch.</p>
+<p>The logical <code>digestSha256</code> field is required on successful and failed job
+results, but it is not stored in the 48-byte packed job-result record. A
+decoder constructs the canonical standalone job-result packet using the closure
+and rebasing algorithm in the packet specification, computes SHA-256 over those
+bytes, and exposes the lowercase hexadecimal digest as this deterministic
+derived field. Encoders verify a supplied logical digest against the same bytes
+and never serialize it as an independent value. Logical source-set values are
+inline at their use sites; the packed projector interns their complete content
+into the source-set and source-reference tables without changing their logical
+meaning. Projection in the other direction is bounded by a batch-wide maximum
+of 1,048,576 logical source-reference expansions. The checked count sums a
+set's members at every vertex, fragment source-set field, region, and operand
+event that exposes it, including repeated uses of one interned packed handle.
+Native and WASM enforce the same bound before publishing a successful packet,
+so every production result remains projectable by the generated clients.</p>
+<h2 id="provenance-and-outcomes">Provenance And Outcomes</h2>
+<p>Positive lineage is coverage-based and stage-aware. Union adds the positive
+source to covered material even when material was already covered. Difference
+removes all positive lineage from removed cells. A later union into the empty
+area begins fresh lineage. A subtraction later filled does not own the restored
+boundary, but remains history evidence.</p>
+<p>The result exposes:</p>
+<ul>
+<li>exact many-to-many positive-operand/result-region associations computed from
+actual surviving lineage;</li>
+<li>all coincident source curves/features for each surviving boundary fragment;</li>
+<li>surviving subtractive operands responsible for outer/hole fragments;</li>
+<li>all source segments/features forming each new intersection vertex; and</li>
+<li>nonexclusive, canonically sorted outcome events for each operand.</li>
+</ul>
+<p>Outcome events include:</p>
+<ul>
+<li><code>contributes_final_material</code> with result-region references;</li>
+<li><code>redundant_or_absorbed_coverage</code>;</li>
+<li><code>partially_removed_later</code>;</li>
+<li><code>completely_removed_later</code>;</li>
+<li><code>subtraction_effect_survives</code> with every surviving boundary/result reference,
+or an empty reference range for unfilled complete subtraction with no final
+material boundary;</li>
+<li><code>subtraction_effect_overwritten_later</code>; and</li>
+<li><code>no_effect</code>.</li>
+</ul>
+<p>These are not forced into one enum. A source may have several simultaneous
+events. A0 does not serialize contributor-coverage subregions.</p>
+<p>Their truth conditions are exact and use positive-area arrangement cells;
+boundary-only contact does not count as material effect:</p>
+<ul>
+<li><code>contributes_final_material</code> exists for a union operand iff at least one
+final present cell carries that operand's positive lineage. Its references
+are exactly the result regions containing such cells.</li>
+<li><code>redundant_or_absorbed_coverage</code> exists iff a union operand covered positive
+area at its stage but some or all of that area was already covered by the
+pre-stage accumulator or another operand in the same unordered stage. It may
+coexist with <code>contributes_final_material</code>.</li>
+<li><code>partially_removed_later</code> exists iff an operand contributed positive-area
+material immediately after its union stage and later differences remove some
+but not all of its lineage-bearing area before the final result.</li>
+<li><code>completely_removed_later</code> exists iff such material existed immediately
+after insertion and none of its lineage remains in final material. It is
+mutually exclusive with <code>contributes_final_material</code> and
+<code>partially_removed_later</code>.</li>
+<li><code>subtraction_effect_survives</code> exists iff a difference operand removes
+positive area that remains unfilled in the final result. Its references are
+exactly the final boundary fragments that separate its attributed removed
+set from material. Still-unfilled removal can have no attributable final
+boundary after complete subtraction or when only another disconnected
+removed component was refilled. In either case this event has an empty
+reference range rather than being omitted. It may coexist with
+<code>subtraction_effect_overwritten_later</code> when only part of the attributed
+removed area was restored.</li>
+<li><code>subtraction_effect_overwritten_later</code> exists iff positive area removed by a
+difference operand is restored by a later union. It may coexist with a
+surviving effect when only part of the removed area is restored.</li>
+<li><code>no_effect</code> exists iff the operand changes neither the regularized material
+set nor any positive/subtractive lineage or history cell. It is exclusive
+with every other event.</li>
+</ul>
+<p>Same-stage union operands are evaluated symmetrically against the pre-stage
+accumulator and the complete same-stage union, so no authored operand order can
+change these predicates.</p>
+<p>Same-stage difference operands are likewise evaluated symmetrically, never as
+a sequential subtraction. For operand <code>D</code>, its attributed removed set is
+<code>R(interior(pre-stage material) intersection interior(D))</code>, independent of
+every other operand in that stage. A positive-area cell covered by several
+same-stage subtractors records every such operand, so coincident and partially
+overlapping subtractors each receive removal/history credit for their own
+attributed set. A surviving boundary fragment names every credited subtractor
+whose attributed removed set lies on its removed side and whose pre-stage
+material lies on its retained side. Each operand's
+<code>subtraction_effect_survives</code>, <code>subtraction_effect_overwritten_later</code>, and
+<code>no_effect</code> predicates are evaluated from that independent attributed set and
+the later-stage history. Consequently operand-id sorting is canonical encoding
+only and cannot change difference lineage.</p>
+<h2 id="relationship-result">Relationship Result</h2>
+<p>For each selected successful job pair, Geometer returns:</p>
+<ul>
+<li>aggregate maximum intersection dimension: <code>disjoint</code>, <code>point</code>, <code>curve</code>, or
+<code>area</code>;</li>
+<li>canonically sorted concrete left/right result-region pairs with their
+dimension;</li>
+<li>symmetric equality; and</li>
+<li>directional containment where applicable.</li>
+</ul>
+<p>For closed regularized result-region sets <code>L</code> and <code>R</code>, dimension is <code>area</code> iff
+<code>interior(L intersection R)</code> is nonempty; otherwise <code>curve</code> iff their
+intersection contains a nonzero-length line or circular-arc interval;
+otherwise <code>point</code> iff the intersection is nonempty; otherwise <code>disjoint</code>.
+Boundary contact is therefore reported as <code>point</code> or <code>curve</code>, never area.
+<code>equality</code> means exact set equality. <code>leftContainsRight</code> means <code>R</code> is a subset
+of <code>L</code>, and <code>rightContainsLeft</code> is the converse; these flags are non-strict, so
+equality sets both. Proper containment is derived as containment without
+equality and is not separately encoded. Containment and equality include
+boundaries and are decided by the exact arrangement, not sampling.</p>
+<p>An empty successful job is <code>disjoint</code> from every job and yields no concrete
+pairs. A query depending on a failed job is
+<code>skipped_dependency_failed</code>. Geometer does not return or interpret net/domain
+policy.</p>
+<h2 id="failure-boundary-and-diagnostics">Failure Boundary And Diagnostics</h2>
+<p>Malformed generic framing and foreign-memory descriptor failures retain the
+generic transport behavior. A well-formed invocation with unsupported packet
+generation, bad attachment metadata, impossible packet table
+bounds/counts/offsets, duplicate ids, missing/cross-space references, or
+ambiguous job indexing produces a typed contract diagnostic and rejects the
+whole batch before geometry. Generated clients surface that typed rejection as
+<code>GeometerContractError</code>; no partial result attachment exists. Once jobs are
+structurally isolated, geometry, capability, solver, resource, and
+normalization failures are job-local; independent jobs continue.</p>
+<p>The scope matrix is normative:</p>
+<table>
+<thead>
+<tr>
+<th>Failure</th>
+<th>Wire category/scope</th>
+<th>Generated client</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>generic framing, pointer/descriptor, transport allocation</td>
+<td><code>geometer.transport.*</code>, no typed operation result when the transport cannot construct one</td>
+<td>transport/invocation exception</td>
+</tr>
+<tr>
+<td>packet magic/generation/table/limit defect</td>
+<td><code>geometer.contract.analytic_planar_boolean_packet.*</code>, batch rejected</td>
+<td><code>GeometerContractError</code></td>
+</tr>
+<tr>
+<td>duplicate/out-of-range id</td>
+<td><code>geometer.contract.analytic_planar_boolean_packet.invalid_id</code>, batch rejected</td>
+<td><code>GeometerContractError</code></td>
+</tr>
+<tr>
+<td>missing/cross-space reference</td>
+<td><code>geometer.contract.analytic_planar_boolean_packet.invalid_reference</code>, batch rejected</td>
+<td><code>GeometerContractError</code></td>
+</tr>
+<tr>
+<td>valid isolated job with invalid topology/arc/capability/normalization/solver/resource outcome</td>
+<td>operation diagnostic in failed job result</td>
+<td>returned failed job result</td>
+</tr>
+<tr>
+<td>relationship depending on failed job</td>
+<td><code>skipped_dependency_failed</code> relationship status</td>
+<td>returned relationship result</td>
+</tr>
+<tr>
+<td>relationship evaluation for otherwise successful jobs cannot complete within exact solver/resource rules</td>
+<td>outer <code>geometer.operation.analytic_planar_boolean.solver_failed</code> or <code>.resource_limit_exceeded</code>; whole invocation fails and no result attachment is returned</td>
+<td>operation exception</td>
+</tr>
+</tbody>
+</table>
+<p>A0 has no query-scoped diagnostic record. Query ids and references are
+validated with the request packet before job isolation. Dependency failure has
+the dedicated relationship status above; any other relationship-computation
+failure is an outer operation failure, so the result packet's diagnostic table
+contains job-scoped records only.</p>
+<p>Operation diagnostic identities are namespaced strings in generated APIs and
+compact governed integers in a structurally valid result packet:</p>
+<ul>
+<li><code>geometer.operation.analytic_planar_boolean.invalid_topology</code></li>
+<li><code>geometer.operation.analytic_planar_boolean.invalid_arc</code></li>
+<li><code>geometer.operation.analytic_planar_boolean.unsupported_geometry</code></li>
+<li><code>geometer.operation.analytic_planar_boolean.normalization_error_exceeded</code></li>
+<li><code>geometer.operation.analytic_planar_boolean.normalization_topology_collapse</code></li>
+<li><code>geometer.operation.analytic_planar_boolean.nonanalytic_result</code></li>
+<li><code>geometer.operation.analytic_planar_boolean.solver_failed</code></li>
+<li><code>geometer.operation.analytic_planar_boolean.resource_limit_exceeded</code></li>
+<li><code>geometer.operation.analytic_planar_boolean.resolution_coalesced</code> (warning)</li>
+</ul>
+<p>Diagnostics carry trustworthy job/stage/operand/geometry ids and an optional
+governed logical path identity. Unknown or untrusted ids are omitted rather
+than guessed.</p>
+<p>The logical <code>pathIdentity</code> is the symbolic name of the packed <code>path_token</code> from
+the numeric catalog. Token zero maps to absence; every nonzero token maps
+one-to-one to the same-named <code>JobDiagnosticPath</code> enum member. This standalone
+projection never depends on the original request, request array indexes, or an
+ID-to-index lookup, so a persisted result packet always decodes identically.
+Generated convenience code may combine the identity, trusted ids, and an
+available request to present a navigable location, but that presentation is not
+part of the canonical result DTO or bytes. Batch-rejecting outer contract
+diagnostics continue to use <code>DiagnosticA0.path</code> as an RFC 6901 pointer because
+they are produced while validating the request document.</p>
+<h2 id="generated-clients">Generated Clients</h2>
+<p>TypeScript:</p>
+<pre><code class="language-ts">client.analyticPlanarBooleanBatch(
+  request: AnalyticPlanarBooleanBatchRequest,
+  options?: OperationCallOptions,
+): Promise&lt;AnalyticPlanarBooleanBatchResult&gt;
+</code></pre>
+<p>The encoder writes directly to <code>ArrayBuffer</code>/typed arrays. Identity types are
+<code>bigint</code>; compile-time and runtime tests reject <code>number</code> ids.</p>
+<p>Python:</p>
+<pre><code class="language-python">client.analytic_planar_boolean_batch(
+    request: AnalyticPlanarBooleanBatchRequest,
+    *,
+    timeout: float | None = None,
+) -&gt; AnalyticPlanarBooleanBatchResult
+</code></pre>
+<p>The encoder accepts generated models and writes bytes/memoryview without JSON
+on the geometry hot path. Public convenience adapters may map existing values
+into these generated types but cannot remain an independent structural
+authority.</p>
+<p>All generated suites must prove fixed uint64 round trips, strict validation,
+portable fixture encoding/decoding, job-local failures, canonical job-result
+digests, attachment ownership, and capability errors.</p>
+<p>Rust exposes the same logical model and a friendly
+<code>analytic_planar_boolean_batch</code> method through the persistent executable
+client. Identity newtypes wrap <code>u64</code> and reject zero. Its packed codec writes
+directly to byte buffers and shares every strict, malformed, canonical-byte,
+diagnostic, and capability vector with C++, TypeScript, and Python. Rust is a
+required production projection, not a follow-up.</p>
+<h2 id="historical-section-links">Historical Section Links</h2>
+<p>The following anchors preserve existing links without retaining research
+results as interface requirements. These records do not establish production
+readiness:</p>
+<p><a id="feasibility-evidence"></a></p>
+<ul>
+<li><a href="../../../../../research/analytic/analytic-planar-boolean-history.md#feasibility-evidence">Feasibility Evidence</a></li>
+</ul>
+<p><a id="production-solver-architecture"></a></p>
+<ul>
+<li><a href="../../../../../research/analytic/analytic-planar-boolean-history.md#production-solver-architecture">Production Solver Architecture</a></li>
+</ul>
+<p><a id="historical-exact-first-architecture-non-primary"></a></p>
+<ul>
+<li><a href="../../../../../research/analytic/analytic-planar-boolean-history.md#historical-exact-first-architecture-non-primary">Historical Exact-First Architecture (Non-Primary)</a></li>
+</ul>
+<p><a id="historical-exact-normalization-oracle-only"></a></p>
+<ul>
+<li><a href="../../../../../research/analytic/analytic-planar-boolean-history.md#historical-exact-normalization-oracle-only">Historical Exact Normalization (Oracle Only)</a></li>
+</ul>
+<p><a id="browser-packaging"></a></p>
+<ul>
+<li><a href="../../../../../research/analytic/analytic-planar-boolean-history.md#browser-packaging">Browser Packaging</a></li>
+</ul>
+<p><a id="performance-and-telemetry"></a></p>
+<ul>
+<li><a href="../../../../../research/analytic/analytic-planar-boolean-history.md#performance-and-telemetry">Performance And Telemetry</a></li>
+</ul>
+<p><a id="promotion-gates"></a></p>
+<ul>
+<li><a href="../../../../../research/analytic/analytic-planar-boolean-history.md#promotion-gates">Promotion Gates</a></li>
+</ul>
+<p><a id="filtered-production-gates"></a></p>
+<ul>
+<li><a href="../../../../../research/analytic/analytic-planar-boolean-history.md#filtered-production-gates">Filtered Production Gates</a></li>
+</ul>
+<p><a id="exact-result-replay-and-mutation-sentinels"></a></p>
+<ul>
+<li><a href="../../../../../research/analytic/analytic-planar-boolean-history.md#exact-result-replay-and-mutation-sentinels">Exact Result Replay And Mutation Sentinels</a></li>
+</ul>
+<p><a id="closed-form-analytic-invariants"></a></p>
+<ul>
+<li><a href="../../../../../research/analytic/analytic-planar-boolean-history.md#closed-form-analytic-invariants">Closed-Form Analytic Invariants</a></li>
+</ul>
+<p><a id="exact-degeneracy-boundaries"></a></p>
+<ul>
+<li><a href="../../../../../research/analytic/analytic-planar-boolean-history.md#exact-degeneracy-boundaries">Exact Degeneracy Boundaries</a></li>
+</ul>
+<p><a id="exact-boolean-identities"></a></p>
+<ul>
+<li><a href="../../../../../research/analytic/analytic-planar-boolean-history.md#exact-boolean-identities">Exact Boolean Identities</a></li>
+</ul>
+<p><a id="exact-boolean-metamorphic-relations"></a></p>
+<ul>
+<li><a href="../../../../../research/analytic/analytic-planar-boolean-history.md#exact-boolean-metamorphic-relations">Exact Boolean Metamorphic Relations</a></li>
+</ul>
+<p><a id="bounded-rectangle-enumeration"></a></p>
+<ul>
+<li><a href="../../../../../research/analytic/analytic-planar-boolean-history.md#bounded-rectangle-enumeration">Bounded Rectangle Enumeration</a></li>
+</ul>
+<p><a id="deterministic-seeded-rectangle-properties"></a></p>
+<ul>
+<li><a href="../../../../../research/analytic/analytic-planar-boolean-history.md#deterministic-seeded-rectangle-properties">Deterministic Seeded Rectangle Properties</a></li>
+</ul>
+<p><a id="exact-many-to-many-lineage-matrix"></a></p>
+<ul>
+<li><a href="../../../../../research/analytic/analytic-planar-boolean-history.md#exact-many-to-many-lineage-matrix">Exact Many-To-Many Lineage Matrix</a></li>
+</ul>
+<p><a id="occt-801-qualification"></a></p>
+<ul>
+<li><a href="../../../../../research/analytic/analytic-planar-boolean-history.md#occt-801-qualification">OCCT 8.0.1 Qualification</a></li>
+</ul>
+
+</main>
+</body>
+</html>

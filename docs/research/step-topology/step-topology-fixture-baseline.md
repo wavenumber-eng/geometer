@@ -14,7 +14,7 @@ occurrences, and topology owned by simple-shape definitions. It does not assign
 durable topology identity and does not define an annotation vocabulary.
 
 The machine-readable evidence is
-[`docs/reports/step-topology-fixture-baseline.json`](../reports/step-topology-fixture-baseline.json).
+[`docs/reports/step-topology-fixture-baseline.json`](../../reports/step-topology-fixture-baseline.json).
 Its native generator and freshness test are implemented by
 `geometer_step_topology_fixture_inventory`. The committed render-count report
 is a Windows x64 reference because OCCT tessellation cardinality can vary
@@ -147,13 +147,13 @@ unbounded all-faces JSON response is not an acceptable starting point.
 The current largest direct binding table is the repeated SOIC assembly at 312
 spans and 73,632 logical bytes. Its 636 unique triangles expand to 2,992
 instanced triangles. See
-[direct render-binding research](step-topology-render-binding.md) for the
+[direct render-binding research](../../design/step-topology-render-binding.md) for the
 selection and reverse-resolution evidence.
 
 The A2 report also records the actual deterministic binding-GLB JSON, binary,
 and total byte counts, plus one-primitive-per-face draw-call cardinality and a
 one-merged-primitive-per-occurrence projection. See
-[GLB work-packet research](step-topology-glb-binding.md) for the route and
+[GLB work-packet research](../../design/step-topology-glb-binding.md) for the route and
 layout comparison and the real Three.js raycast result.
 
 ## Runtime, Fixture, And Matrix Impact
@@ -245,7 +245,7 @@ Geometer now links `TKBinXCAF` and `TKXmlXCAF`; the same-version standard
 driver evidence is recorded in `step-topology-xcaf-persistence.md`.
 The toolkits are native-only and are not added to the browser WASM target.
 
-The follow-on [native inspection research](step-topology-native-inspection.md)
+The follow-on [native inspection research](../../design/step-topology-native-inspection.md)
 now proves BRepGraph population, reconstruction, UID behavior, repeated product
 occurrences, layer registration, and retained face mesh in an isolated native
 test. XCAF remains the document/session source of truth; the BRepGraph probe is

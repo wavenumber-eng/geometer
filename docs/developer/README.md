@@ -27,6 +27,10 @@ specific names, visualizer policy, or downstream application semantics into
 For the current callable C++, C ABI, Python, WASM, CLI, JSON, and binary
 formats, start at [../design/README.md](../design/README.md).
 
+For authored/generated documentation ownership and focused freshness checks,
+see [documentation maintenance](documentation.md). The [demo audit](demo-status.md)
+records current runtime evidence and remaining verification gaps.
+
 ## Repository Layout
 
 - `src/cpp/lib/` - reusable C++ library code.
@@ -132,7 +136,7 @@ rejects stale, missing, unexpected, unlinked, or externally dependent generated
 files, verifies vendored documentation assets, and replays the governed raw
 contract vectors under `tests/contracts/vectors/`. Use `npm run generate:docs`
 or `npm run check:docs` for a focused documentation-only pass. See
-[../design/typespec-toolchain.md](../design/typespec-toolchain.md) for authority,
+[../design/typespec-toolchain.md](../contracts/typespec-toolchain.md) for authority,
 supported constructs, identities, and output paths.
 
 ## Workspace Copy Setup
@@ -650,7 +654,7 @@ python -m http.server 8123 --bind 127.0.0.1 --directory dist\wasm\demos\hlr
 Open `http://127.0.0.1:8123/`. The page runtime is only `index.html`; the
 adjacent `_headers` and `asset-manifest.json` files are deployment and closure
 metadata. This command builds and serves locally—it does not publish. See
-[Browser demo packaging and UI](../design/browser-demos.md) before adding or
+[Browser demo packaging and UI](browser-demos.md) before adding or
 hosting another demo.
 
 The generated TypeScript model-bounds example uses the packaged high-level
@@ -736,9 +740,11 @@ uv run pytest tests\python\test_topology_worker_supervisor.py -q
 ```
 
 The helper worker protocol is test-only. Do not build application code against
-it. Slice A's persistent-topology operation models are now generated from
-TypeSpec, but are explicitly marked unavailable until a governed process
-adapter implements them. See
+it. Persistent-topology operation models are generated from TypeSpec. Nine
+experimental operations have native executable IPC adapters; hierarchy,
+recovery analysis, and save remain structural-only. None are browser/WASM
+operations or production-ready topology APIs. Check the advertised catalog
+before calling them. See
 [STEP topology contract Slice A](../design/step-topology-contract-a0.md).
 
 The experimental direct topology-to-triangle binding proof has a separate
@@ -808,7 +814,7 @@ same-version, old-write/new-read, new-write/old-read, and missing-reader-driver
 behavior for XBF and XML. Its artifacts and provenance report remain generated
 under `.deps/xcaf-matrix/automated/`; do not commit them. The durable measured
 result and its narrow scope are recorded in
-`docs/design/step-topology-xcaf-persistence.md`.
+`docs/research/step-topology/step-topology-xcaf-persistence.md`.
 
 Specification traceability is recorded as relative locators in the design
 docs. `GEOMETER_AP242_SPEC_ROOT` is only a manual reviewer convention; no test

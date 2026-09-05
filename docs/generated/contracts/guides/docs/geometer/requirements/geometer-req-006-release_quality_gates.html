@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <title>REQ-006: Release Quality Gates — Geometer</title>
+  <link rel="stylesheet" href="../../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../../guides.html">Documentation index</a><a href="../../../../../../geometer/requirements/geometer-req-006-release_quality_gates.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="req-006-release-quality-gates">REQ-006: Release Quality Gates</h1></header>
+<h2 id="summary">Summary</h2>
+<p>A tagged Geometer release must pass deterministic native, Python, package, and
+hygiene checks before publication.</p>
+<h2 id="requirements">Requirements</h2>
+<ol>
+<li>Run <code>git diff --check</code>.</li>
+<li>Run Ruff on Python source, examples, tests, and scripts.</li>
+<li>Run Pyright on the public Python package, scripts, and Python tests.</li>
+<li>Run <code>uv lock --check</code>.</li>
+<li>Run clang-format checking on C++ source, examples, and tests.</li>
+<li>Run Lizard complexity checking as part of release signoff.</li>
+<li>Run the L99 code-hygiene test stratum before tagging.</li>
+<li>Run native validation for the release platform.</li>
+<li>Run Python package validation against an installed wheel.</li>
+<li>For Linux releases, run validation from WSL2 or Linux and check that the
+executable does not dynamically depend on OCCT <code>libTK*</code> libraries.</li>
+<li>After PyPI publication, install from PyPI in WSL2 and validate downstream
+use through Altium Cruncher or the headless package example.</li>
+<li>When OCCT is restored from the binary dependency cache, validate the cache
+manifest and archive SHA-256 before using the restored install tree.</li>
+</ol>
+
+</main>
+</body>
+</html>

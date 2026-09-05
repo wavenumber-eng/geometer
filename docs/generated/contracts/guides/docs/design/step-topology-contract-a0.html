@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <title>STEP Topology Contract Slice A — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../design/step-topology-contract-a0.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="step-topology-contract-slice-a">STEP Topology Contract Slice A</h1></header>
+<p>Status: unpromoted experimental candidate; native lifecycle/inspection/render runtime available</p>
+<p>Date: 2026-08-22</p>
+<h2 id="purpose-and-authority">Purpose And Authority</h2>
+<p>Slice A gives the native STEP/XCAF research a generated, bounded vocabulary for
+native process and TypeScript adapters. It covers open, close, paged inspection,
+GLB rendering, and renderer-neutral hit resolution. It does not expose those
+operations through the generic C ABI or browser/WASM. The native executable IPC
+initially advertised open, paged inspect, render, hit resolution, and close;
+later experimental slices add group/probe mutation, journal checkpoint, and
+exact journal restore. The strict generic IPC request and
+operation-outcome envelopes now admit every generated topology
+request/result variant, which is transport typing only and does not change
+runtime availability.</p>
+<p>The authored source is
+<code>src/tsp/geometer/operations/step-topology-a0.tsp</code>; the operation declarations
+are in <code>step-topology-operation-a0.tsp</code>. TypeSpec owns only this candidate wire
+structure. The focused C++ session, render-artifact, GLB, and hit-resolution
+implementations remain behavioral authority. The promotion manifest records
+every root and operation as <code>experimental_candidate</code>.</p>
+<p>This is greenfield Geometer research. It does not reuse the legacy
+<code>appz/data_models</code> GLTF enrichment vocabulary and is not the eventual
+carrier-neutral annotation contract.</p>
+<h2 id="lifecycle-and-identity">Lifecycle And Identity</h2>
+<p>Every operation after open carries both the opaque session handle and the
+positive session generation. Target handles identify definitions,
+occurrences, bodies, shells, or faces only inside that live generation. Render
+and GLB artifact handles are separate identities. None is durable across
+refresh, close, eviction, worker replacement, restart, or export/reload.</p>
+<p>The generated codecs enforce closed objects, fixed handle/hash byte lengths,
+positive generations, bounded indices, bounded strings and arrays, and exact
+literal schema/attachment values. They deliberately do not interpret token
+prefixes or cryptographic seals. Native lookup verifies the session secret,
+generation, artifact digest/seal, exact indices, and claimed
+occurrence/body/face relationship. This prevents language projections from
+implementing weaker copies of session security.</p>
+<p>The normalized inspection result separates definitions, root occurrences,
+component occurrences, bodies, shells, and faces. Component occurrences carry
+their parent and positive depth; root occurrences cannot accidentally acquire
+those fields. Body/shell/face ownership is plural because an OCCT subshape may
+participate in more than one containing shape. Bounded <code>body_shell</code>,
+<code>body_face</code>, and <code>shell_face</code> edge records carry relationships separately from
+fixed-size target summaries, so one high-membership target cannot exceed the
+JSON limit. Definitions,
+bodies, shells, and faces may carry the same source-entity evidence shape,
+including the source model number, entity type, mapping method, and whether the
+shape-result relationship round-trips.</p>
+<p>A native page contains no more than 1,024 total target/edge records and has an
+opaque section/record/member continuation cursor. Counts describe the complete
+snapshot. Source-entity evidence is opt-in. Diagnostic-carrier projection is
+currently rejected explicitly when <code>include_diagnostics</code> is true; it is not a
+silent empty result. The optional compact topology table remains reserved for a
+future separately specified format.</p>
+<p>Whole-snapshot validation is stateful. The generated TypeScript helper exposes
+a session/generation-bound inspection accumulator that accepts every page
+through the terminal page. It retains target handles and relationships across
+page boundaries, rejects changed counts or repeated cursors, and only at the
+terminal page accepts exact counts, complete definition and occurrence
+parentage, non-dangling topology edges, definition agreement, and exact
+body/shell/face membership counts. The one-call helper is only for terminal
+single-page snapshots and rejects a continuation cursor.</p>
+<p>The accumulator rejects a declared count as soon as any record category
+exceeds it, and every nonterminal page must add at least one target record.
+This bounds retained cursors and records by the declared snapshot counts.
+Definition cardinalities are accumulated incrementally and occurrence depths
+are memoized during a color-marked parent-graph walk, keeping terminal
+validation linear in records and membership edges. Component depth is capped
+at 64, matching native traversal containment.</p>
+<p>All Slice A JSON counters, byte lengths, generations, and indices are bounded
+<code>uint32</code> values. This is intentional: JavaScript <code>number</code> represents that
+entire integer domain exactly, so generated TypeScript codecs do not imply a
+<code>bigint</code> value while parsing ordinary JSON numbers.</p>
+<h2 id="attachment-contract">Attachment Contract</h2>
+<p>Binary content is never base64 JSON:</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Direction</th>
+<th>Attachment</th>
+<th>Required</th>
+<th style="text-align:right">Limit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>open</td>
+<td>input</td>
+<td><code>step</code></td>
+<td>yes</td>
+<td style="text-align:right">256 MiB</td>
+</tr>
+<tr>
+<td>inspect</td>
+<td>output</td>
+<td><code>topology_table</code></td>
+<td>no</td>
+<td style="text-align:right">128 MiB</td>
+</tr>
+<tr>
+<td>render</td>
+<td>output</td>
+<td><code>glb</code></td>
+<td>yes</td>
+<td style="text-align:right">256 MiB</td>
+</tr>
+<tr>
+<td>render</td>
+<td>output</td>
+<td><code>topology_binding_table</code></td>
+<td>no</td>
+<td style="text-align:right">128 MiB</td>
+</tr>
+</tbody>
+</table>
+<p>The JSON result descriptors use literal names, media types, and format
+identities so an attachment descriptor cannot silently describe a different
+slot. Transport adapters must additionally verify that every required external
+attachment exists exactly once, that no undeclared attachment is present, and
+that byte length and SHA-256 match its descriptor. The compact table formats
+are reserved identities, not implemented formats in Slice A.</p>
+<h2 id="render-and-hit-shape">Render And Hit Shape</h2>
+<p>The render request fixes tessellation deflections, relative/parallel policy,
+and the 3x4 source-to-render transform. The result binds a sealed GLB artifact
+to the originating session generation and records definition mesh, occurrence
+instance, primitive, and triangle cardinality. The required GLB descriptor is
+distinct from the sealed native render artifact descriptor.</p>
+<p>A hit request returns the artifact handle and GLB byte digest, instance,
+primitive, primitive-local triangle, and the occurrence/body/face claims read
+from the loaded GLB extras. The native <code>resolve_glb_hit</code> path treats all of
+those fields as untrusted and returns the authoritative native triangle and
+targets only after exact validation.</p>
+<h2 id="candidate-availability">Candidate Availability</h2>
+<p>All twelve topology operations retain portable <code>runtime_available: false</code>.
+Nine additionally carry <code>native_runtime_available: true</code>: open, inspect,
+render, resolve hit, close, apply logical groups, apply metadata probes,
+checkpoint edit journal, and exact edit-journal restore. The portable C ABI and
+browser/WASM catalogs include none of them. TypeScript metadata carries both
+flags: the environment-neutral IPC client defaults to portable expectations,
+while the Node process adapter forces the native catalog. Hierarchy, general
+save, and recovery analysis remain structural-only.</p>
+<h2 id="validation">Validation</h2>
+<p>Twenty-six Slice A governed vectors are recorded explicitly in the promotion
+manifest: thirteen strict/schema vectors and thirteen semantic vectors. They prove
+that a topology open request and result round-trip through the generic strict
+IPC envelopes while remaining unavailable through portable runtimes; bind all twelve topology
+operation identities to their request/result schema identities; reject request
+and success-result identity mismatches; canonical C++
+and TypeScript hit-request round-trip; rejection of unknown fields, zero
+generations, and out-of-range indices; stale-session rejection; global target
+handle uniqueness across pages; complete cross-page definition, occurrence,
+and topology relationships; plural membership edges and exact counts; positive and
+negative source-entity evidence; bounded page progress/counts; the native
+maximum occurrence depth; exact resolve-result maxima; and exact
+external attachment name, media type, byte length, SHA-256, and artifact/GLB
+digest relationships. Python and Rust receive the same generated strict
+structural projection; C++ and TypeScript own the additional semantic vector
+oracles.</p>
+<p>The semantic corpus includes a 4,096-body shared-shell high-fan-in snapshot
+split across four target pages and four edge pages. Validation uses membership
+sets built once per owner, so edge checks are constant-time lookups rather than
+repeated scans of high-degree arrays.</p>
+<p>Native tests separately prove unique target issuance, stale and cross-session
+generation rejection, artifact/attachment digest mismatch, forged target
+relationships, and exact triangle resolution. Duplicate normalized target ids
+cannot be created by the native snapshot builder; consumers must still treat a
+duplicate in any future compact table as a fatal whole-artifact error.</p>
+<p>Run the focused contract checks with:</p>
+<pre><code class="language-powershell">npm run check:contracts
+node tests\typescript\contract_codec_validation.mjs
+uv run pytest tests\python\test_generated_contracts.py `
+  tests\python\test_contract_promotion_manifest.py -q
+</code></pre>
+<p>The native behavior remains covered by
+<code>geometer_step_topology_session_test</code> and
+<code>geometer_step_topology_render_binding_test</code>.</p>
+<h2 id="surface-outside-slice-a">Surface Outside Slice A</h2>
+<p>Slice A itself does not define apply/edit commands, logical groups, hierarchy,
+save/export, XBF/XML, AP242 persistence, restart restore, edit journals, or
+recovery evidence. Unpromoted Slice B now owns logical-group, neutral-probe,
+hierarchy, and checkpoint structures, with native routing for groups, probes,
+and journal checkpoint. Unpromoted Slice C owns persistence and recovery
+structures, with native routing for exact edit-journal restore only. General
+hierarchy, save/carrier restore, and changed-source recovery routing remain
+deferred.</p>
+
+</main>
+</body>
+</html>

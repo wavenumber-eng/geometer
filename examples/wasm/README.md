@@ -346,7 +346,7 @@ The reusable `scripts/package_single_html_site.py` tool supplies the CSP,
 single-runtime-file manifest, deterministic staging, and Cloudflare headers for
 this and future self-contained demos.
 
-See [Browser demo packaging and UI](../../docs/design/browser-demos.md) for the
+See [Browser demo packaging and UI](../../docs/developer/browser-demos.md) for the
 durable source/build/test layout and the checklist for adding another hosted
 demo. Building these artifacts never publishes them.
 

@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <title>CLI Interfaces — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../design/cli.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="cli-interfaces">CLI Interfaces</h1></header>
+<p>The current implemented CLI is documented below. The additive persistent
+<code>serve --stdio</code> mode follows <a href="executable-ipc-a0.html">Executable IPC A0</a>; normal
+file-oriented commands remain unchanged.</p>
+<p>Native CLI:</p>
+<pre><code class="language-powershell">.\dist\native\windows-x64\geometer.exe --version
+.\dist\native\windows-x64\geometer.exe model-bounds input.step output.bounds.json --format step
+.\dist\native\windows-x64\geometer.exe model-to-glb input.step output.glb --format step
+.\dist\native\windows-x64\geometer.exe model-project-hlr input.step output.json --format step
+.\dist\native\windows-x64\geometer.exe model-project-svg input.step output.svg --format step --mode outline --view top
+.\dist\native\windows-x64\geometer.exe mesh-project-hlr input.mesh output.json --options fast-options.json
+.\dist\native\windows-x64\geometer.exe step-to-glb input.step output.glb
+.\dist\native\windows-x64\geometer.exe step-project-hlr input.step output.json
+.\dist\native\windows-x64\geometer.exe step-project-svg input.step output.svg --mode outline --view top
+.\dist\native\windows-x64\geometer.exe planar-step planar-step-request.json output.step
+.\dist\native\windows-x64\geometer.exe init-request request.json --step input.step --operation step_hlr_projection_json --output output.json
+.\dist\native\windows-x64\geometer.exe run request.json response.json
+.\dist\native\windows-x64\geometer.exe planar-batch-solve request.bin response.bin --warmup 1 --repeat 5 --metrics metrics.json
+.\dist\native\windows-x64\geometer.exe serve --stdio
+</code></pre>
+<p><code>serve --stdio</code> is a machine protocol endpoint, not an interactive command.
+stdin and stdout contain only binary <code>GMIPCA01</code> frames, while diagnostics and
+logs use stderr. Use a maintained Python, Node/TypeScript or Rust client; see
+the <a href="executable-ipc.html">IPC consumer guide</a>. Discover operations from the
+welcome catalog: model bounds, model/mesh HLR, the experimental analytic
+operation and an additional native-only experimental topology subset are
+implemented. Structural-only catalog declarations are not callable.</p>
+<p>Root-level <code>dist/geometer(.exe)</code> artifacts are no longer produced. Source
+checkout consumers should use <code>dist/native/&lt;platform&gt;/geometer(.exe)</code>.</p>
+<p>Node WASM CLI parity/test target:</p>
+<pre><code class="language-powershell">node dist\wasm\node-test\geometer-node-test.js step-to-glb input.step output.glb
+</code></pre>
+<p>Projection CLI options:</p>
+<ul>
+<li><code>--format &lt;step&gt;</code></li>
+<li><code>--view &lt;id&gt;</code></li>
+<li><code>--mode &lt;outline|detail|bbox&gt;</code></li>
+<li><code>--curve-mode &lt;native-arcs|polyline&gt;</code></li>
+<li><code>--samples &lt;count&gt;</code></li>
+<li><code>--round-digits &lt;count&gt;</code></li>
+<li><code>--projection-algorithm &lt;poly|exact|fast&gt;</code></li>
+<li><code>--outline-algorithm &lt;hlr-close|mesh-shadow|fast-mesh-shadow&gt;</code></li>
+<li><code>--deflection-mode &lt;absolute|bbox-relative&gt;</code></li>
+<li><code>--deflection-coefficient &lt;value&gt;</code></li>
+</ul>
+<p><code>--projection-algorithm fast</code> selects Fast vector detail without changing the
+default <code>poly</code> behavior. <code>--outline-algorithm fast-mesh-shadow</code> independently
+selects the Fast outline implementation. They may be used together or with an
+older compatible counterpart.</p>
+<p>The direct projection commands expose the common selectors above. The <code>run</code>
+request is the file-oriented route for the full canonical nested <code>fast</code> block,
+including boundary, crease, silhouette, hidden-line, coplanar-seam, tolerance,
+and resource-limit controls. Canonical angles such as <code>crease_angle_rad</code> are
+radians; the browser demos convert their degree controls at the UI boundary.
+See <a href="hlr-projection-a0.html#fast-controls">HLR Projection A0</a> for every member,
+default, unit, and compatibility alias.</p>
+<p><code>mesh-project-hlr</code> accepts the governed indexed-triangle-mesh A0 packet and
+writes <code>geometry.hlr_projection.result.a0</code>. With no options file, it selects
+Fast detail and Fast mesh-shadow, the only applicable mesh backends. Its
+optional <code>--options</code> file is a strict canonical
+<code>geometry.hlr_projection.options.a0</code> object. The equivalent batch operation is
+<code>mesh_hlr_projection_json</code>, with <code>mesh_path</code>, <code>output_path</code>, and optional
+canonical <code>options</code>; batch-level options are applied first.</p>
+<p>STEP-to-GLB CLI options:</p>
+<ul>
+<li><code>--deflection &lt;value&gt;</code></li>
+<li><code>--angular &lt;value&gt;</code></li>
+</ul>
+<p>Planar STEP CLI:</p>
+<ul>
+<li><code>planar-step &lt;request.json&gt; &lt;output.step&gt;</code> reads a
+<code>geometry.planar_step.request.a0</code> request and writes a colored STEP file.</li>
+</ul>
+<p>JSON batch CLI commands:</p>
+<ul>
+<li><code>run &lt;request.json&gt; &lt;response.json&gt;</code>: run a
+<code>geometer.batch.request.a0</code> jobs array and write a
+<code>geometer.batch.response.a0</code> response.</li>
+<li><code>init-request &lt;request.json&gt; --step &lt;path&gt;</code>: write a starter JSON request.</li>
+<li><code>--operation &lt;step_hlr_projection_json|step_hlr_projection_svg|step_to_glb&gt;</code>:
+choose the starter request operation.</li>
+<li><code>--output &lt;path&gt;</code>: choose the starter request output path.</li>
+</ul>
+<p>Batch requests accept an optional top-level <code>options</code> object. Batch jobs accept
+<code>operation</code>, <code>step_path</code>, <code>output_path</code>, and an optional job-level <code>options</code>
+object. <code>planar_step</code> jobs instead accept <code>request_path</code> or an inline
+<code>planar_step_request</code> object. Geometer parses top-level options first, then
+parses job-level options on top, so callers can put shared settings such as <code>curve_mode</code>,
+<code>samples_per_curve</code>, <code>round_digits</code>, <code>mesh_linear_deflection</code>, or
+<code>mesh_angular_deflection</code> at the request level and only override the fields
+that differ per job. HLR JSON/SVG jobs use HLR projection options; GLB jobs use
+STEP-to-GLB options. The response includes Geometer version, ABI, top-level
+<code>ok</code>, and per-job <code>id</code>, <code>operation</code>, <code>ok</code>, <code>code</code>, <code>elapsed_ms</code>, and optional
+<code>output_path</code> or <code>message</code>.</p>
+<p>For source-model jobs, prefer:</p>
+<ul>
+<li><code>model_bounds_json</code></li>
+<li><code>model_hlr_projection_json</code></li>
+<li><code>model_hlr_projection_svg</code></li>
+<li><code>model_to_glb</code></li>
+</ul>
+<p>These operations currently accept only <code>format: &quot;step&quot;</code> and accept either
+<code>model_path</code> or compatibility <code>step_path</code>. Existing <code>step_hlr_projection_json</code>,
+<code>step_hlr_projection_svg</code>, and <code>step_to_glb</code> jobs remain supported.</p>
+<p>Planar batch solve CLI options:</p>
+<ul>
+<li><code>--warmup &lt;count&gt;</code>: run unmeasured solves before benchmark repeats.</li>
+<li><code>--repeat &lt;count&gt;</code>: measured solve repeats.</li>
+<li><code>--metrics &lt;path&gt;</code>: write JSON metrics with request/response byte sizes and
+min/mean/max/last solve time.</li>
+<li><code>--format &lt;binary|json&gt;</code>: choose packed binary output or fused ring JSON.</li>
+<li><code>--return-rings &lt;true|false&gt;</code>: compatibility alias for <code>--format json</code>.</li>
+</ul>
+<p><code>planar-batch-solve</code> uses the same packed request/response byte format as
+<code>solve_planar_batch_from_bytes</code> and the browser C ABI. It is intended for
+native-vs-WASM diagnostics and benchmark comparisons.</p>
+
+</main>
+</body>
+</html>

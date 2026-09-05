@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <title>TypeSpec Toolchain And Normalized Catalog — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../contracts/typespec-toolchain.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="typespec-toolchain-and-normalized-catalog">TypeSpec Toolchain And Normalized Catalog</h1></header>
+<h2 id="status-and-authority">Status and authority</h2>
+<p>This document fixes the implementation shape for Geometer's TypeSpec
+foundation. ADR-010 remains the authority decision: authored TypeSpec owns the
+structure of individually promoted contracts, while C++ owns geometry behavior
+and the promotion manifest owns lifecycle/evidence state.</p>
+<p>ADR-011 is Accepted and its independent transport review is recorded in the
+promotion manifest. The TypeSpec/catalog foundation described here is
+implemented, including C++, TypeScript, Rust, Python, JSON Schema, and HTML
+projections. Promotion and runtime availability remain separate lifecycle
+decisions for every operation.</p>
+<h2 id="alx-baseline-and-geometer-differences">ALX baseline and Geometer differences</h2>
+<p>The design adapts the working ALX pattern from <code>appz/data_models</code>:</p>
+<ul>
+<li>a private, lockfile-pinned npm toolchain;</li>
+<li>TypeSpec source under <code>src/tsp</code>;</li>
+<li>JSON Schema plus one local normalized-catalog emitter;</li>
+<li>catalog-discovered roots rather than per-language root lists;</li>
+<li>generators that reject unsupported or lossy constructs; and</li>
+<li>committed outputs with deterministic <code>--check</code> behavior.</li>
+</ul>
+<p>Geometer does not import ALX TypeSpec, its emitter, generated files, or sibling
+scripts. The ALX catalog is schema-root focused and hard-codes the Alexandria
+namespace. Geometer's in-repository emitter instead owns the Geometer namespace
+and normalizes operations and raw attachment declarations as first-class
+records alongside schema roots.</p>
+<h2 id="pinned-build-toolchain">Pinned build toolchain</h2>
+<p>The root gains a private <code>package.json</code> and committed <code>package-lock.json</code> with:</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Pinned version</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Node.js CI/tooling generation</td>
+<td>24</td>
+</tr>
+<tr>
+<td>npm package manager declaration</td>
+<td>11.16.0</td>
+</tr>
+<tr>
+<td><code>@typespec/compiler</code></td>
+<td>1.14.0</td>
+</tr>
+<tr>
+<td><code>@typespec/json-schema</code></td>
+<td>1.14.0</td>
+</tr>
+<tr>
+<td>TypeScript</td>
+<td>5.9.3</td>
+</tr>
+<tr>
+<td>Biome</td>
+<td>2.5.7</td>
+</tr>
+</tbody>
+</table>
+<p>The local emitter is a private file dependency. <code>npm ci</code> is the only supported
+dependency restore in CI and release checks. Node and npm are build/test tools,
+not native, WASM, executable, Rust-client, or Python-package runtime
+dependencies. <code>@typespec/http</code> is not part of the foundation because Geometer's
+governed transports are C ABI and framed stdio rather than HTTP.</p>
+<p>The <code>packageManager</code> declaration documents the pin but does not provision npm.
+After <code>actions/setup-node@v6</code> installs Node 24, CI explicitly runs:</p>
+<pre><code class="language-text">npm install --global npm@11.16.0
+npm --version
+npm ci
+</code></pre>
+<p>The version command must produce exactly <code>11.16.0</code>; CI fails before restore or
+generation otherwise. Developer and release instructions use the same
+provision/check sequence. The generated foundation adds a
+<code>check:node-toolchain</code> script, and every contract generate/check/signoff command
+runs it before invoking TypeSpec. This prevents a compatible-looking
+<code>packageManager</code> field from silently allowing a different npm executable.</p>
+<p>Version upgrades are deliberate lockfile changes validated by regeneration and
+all affected conformance gates. Geometer may adopt newer versions than this
+baseline later, but must never float them during generation.</p>
+<h2 id="repository-layout">Repository layout</h2>
+<table>
+<thead>
+<tr>
+<th>Purpose</th>
+<th>Path</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Authored TypeSpec entry point</td>
+<td><code>src/tsp/geometer/main.tsp</code></td>
+</tr>
+<tr>
+<td>Authored common declarations</td>
+<td><code>src/tsp/geometer/common.tsp</code></td>
+</tr>
+<tr>
+<td>Authored operation declarations</td>
+<td><code>src/tsp/geometer/operations/</code></td>
+</tr>
+<tr>
+<td>Local emitter/decorator package</td>
+<td><code>src/ts/wn-geometer-contract-emitter/</code></td>
+</tr>
+<tr>
+<td>TypeSpec configuration</td>
+<td><code>tspconfig.yaml</code></td>
+</tr>
+<tr>
+<td>Authored catalog-format schema</td>
+<td><code>contracts/geometer/catalog-schema.a0.json</code></td>
+</tr>
+<tr>
+<td>Normalized catalog</td>
+<td><code>contracts/geometer/generated/wn_geometer_contract_catalog.a0.json</code></td>
+</tr>
+<tr>
+<td>Generated JSON Schemas</td>
+<td><code>contracts/geometer/generated/schema/</code></td>
+</tr>
+<tr>
+<td>Generation/check driver</td>
+<td><code>scripts/generate-contracts.mjs</code></td>
+</tr>
+<tr>
+<td>Generated C++ DTO/codecs</td>
+<td><code>src/cpp/lib/geometer/generated/contracts/</code></td>
+</tr>
+<tr>
+<td>Generated TypeScript package source</td>
+<td><code>src/ts/geometer/generated/</code></td>
+</tr>
+<tr>
+<td>Generated Rust crate source</td>
+<td><code>src/rust/geometer-client/src/generated/</code></td>
+</tr>
+<tr>
+<td>Generated Python internals</td>
+<td><code>python/geometer/_generated/contracts/</code></td>
+</tr>
+<tr>
+<td>Generated HTML reference</td>
+<td><code>docs/generated/contracts/</code></td>
+</tr>
+</tbody>
+</table>
+<p>The foundation slice created the toolchain, authored TypeSpec root, catalog
+schema, normalized catalog, and JSON Schemas. The generated HTML reference now
+consumes that catalog and joins lifecycle state from the promotion manifest.
+The C++, TypeScript, Rust, and Python structural projections are implemented.
+Rust and Python retain their separate transport/public-compatibility promotion
+gates; the catalog records every output root so generators cannot invent
+competing layouts.</p>
+<h2 id="namespace-and-identities">Namespace and identities</h2>
+<p>All owned declarations are under <code>Wavenumber.Geometer.Contracts</code>. Operation
+declarations are under <code>Wavenumber.Geometer.Contracts.Operations</code>; organized
+subnamespaces such as <code>Common</code> and <code>ModelBoundsA0</code> are allowed below the owned
+root.</p>
+<p>Every schema root has both:</p>
+<ul>
+<li>the stable contract identity already governed by the promotion manifest,
+such as <code>geometry.model_bounds.options.a0</code>; and</li>
+<li>an explicit JSON Schema identifier using
+<code>urn:wavenumber:schema:geometer:&lt;contract-identity-without-generation&gt;:&lt;generation&gt;</code>,
+such as
+<code>urn:wavenumber:schema:geometer:geometry.model_bounds.options:a0</code>.</li>
+</ul>
+<p>The emitter rejects missing or duplicate contract identities, schema
+identifiers, operation identities, and declaration names. It also rejects a
+TypeSpec root whose identity is absent from the promotion manifest. The
+manifest may inventory handwritten contracts not yet present in TypeSpec, but
+no TypeSpec contract may be untracked.</p>
+<p>Catalog format identity is <code>wn.geometer.contract_catalog</code> generation <code>a0</code>.
+This format generation is separate from contract identities, executable IPC
+A0, packed format versions, releases, and the date-based C ABI generation.</p>
+<h2 id="catalog-contents">Catalog contents</h2>
+<p>The normalized catalog is the only input to language and HTML generators. It
+contains, in deterministic order:</p>
+<ul>
+<li>catalog identity and generation;</li>
+<li>roots with declaration name, contract identity, schema identity, and kind;</li>
+<li>owned model, scalar, enum, and named-union declarations;</li>
+<li>documentation, constraints, defaults, requiredness, nullability, and
+presence/patch annotations;</li>
+<li>closed/open-object intent and reviewed extension-bucket annotations;</li>
+<li>discriminator and variant metadata;</li>
+<li>operations with stable identity plus request/result contract references;</li>
+<li>explicit runtime availability, allowing generated experimental structure to
+remain absent from runtime capability catalogs;</li>
+<li>named input/output attachments with direction, requiredness, allowed media
+types, and byte limits; and</li>
+<li>generator-relevant logical annotations whose meaning is governed here or in
+a focused design document.</li>
+</ul>
+<p>Promotion status, compatibility evidence, downstream snapshots, and review
+approval do not move into TypeSpec. They remain in the promotion manifest and
+are joined by identity during generation/checks.</p>
+<p>Operations use Geometer-owned decorators implemented by the local package.
+Those decorators attach operation identity and repeatable input/output
+attachment records to TypeSpec operation declarations. Raw attachments are not
+modeled as base64 strings or JSON properties. The operation request and result
+references point to ordinary generated DTO roots; transport-specific envelopes
+remain governed by ADR-011 and its specifications.</p>
+<p><code>@experimentalOperation</code> marks a catalog-discovered operation as structural
+research with portable <code>runtime_available: false</code>. Its roots still generate in
+every required language. <code>@nativeExperimentalOperation</code> may only accompany
+that marker and adds <code>native_runtime_available: true</code>; an unpaired use is a
+compile error so native-only intent cannot fail open into C ABI/WASM exposure.
+Rust and Python executable-client catalogs include portable plus native-only
+operations. TypeScript metadata retains both flags, allowing its portable IPC
+client expectation and native Node-process expectation to remain exact. The
+promotion manifest must independently register the operation and both roots as
+<code>experimental_candidate</code>; neither decorator is promotion evidence.</p>
+<h2 id="supported-subset-and-failure-policy">Supported subset and failure policy</h2>
+<p>The first catalog generation supports named object/array/record models,
+scalars, enums, named unions, literal variants, arrays, records, documented
+defaults, and the constraints required by the pilot. It supports explicit
+nullable unions while preserving optional-field absence separately.</p>
+<p>Anonymous object models, anonymous unions, tuples, templates that remain
+uninstantiated, unsupported intrinsic values, type-valued extension metadata,
+unresolved references, ambiguous discriminators, and lossy number mappings are
+hard errors. A new TypeSpec construct is enabled only with catalog-schema,
+generator, documentation, and conformance coverage. Generators must not map an
+unknown construct to <code>any</code>, <code>unknown</code>, a generic dictionary, or an omitted
+declaration merely to complete generation.</p>
+<p>Canonical objects are sealed by default. A record/open bucket requires the
+reviewed reason and ownership metadata defined by contract semantics. Defaults
+record intent but do not erase wire presence or eagerly populate patch DTOs.</p>
+<h2 id="deterministic-generation-and-checks">Deterministic generation and checks</h2>
+<p>The supported commands are:</p>
+<pre><code class="language-powershell">npm install --global npm@11.16.0
+if ((npm --version).Trim() -ne &quot;11.16.0&quot;) { throw &quot;npm version mismatch&quot; }
+npm ci
+npm run generate:contracts
+npm run check:contracts
+</code></pre>
+<p><code>generate:contracts</code> compiles with warnings as errors into staging directories,
+validates the catalog against its authored format schema, verifies exact root
+and operation agreement with the promotion manifest, and atomically updates
+the governed catalog and schemas. It then generates the C++17 wire DTOs and
+strict RapidJSON codecs plus the offline HTML reference. C++ generation uses
+the repository clang-format policy and fails if an admitted catalog construct
+has no lossless C++ mapping.
+The same generator emits the runtime operation/capability catalog and its
+output-attachment declaration lookup; these are not maintained as handwritten
+operation lists. Generated string encoders reject invalid UTF-8 before calling
+RapidJSON, including operation diagnostics populated from native error text.
+The command also emits generated TypeScript DTOs, strict codecs, typed
+operation metadata, the compiled ESM package under <code>dist/wasm/npm/geometer/</code>, and
+the compiled model-bounds TypeScript example. Each projection has byte-for-byte
+check mode.</p>
+<p><code>check:contracts</code> performs the same generation without modifying the worktree
+and fails on stale, missing, unexpected, unlinked, or externally dependent
+generated files. It also runs formatter/static checks for the local emitter and
+generators and replays governed pilot vectors. Output uses UTF-8, LF endings,
+stable key/order rules, and one trailing newline. Absolute paths, timestamps,
+host details, and sibling-workspace paths are forbidden in generated bytes.</p>
+<p>The TypeSpec/catalog foundation, generated C++ projection, and generated
+contract documentation have dedicated checks. Later TypeScript, Rust, Python,
+and transport strata consume the same committed catalog and schemas; they do
+not recompile a private subset or maintain handwritten root/operation lists.</p>
+
+</main>
+</body>
+</html>

@@ -26,6 +26,14 @@ against unchanged kernel sources using cached OCCT; no new kernel release is
 implied. Updated windows were launched for user recheck; visual acceptance of
 the repaired angle remains pending.</p>
 <h2 id="runtime-evidence-and-disposition">Runtime Evidence And Disposition</h2>
+<p>The optional <a href="../../../../../../examples/rust/native_viewer/README.md">Native Rust API Lab</a>
+is a twelfth entry added on the native API feature branch, not a replacement
+for the 11 retained demos. It uses the maintained Rust executable client and
+TypeSpec-generated contracts. Windows Radeon RX 7600 XT/Vulkan smoke produced
+colored STEP triangles, native illustrated SVG and separate Fast HLR layers;
+the app-window screenshot was inspected. Full mouse/docking/resize acceptance
+and macOS build/Metal testing remain pending. The 3D preview is explicitly
+opaque; native SVG preserves source opacity. Public packaging is deferred.</p>
 <table>
 <thead>
 <tr>
@@ -36,6 +44,12 @@ the repaired angle remains pending.</p>
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>Native Rust API Lab / executable-backed Rust consumers</td>
+<td><a href="../../../../../../examples/rust/native_viewer/src/main.rs">source</a>, <a href="../../../../../../examples/rust/native_viewer/README.md">guide</a></td>
+<td>Feature native STEP/illustration/Fast HLR smoke and GPU screenshot inspected on Windows; focused camera/opaque-material/epoch/raster tests. Human UI and Mac acceptance pending.</td>
+<td>Keep separate from direct-linked C++; optional Cargo crate, not release-packaged.</td>
+</tr>
 <tr>
 <td>Model bounds / generated browser consumers</td>
 <td><a href="../../../../../../examples/wasm/model_bounds_demo.html">page</a></td>

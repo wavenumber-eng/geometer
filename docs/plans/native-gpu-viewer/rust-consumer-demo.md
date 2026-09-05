@@ -11,8 +11,9 @@ created = "2026-09-05"
 User decision: keep separate demos for two integration modes. The C++ app
 directly links Geometer; this Rust/wgpu app calls the native executable through
 the public Rust client. Native API availability and this Rust app are the
-priority, ahead of the C++/SDL GPU upgrade. No Rust app or new GPU dependency
-has been implemented by this planning update.
+priority, ahead of the C++/SDL GPU upgrade. The first Windows implementation is
+now available at `examples/rust/native_viewer`; see its README and execution
+log for tested scope. User interaction acceptance and Mac execution remain open.
 
 ## Intended Consumer Path
 

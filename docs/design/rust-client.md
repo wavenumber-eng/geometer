@@ -77,6 +77,14 @@ not present in the released 2026.9.4 binary.
 
 ## Client lifecycle
 
+`GeometerClient::find_executable()` resolves the same local path as
+`discover_and_spawn()` without launching it, so desktop consumers can show or
+override the selected executable. Windows spawn uses `CREATE_NO_WINDOW` while
+retaining piped stdin/stdout/stderr. These process-support helpers are not new
+TypeSpec geometry operations. The optional
+[Rust/wgpu demo](../../examples/rust/native_viewer/README.md) demonstrates the
+typed native APIs without adding GUI dependencies to this crate.
+
 `GeometerClient::spawn()` starts an explicit executable path, sends `hello`,
 and requires a `welcome` selecting `a0`, the exact normalized-catalog digest,
 all required capabilities, and effective limits no larger than the A0 maxima.

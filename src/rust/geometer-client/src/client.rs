@@ -203,7 +203,11 @@ impl GeometerClient {
         client_name: &str,
         client_version: &str,
     ) -> Result<Self, GeometerClientError> {
-        let mut child = Command::new(executable.as_ref())
+        let mut command = Command::new(executable.as_ref());
+        // Executable-backed desktop consumers must not create a console window.
+        #[cfg(windows)]
+        command.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+        let mut child = command
             .args(["serve", "--stdio"])
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
@@ -294,6 +298,11 @@ impl GeometerClient {
             )
         })?;
         Self::spawn(path, client_name, client_version).await
+    }
+
+    /// Resolve the same local executable used by `discover_and_spawn` without launching it.
+    pub fn find_executable() -> Option<std::path::PathBuf> {
+        discover_executable()
     }
 
     pub fn welcome(&self) -> &IpcWelcomeA0 {

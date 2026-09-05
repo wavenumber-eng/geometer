@@ -74,6 +74,13 @@ meshes through a generated attachment contract. See
 release-qualification status. It requires a matching feature executable; it is
 not present in the released 2026.9.4 binary.</p>
 <h2 id="client-lifecycle">Client lifecycle</h2>
+<p><code>GeometerClient::find_executable()</code> resolves the same local path as
+<code>discover_and_spawn()</code> without launching it, so desktop consumers can show or
+override the selected executable. Windows spawn uses <code>CREATE_NO_WINDOW</code> while
+retaining piped stdin/stdout/stderr. These process-support helpers are not new
+TypeSpec geometry operations. The optional
+<a href="../../../../../../examples/rust/native_viewer/README.md">Rust/wgpu demo</a> demonstrates the
+typed native APIs without adding GUI dependencies to this crate.</p>
 <p><code>GeometerClient::spawn()</code> starts an explicit executable path, sends <code>hello</code>,
 and requires a <code>welcome</code> selecting <code>a0</code>, the exact normalized-catalog digest,
 all required capabilities, and effective limits no larger than the A0 maxima.

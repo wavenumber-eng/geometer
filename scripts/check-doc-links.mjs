@@ -7,7 +7,7 @@ const failures = [];
 let checked = 0;
 function visit(directory) {
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
-    if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
+    if (entry.name.startsWith(".") || ["node_modules", "target"].includes(entry.name)) continue;
     const path = resolve(directory, entry.name);
     if (entry.isDirectory()) visit(path);
     else if (extname(path) === ".md") check(path);
@@ -49,6 +49,13 @@ for (const [directory, suffixes] of [
     demos += 1;
     if (!demoAudit.includes(`](../../${path})`)) failures.push(`Demo lacks audit entry: ${path}`);
   }
+}
+for (const entry of readdirSync(resolve(root, "examples/rust"), { withFileTypes: true })) {
+  if (!entry.isDirectory()) continue;
+  const path = `examples/rust/${entry.name}/src/main.rs`;
+  if (!existsSync(resolve(root, path))) continue;
+  demos += 1;
+  if (!demoAudit.includes(`](../../${path})`)) failures.push(`Demo lacks audit entry: ${path}`);
 }
 if (failures.length) throw new Error(`Broken documentation file links:\n${failures.join("\n")}`);
 console.log(

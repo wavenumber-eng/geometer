@@ -30,13 +30,13 @@ depends_on = ["architecture-and-parity"]
 [[steps]]
 id = "rust-demo-foundation"
 title = "Build the Rust/wgpu shell, responsive controls and managed GeometerClient connection"
-status = "pending"
+status = "done"
 depends_on = ["architecture-and-parity"]
 
 [[steps]]
 id = "rust-demo-integration"
 title = "Demonstrate typed native geometry and illustration with progress, GPU preview and JSON/SVG exports"
-status = "pending"
+status = "done"
 depends_on = ["rust-demo-foundation", "native-illustration-windows"]
 
 [[steps]]

@@ -1,0 +1,22 @@
+[package]
+name = "geometer-native-viewer"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+publish = false
+license = "MIT"
+description = "Native wgpu demonstration of Geometer's typed executable client"
+
+[dependencies]
+geometer-client = { path = "../../../src/rust/geometer-client" }
+eframe = { version = "=0.36.1", default-features = false, features = ["default_fonts", "wgpu", "x11", "wayland"] }
+bytemuck = { version = "=1.25.2", features = ["derive"] }
+resvg = { version = "=0.48.1", default-features = false }
+rfd = "=0.17.2"
+tokio = { version = "1.47", features = ["rt-multi-thread", "sync", "time", "fs"] }
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[profile.release]
+opt-level = 2

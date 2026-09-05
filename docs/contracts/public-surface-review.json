@@ -468,7 +468,7 @@
     },
     {
       "path": "src/rust/geometer-client/src/client.rs",
-      "sha256": "bac87bfe46db893fe4fc117bf3959533bcfaec7c415b93e57b8e11da13e0ad13"
+      "sha256": "6e2de103a2a9e36fe67263799f1e2e828bed728d5a58d699d30ddcb04aa8d082"
     },
     {
       "path": "src/rust/geometer-client/src/client_tests.rs",

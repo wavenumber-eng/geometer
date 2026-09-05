@@ -24,6 +24,14 @@ signing/notarization or bundled-kernel distribution authorization from this task
 
 ## Inputs The Implementer Must Supply
 
+The optional crate and platform-neutral WGSL shader are now implemented in
+`examples/rust/native_viewer`. Its README provides locked Cargo build/run
+commands and the exact client/native catalog requirement. Windows evidence
+uses eframe/egui 0.36.1, wgpu 30.0.1, resvg 0.48.1 and Rust 1.95.0. A Windows
+build and screenshot exist; no Mac artifact or qualified GUI deployment floor
+exists yet. Run the source build on an actual Mac before marking the build-path
+or Metal acceptance steps complete. Public release decisions remain deferred.
+
 - Exact feature-complete commit, macOS arm64 build artifact and SHA-256 manifest.
 - OS/deployment minimum, architecture, and the applicable Rust/wgpu/UI or
   SDL/ImGui pins and Metal shader configuration.

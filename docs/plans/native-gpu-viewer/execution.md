@@ -142,3 +142,46 @@ both CTests with all 40 exact renderer fixtures; Clippy, Rust structural hygiene
 Ruff/Pyright, 130 contract vectors, generation and documentation freshness.
 The Windows operation/typed Rust workflow checkpoint is done; this does not
 complete platform qualification, Python installed-package acceptance or demos.
+
+## Slice 5: native executable-backed Rust/wgpu demonstration
+
+Added the independent, locked `examples/rust/native_viewer` crate. Hardware
+depth renders generated colored STEP tessellation; generated typed native
+illustration produces original vector SVG; typed model HLR produces separate
+Fast detail/fast mesh shadow layers, with retained legacy algorithm selectors.
+No Geometer/OCCT static linking, JS/WASM runtime or parallel wire DTOs. The
+maintained client now exposes its existing executable discovery and suppresses
+Windows child console windows.
+
+Left/right resizable controls, a resizable model/result split, stable
+orthographic orbit/pan/zoom/Fit and independent output tabs are implemented.
+Loading/native calls/conversion/rasterization/export run off the UI thread;
+phase/elapsed indicators, debounced latest-view work, revision/epoch filtering
+and explicit owned-process termination preserve coherent snapshots. Original
+SVG and generated result/style/HLR/mesh JSON exports retain immutable background
+snapshots. The diagnostic GPU preview is explicitly opaque; native SVG retains
+material opacity. Rasterized display is not substituted for vector export.
+
+Independent reviewer found alpha/depth-write ambiguity, a stale mesh after
+failed load, and successful exit codes on failed smoke. All were fixed and
+the reviewer approved the checkpoint, including inspection of the app-only
+GPU screenshot. Stop now invalidates every old event kind and waits for its
+termination result before reconnect. The preview clears both mesh and bounds.
+
+Focused Windows checks passed: five GUI unit tests, GUI and maintained-client
+Clippy, opt-in Rack RUST_002 (positive window/native/SVG/HLR screenshot and
+negative missing-model smoke, 2 tests in 15.36 seconds), 30 client library,
+12 live process and 3 generated dispatch tests, Ruff/Pyright, structural audit,
+documentation freshness (312 links/12 demos/149 public sources), whitespace.
+Read-only process inspection after checks found no remaining geometer.exe.
+Radeon RX 7600 XT/Vulkan screenshot showed both colored GPU geometry and native
+illustrated output; the 823-triangle SOT23-6 example produced 48,111 SVG bytes
+and 12,492 HLR JSON bytes. These are development observations, not release or
+exhaustive interaction/depth certification.
+
+Windows human acceptance is the next checkpoint: inspect the previously bad
+angle, camera behavior, docking/DPI/narrow sizing, selectors, busy work, failures
+and exports. Mac source-build/Metal instructions are prepared, but no Mac build
+or runtime is claimed. Installed Python wheel qualification, optional native
+HLR composition, four-platform release qualification and later C++ GPU work
+remain open. No release artifacts were replaced, uploaded, tagged or published.

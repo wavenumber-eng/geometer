@@ -33,7 +33,9 @@ const char* operation_catalog_json()
         "attachments\":[],\"runtime_dispatch\":\"logical_dto\"},{\"identity\":\"geometry.mesh_"
         "illustration.a0\",\"request_contract\":\"geometry.mesh_illustration.request.a0\",\"result_"
         "contract\":\"geometry.mesh_illustration.result.a0\",\"input_attachments\":[{\"name\":"
-        "\"mesh_collection\",\"required\":true,\"media_types\":[\"application/"
+        "\"hlr_projection\",\"required\":false,\"media_types\":[\"application/"
+        "vnd.wavenumber.geometer.hlr-projection+json\"],\"max_bytes\":67108864},{\"name\":\"mesh_"
+        "collection\",\"required\":true,\"media_types\":[\"application/"
         "vnd.wavenumber.geometer.mesh-collection+json\"],\"max_bytes\":268435456}],\"output_"
         "attachments\":[],\"runtime_dispatch\":\"logical_dto\"},{\"identity\":\"geometry.model_"
         "bounds.a0\",\"request_contract\":\"geometry.model_bounds.options.a0\",\"result_contract\":"
@@ -90,7 +92,9 @@ const char* native_operation_catalog_json()
         "attachments\":[],\"runtime_dispatch\":\"logical_dto\"},{\"identity\":\"geometry.mesh_"
         "illustration.a0\",\"request_contract\":\"geometry.mesh_illustration.request.a0\",\"result_"
         "contract\":\"geometry.mesh_illustration.result.a0\",\"input_attachments\":[{\"name\":"
-        "\"mesh_collection\",\"required\":true,\"media_types\":[\"application/"
+        "\"hlr_projection\",\"required\":false,\"media_types\":[\"application/"
+        "vnd.wavenumber.geometer.hlr-projection+json\"],\"max_bytes\":67108864},{\"name\":\"mesh_"
+        "collection\",\"required\":true,\"media_types\":[\"application/"
         "vnd.wavenumber.geometer.mesh-collection+json\"],\"max_bytes\":268435456}],\"output_"
         "attachments\":[],\"runtime_dispatch\":\"logical_dto\"},{\"identity\":\"geometry.model_"
         "bounds.a0\",\"request_contract\":\"geometry.model_bounds.options.a0\",\"result_contract\":"
@@ -169,7 +173,7 @@ const char* native_operation_catalog_json()
 
 const char* normalized_contract_catalog_sha256()
 {
-    return "9ad4359655f2012a16e498224cf8bf56e835be17d9185e2ca5212d01b9d8e472";
+    return "078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d";
 }
 
 bool operation_output_attachment_declared(const std::string& operation_id,
@@ -214,6 +218,9 @@ bool operation_input_attachment_declared(const std::string& operation_id,
         return true;
     if (operation_id == "geometry.mesh_hlr_projection.a0" && attachment_name == "mesh" &&
         media_type == "application/vnd.wavenumber.geometer.indexed-triangle-mesh")
+        return true;
+    if (operation_id == "geometry.mesh_illustration.a0" && attachment_name == "hlr_projection" &&
+        media_type == "application/vnd.wavenumber.geometer.hlr-projection+json")
         return true;
     if (operation_id == "geometry.mesh_illustration.a0" && attachment_name == "mesh_collection" &&
         media_type == "application/vnd.wavenumber.geometer.mesh-collection+json")
@@ -266,6 +273,8 @@ std::size_t operation_input_attachment_max_bytes(const std::string& operation_id
         return 268435456U;
     if (operation_id == "geometry.mesh_hlr_projection.a0" && attachment_name == "mesh")
         return 268435456U;
+    if (operation_id == "geometry.mesh_illustration.a0" && attachment_name == "hlr_projection")
+        return 67108864U;
     if (operation_id == "geometry.mesh_illustration.a0" && attachment_name == "mesh_collection")
         return 268435456U;
     if (operation_id == "geometry.model_bounds.a0" && attachment_name == "model")
@@ -293,6 +302,8 @@ const char* operation_input_attachment_primary_media_type(const std::string& ope
         return "application/vnd.wavenumber.geometer.analytic-planar-boolean-request";
     if (operation_id == "geometry.mesh_hlr_projection.a0" && attachment_name == "mesh")
         return "application/vnd.wavenumber.geometer.indexed-triangle-mesh";
+    if (operation_id == "geometry.mesh_illustration.a0" && attachment_name == "hlr_projection")
+        return "application/vnd.wavenumber.geometer.hlr-projection+json";
     if (operation_id == "geometry.mesh_illustration.a0" && attachment_name == "mesh_collection")
         return "application/vnd.wavenumber.geometer.mesh-collection+json";
     if (operation_id == "geometry.model_bounds.a0" && attachment_name == "model")

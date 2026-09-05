@@ -100,6 +100,48 @@ void smoke()
     require(geometer::illustrate_mesh(input, &result, &status) != 0 && result.svg.empty(),
             "overflowing homogeneous divisor accepted");
 }
+
+void hlr_smoke()
+{
+    auto input = fixture();
+    input.style.emplace();
+    input.style->show_outlines = false;
+    input.style->show_creases = false;
+    input.style->show_hlr_outline = true;
+    input.style->show_hlr_detail = true;
+    geometer::contracts::HlrProjectionResultA0 hlr;
+    hlr.source.hash = std::string(64, '0');
+    geometer::contracts::HlrProjectedView view;
+    view.id = "test";
+    view.direction = input.view.direction;
+    view.up = input.view.up;
+    view.modes.outline.segments.push_back({0, 0, 1, 0});
+    view.modes.detail.segments.push_back({0, 0, 1, 1});
+    hlr.views.push_back(view);
+    geometer::contracts::MeshIllustrationResultA0 result, repeated;
+    geometer::Status status;
+    require(geometer::illustrate_mesh(input, hlr, &result, &status) == 0, status.message.c_str());
+    require(result.stats.outlines == 1 && result.stats.details == 1 && result.stats.creases == 0,
+            "HLR composition counts");
+    // Up can contain a direction component or use a different finite scale.
+    input.view.up = {0, 1e-13, 1e-6};
+    hlr.views[0].up = {0, 2e-13, 2e-6};
+    require(geometer::illustrate_mesh(input, hlr, &repeated, &status) == 0, status.message.c_str());
+    require(repeated.svg == result.svg, "equivalent skewed/scaled HLR basis changed SVG");
+    hlr.views[0].up = {1, 0, 0};
+    require(geometer::illustrate_mesh(input, hlr, &result, &status) != 0 && result.svg.empty(),
+            "wrong HLR up accepted or leaked SVG");
+    hlr.views[0].up = input.view.up;
+    hlr.views[0].modes.detail.segments[0][0] = std::numeric_limits<double>::infinity();
+    require(geometer::illustrate_mesh(input, hlr, &result, &status) != 0 && result.svg.empty(),
+            "nonfinite HLR accepted or leaked SVG");
+    hlr.views[0].modes.detail.segments.clear();
+    input.style->show_hlr_outline = false;
+    input.style->show_hlr_detail = false;
+    hlr.views[0].modes.bbox.segments.resize(1000000);
+    require(geometer::illustrate_mesh(input, hlr, &result, &status) == 102 && result.svg.empty(),
+            "disabled HLR layer bypassed segment cap");
+}
 } // namespace
 
 int main(int argc, char** argv)
@@ -109,6 +151,7 @@ int main(int argc, char** argv)
         if (argc == 1)
         {
             smoke();
+            hlr_smoke();
             return 0;
         }
         if (argc == 3 && std::string(argv[1]) == "--step")

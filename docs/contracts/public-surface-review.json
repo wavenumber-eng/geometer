@@ -36,7 +36,7 @@
     },
     {
       "path": "python/geometer/_illustration.py",
-      "sha256": "4a188bcfebeb285450ab3e4672cd28c51cd2d20aa3f4cb40b0758bacf3d1f05c"
+      "sha256": "5ef6412dd17d30c36dc8192487a0a1a2836ba4dac391a16b5c20b18758859d36"
     },
     {
       "path": "python/geometer/_indexed_mesh_packet_a0.py",
@@ -48,7 +48,7 @@
     },
     {
       "path": "python/geometer/_ipc_client.py",
-      "sha256": "b069e9b42d46b8c2cdd3df5d9ef23ffd00fc218e652acc79a5bc776e8af11844"
+      "sha256": "7227872da41712d9d034cc43976f8d36e6629fbf3bdf2877b4dcbf241807832e"
     },
     {
       "path": "python/geometer/_paths.py",
@@ -104,7 +104,7 @@
     },
     {
       "path": "src/cpp/lib/CMakeLists.txt",
-      "sha256": "a497966baa59ca46566428385e33b5717f8aa610f5b74f51f152d43f962031f2"
+      "sha256": "78a8d7a45374d9755235f94ce47d8d24b5555ac596122d7c0b8b2c8f44271c36"
     },
     {
       "path": "src/cpp/lib/geometer.h",
@@ -308,7 +308,7 @@
     },
     {
       "path": "src/cpp/lib/geometer/mesh_illustration.h",
-      "sha256": "df46eacb9f4171a4873ac52b8d32f531a2f2f2a9e27ce4b3fdcc967903fb3289"
+      "sha256": "39fa575d555edcc147e475b9e29cf2b77f32516dac73d7133ecd3ddb64b3937d"
     },
     {
       "path": "src/cpp/lib/geometer/model.h",
@@ -480,7 +480,7 @@
     },
     {
       "path": "src/rust/geometer-client/src/illustration.rs",
-      "sha256": "5378c574dbb684f18c40e781dd81e71740a2088c901c7ef7ea4a9d51a75ecbbb"
+      "sha256": "7c358a54335df29f229946fd26187a3f5e47f09dfe6641822c38d444f3652e31"
     },
     {
       "path": "src/rust/geometer-client/src/indexed_mesh_packet_a0.rs",

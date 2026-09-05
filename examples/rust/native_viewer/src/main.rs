@@ -7,6 +7,7 @@ mod hlr;
 mod jobs;
 mod mesh;
 mod raster;
+mod result_view;
 mod settings;
 #[cfg(test)]
 mod settings_tests;

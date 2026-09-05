@@ -48,8 +48,11 @@ transparency. The native illustration and original SVG preserve source opacity.
   fast mesh shadow, same view/root-placement convention. Controls also offer
   the existing poly/exact and mesh-shadow/HLR-close selectors; the default
   remains Fast detail plus fast mesh shadow. Separate shadow/detail tabs
-  display the returned polylines; they do not claim combined illustration/HLR
-  SVG support. That native composition API remains separate planned work.
+  display the returned polylines. The native illustration operation also
+  composes selected detail then outline over fills, matching the web Lab.
+  The line toggles affect both the illustration preview and exported SVG.
+  Disabled layers are not computed; with both off, HLR is skipped entirely,
+  its tabs are blank and HLR geometry export is disabled.
 - Fast crease angle, experimental seam filtering/angle/depth, layer toggles,
   relative HLR chord/angle and STEP mesh quality presets/custom values are
   available. STEP changes apply on the next load or explicit Retessellate;
@@ -62,6 +65,9 @@ transparency. The native illustration and original SVG preserve source opacity.
   JSON, or colored mesh-collection JSON. These are completed snapshots, not
   screenshots. Stale illustration/HLR exports are disabled until recomputation
   succeeds. The mesh export is the current loaded model, independent of view.
+  A prominent Save SVG button is beside the output selector. The white output
+  canvas stays fixed while the status bar changes; the SVG fits and centers
+  in both axes without status messages shifting it.
 
 File reading, native requests, conversion, SVG rasterization and file writing
 run off the UI thread. The panel shows phases and elapsed time, not a fabricated

@@ -219,3 +219,42 @@ off), Rack window success/failure checks (2 passed, 14.34 seconds), Ruff/Pyright
 documentation freshness and whitespace. A fresh app-only screenshot was
 inspected: SOT-23 rendered 220 triangles, 8,632 SVG bytes and 10,514 HLR JSON
 bytes on Radeon/Vulkan. No OCCT/native kernel rebuild or release publication.
+
+## User correction: compose HLR in the illustration and exported SVG
+
+Implemented the requested web-Lab linework workflow rather than treating raw
+mesh diagnostics or separate HLR views as equivalent. The existing TypeSpec
+illustration operation now declares an optional bounded `hlr_projection`
+attachment, reusing the generated HLR result. No parallel DTO format was added.
+Native C++ composes visible detail then outline over fills, with the shared
+projection basis, millimeter frame, viewport and mirror. Rust exposes
+`mesh_illustration_with_hlr`; Python accepts `hlr_projection=`. The original
+pure illustration call remains available. Unsupported arcs, mismatched bases,
+malformed attachments and more than 1,000,000 total segments fail explicitly.
+Matching source model/placement and visible-only HLR remain caller preconditions;
+the result contract cannot authenticate those relationships from 2D lines alone.
+
+The Rust demo's line toggles now control the preview and original SVG export,
+with only selected HLR layers computed. Both off bypasses HLR entirely. The
+result pane is all white and centered, and a fixed status bar prevents its
+layout shifting during recompute. Save SVG is beside the output selector.
+Surface fusion and automatic SVG style/path coalescing remain native renderer
+features with the same TypeScript semantics, not client postprocessing.
+
+Independent review identified normalization of scaled/skewed up vectors and
+unnecessary HLR failure coupling when line layers were off. Both were corrected
+with regressions. A final independent read-only reviewer approved the slice
+without blocking findings, including ordering, units/mirror, caps, client APIs,
+toggles, pure-fill bypass, fixed output and vector export.
+
+Focused Windows checks passed: both native CTests (40 existing pure-renderer
+parity cases plus direct composition/error/cap checks); 24 complete composed
+TypeScript/native result comparisons and deterministic repeats; 12 existing
+live Rust IPC and 3 generated dispatch tests; 11 Python illustration/promotion
+tests; 11 GUI unit/native tests, including deliberately invalid STEP bytes in
+a fill-only job proving no HLR call occurs. Clippy, Ruff/Pyright and contract
+freshness passed. The updated Rust executable example wrote a composed SVG.
+An actual GUI smoke and inspected screenshot showed the composed SOT-23:
+220 triangles, 12,723 SVG bytes, Radeon RX 7600 XT/Vulkan. Cached OCCT was reused;
+only Geometer source was rebuilt. Public releases and platform qualification
+are still separate; human angle/interaction acceptance remains next.

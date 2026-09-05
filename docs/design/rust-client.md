@@ -9,7 +9,9 @@ TypeSpec catalog. The live client spawns one persistent native
 HLR, and analytic planar Boolean through their governed attachments.
 
 Feature builds additionally provide typed `model_tessellation` and
-`mesh_illustration` methods using generated A0 values. The complete
+`mesh_illustration` methods using generated A0 values. Optional
+`mesh_illustration_with_hlr(input, hlr)` returns the native composed SVG with
+visibility-filtered outline/detail; consumers do not arrange SVG layers. The complete
 [native STEP-to-SVG example](mesh-illustration-native.md) needs no JS/WASM runtime
 or handwritten subprocess protocol. These additions require a matching feature
 executable and are not available in the previous release.

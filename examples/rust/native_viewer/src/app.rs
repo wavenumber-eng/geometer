@@ -381,7 +381,7 @@ impl App {
         {
             self.changed();
         }
-        if crate::settings::hlr_controls(ui, &mut self.hlr_options) {
+        if crate::settings::hlr_controls(ui, &mut self.hlr_options, &mut self.style) {
             self.changed();
         }
         ui.separator();
@@ -421,7 +421,16 @@ impl App {
                 if ui.button("Style JSON").clicked() {
                     export = self.solution.as_ref().map(|s| Export::Style(s.clone()));
                 }
-                if ui.button("HLR geometry JSON").clicked() {
+                if ui
+                    .add_enabled(
+                        self.solution
+                            .as_ref()
+                            .is_some_and(|s| !s.hlr_json.is_empty()),
+                        egui::Button::new("HLR geometry JSON"),
+                    )
+                    .on_disabled_hover_text("Both HLR layers are off; no HLR was computed.")
+                    .clicked()
+                {
                     export = self.solution.as_ref().map(|s| Export::Hlr(s.clone()));
                 }
             });
@@ -472,23 +481,20 @@ impl eframe::App for App {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let ctx = ui.ctx().clone();
         self.events(&ctx);
-        egui::Panel::top("job status")
-            .resizable(false)
-            .show(ui, |ui| {
-                ui.horizontal_wrapped(|ui| {
-                    if self.busy {
-                        ui.spinner();
-                        ui.label(format!("{:.1}s", self.started.elapsed().as_secs_f64()));
-                    }
-                    ui.label(&self.phase);
-                    if self.pending.is_some() {
-                        ui.label("• Latest view queued");
-                    }
-                    if self.error.is_some() {
-                        ui.colored_label(egui::Color32::DARK_RED, "Error — see controls");
-                    }
-                });
-            });
+        let mut status = self.phase.clone();
+        if self.busy {
+            status = format!("{:.1}s • {status}", self.started.elapsed().as_secs_f64());
+        }
+        if self.completed != Some(self.revision) && self.solution.is_some() {
+            status.push_str(" • Showing previous completed view");
+        }
+        if self.pending.is_some() {
+            status.push_str(" • Latest view queued");
+        }
+        if self.error.is_some() {
+            status.push_str(" • Error — see controls");
+        }
+        crate::result_view::status(ui, self.busy, &status);
         let dock = if self.right_dock {
             egui::Panel::right("controls")
         } else {
@@ -507,34 +513,30 @@ impl eframe::App for App {
             .min_size(180.0)
             .max_size((ui.available_width() - 180.0).max(180.0))
             .show(ui, |ui| self.viewport(ui));
-        egui::CentralPanel::default().show(ui, |ui| {
-            ui.horizontal_wrapped(|ui| {
-                ui.selectable_value(&mut self.result_tab, 0, "Illustration SVG");
-                ui.selectable_value(&mut self.result_tab, 1, "HLR shadow");
-                ui.selectable_value(&mut self.result_tab, 2, "HLR detail");
-            });
-            if self.completed != Some(self.revision) && self.solution.is_some() {
-                ui.label("Previous completed view — updating");
-            }
-            let texture = if self.result_tab == 0 {
-                self.texture.as_ref()
-            } else {
-                self.hlr_textures
-                    .as_ref()
-                    .map(|textures| &textures[self.result_tab - 1])
-            };
-            if let Some(texture) = texture {
-                ui.add(
-                    egui::Image::new(texture).fit_to_exact_size(
-                        texture.size_vec2()
-                            * (ui.available_width() / texture.size_vec2().x)
-                                .min(ui.available_height() / texture.size_vec2().y),
-                    ),
+        let mut save_svg = false;
+        egui::CentralPanel::default()
+            .frame(
+                egui::Frame::default()
+                    .fill(egui::Color32::WHITE)
+                    .inner_margin(8.0),
+            )
+            .show(ui, |ui| {
+                let textures = [
+                    self.texture.as_ref(),
+                    self.hlr_textures.as_ref().map(|t| &t[0]),
+                    self.hlr_textures.as_ref().map(|t| &t[1]),
+                ];
+                save_svg = crate::result_view::show(
+                    ui,
+                    textures,
+                    &mut self.result_tab,
+                    !self.busy && self.completed == Some(self.revision) && self.solution.is_some(),
                 );
-            } else {
-                ui.label("Connect and open a STEP model to produce native illustration.");
-            }
-        });
+            });
+        if save_svg && let Some(solution) = self.solution.clone() {
+            self.begin("Saving illustration SVG");
+            self.jobs.export(Export::Svg(solution));
+        }
         if self.busy || self.pending.is_some() {
             ctx.request_repaint_after(Duration::from_millis(50));
         }

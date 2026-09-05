@@ -32,8 +32,11 @@ The [Lab parity analysis](native-illustration-lab-parity.md) identifies raw
 mesh lines drawn over foreground surfaces: the browser Lab disables them and
 supplies HLR lines, whereas the initial Rust demo enabled raw overlays. Rust
 now defaults those diagnostics off and exposes supported Lab shading, color,
-line, Fast crease/seam and tessellation controls. Native combined HLR/SVG and
-experimental browser AO remain explicitly unavailable, not hidden fallbacks.
+line, Fast crease/seam and tessellation controls. Native combined HLR/SVG now
+matches the web Lab's visibility-filtered detail/outline composition: toggles
+affect preview and original SVG export. The white centered result pane no longer
+shifts with job status, and Save SVG is next to its selector. Experimental
+browser AO remains explicitly unavailable, not a hidden fallback.
 
 | Demo / audience | Source | Verification on this host | Approved disposition: retain for now |
 | --- | --- | --- | --- |

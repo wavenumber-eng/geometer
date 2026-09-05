@@ -26,6 +26,22 @@ layout, base64 JSON or local file path is required. The result is the existing
 `geometry.mesh_illustration.result.a0`, including inline SVG, not a relabeled
 attachment descriptor. There are no output attachments.
 
+An optional `hlr_projection` attachment contains the existing generated
+`geometry.hlr_projection.result.a0` JSON, media type
+`application/vnd.wavenumber.geometer.hlr-projection+json`, maximum 64 MiB.
+Exactly one view must match the illustration's normalized direction/up basis;
+units must be millimeters. Request `curve_mode: polyline`: arcs are rejected,
+not silently approximated. All layers combined are limited to 1,000,000
+segments, including disabled layers and bbox. The renderer uses the mesh
+bounds/viewport and applies `mirror_x` to both fills and supplied linework.
+
+Supply **visible-only** HLR from the same model, placement and transform as the
+meshes. The projection contract does not bind its source hash to a mesh
+collection or retain the producing options; composition cannot verify those
+relationships or recover visibility from arbitrary 2D segments. The complete
+STEP examples and demo use the same STEP bytes and stripped root placement,
+with no additional model transform. Hidden HLR edges must remain disabled.
+
 ## Rust and Python executable clients
 
 Both clients accept the existing generated `MeshIllustrationInputA0` and adapt
@@ -33,7 +49,8 @@ it to generated settings plus the mesh attachment. This keeps the public
 illustration input shape consistent with the browser and direct C++ API.
 
 The complete [Rust example](../../src/rust/geometer-client/examples/mesh_illustration.rs)
-spawns the executable, tessellates STEP bytes, renders through the typed client,
+spawns the executable, tessellates STEP bytes, computes visible Fast HLR,
+renders the combined illustration through the typed client,
 closes the process and writes SVG:
 
 ```powershell
@@ -47,15 +64,26 @@ from pathlib import Path
 import geometer
 
 with geometer.GeometerClient(executable="PATH_TO_MATCHING_GEOMETER") as client:
-    tessellated = client.model_tessellation(Path("INPUT.step").read_bytes())
+    step = Path("INPUT.step").read_bytes()
+    tessellated = client.model_tessellation(step)
+    view = geometer.MeshIllustrationView(direction=(0.4, 0.7, 1.0), up=(0.0, 1.0, 0.0))
+    hlr = client.model_hlr_projection(step, geometer.HlrProjectionOptionsA0(
+        views=(geometer.HlrViewSpec(id="illustration", direction=view.direction, up=view.up),),
+        projection_algorithm=geometer.HlrProjectionAlgorithm.FAST,
+        outline_algorithm=geometer.HlrOutlineAlgorithm.FAST_MESH_SHADOW,
+        curve_mode=geometer.HlrCurveMode.POLYLINE,
+        strip_root_placement=True, output_outline=True, output_detail=True, output_bbox=False,
+        fast=geometer.FastHlrOptionsA0(include_hidden=False),
+    ))
     result = client.mesh_illustration(geometer.MeshIllustrationInputA0(
         schema="geometry.mesh_illustration.input.a0",
         meshes=tessellated.mesh_collection.meshes,
-        view=geometer.MeshIllustrationView(
-            direction=(0.4, 0.7, 1.0), up=(0.0, 1.0, 0.0)),
+        view=view,
         style=geometer.MeshIllustrationStyleA0(
-            shading=geometer.MeshIllustrationShading.TOON),
-    ))
+            shading=geometer.MeshIllustrationShading.TOON,
+            show_outlines=False, show_creases=False,
+            show_hlr_outline=True, show_hlr_detail=True),
+    ), hlr_projection=hlr)
 Path("OUTPUT.svg").write_text(result.svg, encoding="utf-8")
 ```
 
@@ -108,10 +136,19 @@ The native implementation follows the production TypeScript renderer:
 - Integer-grid SVG coordinates, six-percent padding, stable CSS classes,
   background/title options and chained line paths.
 
-This pure API does not compute or accept optional CAD HLR layers yet. In
-particular, `show_hlr_outline` and `show_hlr_detail` do not request extra HLR
-computation. Native Fast HLR composition needs a separate governed wrapper;
-the browser's `illustrated-hlr` composition is not silently substituted.
+The pure `illustrate_mesh(input, result, status)` / Rust `mesh_illustration(input)`
+calls still do not compute HLR. For a finished layered SVG, use the C++ overload
+`illustrate_mesh(input, hlr, result, status)`, Rust
+`mesh_illustration_with_hlr(input, hlr)`, or Python's `hlr_projection=` keyword.
+`show_hlr_detail` and `show_hlr_outline` select supplied lines; detail is drawn
+before outline, above fills, exactly as in the web Lab. Consumers do not manage
+SVG z-order. They may retain the original HLR result for independent layers.
+
+`fuse_surfaces` is a Geometer rendering option implemented in both TypeScript
+and native C++, not a Rust/display-only optimization. It merges compatible
+adjacent rendered surfaces while preserving visibility. `layer_coplanar_materials`
+separately controls coplanar material layering. SVG CSS style deduplication and
+same-style line chaining are automatic; they do not require a consumer pass.
 
 SVG text escapes XML delimiters and rejects XML 1.0 forbidden characters or
 invalid Unicode. That hardening is shared with TypeScript. CSS color validation
@@ -157,7 +194,10 @@ Windows has local conformance evidence, including typed Rust and Python
 STEP-to-SVG calls and exact Rust IPC output versus the TypeScript oracle.
 Malformed attachments, triangle limits and oversized inline SVG recover without
 poisoning the process. macOS/Linux runtime qualification, installed-wheel
-validation, optional native HLR composition and GUI acceptance remain open.
+validation and GUI acceptance remain open. Native composition additionally has
+24 exact TypeScript/IPC comparisons (three views, reflection and four line
+toggle combinations), deterministic repeats, Python typed composition and
+malformed-attachment checks, and C++ basis/finite-value/segment-cap regressions.
 
 ```powershell
 cmake --build build --target geometer_mesh_illustration_test

@@ -20,8 +20,8 @@ pub fn lab_style() -> MeshIllustrationStyleA0 {
     style.show_outlines = Some(false);
     style.show_creases = Some(false);
     style.crease_angle_degrees = Some(42.0);
-    style.show_hlr_outline = Some(false); // Native illustration has no linework attachment yet.
-    style.show_hlr_detail = Some(false);
+    style.show_hlr_outline = Some(true);
+    style.show_hlr_detail = Some(true);
     style.outline_color = Some("#17252c".into());
     style.crease_color = style.outline_color.clone();
     style.outline_width = Some(0.006);
@@ -126,7 +126,6 @@ pub fn style_controls(ui: &mut egui::Ui, style: &mut MeshIllustrationStyleA0) ->
         ui.add(egui::Slider::new(style.crease_angle_degrees.get_or_insert(42.0), 0.0..=180.0).text("Mesh crease °"));
     });
     ui.collapsing("Browser-only controls", |ui| {
-        ui.label("Combined HLR + illustration SVG: native composition API not implemented yet. HLR controls below affect the separate HLR tabs.");
         ui.label("Experimental AO (enable, strength, radius, samples, bands): browser-only extension; absent from the governed native A0 contract. No native fallback is implied.");
     });
     *style != before
@@ -148,16 +147,21 @@ fn angle(
     }
 }
 
-pub fn hlr_controls(ui: &mut egui::Ui, options: &mut HlrProjectionOptionsA0) -> bool {
+pub fn hlr_controls(
+    ui: &mut egui::Ui,
+    options: &mut HlrProjectionOptionsA0,
+    style: &mut MeshIllustrationStyleA0,
+) -> bool {
     let before = options.clone();
+    let before_style = style.clone();
     ui.separator();
-    ui.label("Independent HLR layers (not overlaid on SVG)");
+    ui.label("Illustration linework (preview + exported SVG)");
     ui.checkbox(
-        options.output_outline.get_or_insert(true),
+        style.show_hlr_outline.get_or_insert(true),
         "Mesh-shadow outline",
     );
     ui.checkbox(
-        options.output_detail.get_or_insert(true),
+        style.show_hlr_detail.get_or_insert(true),
         "HLR detail lines",
     );
     let algorithm = options
@@ -220,7 +224,7 @@ pub fn hlr_controls(ui: &mut egui::Ui, options: &mut HlrProjectionOptionsA0) -> 
             .text("Seam depth mm"),
         );
     });
-    *options != before
+    *options != before || *style != before_style
 }
 
 pub fn mesh_controls(

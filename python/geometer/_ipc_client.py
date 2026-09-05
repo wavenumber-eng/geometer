@@ -446,12 +446,20 @@ class _GeometerIpcExecution(_GeometerIpcSession):
         return model_tessellation(cast("GeometerIpcClient", self), model, options, timeout)
 
     def mesh_illustration(
-        self, input: MeshIllustrationInputA0, *, timeout: float | None = None
+        self,
+        input: MeshIllustrationInputA0,
+        *,
+        hlr_projection: HlrProjectionResultA0 | None = None,
+        timeout: float | None = None,
     ) -> MeshIllustrationResultA0:
-        """Render generated A0 mesh illustration through the native executable."""
+        """Render A0 SVG, optionally with visible-only polyline HLR from the same
+        millimeter model/frame and exactly one matching view. Native composition
+        applies show_hlr_* styling, layer ordering and mirror_x. Arcs and more
+        than 1,000,000 segments are rejected; hidden lines are not re-filtered.
+        """
         from ._illustration import mesh_illustration
 
-        return mesh_illustration(cast("GeometerIpcClient", self), input, timeout)
+        return mesh_illustration(cast("GeometerIpcClient", self), input, timeout, hlr_projection)
 
     def model_hlr_projection(
         self,

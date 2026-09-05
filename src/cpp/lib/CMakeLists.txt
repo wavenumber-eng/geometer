@@ -46,6 +46,7 @@ set(GEOMETER_LIB_SOURCES
     mesh_shadow_outline.cpp
     mesh_hlr_projection.cpp
     mesh_illustration.cpp
+    mesh_illustration_hlr.cpp
     mesh_illustration_fusion.cpp
     mesh_illustration_fusion_geometry.cpp
     mesh_illustration_grid.cpp

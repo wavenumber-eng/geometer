@@ -60,8 +60,11 @@ Commands render_commands(const Scene& scene, const Style& style, WorkBudget& bud
 
 namespace geometer
 {
-int illustrate_mesh(const contracts::MeshIllustrationInputA0& input,
-                    contracts::MeshIllustrationResultA0* result, Status* status)
+namespace
+{
+int render(const contracts::MeshIllustrationInputA0& input,
+           const contracts::HlrProjectionResultA0* hlr, contracts::MeshIllustrationResultA0* result,
+           Status* status)
 {
     if (result)
         *result = {};
@@ -88,7 +91,9 @@ int illustrate_mesh(const contracts::MeshIllustrationInputA0& input,
         const auto style = illustration_detail::resolve_style(
             input.style.value_or(contracts::MeshIllustrationStyleA0{}));
         illustration_detail::WorkBudget budget;
-        const auto commands = illustration_detail::render_commands(scene, style, budget);
+        auto commands = illustration_detail::render_commands(scene, style, budget);
+        if (hlr)
+            illustration_detail::append_hlr(input, *hlr, scene, style, commands);
         auto svg = illustration_detail::render_svg(
             scene, style, commands, input.svg.value_or(contracts::MeshIllustrationSvgOptions{}));
         result->svg = std::move(svg);
@@ -111,5 +116,19 @@ int illustrate_mesh(const contracts::MeshIllustrationInputA0& input,
         *result = {};
         return fail(1, error.what());
     }
+}
+} // namespace
+
+int illustrate_mesh(const contracts::MeshIllustrationInputA0& input,
+                    contracts::MeshIllustrationResultA0* result, Status* status)
+{
+    return render(input, nullptr, result, status);
+}
+
+int illustrate_mesh(const contracts::MeshIllustrationInputA0& input,
+                    const contracts::HlrProjectionResultA0& hlr,
+                    contracts::MeshIllustrationResultA0* result, Status* status)
+{
+    return render(input, &hlr, result, status);
 }
 } // namespace geometer

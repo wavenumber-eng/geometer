@@ -4,6 +4,79 @@ use geometer_client::{
 };
 
 #[test]
+#[ignore = "requires matching GEOMETER_EXECUTABLE; opt-in RUST_002 GPU lane"]
+fn fill_only_job_skips_hlr_and_exports_original_svg() {
+    use crate::jobs::{Event, Export, Jobs, Model};
+    use std::{
+        sync::Arc,
+        time::{Duration, Instant},
+    };
+    let runtime = tokio::runtime::Runtime::new().unwrap();
+    let client = runtime
+        .block_on(GeometerClient::spawn(
+            std::env::var_os("GEOMETER_EXECUTABLE").unwrap(),
+            "fill-only-test",
+            "a0",
+        ))
+        .unwrap();
+    let collection = decode_mesh_collection_a0_json(br#"{
+        "schema":"geometry.mesh_collection.a0","length_unit":"millimeter",
+        "meshes":[{"id":"triangle","positions":[0,0,0,1,0,0,0,1,0],"materials":[{"color":[0.5,0.5,0.5]}]}]
+    }"#).unwrap();
+    let model = Arc::new(Model {
+        path: "invalid.step".into(),
+        collection,
+        geometry_json: Vec::new(),
+        step: b"deliberately invalid STEP; HLR must not be called".to_vec(),
+        mesh_options: crate::settings::mesh_defaults(),
+    });
+    let view = MeshIllustrationView {
+        direction: [0.0, 0.0, 1.0],
+        up: [0.0, 1.0, 0.0],
+        mirror_x: None,
+    };
+    let mut style = crate::settings::lab_style();
+    style.show_hlr_outline = Some(false);
+    style.show_hlr_detail = Some(false);
+    let mut jobs = Jobs::new(eframe::egui::Context::default()).unwrap();
+    jobs.solve(
+        7,
+        client.clone(),
+        model,
+        view.clone(),
+        style,
+        crate::hlr::options(&view),
+    );
+    let deadline = Instant::now() + Duration::from_secs(15);
+    loop {
+        let (_, event) = jobs
+            .events
+            .recv_timeout(deadline.saturating_duration_since(Instant::now()))
+            .unwrap();
+        match event {
+            Event::Phase(phase) => assert!(!phase.contains("HLR")),
+            Event::Solved(7, result) => {
+                let solution = result.unwrap();
+                assert_eq!(solution.result.stats.triangles, 1);
+                assert_eq!(
+                    solution.result.stats.outlines + solution.result.stats.details,
+                    0
+                );
+                assert!(solution.hlr_json.is_empty());
+                assert_eq!(
+                    Export::Svg(solution.clone()).data().1,
+                    solution.result.svg.as_bytes()
+                );
+                break;
+            }
+            _ => panic!("unexpected job event"),
+        }
+    }
+    jobs.shutdown(None);
+    runtime.block_on(client.close()).unwrap();
+}
+
+#[test]
 #[ignore = "requires matching GEOMETER_EXECUTABLE; run through opt-in RUST_002 GPU lane"]
 fn native_lab_settings_and_raw_overlay_diagnosis() {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");

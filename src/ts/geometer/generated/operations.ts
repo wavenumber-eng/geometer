@@ -1,7 +1,7 @@
 // Generated from wn_geometer_contract_catalog.a0.json. Do not edit.
 
 export const NORMALIZED_CONTRACT_CATALOG_SHA256 =
-  "9ad4359655f2012a16e498224cf8bf56e835be17d9185e2ca5212d01b9d8e472" as const;
+  "078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" as const;
 
 export const operationCatalog = {
   "geometry.analytic_planar_boolean_batch.a0": {
@@ -66,6 +66,12 @@ export const operationCatalog = {
     nativeRuntimeAvailable: false,
     runtimeDispatch: "logical_dto",
     inputAttachments: [
+      {
+        name: "hlr_projection",
+        required: false,
+        media_types: ["application/vnd.wavenumber.geometer.hlr-projection+json"],
+        max_bytes: 67108864,
+      },
       {
         name: "mesh_collection",
         required: true,

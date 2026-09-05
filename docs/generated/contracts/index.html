@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="9ad4359655f2012a16e498224cf8bf56e835be17d9185e2ca5212d01b9d8e472">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
   <title>Geometer Contract Reference</title>
   <link rel="stylesheet" href="../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="9ad4359655f2012a16e498224cf8bf56e835be17d9185e2ca5212d01b9d8e472" data-page-kind="index">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="index">
 <main>
 <header>
   <p class="page-type">Generated contract reference</p>
@@ -117,7 +117,13 @@
   <h3><a href="contracts/geometry-mesh-illustration-request-a0.html"><code>geometry.mesh_illustration.request.a0</code></a></h3>
   <p>Native one-shot illustration settings. Meshes arrive in the required
 mesh_collection attachment governed by geometry.mesh_collection.a0.
-Reuses existing illustration A0 options and result; does not compute HLR.</p>
+Reuses existing illustration A0 options and result; does not compute HLR.
+Optional hlr_projection attachment is geometry.hlr_projection.result.a0:
+exactly one matching view, millimeters, polyline outline/detail only.
+Supply visibility-filtered HLR from the same model, placement and transform
+as the meshes. The renderer mirrors and composes detail then outline over
+surfaces according to show_hlr_detail/show_hlr_outline; it does not infer
+visibility from arbitrary supplied segments. Maximum 1,000,000 segments.</p>
   <p><span class="tag">model</span> <span class="status">pilot_candidate</span></p><p>See interface support policy; promotion is not maturity</p>
 </article>
 <article class="panel">
@@ -294,7 +300,7 @@ Reuses existing illustration A0 options and result; does not compute HLR.</p>
 </section>
 <section>
   <h2>Generated inputs</h2>
-  <div class="panel"><p>Catalog <code>wn.geometer.contract_catalog:a0</code></p><p>SHA-256 <code>9ad4359655f2012a16e498224cf8bf56e835be17d9185e2ca5212d01b9d8e472</code></p><p><a href="../../../contracts/geometer/generated/wn_geometer_contract_catalog.a0.json">Normalized catalog JSON</a></p></div>
+  <div class="panel"><p>Catalog <code>wn.geometer.contract_catalog:a0</code></p><p>SHA-256 <code>078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d</code></p><p><a href="../../../contracts/geometer/generated/wn_geometer_contract_catalog.a0.json">Normalized catalog JSON</a></p></div>
 </section>
 </main>
 </body>

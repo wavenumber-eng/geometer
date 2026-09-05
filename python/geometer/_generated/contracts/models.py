@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Literal, TypeAlias
 
-NORMALIZED_CATALOG_SHA256 = "9ad4359655f2012a16e498224cf8bf56e835be17d9185e2ca5212d01b9d8e472"
+NORMALIZED_CATALOG_SHA256 = "078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d"
 
 JobId: TypeAlias = int
 
@@ -856,7 +856,7 @@ class MeshIllustrationSvgOptions:
     title: str | None = None
 
 
-# Native one-shot illustration settings. Meshes arrive in the required mesh_collection attachment governed by geometry.mesh_collection.a0. Reuses existing illustration A0 options and result; does not compute HLR.
+# Native one-shot illustration settings. Meshes arrive in the required mesh_collection attachment governed by geometry.mesh_collection.a0. Reuses existing illustration A0 options and result; does not compute HLR. Optional hlr_projection attachment is geometry.hlr_projection.result.a0: exactly one matching view, millimeters, polyline outline/detail only. Supply visibility-filtered HLR from the same model, placement and transform as the meshes. The renderer mirrors and composes detail then outline over surfaces according to show_hlr_detail/show_hlr_outline; it does not infer visibility from arbitrary supplied segments. Maximum 1,000,000 segments.
 @dataclass(frozen=True, slots=True, kw_only=True)
 class MeshIllustrationRequestA0:
     schema: Literal["geometry.mesh_illustration.request.a0"]

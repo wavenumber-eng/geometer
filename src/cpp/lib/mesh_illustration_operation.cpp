@@ -30,17 +30,36 @@ void execute_mesh_illustration(const unsigned char* request, std::size_t size,
         fail(error.code, error.message, contracts::DiagnosticCategory::contract);
         return;
     }
-    if (attachments.size() != 1 || attachments[0].name != "mesh_collection" ||
-        attachments[0].media_type != "application/vnd.wavenumber.geometer.mesh-collection+json" ||
-        attachments[0].size > 268435456)
+    const OperationAttachmentView* meshes = nullptr;
+    const OperationAttachmentView* linework = nullptr;
+    for (const auto& attachment : attachments)
+    {
+        if (attachment.name == "mesh_collection" && !meshes &&
+            attachment.media_type == "application/vnd.wavenumber.geometer.mesh-collection+json" &&
+            attachment.size <= 268435456)
+            meshes = &attachment;
+        else if (attachment.name == "hlr_projection" && !linework &&
+                 attachment.media_type ==
+                     "application/vnd.wavenumber.geometer.hlr-projection+json" &&
+                 attachment.size <= 67108864)
+            linework = &attachment;
+        else
+        {
+            fail("geometer.contract.invalid_attachment",
+                 "Unexpected, duplicate or invalid illustration attachment.",
+                 contracts::DiagnosticCategory::contract);
+            return;
+        }
+    }
+    if (!meshes)
     {
         fail("geometer.contract.invalid_attachment",
-             "Expected one bounded mesh_collection JSON attachment.",
+             "Expected a bounded mesh_collection JSON attachment.",
              contracts::DiagnosticCategory::contract);
         return;
     }
     contracts::MeshCollectionA0 collection;
-    if (!contracts::decode_json(attachments[0].data, attachments[0].size, &collection, &error))
+    if (!contracts::decode_json(meshes->data, meshes->size, &collection, &error))
     {
         fail(error.code, error.message, contracts::DiagnosticCategory::contract);
         return;
@@ -53,7 +72,14 @@ void execute_mesh_illustration(const unsigned char* request, std::size_t size,
     input.svg = std::move(options.svg);
     contracts::MeshIllustrationResultA0 result;
     Status status;
-    const auto code = illustrate_mesh(input, &result, &status);
+    contracts::HlrProjectionResultA0 hlr;
+    if (linework && !contracts::decode_json(linework->data, linework->size, &hlr, &error))
+    {
+        fail(error.code, error.message, contracts::DiagnosticCategory::contract);
+        return;
+    }
+    const auto code = linework ? illustrate_mesh(input, hlr, &result, &status)
+                               : illustrate_mesh(input, &result, &status);
     if (code != 0)
     {
         fail(code == 102 ? "geometer.operation.resource_limit_exceeded"

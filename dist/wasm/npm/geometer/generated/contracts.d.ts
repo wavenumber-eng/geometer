@@ -561,7 +561,13 @@ export interface MeshIllustrationSvgOptions {
 }
 /** Native one-shot illustration settings. Meshes arrive in the required
 mesh_collection attachment governed by geometry.mesh_collection.a0.
-Reuses existing illustration A0 options and result; does not compute HLR. */
+Reuses existing illustration A0 options and result; does not compute HLR.
+Optional hlr_projection attachment is geometry.hlr_projection.result.a0:
+exactly one matching view, millimeters, polyline outline/detail only.
+Supply visibility-filtered HLR from the same model, placement and transform
+as the meshes. The renderer mirrors and composes detail then outline over
+surfaces according to show_hlr_detail/show_hlr_outline; it does not infer
+visibility from arbitrary supplied segments. Maximum 1,000,000 segments. */
 export interface MeshIllustrationRequestA0 {
     readonly schema: "geometry.mesh_illustration.request.a0";
     readonly view: MeshIllustrationView;

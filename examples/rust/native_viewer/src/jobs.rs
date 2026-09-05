@@ -52,7 +52,7 @@ pub enum Export {
 }
 
 impl Export {
-    fn data(&self) -> (&'static str, &[u8]) {
+    pub(crate) fn data(&self) -> (&'static str, &[u8]) {
         match self {
             Self::Svg(s) => ("illustration.svg", s.result.svg.as_bytes()),
             Self::Result(s) => ("illustration.a0.json", &s.result_json),
@@ -186,32 +186,45 @@ impl Jobs {
         model: Arc<Model>,
         view: MeshIllustrationView,
         style: MeshIllustrationStyleA0,
-        options: HlrProjectionOptionsA0,
+        mut options: HlrProjectionOptionsA0,
     ) {
         let emit = self.emit();
         self.runtime.as_ref().unwrap().spawn(async move {
             let result = async {
+                options.output_outline = Some(style.show_hlr_outline.unwrap_or(true));
+                options.output_detail = Some(style.show_hlr_detail.unwrap_or(false));
+                let hlr = if options.output_outline == Some(true)
+                    || options.output_detail == Some(true)
+                {
+                    emit(Event::Phase("Geometer: HLR detail / shadow"));
+                    Some(
+                        client
+                            .model_hlr_projection(ModelHlrProjectionRequest {
+                                model: model.step.clone(),
+                                media_type: "application/step".into(),
+                                options,
+                            })
+                            .await
+                            .map_err(error)?,
+                    )
+                } else {
+                    None // Pure fills must not depend on unused HLR computation succeeding.
+                };
                 emit(Event::Phase("Geometer: native illustration"));
-                let result = client
-                    .mesh_illustration(MeshIllustrationInputA0 {
-                        schema: "geometry.mesh_illustration.input.a0".into(),
-                        meshes: model.collection.meshes.clone(),
-                        view,
-                        prepare: None,
-                        style: Some(style.clone()),
-                        svg: None,
-                    })
-                    .await
-                    .map_err(error)?;
-                emit(Event::Phase("Geometer: HLR detail / shadow"));
-                let hlr = client
-                    .model_hlr_projection(ModelHlrProjectionRequest {
-                        model: model.step.clone(),
-                        media_type: "application/step".into(),
-                        options,
-                    })
-                    .await
-                    .map_err(error)?;
+                let input = MeshIllustrationInputA0 {
+                    schema: "geometry.mesh_illustration.input.a0".into(),
+                    meshes: model.collection.meshes.clone(),
+                    view,
+                    prepare: None,
+                    style: Some(style.clone()),
+                    svg: None,
+                };
+                let result = if let Some(hlr) = &hlr {
+                    client.mesh_illustration_with_hlr(input, hlr.clone()).await
+                } else {
+                    client.mesh_illustration(input).await
+                }
+                .map_err(error)?;
                 emit(Event::Phase("Rasterizing SVG preview"));
                 tokio::task::spawn_blocking(move || {
                     let image = raster::rasterize(&result.svg)?;
@@ -219,9 +232,20 @@ impl Jobs {
                         .map_err(|e| e.to_string())?;
                     let style_json = encode_mesh_illustration_style_a0_json(&style)
                         .map_err(|e| e.to_string())?;
-                    let hlr_json =
-                        encode_hlr_projection_result_a0_json(&hlr).map_err(|e| e.to_string())?;
-                    let hlr_images = crate::hlr::images(&hlr, &style)?;
+                    let (hlr_json, hlr_images) = if let Some(hlr) = hlr {
+                        (
+                            encode_hlr_projection_result_a0_json(&hlr)
+                                .map_err(|e| e.to_string())?,
+                            crate::hlr::images(&hlr, &style)?,
+                        )
+                    } else {
+                        (
+                            Vec::new(),
+                            std::array::from_fn(|_| {
+                                egui::ColorImage::filled([1, 1], egui::Color32::WHITE)
+                            }),
+                        )
+                    };
                     Ok(Arc::new(Solution {
                         result,
                         result_json,

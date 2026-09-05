@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="9ad4359655f2012a16e498224cf8bf56e835be17d9185e2ca5212d01b9d8e472">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
   <title>Native mesh illustration (development candidate) — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="9ad4359655f2012a16e498224cf8bf56e835be17d9185e2ca5212d01b9d8e472" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../design/mesh-illustration-native.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="native-mesh-illustration-development-candidate">Native mesh illustration (development candidate)</h1></header>
 <h2 id="availability-and-authority">Availability and authority</h2>
@@ -33,12 +33,27 @@ It reuses the same view/prepare/style/SVG fields and requires one
 layout, base64 JSON or local file path is required. The result is the existing
 <code>geometry.mesh_illustration.result.a0</code>, including inline SVG, not a relabeled
 attachment descriptor. There are no output attachments.</p>
+<p>An optional <code>hlr_projection</code> attachment contains the existing generated
+<code>geometry.hlr_projection.result.a0</code> JSON, media type
+<code>application/vnd.wavenumber.geometer.hlr-projection+json</code>, maximum 64 MiB.
+Exactly one view must match the illustration's normalized direction/up basis;
+units must be millimeters. Request <code>curve_mode: polyline</code>: arcs are rejected,
+not silently approximated. All layers combined are limited to 1,000,000
+segments, including disabled layers and bbox. The renderer uses the mesh
+bounds/viewport and applies <code>mirror_x</code> to both fills and supplied linework.</p>
+<p>Supply <strong>visible-only</strong> HLR from the same model, placement and transform as the
+meshes. The projection contract does not bind its source hash to a mesh
+collection or retain the producing options; composition cannot verify those
+relationships or recover visibility from arbitrary 2D segments. The complete
+STEP examples and demo use the same STEP bytes and stripped root placement,
+with no additional model transform. Hidden HLR edges must remain disabled.</p>
 <h2 id="rust-and-python-executable-clients">Rust and Python executable clients</h2>
 <p>Both clients accept the existing generated <code>MeshIllustrationInputA0</code> and adapt
 it to generated settings plus the mesh attachment. This keeps the public
 illustration input shape consistent with the browser and direct C++ API.</p>
 <p>The complete <a href="../../../../../../src/rust/geometer-client/examples/mesh_illustration.rs">Rust example</a>
-spawns the executable, tessellates STEP bytes, renders through the typed client,
+spawns the executable, tessellates STEP bytes, computes visible Fast HLR,
+renders the combined illustration through the typed client,
 closes the process and writes SVG:</p>
 <pre><code class="language-powershell">cargo run --manifest-path src/rust/geometer-client/Cargo.toml --example mesh_illustration -- PATH_TO_MATCHING_GEOMETER INPUT.step OUTPUT.svg
 </code></pre>
@@ -47,15 +62,26 @@ closes the process and writes SVG:</p>
 import geometer
 
 with geometer.GeometerClient(executable=&quot;PATH_TO_MATCHING_GEOMETER&quot;) as client:
-    tessellated = client.model_tessellation(Path(&quot;INPUT.step&quot;).read_bytes())
+    step = Path(&quot;INPUT.step&quot;).read_bytes()
+    tessellated = client.model_tessellation(step)
+    view = geometer.MeshIllustrationView(direction=(0.4, 0.7, 1.0), up=(0.0, 1.0, 0.0))
+    hlr = client.model_hlr_projection(step, geometer.HlrProjectionOptionsA0(
+        views=(geometer.HlrViewSpec(id=&quot;illustration&quot;, direction=view.direction, up=view.up),),
+        projection_algorithm=geometer.HlrProjectionAlgorithm.FAST,
+        outline_algorithm=geometer.HlrOutlineAlgorithm.FAST_MESH_SHADOW,
+        curve_mode=geometer.HlrCurveMode.POLYLINE,
+        strip_root_placement=True, output_outline=True, output_detail=True, output_bbox=False,
+        fast=geometer.FastHlrOptionsA0(include_hidden=False),
+    ))
     result = client.mesh_illustration(geometer.MeshIllustrationInputA0(
         schema=&quot;geometry.mesh_illustration.input.a0&quot;,
         meshes=tessellated.mesh_collection.meshes,
-        view=geometer.MeshIllustrationView(
-            direction=(0.4, 0.7, 1.0), up=(0.0, 1.0, 0.0)),
+        view=view,
         style=geometer.MeshIllustrationStyleA0(
-            shading=geometer.MeshIllustrationShading.TOON),
-    ))
+            shading=geometer.MeshIllustrationShading.TOON,
+            show_outlines=False, show_creases=False,
+            show_hlr_outline=True, show_hlr_detail=True),
+    ), hlr_projection=hlr)
 Path(&quot;OUTPUT.svg&quot;).write_text(result.svg, encoding=&quot;utf-8&quot;)
 </code></pre>
 <p>Rust remains asynchronous; Python is synchronous and accepts <code>timeout=</code>.
@@ -101,10 +127,18 @@ filtered HLR linework; see the <a href="../developer/native-illustration-lab-par
 <li>Integer-grid SVG coordinates, six-percent padding, stable CSS classes,
 background/title options and chained line paths.</li>
 </ul>
-<p>This pure API does not compute or accept optional CAD HLR layers yet. In
-particular, <code>show_hlr_outline</code> and <code>show_hlr_detail</code> do not request extra HLR
-computation. Native Fast HLR composition needs a separate governed wrapper;
-the browser's <code>illustrated-hlr</code> composition is not silently substituted.</p>
+<p>The pure <code>illustrate_mesh(input, result, status)</code> / Rust <code>mesh_illustration(input)</code>
+calls still do not compute HLR. For a finished layered SVG, use the C++ overload
+<code>illustrate_mesh(input, hlr, result, status)</code>, Rust
+<code>mesh_illustration_with_hlr(input, hlr)</code>, or Python's <code>hlr_projection=</code> keyword.
+<code>show_hlr_detail</code> and <code>show_hlr_outline</code> select supplied lines; detail is drawn
+before outline, above fills, exactly as in the web Lab. Consumers do not manage
+SVG z-order. They may retain the original HLR result for independent layers.</p>
+<p><code>fuse_surfaces</code> is a Geometer rendering option implemented in both TypeScript
+and native C++, not a Rust/display-only optimization. It merges compatible
+adjacent rendered surfaces while preserving visibility. <code>layer_coplanar_materials</code>
+separately controls coplanar material layering. SVG CSS style deduplication and
+same-style line chaining are automatic; they do not require a consumer pass.</p>
 <p>SVG text escapes XML delimiters and rejects XML 1.0 forbidden characters or
 invalid Unicode. That hardening is shared with TypeScript. CSS color validation
 matches ECMAScript whitespace/case-folding semantics and rejects unsafe CSS to
@@ -141,7 +175,10 @@ Windows has local conformance evidence, including typed Rust and Python
 STEP-to-SVG calls and exact Rust IPC output versus the TypeScript oracle.
 Malformed attachments, triangle limits and oversized inline SVG recover without
 poisoning the process. macOS/Linux runtime qualification, installed-wheel
-validation, optional native HLR composition and GUI acceptance remain open.</p>
+validation and GUI acceptance remain open. Native composition additionally has
+24 exact TypeScript/IPC comparisons (three views, reflection and four line
+toggle combinations), deterministic repeats, Python typed composition and
+malformed-attachment checks, and C++ basis/finite-value/segment-cap regressions.</p>
 <pre><code class="language-powershell">cmake --build build --target geometer_mesh_illustration_test
 ctest --test-dir build -R geometer_mesh_illustration --output-on-failure
 </code></pre>

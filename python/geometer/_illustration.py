@@ -4,9 +4,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ._generated.contracts.codecs import encode_mesh_collection_a0_json, encode_mesh_illustration_input_a0_json
+from ._generated.contracts.codecs import (
+    encode_hlr_projection_result_a0_json,
+    encode_mesh_collection_a0_json,
+    encode_mesh_illustration_input_a0_json,
+)
 from ._generated.contracts.models import (
     MeshCollectionA0,
+    HlrProjectionResultA0,
     MeshIllustrationInputA0,
     MeshIllustrationRequestA0,
     MeshIllustrationResultA0,
@@ -19,7 +24,10 @@ if TYPE_CHECKING:
 
 
 def mesh_illustration(
-    client: GeometerIpcClient, input: MeshIllustrationInputA0, timeout: float | None
+    client: GeometerIpcClient,
+    input: MeshIllustrationInputA0,
+    timeout: float | None,
+    hlr_projection: HlrProjectionResultA0 | None = None,
 ) -> MeshIllustrationResultA0:
     from ._ipc_client import GeometerIpcProtocolError, GeometerOperationError
 
@@ -34,16 +42,25 @@ def mesh_illustration(
         svg=input.svg,
     )
     collection = MeshCollectionA0(schema="geometry.mesh_collection.a0", length_unit="millimeter", meshes=input.meshes)
+    attachments = [
+        Attachment(
+            name="mesh_collection",
+            media_type="application/vnd.wavenumber.geometer.mesh-collection+json",
+            data=encode_mesh_collection_a0_json(collection),
+        )
+    ]
+    if hlr_projection is not None:
+        attachments.append(
+            Attachment(
+                name="hlr_projection",
+                media_type="application/vnd.wavenumber.geometer.hlr-projection+json",
+                data=encode_hlr_projection_result_a0_json(hlr_projection),
+            )
+        )
     response = client.execute(
         "geometry.mesh_illustration.a0",
         request,
-        (
-            Attachment(
-                name="mesh_collection",
-                media_type="application/vnd.wavenumber.geometer.mesh-collection+json",
-                data=encode_mesh_collection_a0_json(collection),
-            ),
-        ),
+        tuple(attachments),
         timeout=timeout,
     )
     if isinstance(response.outcome, OperationFailureA0):

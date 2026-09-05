@@ -18,6 +18,13 @@ Passing a demo does not promote its solver. No demo has been deleted.</p>
 <p>User decision on 2026-09-05: retain all 11 demos/examples for now. Pruning is
 deferred to a separate explicitly approved change. Retention does not alter
 experimental maturity or resolve the verification gaps recorded below.</p>
+<p>Native GUI follow-up on 2026-09-05: user inspection found an angled-view
+occlusion defect in the C++ preview. Its demo renderer now uses cached per-pixel
+depth testing instead of centroid sorting. Both GUIs expose fast detail and
+fast mesh-shadow selectors, enabled by default. The C++ example was rebuilt
+against unchanged kernel sources using cached OCCT; no new kernel release is
+implied. Updated windows were launched for user recheck; visual acceptance of
+the repaired angle remains pending.</p>
 <h2 id="runtime-evidence-and-disposition">Runtime Evidence And Disposition</h2>
 <table>
 <thead>
@@ -68,8 +75,8 @@ experimental maturity or resolve the verification gaps recorded below.</p>
 <tr>
 <td>Native C++ HLR preview / direct embedding</td>
 <td><a href="../../../../../../examples/cpp/hlr_preview.cpp">source</a></td>
-<td>Committed Windows executable present; no unattended GUI smoke mode found. Packaging validator checks presence, not interaction.</td>
-<td>Keep pending GUI assessment; runtime not verified in this audit.</td>
+<td>User inspected the original GUI and reported depth-order artifacts. Updated demo built/launched; focused depth regression passed in 0.01 seconds. Corrected angled-view appearance awaits user recheck.</td>
+<td>Keep; repair remains subject to visual acceptance.</td>
 </tr>
 <tr>
 <td>Python headless HLR/SVG / Python consumers</td>
@@ -80,8 +87,8 @@ experimental maturity or resolve the verification gaps recorded below.</p>
 <tr>
 <td>Python PyVista/Qt viewer / optional GUI experiment</td>
 <td><a href="../../../../../../examples/python/pyvista_hlr_viewer.py">source</a></td>
-<td>Initial isolated-environment attempt lacked dependencies. Reusing the existing primary checkout's GUI environment, with this worktree's source and committed executable selected explicitly, passed off-screen rendering: 53 meshes and expected bounds. Interactive controls remain untested.</td>
-<td>Keep optional GUI experiment; no dependency upgrade or archive required by this smoke result.</td>
+<td>Existing GUI environment passed off-screen rendering (53 meshes/bounds), then user inspection. Follow-up Qt control smoke switched fast/poly/exact detail and all outline choices, returning nonempty geometry; updated GUI relaunched for user recheck.</td>
+<td>Keep optional GUI experiment; no dependency upgrade required.</td>
 </tr>
 <tr>
 <td>Node topology reference / experimental IPC consumers</td>

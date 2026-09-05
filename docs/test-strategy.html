@@ -15,6 +15,7 @@
     <p>Native C++ and Python lanes validate the executable and bindings. Browser and Node lanes validate WASM behavior and cross-transport byte parity.</p>
     <h2>Fixtures, Assets, And Oracles</h2>
     <p>Governed packet fixtures, contract vectors, demo assets, and expected-result oracles provide deterministic regression evidence.</p>
+    <p>The native preview's dependency-free CTest depth-buffer regression covers per-pixel occlusion, draw order, winding, clipping and degenerate triangles (0.01 seconds on the audited Windows host). It needs no GUI startup or geometry solve; interactive native-demo checks remain a separate manual lane.</p>
     <h2>Coverage And Evidence</h2>
     <p>Documentation changes use deterministic HTML/asset freshness and authored Markdown file-link checks, plus a small Node regression for effective native availability, experimental maturity and handwritten coverage gaps. These checks require no native build or browser startup. Focused browser demo audits run separately against committed artifacts; missing GUI dependencies and unverified interactions remain explicit.</p>
     <p>CTest, pytest, Rack, package validation, and qualification reports provide coverage evidence. Missing or deferred surfaces remain explicit in governed records.</p>

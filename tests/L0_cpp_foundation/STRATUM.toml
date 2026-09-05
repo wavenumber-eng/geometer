@@ -7,6 +7,7 @@ concerns = ["build", "occt", "cpp"]
 
 objectives = [
     "Run the complete registered native CTest suite from the governed default build tree.",
+    "Verify the demo-only preview depth buffer resolves overlapping triangles independently of draw order and winding.",
     "Keep exact analytic feasibility, generic operation, IPC, and retained geometry tests visible in Rack.",
 ]
 

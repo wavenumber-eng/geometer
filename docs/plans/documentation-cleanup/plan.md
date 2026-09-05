@@ -88,6 +88,12 @@ status = "done"
 depends_on = ["demo-disposition-review", "readme-refresh"]
 
 [[steps]]
+id = "native-gui-repairs"
+title = "Repair C++ preview depth ordering and expose fast detail/shadow in both native demos"
+status = "done"
+depends_on = ["demo-disposition-review"]
+
+[[steps]]
 id = "documentation-drift-gates"
 title = "Add lightweight checks for links, interface inventory freshness, maturity labels, and demo registration"
 status = "pending"
@@ -193,9 +199,12 @@ The [durable demo audit](../../developer/demo-status.md) records actual runs
 and explicit limitations. The user approved retaining all demos for now; the
 [retention decision](demo-retention.md) completes disposition and the associated
 documentation-only cleanup without removing anything. This non-destructive
-decision no longer depends on completing runtime verification. Native C++ GUI
-interaction remains unverified. No native/WASM rebuild,
-runtime migration, pruning, public push, or release has been performed.
+decision no longer depends on completing runtime verification. Subsequent user
+inspection led to [scoped native GUI repairs](native-gui-repairs.md): C++ depth
+testing and existing fast detail/shadow selectors in both demos. The updated
+C++ demo was rebuilt, and both GUIs were launched for visual recheck. Solver
+sources, kernel executable and WASM artifacts remain unchanged. No runtime
+contract migration, pruning, public push, or release has been performed.
 
 ## Objective
 

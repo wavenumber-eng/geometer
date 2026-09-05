@@ -9,6 +9,14 @@ User decision on 2026-09-05: retain all 11 demos/examples for now. Pruning is
 deferred to a separate explicitly approved change. Retention does not alter
 experimental maturity or resolve the verification gaps recorded below.
 
+Native GUI follow-up on 2026-09-05: user inspection found an angled-view
+occlusion defect in the C++ preview. Its demo renderer now uses cached per-pixel
+depth testing instead of centroid sorting. Both GUIs expose fast detail and
+fast mesh-shadow selectors, enabled by default. The C++ example was rebuilt
+against unchanged kernel sources using cached OCCT; no new kernel release is
+implied. Updated windows were launched for user recheck; visual acceptance of
+the repaired angle remains pending.
+
 ## Runtime Evidence And Disposition
 
 | Demo / audience | Source | Verification on this host | Approved disposition: retain for now |
@@ -19,9 +27,9 @@ experimental maturity or resolve the verification gaps recorded below.
 | Analytic polygon pour / solver research | [page](../../examples/wasm/analytic_polygon_pour_demo.html) | Standalone Chrome runtime test passed. | Retain as experimental research. |
 | PCB polygon pour / abandoned application direction | [page](../../examples/wasm/pcb_polygon_pour_demo.html) | Standalone interaction test passed. | Retain as experimental research; any later pruning requires separate approval. |
 | Planar ring solver / packed polygon example | [page](../../examples/wasm/planar_ring_solver_demo.html) | Headless Chrome loaded the committed standalone page and solved: 1 region, 2 holes, 27.223347 square mm, runtime 2026.9.4 / ABI 20260904. | Keep provisionally as a working packed polygon example; do not prune solely for age. |
-| Native C++ HLR preview / direct embedding | [source](../../examples/cpp/hlr_preview.cpp) | Committed Windows executable present; no unattended GUI smoke mode found. Packaging validator checks presence, not interaction. | Keep pending GUI assessment; runtime not verified in this audit. |
+| Native C++ HLR preview / direct embedding | [source](../../examples/cpp/hlr_preview.cpp) | User inspected the original GUI and reported depth-order artifacts. Updated demo built/launched; focused depth regression passed in 0.01 seconds. Corrected angled-view appearance awaits user recheck. | Keep; repair remains subject to visual acceptance. |
 | Python headless HLR/SVG / Python consumers | [source](../../examples/python/step_hlr_svg.py) | Executed against committed binary; produced projection JSON, SVG and GLB. | Keep primary Python example. |
-| Python PyVista/Qt viewer / optional GUI experiment | [source](../../examples/python/pyvista_hlr_viewer.py) | Initial isolated-environment attempt lacked dependencies. Reusing the existing primary checkout's GUI environment, with this worktree's source and committed executable selected explicitly, passed off-screen rendering: 53 meshes and expected bounds. Interactive controls remain untested. | Keep optional GUI experiment; no dependency upgrade or archive required by this smoke result. |
+| Python PyVista/Qt viewer / optional GUI experiment | [source](../../examples/python/pyvista_hlr_viewer.py) | Existing GUI environment passed off-screen rendering (53 meshes/bounds), then user inspection. Follow-up Qt control smoke switched fast/poly/exact detail and all outline choices, returning nonempty geometry; updated GUI relaunched for user recheck. | Keep optional GUI experiment; no dependency upgrade required. |
 | Node topology reference / experimental IPC consumers | [source](../../examples/node/step_topology_annotation_reference.ts), [guide](../../examples/node/README.md) | Native open/inspect/group/probe/checkpoint/restart/replay passed. | Keep clearly experimental, not the introductory IPC example. |
 | Node model-bounds quick start / introductory IPC | [source](../../examples/node/ipc-model-bounds.mjs) | Native handshake, discovery, STEP attachment, bounds and graceful close passed. | Keep minimal introductory IPC example. |
 

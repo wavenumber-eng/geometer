@@ -39,6 +39,11 @@ Left/Right buttons are camera presets. Lighting controls adjust key direction,
 key/fill/head intensity, ambient level, and material contrast. The projection
 regenerates after camera movement settles.
 
+`Detail alg` selects `fast` (default), `poly`, or `exact`; `Outline alg` selects
+`fast-mesh-shadow` (default), `mesh-shadow`, or `hlr-close`. Changing either
+recomputes the projection. `Mode` independently selects detail, outline or both
+for display; the PyVista 3D viewport is unchanged by the HLR algorithm choice.
+
 Or install the demo dependencies into your current environment:
 
 ```powershell

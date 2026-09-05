@@ -1,3 +1,6 @@
+add_executable(geometer_preview_depth_buffer_test preview_depth_buffer_test.cpp)
+add_test(NAME geometer_preview_depth_buffer_test COMMAND geometer_preview_depth_buffer_test)
+
 add_executable(geometer_planar_contours_test
     planar_contours_test.cpp
     ${CMAKE_SOURCE_DIR}/src/cpp/lib/planar_contours.cpp

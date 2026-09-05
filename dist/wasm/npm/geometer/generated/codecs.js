@@ -1172,6 +1172,10 @@ const declarations = {
         variants: [
             {
                 kind: "reference",
+                target: "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0",
+            },
+            {
+                kind: "reference",
                 target: "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationRequestA0",
             },
             {
@@ -1698,6 +1702,52 @@ const declarations = {
             mirror_x: { type: { kind: "primitive", name: "boolean" }, optional: true, constraints: {} },
         },
     },
+    "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0": {
+        kind: "object",
+        properties: {
+            schema: {
+                type: {
+                    kind: "literal",
+                    value_type: "string",
+                    value: "geometry.mesh_illustration.request.a0",
+                },
+                optional: false,
+                constraints: {},
+            },
+            view: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationView",
+                },
+                optional: false,
+                constraints: {},
+            },
+            prepare: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationPrepareOptions",
+                },
+                optional: true,
+                constraints: {},
+            },
+            style: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationStyleA0",
+                },
+                optional: true,
+                constraints: {},
+            },
+            svg: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationSvgOptions",
+                },
+                optional: true,
+                constraints: {},
+            },
+        },
+    },
     "Wavenumber.Geometer.Contracts.ModelBoundsA0.Matrix4x4": {
         kind: "array",
         element: { kind: "primitive", name: "float64" },
@@ -1999,6 +2049,10 @@ const declarations = {
     "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationResultValueA0": {
         kind: "union",
         variants: [
+            {
+                kind: "reference",
+                target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationResultA0",
+            },
             {
                 kind: "reference",
                 target: "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationResultA0",
@@ -5599,6 +5653,18 @@ export function encodeMeshIllustrationStyleA0Json(value) {
     return encodeContractJson(value, {
         kind: "reference",
         target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationStyleA0",
+    }, declarations);
+}
+export function decodeMeshIllustrationRequestA0Json(data) {
+    return decodeContractJson(data, {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0",
+    }, declarations);
+}
+export function encodeMeshIllustrationRequestA0Json(value) {
+    return encodeContractJson(value, {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0",
     }, declarations);
 }
 export function decodeModelBoundsOptionsA0Json(data) {

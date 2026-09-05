@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Literal, TypeAlias
 
-NORMALIZED_CATALOG_SHA256 = "a8c0c77000c376613d20f6968bb2a7c0fea38b4b829ab02b0f13e453a9dfd297"
+NORMALIZED_CATALOG_SHA256 = "9ad4359655f2012a16e498224cf8bf56e835be17d9185e2ca5212d01b9d8e472"
 
 JobId: TypeAlias = int
 
@@ -799,6 +799,73 @@ class IpcReasonA0:
     reason: str | None = None
 
 
+IllustrationVector3: TypeAlias = tuple[float, float, float]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshIllustrationView:
+    direction: IllustrationVector3
+    up: IllustrationVector3
+    mirror_x: bool | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshIllustrationPrepareOptions:
+    max_triangles: int | None = None
+    weld_tolerance: float | None = None
+
+
+class MeshIllustrationShading(str, Enum):
+    UNLIT = "unlit"
+    FLAT = "flat"
+    LAMBERT = "lambert"
+    BANDED = "banded"
+    TOON = "toon"
+
+
+# Presence-preserving illustration style. Package defaults apply to absent fields.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshIllustrationStyleA0:
+    shading: MeshIllustrationShading | None = None
+    ambient: float | None = None
+    key_intensity: float | None = None
+    light_direction: IllustrationVector3 | None = None
+    bands: int | None = None
+    source_colors: bool | None = None
+    fallback_color: IllustrationVector3 | None = None
+    background: str | None = None
+    transparent_background: bool | None = None
+    fuse_surfaces: bool | None = None
+    layer_coplanar_materials: bool | None = None
+    show_hlr_outline: bool | None = None
+    show_hlr_detail: bool | None = None
+    show_outlines: bool | None = None
+    show_creases: bool | None = None
+    crease_angle_degrees: float | None = None
+    outline_color: str | None = None
+    crease_color: str | None = None
+    outline_width: float | None = None
+    crease_width: float | None = None
+    double_sided: bool | None = None
+    rim_amount: float | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshIllustrationSvgOptions:
+    coordinate_span: int | None = None
+    title: str | None = None
+
+
+# Native one-shot illustration settings. Meshes arrive in the required mesh_collection attachment governed by geometry.mesh_collection.a0. Reuses existing illustration A0 options and result; does not compute HLR.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshIllustrationRequestA0:
+    schema: Literal["geometry.mesh_illustration.request.a0"]
+    view: MeshIllustrationView
+    prepare: MeshIllustrationPrepareOptions | None = None
+    style: MeshIllustrationStyleA0 | None = None
+    svg: MeshIllustrationSvgOptions | None = None
+
+
 class ModelRootPlacement(str, Enum):
     STRIP = "strip"
     PRESERVE = "preserve"
@@ -1297,7 +1364,8 @@ class StepTopologyAnalyzeRecoveryRequestA0:
 
 # Structurally representable request payloads for executable IPC A0. A variant is callable only when the negotiated runtime catalog advertises its operation; structural presence does not imply runtime availability.
 IpcRequestValueA0: TypeAlias = (
-    ModelTessellationRequestA0
+    MeshIllustrationRequestA0
+    | ModelTessellationRequestA0
     | ModelBoundsOptionsA0
     | HlrProjectionOptionsA0
     | PackedAttachmentProjectionA0
@@ -1346,8 +1414,6 @@ IllustrationMatrix4x4: TypeAlias = tuple[
     float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float
 ]
 
-IllustrationVector3: TypeAlias = tuple[float, float, float]
-
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class MeshIllustrationMaterial:
@@ -1367,60 +1433,6 @@ class MeshIllustrationMesh:
     materials: tuple[MeshIllustrationMaterial, ...]
     triangle_material_indices: tuple[int, ...] | None = None
     double_sided: bool | None = None
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class MeshIllustrationView:
-    direction: IllustrationVector3
-    up: IllustrationVector3
-    mirror_x: bool | None = None
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class MeshIllustrationPrepareOptions:
-    max_triangles: int | None = None
-    weld_tolerance: float | None = None
-
-
-class MeshIllustrationShading(str, Enum):
-    UNLIT = "unlit"
-    FLAT = "flat"
-    LAMBERT = "lambert"
-    BANDED = "banded"
-    TOON = "toon"
-
-
-# Presence-preserving illustration style. Package defaults apply to absent fields.
-@dataclass(frozen=True, slots=True, kw_only=True)
-class MeshIllustrationStyleA0:
-    shading: MeshIllustrationShading | None = None
-    ambient: float | None = None
-    key_intensity: float | None = None
-    light_direction: IllustrationVector3 | None = None
-    bands: int | None = None
-    source_colors: bool | None = None
-    fallback_color: IllustrationVector3 | None = None
-    background: str | None = None
-    transparent_background: bool | None = None
-    fuse_surfaces: bool | None = None
-    layer_coplanar_materials: bool | None = None
-    show_hlr_outline: bool | None = None
-    show_hlr_detail: bool | None = None
-    show_outlines: bool | None = None
-    show_creases: bool | None = None
-    crease_angle_degrees: float | None = None
-    outline_color: str | None = None
-    crease_color: str | None = None
-    outline_width: float | None = None
-    crease_width: float | None = None
-    double_sided: bool | None = None
-    rim_amount: float | None = None
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class MeshIllustrationSvgOptions:
-    coordinate_span: int | None = None
-    title: str | None = None
 
 
 # Serializable one-shot illustration input; reusable prepared scenes are opaque package objects.
@@ -2003,7 +2015,8 @@ class StepTopologyAnalyzeRecoveryResultA0:
 
 # Structurally representable operation results. A result variant may belong to a runtime-unavailable experimental operation and is not an availability claim; the negotiated operation catalog remains authoritative.
 OperationResultValueA0: TypeAlias = (
-    ModelTessellationResultA0
+    MeshIllustrationResultA0
+    | ModelTessellationResultA0
     | ModelBoundsResultA0
     | HlrProjectionResultA0
     | PackedAttachmentProjectionA0
@@ -2077,6 +2090,7 @@ MODEL_TYPES = {
     "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationStyleA0": MeshIllustrationStyleA0,
     "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationSvgOptions": MeshIllustrationSvgOptions,
     "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationView": MeshIllustrationView,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0": MeshIllustrationRequestA0,
     "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsOptionsA0": ModelBoundsOptionsA0,
     "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsResultA0": ModelBoundsResultA0,
     "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsSource": ModelBoundsSource,

@@ -4,7 +4,12 @@
 
 The source checkout and PyPI wheel include a thin Python package named
 `geometer`; the PyPI distribution name is `wn-geometer`. The package drives the
-native CLI and keeps the public API byte/path oriented:
+native CLI and keeps the file-oriented convenience API byte/path oriented.
+
+The persistent `GeometerClient` also exposes generated-value operations. Feature
+builds include [colored STEP tessellation and native mesh illustration](mesh-illustration-native.md)
+with a complete Python STEP-to-SVG example. Those new methods require a matching
+feature executable; the previously released wheel does not provide them.
 
 ```python
 from pathlib import Path

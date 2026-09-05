@@ -51,6 +51,7 @@ set(GEOMETER_LIB_SOURCES
     mesh_illustration_grid.cpp
     mesh_illustration_layers.cpp
     mesh_illustration_math.cpp
+    mesh_illustration_operation.cpp
     mesh_illustration_prepare.cpp
     mesh_illustration_style.cpp
     mesh_illustration_svg.cpp

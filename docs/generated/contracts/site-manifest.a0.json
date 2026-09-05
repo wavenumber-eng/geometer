@@ -3,7 +3,7 @@
   "generation": "a0",
   "catalog_identity": "wn.geometer.contract_catalog",
   "catalog_generation": "a0",
-  "catalog_sha256": "a8c0c77000c376613d20f6968bb2a7c0fea38b4b829ab02b0f13e453a9dfd297",
+  "catalog_sha256": "9ad4359655f2012a16e498224cf8bf56e835be17d9185e2ca5212d01b9d8e472",
   "contracts": {
     "geometry.analytic_planar_boolean_batch.request.a0": "contracts/geometry-analytic-planar-boolean-batch-request-a0.html",
     "geometry.analytic_planar_boolean_batch.result.a0": "contracts/geometry-analytic-planar-boolean-batch-result-a0.html",
@@ -22,6 +22,7 @@
     "geometry.mesh_illustration.input.a0": "contracts/geometry-mesh-illustration-input-a0.html",
     "geometry.mesh_illustration.result.a0": "contracts/geometry-mesh-illustration-result-a0.html",
     "geometry.mesh_illustration.style.a0": "contracts/geometry-mesh-illustration-style-a0.html",
+    "geometry.mesh_illustration.request.a0": "contracts/geometry-mesh-illustration-request-a0.html",
     "geometry.model_bounds.options.a0": "contracts/geometry-model-bounds-options-a0.html",
     "geometry.model_bounds.a0": "contracts/geometry-model-bounds-a0.html",
     "geometry.mesh_collection.a0": "contracts/geometry-mesh-collection-a0.html",
@@ -56,6 +57,7 @@
   "operations": {
     "geometry.analytic_planar_boolean_batch.a0": "operations/geometry-analytic-planar-boolean-batch-a0.html",
     "geometry.mesh_hlr_projection.a0": "operations/geometry-mesh-hlr-projection-a0.html",
+    "geometry.mesh_illustration.a0": "operations/geometry-mesh-illustration-a0.html",
     "geometry.model_bounds.a0": "operations/geometry-model-bounds-a0.html",
     "geometry.model_hlr_projection.a0": "operations/geometry-model-hlr-projection-a0.html",
     "geometry.model_tessellation.a0": "operations/geometry-model-tessellation-a0.html",

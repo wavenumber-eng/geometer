@@ -69,30 +69,36 @@ def _assert_candidate_contracts(contracts: list[dict[str, Any]], operations: lis
 
 
 def _assert_catalog_lineage(path: Path, historical_hash: str) -> None:
-    """Preserve historical evidence while allowing the reviewed additive tessellation slice."""
+    """Preserve historical evidence across reviewed additive native visualization contracts."""
     if _sha256(path) == historical_hash:
         return
     catalog = json.loads(path.read_text(encoding="utf-8"))
     prefix = "Wavenumber.Geometer.Contracts.ModelTessellationA0."
-    catalog["declarations"] = [item for item in catalog["declarations"] if not item["name"].startswith(prefix)]
-    catalog["roots"] = [item for item in catalog["roots"] if not item["name"].startswith(prefix)]
+    illustration_prefix = "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0."
+    prefixes = (prefix, illustration_prefix)
+    catalog["declarations"] = [item for item in catalog["declarations"] if not item["name"].startswith(prefixes)]
+    catalog["roots"] = [item for item in catalog["roots"] if not item["name"].startswith(prefixes)]
     catalog["operations"] = [
-        item for item in catalog["operations"] if item["identity"] != "geometry.model_tessellation.a0"
+        item
+        for item in catalog["operations"]
+        if item["identity"] not in {"geometry.model_tessellation.a0", "geometry.mesh_illustration.a0"}
     ]
     additions = {
-        "Wavenumber.Geometer.Contracts.IpcA0.IpcRequestValueA0": prefix + "ModelTessellationRequestA0",
-        "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationResultValueA0": prefix + "ModelTessellationResultA0",
+        "Wavenumber.Geometer.Contracts.IpcA0.IpcRequestValueA0": [
+            ("model_tessellation", prefix + "ModelTessellationRequestA0"),
+            ("mesh_illustration", illustration_prefix + "MeshIllustrationRequestA0"),
+        ],
+        "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationResultValueA0": [
+            ("model_tessellation", prefix + "ModelTessellationResultA0"),
+            ("mesh_illustration", "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationResultA0"),
+        ],
     }
-    for union, target in additions.items():
+    for union, variants in additions.items():
         declaration = next(item for item in catalog["declarations"] if item["name"] == union)
-        expected = {
-            "name": "model_tessellation",
-            "type": {"kind": "reference", "target": target},
-            "doc": "",
-            "annotations": {},
-        }
-        assert [item for item in declaration["variants"] if item["name"] == "model_tessellation"] == [expected]
-        declaration["variants"].remove(expected)
+        for name, target in variants:
+            expected = {"name": name, "type": {"kind": "reference", "target": target}, "doc": "", "annotations": {}}
+            assert [item for item in declaration["variants"] if item["name"] == name] == [expected]
+            declaration["variants"].remove(expected)
     # Exact reconstruction proves every preexisting root, operation and field is
     # unchanged. Do not replace the old evidence hash with the current catalog.
     # Use the catalog generator's ECMAScript number serialization, not Python's

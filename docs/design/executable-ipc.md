@@ -36,6 +36,11 @@ package consumers use its exported package specifier above.
 
 ## Mesh Attachment Example (Python)
 
+Feature builds also offer [native mesh illustration](mesh-illustration-native.md):
+Rust/Python accept the shared generated illustration input, send a governed
+colored-mesh attachment and receive the existing A0 SVG result. STEP consumers
+first use `model_tessellation`; no JavaScript/WASM runtime is needed.
+
 The public client packs the mesh and sends a named binary attachment; JSON
 contains HLR options, not base64 geometry:
 

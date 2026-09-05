@@ -7,6 +7,7 @@ import "./operations/hlr-projection-a0.tsp";
 import "./operations/hlr-projection-operation-a0.tsp";
 import "./operations/mesh-illustration-a0.tsp";
 import "./operations/model-tessellation-operation-a0.tsp";
+import "./operations/mesh-illustration-operation-a0.tsp";
 import "./operation-outcome-a0.tsp";
 import "./ipc-a0.tsp";
 import "./operations/analytic-planar-boolean-a0.tsp";

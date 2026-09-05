@@ -29,6 +29,16 @@ from ._analytic_packet_a0 import (
 )
 from ._generated.contracts.models import (
     MeshCollectionA0,
+    MeshIllustrationInputA0,
+    MeshIllustrationMaterial,
+    MeshIllustrationMesh,
+    MeshIllustrationPrepareOptions,
+    MeshIllustrationRequestA0,
+    MeshIllustrationResultA0,
+    MeshIllustrationShading,
+    MeshIllustrationStyleA0,
+    MeshIllustrationSvgOptions,
+    MeshIllustrationView,
     ModelRootPlacement,
     ModelTessellationRequestA0,
     ModelTessellationResultA0,
@@ -96,6 +106,16 @@ from ._types import (
 )
 
 __all__ = [
+    "MeshIllustrationInputA0",
+    "MeshIllustrationMaterial",
+    "MeshIllustrationMesh",
+    "MeshIllustrationPrepareOptions",
+    "MeshIllustrationRequestA0",
+    "MeshIllustrationResultA0",
+    "MeshIllustrationShading",
+    "MeshIllustrationStyleA0",
+    "MeshIllustrationSvgOptions",
+    "MeshIllustrationView",
     "MeshCollectionA0",
     "ModelRootPlacement",
     "ModelTessellation",

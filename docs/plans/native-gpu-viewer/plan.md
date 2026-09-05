@@ -12,7 +12,7 @@ status = "done"
 [[steps]]
 id = "architecture-and-parity"
 title = "Approve viewer boundaries, web parity matrix and shared illustration execution strategy"
-status = "pending"
+status = "done"
 depends_on = ["baseline-inventory", "rust-demo-scope"]
 
 [[steps]]
@@ -24,7 +24,7 @@ depends_on = ["baseline-inventory"]
 [[steps]]
 id = "native-illustration-windows"
 title = "Implement the native Windows operation and typed Rust STEP/mesh workflow"
-status = "pending"
+status = "done"
 depends_on = ["architecture-and-parity"]
 
 [[steps]]

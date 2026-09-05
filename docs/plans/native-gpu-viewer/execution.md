@@ -109,3 +109,36 @@ Final review approved the core checkpoint and independently reran both CTests:
 40 exact parity/determinism cases plus native smoke passed (about 1 second).
 Existing TypeScript illustration validation, all 130 contract vectors,
 generated freshness, documentation checks and touched-file formatting passed.
+
+## Slice 4: executable illustration and typed clients
+
+Added TypeSpec `geometry.mesh_illustration.request.a0` and the operation
+`geometry.mesh_illustration.a0`, with existing A0 view/prepare/style/SVG values,
+one bounded `geometry.mesh_collection.a0` JSON attachment and the unchanged
+inline `geometry.mesh_illustration.result.a0`. Generated all projections and
+IPC unions/dispatch; no parallel handwritten wire DTOs. Rust and Python typed
+methods accept the existing generated illustration input and adapt transport
+placement internally.
+
+The native operation calls the reviewed renderer. IPC now checks the encoded
+8 MiB response JSON limit before handing a frame to the writer, returning a
+recoverable operation failure. A real 128,000-triangle nonoverlapping fixture
+exercises that limit and proves the same process accepts a subsequent small
+request. Rust STEP-to-SVG output matches the test-only TypeScript oracle exactly;
+typed Python validates the generated result and parses SVG. Missing/wrong-media
+attachments are rejected before dispatch; malformed attachment content fails
+without poisoning the process.
+
+Catalog lineage tests reconstruct the exact historical catalog after removing
+only the reviewed tessellation/illustration additions and exact IPC variants.
+Historical solver/topology evidence is unchanged. Native HLR composition,
+installed wheel, cross-platform and viewer acceptance remain open; compiled
+release artifacts have not been replaced or published.
+
+Independent reviewer approved slice 4. Focused final checks passed: 30 Rust
+library, 12 live process and 3 dispatch tests; Python illustration plus catalog
+promotion tests (10 cases, about 3 seconds including the oversized response);
+both CTests with all 40 exact renderer fixtures; Clippy, Rust structural hygiene,
+Ruff/Pyright, 130 contract vectors, generation and documentation freshness.
+The Windows operation/typed Rust workflow checkpoint is done; this does not
+complete platform qualification, Python installed-package acceptance or demos.

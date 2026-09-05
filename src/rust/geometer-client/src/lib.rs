@@ -4,6 +4,7 @@ pub mod analytic_packet_a0;
 pub mod client;
 pub mod generated;
 mod hlr;
+mod illustration;
 pub mod indexed_mesh_packet_a0;
 pub mod ipc;
 mod model_bounds;

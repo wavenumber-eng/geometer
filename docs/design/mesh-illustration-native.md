@@ -5,15 +5,64 @@
 The source branch provides `geometer::illustrate_mesh` in
 `geometer/mesh_illustration.h`, linked through `geometer_lib`. It performs CPU
 vector illustration without a JavaScript engine, browser, GPU or WASM runtime.
-This is an **unreleased direct C++ API**. It is not yet an executable IPC
-operation or a Rust/Python illustration method. Do not infer availability in
-released binaries from the generated illustration DTOs.
+This is **unreleased development functionality**, also exposed by
+`geometry.mesh_illustration.a0` through the generic operation ABI and native
+`serve --stdio` dispatcher, with typed Rust/Python methods. Use matching feature
+clients and executable; the previous released binary does not expose it.
 
 Public input, style and result values come from the existing TypeSpec
 [`mesh-illustration-a0.tsp`](../../src/tsp/geometer/operations/mesh-illustration-a0.tsp).
 The C++ API uses those generated structures directly. Its private scene,
 visibility graph and drawing commands are implementation details, not new wire
 formats. The existing [browser API](hlr-projection-a0.md) remains supported.
+
+The executable settings and attachment declaration come from
+[`mesh-illustration-operation-a0.tsp`](../../src/tsp/geometer/operations/mesh-illustration-operation-a0.tsp).
+It reuses the same view/prepare/style/SVG fields and requires one
+`mesh_collection` attachment, media type
+`application/vnd.wavenumber.geometer.mesh-collection+json`, containing UTF-8
+`geometry.mesh_collection.a0` JSON (maximum 256 MiB). No private indexed-mesh
+layout, base64 JSON or local file path is required. The result is the existing
+`geometry.mesh_illustration.result.a0`, including inline SVG, not a relabeled
+attachment descriptor. There are no output attachments.
+
+## Rust and Python executable clients
+
+Both clients accept the existing generated `MeshIllustrationInputA0` and adapt
+it to generated settings plus the mesh attachment. This keeps the public
+illustration input shape consistent with the browser and direct C++ API.
+
+The complete [Rust example](../../src/rust/geometer-client/examples/mesh_illustration.rs)
+spawns the executable, tessellates STEP bytes, renders through the typed client,
+closes the process and writes SVG:
+
+```powershell
+cargo run --manifest-path src/rust/geometer-client/Cargo.toml --example mesh_illustration -- PATH_TO_MATCHING_GEOMETER INPUT.step OUTPUT.svg
+```
+
+Equivalent Python:
+
+```python
+from pathlib import Path
+import geometer
+
+with geometer.GeometerClient(executable="PATH_TO_MATCHING_GEOMETER") as client:
+    tessellated = client.model_tessellation(Path("INPUT.step").read_bytes())
+    result = client.mesh_illustration(geometer.MeshIllustrationInputA0(
+        schema="geometry.mesh_illustration.input.a0",
+        meshes=tessellated.mesh_collection.meshes,
+        view=geometer.MeshIllustrationView(
+            direction=(0.4, 0.7, 1.0), up=(0.0, 1.0, 0.0)),
+        style=geometer.MeshIllustrationStyleA0(
+            shading=geometer.MeshIllustrationShading.TOON),
+    ))
+Path("OUTPUT.svg").write_text(result.svg, encoding="utf-8")
+```
+
+Rust remains asynchronous; Python is synchronous and accepts `timeout=`.
+Both retain the existing negotiation, cancellation/process lifecycle and
+protocol-failure behavior. A failed illustration is an operation error, not
+automatic renderer fallback. Malformed results terminate the owned connection.
 
 ## Calling the value API
 
@@ -83,7 +132,12 @@ limits return status 102; there is no approximate-renderer fallback.
 These are accepted-work/output limits, not a hard peak-memory or CPU sandbox.
 Generated value validation serializes input; scene/graph/SVG assembly allocates
 intermediate storage. Callers processing untrusted inputs should use the
-managed executable boundary with process limits once its adapter is available.
+managed executable boundary with process limits.
+
+IPC still has an **8 MiB encoded JSON envelope limit**, including escaped SVG,
+warnings and outcome metadata. A larger result returns
+`geometer.transport.response_limit_exceeded`; the process stays usable. No
+implicit truncation, oversized frame or hidden alternate result schema is used.
 
 ## Focused conformance evidence
 
@@ -96,8 +150,11 @@ calls for determinism, and parses every SVG with an XML parser.
 Shared fixtures cover shading modes, views, colors, transforms, reflection,
 normals, opacity, fusion, material inlays/holes, overlapping triangle soup,
 warnings, Unicode CSS, title/viewport options and the colored SOT-23 STEP model.
-Windows has local conformance evidence. macOS/Linux runtime qualification,
-executable/Rust/Python integration and GUI acceptance remain open.
+Windows has local conformance evidence, including typed Rust and Python
+STEP-to-SVG calls and exact Rust IPC output versus the TypeScript oracle.
+Malformed attachments, triangle limits and oversized inline SVG recover without
+poisoning the process. macOS/Linux runtime qualification, installed-wheel
+validation, optional native HLR composition and GUI acceptance remain open.
 
 ```powershell
 cmake --build build --target geometer_mesh_illustration_test

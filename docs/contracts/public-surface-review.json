@@ -4,7 +4,7 @@
   "files": [
     {
       "path": "python/geometer/__init__.py",
-      "sha256": "ec316d82daf3e0a6f4f2ff5ae1a5b79c1298179877cb39552c80240b4b2e27d1"
+      "sha256": "bc4e0909b15bb6c9e8ceaa671751130a82dca5210b15232b949133d4692b6c5b"
     },
     {
       "path": "python/geometer/_analytic_packet_a0.py",
@@ -35,6 +35,10 @@
       "sha256": "4e79bc006953b3193c0dae6d39c809542598c399e8d7cc37d5545a4b46356576"
     },
     {
+      "path": "python/geometer/_illustration.py",
+      "sha256": "4a188bcfebeb285450ab3e4672cd28c51cd2d20aa3f4cb40b0758bacf3d1f05c"
+    },
+    {
       "path": "python/geometer/_indexed_mesh_packet_a0.py",
       "sha256": "4183c1b53dc8eafbbebb118295155cf135e5b428c584aa9e145acdc9d13dc7a9"
     },
@@ -44,7 +48,7 @@
     },
     {
       "path": "python/geometer/_ipc_client.py",
-      "sha256": "0f35e0238da8e5294bfb3524fa466b2f082b700b9e54c61560b85cf599b2227f"
+      "sha256": "b069e9b42d46b8c2cdd3df5d9ef23ffd00fc218e652acc79a5bc776e8af11844"
     },
     {
       "path": "python/geometer/_paths.py",
@@ -100,7 +104,7 @@
     },
     {
       "path": "src/cpp/lib/CMakeLists.txt",
-      "sha256": "1219b46c83d37dd6ad22faf6b20201322cc8c22a626d340bb0779fda7593489b"
+      "sha256": "a497966baa59ca46566428385e33b5717f8aa610f5b74f51f152d43f962031f2"
     },
     {
       "path": "src/cpp/lib/geometer.h",
@@ -396,7 +400,7 @@
     },
     {
       "path": "src/cpp/lib/operation_registry.cpp",
-      "sha256": "582ba38ed13d54bc0c7093dde3bad1caf79d6be09bf45d86473ab06c3ed153e9"
+      "sha256": "0dfae523ec428fc7049ed3e83483d108c4820b9c323e92f66a7b2b3d72806d37"
     },
     {
       "path": "src/cpp/lib/projection_options_json.cpp",
@@ -475,6 +479,10 @@
       "sha256": "fdf5dcc28d6a98b10e2419e375db0d7fb44c68dcec2a355e98ffea117453d21d"
     },
     {
+      "path": "src/rust/geometer-client/src/illustration.rs",
+      "sha256": "5378c574dbb684f18c40e781dd81e71740a2088c901c7ef7ea4a9d51a75ecbbb"
+    },
+    {
       "path": "src/rust/geometer-client/src/indexed_mesh_packet_a0.rs",
       "sha256": "402fe51e216ab94a92f94cbf22e8a59d49c8a941fd12a4fa32e5ab2e10790e50"
     },
@@ -484,7 +492,7 @@
     },
     {
       "path": "src/rust/geometer-client/src/lib.rs",
-      "sha256": "f3bf8d913625ce622e8de3e78b8efa6faf0a64ade99dfd808a773e50613e7d68"
+      "sha256": "b2b7dcc500dfb8045d976d42797683054549b5673dc1c43ad14f6bfdfb86ac45"
     },
     {
       "path": "src/rust/geometer-client/src/model_bounds.rs",

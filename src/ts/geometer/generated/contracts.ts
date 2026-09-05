@@ -692,6 +692,63 @@ export interface IpcReasonA0 {
   readonly reason?: string;
 }
 
+export type IllustrationVector3 = readonly [number, number, number];
+
+export interface MeshIllustrationView {
+  readonly direction: IllustrationVector3;
+  readonly up: IllustrationVector3;
+  readonly mirror_x?: boolean;
+}
+
+export interface MeshIllustrationPrepareOptions {
+  readonly max_triangles?: number;
+  readonly weld_tolerance?: number;
+}
+
+export type MeshIllustrationShading = "unlit" | "flat" | "lambert" | "banded" | "toon";
+
+/** Presence-preserving illustration style. Package defaults apply to absent fields. */
+export interface MeshIllustrationStyleA0 {
+  readonly shading?: MeshIllustrationShading;
+  readonly ambient?: number;
+  readonly key_intensity?: number;
+  readonly light_direction?: IllustrationVector3;
+  readonly bands?: number;
+  readonly source_colors?: boolean;
+  readonly fallback_color?: IllustrationVector3;
+  readonly background?: string;
+  readonly transparent_background?: boolean;
+  readonly fuse_surfaces?: boolean;
+  readonly layer_coplanar_materials?: boolean;
+  readonly show_hlr_outline?: boolean;
+  readonly show_hlr_detail?: boolean;
+  readonly show_outlines?: boolean;
+  readonly show_creases?: boolean;
+  readonly crease_angle_degrees?: number;
+  readonly outline_color?: string;
+  readonly crease_color?: string;
+  readonly outline_width?: number;
+  readonly crease_width?: number;
+  readonly double_sided?: boolean;
+  readonly rim_amount?: number;
+}
+
+export interface MeshIllustrationSvgOptions {
+  readonly coordinate_span?: number;
+  readonly title?: string;
+}
+
+/** Native one-shot illustration settings. Meshes arrive in the required
+mesh_collection attachment governed by geometry.mesh_collection.a0.
+Reuses existing illustration A0 options and result; does not compute HLR. */
+export interface MeshIllustrationRequestA0 {
+  readonly schema: "geometry.mesh_illustration.request.a0";
+  readonly view: MeshIllustrationView;
+  readonly prepare?: MeshIllustrationPrepareOptions;
+  readonly style?: MeshIllustrationStyleA0;
+  readonly svg?: MeshIllustrationSvgOptions;
+}
+
 export type ModelRootPlacement = "strip" | "preserve";
 
 /** Stateless STEP tessellation; component placement is retained in either root mode. */
@@ -1132,6 +1189,7 @@ export interface StepTopologyAnalyzeRecoveryRequestA0 {
 A variant is callable only when the negotiated runtime catalog advertises
 its operation; structural presence does not imply runtime availability. */
 export type IpcRequestValueA0 =
+  | MeshIllustrationRequestA0
   | ModelTessellationRequestA0
   | ModelBoundsOptionsA0
   | HlrProjectionOptionsA0
@@ -1191,8 +1249,6 @@ export type IllustrationMatrix4x4 = readonly [
   number,
 ];
 
-export type IllustrationVector3 = readonly [number, number, number];
-
 export interface MeshIllustrationMaterial {
   /** sRGB channels in the inclusive range [0, 1]. */
   readonly color: IllustrationVector3;
@@ -1209,50 +1265,6 @@ export interface MeshIllustrationMesh {
   readonly materials: readonly MeshIllustrationMaterial[];
   readonly triangle_material_indices?: readonly number[];
   readonly double_sided?: boolean;
-}
-
-export interface MeshIllustrationView {
-  readonly direction: IllustrationVector3;
-  readonly up: IllustrationVector3;
-  readonly mirror_x?: boolean;
-}
-
-export interface MeshIllustrationPrepareOptions {
-  readonly max_triangles?: number;
-  readonly weld_tolerance?: number;
-}
-
-export type MeshIllustrationShading = "unlit" | "flat" | "lambert" | "banded" | "toon";
-
-/** Presence-preserving illustration style. Package defaults apply to absent fields. */
-export interface MeshIllustrationStyleA0 {
-  readonly shading?: MeshIllustrationShading;
-  readonly ambient?: number;
-  readonly key_intensity?: number;
-  readonly light_direction?: IllustrationVector3;
-  readonly bands?: number;
-  readonly source_colors?: boolean;
-  readonly fallback_color?: IllustrationVector3;
-  readonly background?: string;
-  readonly transparent_background?: boolean;
-  readonly fuse_surfaces?: boolean;
-  readonly layer_coplanar_materials?: boolean;
-  readonly show_hlr_outline?: boolean;
-  readonly show_hlr_detail?: boolean;
-  readonly show_outlines?: boolean;
-  readonly show_creases?: boolean;
-  readonly crease_angle_degrees?: number;
-  readonly outline_color?: string;
-  readonly crease_color?: string;
-  readonly outline_width?: number;
-  readonly crease_width?: number;
-  readonly double_sided?: boolean;
-  readonly rim_amount?: number;
-}
-
-export interface MeshIllustrationSvgOptions {
-  readonly coordinate_span?: number;
-  readonly title?: string;
 }
 
 /** Serializable one-shot illustration input; reusable prepared scenes are opaque package objects. */
@@ -1756,6 +1768,7 @@ export interface StepTopologyAnalyzeRecoveryResultA0 {
 to a runtime-unavailable experimental operation and is not an availability
 claim; the negotiated operation catalog remains authoritative. */
 export type OperationResultValueA0 =
+  | MeshIllustrationResultA0
   | ModelTessellationResultA0
   | ModelBoundsResultA0
   | HlrProjectionResultA0

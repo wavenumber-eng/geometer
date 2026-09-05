@@ -25109,6 +25109,10 @@ var declarations = {
     variants: [
       {
         kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0"
+      },
+      {
+        kind: "reference",
         target: "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationRequestA0"
       },
       {
@@ -25635,6 +25639,52 @@ var declarations = {
       mirror_x: { type: { kind: "primitive", name: "boolean" }, optional: true, constraints: {} }
     }
   },
+  "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0": {
+    kind: "object",
+    properties: {
+      schema: {
+        type: {
+          kind: "literal",
+          value_type: "string",
+          value: "geometry.mesh_illustration.request.a0"
+        },
+        optional: false,
+        constraints: {}
+      },
+      view: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationView"
+        },
+        optional: false,
+        constraints: {}
+      },
+      prepare: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationPrepareOptions"
+        },
+        optional: true,
+        constraints: {}
+      },
+      style: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationStyleA0"
+        },
+        optional: true,
+        constraints: {}
+      },
+      svg: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationSvgOptions"
+        },
+        optional: true,
+        constraints: {}
+      }
+    }
+  },
   "Wavenumber.Geometer.Contracts.ModelBoundsA0.Matrix4x4": {
     kind: "array",
     element: { kind: "primitive", name: "float64" },
@@ -25936,6 +25986,10 @@ var declarations = {
   "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationResultValueA0": {
     kind: "union",
     variants: [
+      {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationResultA0"
+      },
       {
         kind: "reference",
         target: "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationResultA0"
@@ -29486,7 +29540,7 @@ function decodeOperationOutcomeA0Json(data) {
 }
 
 // src/ts/geometer/generated/operations.ts
-var NORMALIZED_CONTRACT_CATALOG_SHA256 = "a8c0c77000c376613d20f6968bb2a7c0fea38b4b829ab02b0f13e453a9dfd297";
+var NORMALIZED_CONTRACT_CATALOG_SHA256 = "9ad4359655f2012a16e498224cf8bf56e835be17d9185e2ca5212d01b9d8e472";
 var operationCatalog = {
   "geometry.analytic_planar_boolean_batch.a0": {
     identity: "geometry.analytic_planar_boolean_batch.a0",
@@ -29540,6 +29594,24 @@ var operationCatalog = {
     ],
     outputAttachments: [],
     documentation: "Project a synthesized indexed triangle mesh through the Fast HLR backend."
+  },
+  "geometry.mesh_illustration.a0": {
+    identity: "geometry.mesh_illustration.a0",
+    requestContract: "geometry.mesh_illustration.request.a0",
+    resultContract: "geometry.mesh_illustration.result.a0",
+    runtimeAvailable: true,
+    nativeRuntimeAvailable: false,
+    runtimeDispatch: "logical_dto",
+    inputAttachments: [
+      {
+        name: "mesh_collection",
+        required: true,
+        media_types: ["application/vnd.wavenumber.geometer.mesh-collection+json"],
+        max_bytes: 268435456
+      }
+    ],
+    outputAttachments: [],
+    documentation: "Render colored meshes to the existing deterministic A0 SVG result without JavaScript."
   },
   "geometry.model_bounds.a0": {
     identity: "geometry.model_bounds.a0",

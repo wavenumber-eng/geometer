@@ -161,3 +161,10 @@ file = "test_model_tessellation.py"
 name = "Native Colored Model Tessellation"
 description = "Checks deterministic colored STEP meshes, limits, recoverable operation failure and attachment metadata validation."
 test_case_type = "integration"
+
+[[subtests]]
+id = "PY_021"
+file = "test_mesh_illustration.py"
+name = "Native Mesh Illustration"
+description = "Checks typed STEP-to-illustration, generated result validation, deterministic SVG, resource limits and recoverable failures."
+test_case_type = "integration"

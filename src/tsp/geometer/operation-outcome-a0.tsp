@@ -5,6 +5,7 @@ import "./operations/model-bounds-a0.tsp";
 import "./operations/hlr-projection-a0.tsp";
 import "./operations/step-topology-a0.tsp";
 import "./operations/model-tessellation-a0.tsp";
+import "./operations/mesh-illustration-a0.tsp";
 
 using TypeSpec.JsonSchema;
 using Wavenumber.Geometer.ContractMetadata;
@@ -18,6 +19,7 @@ namespace Wavenumber.Geometer.Contracts.OperationOutcomeA0;
  */
 @oneOf
 union OperationResultValueA0 {
+  mesh_illustration: Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationResultA0,
   model_tessellation: Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationResultA0,
   model_bounds: Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsResultA0,
   hlr_projection: Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionResultA0,

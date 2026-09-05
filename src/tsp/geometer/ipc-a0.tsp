@@ -5,6 +5,7 @@ import "./operations/model-bounds-a0.tsp";
 import "./operations/hlr-projection-a0.tsp";
 import "./operations/step-topology-a0.tsp";
 import "./operations/model-tessellation-a0.tsp";
+import "./operations/mesh-illustration-operation-a0.tsp";
 
 using TypeSpec.JsonSchema;
 using Wavenumber.Geometer.ContractMetadata;
@@ -47,6 +48,7 @@ model IpcReasonA0 {
  * its operation; structural presence does not imply runtime availability.
  */
 union IpcRequestValueA0 {
+  mesh_illustration: Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0,
   model_tessellation: Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationRequestA0,
   logical_dto: Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsOptionsA0,
   hlr_projection: Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionOptionsA0,

@@ -129,6 +129,13 @@
       "option_patch": true
     },
     {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0",
+      "contract_identity": "geometry.mesh_illustration.request.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.mesh_illustration.request:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsOptionsA0",
       "contract_identity": "geometry.model_bounds.options.a0",
       "schema_id": "urn:wavenumber:schema:geometer:geometry.model_bounds.options:a0",
@@ -5979,6 +5986,15 @@
       "constraints": {},
       "variants": [
         {
+          "name": "mesh_illustration",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
           "name": "model_tessellation",
           "type": {
             "kind": "reference",
@@ -7199,6 +7215,74 @@
       ]
     },
     {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0",
+      "kind": "model",
+      "doc": "Native one-shot illustration settings. Meshes arrive in the required\nmesh_collection attachment governed by geometry.mesh_collection.a0.\nReuses existing illustration A0 options and result; does not compute HLR.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.mesh_illustration.request.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "view",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationView"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "prepare",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationPrepareOptions"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "style",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationStyleA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "svg",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationSvgOptions"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.ModelBoundsA0.Matrix4x4",
       "kind": "model",
       "doc": "Row-major affine 4x4 matrix. Semantic validation requires final row [0,0,0,1].",
@@ -7880,6 +7964,15 @@
       "constraints": {},
       "composition": "one_of",
       "variants": [
+        {
+          "name": "mesh_illustration",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationResultA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
         {
           "name": "model_tessellation",
           "type": {
@@ -15611,6 +15704,27 @@
       "native_runtime_available": false,
       "runtime_dispatch": "logical_dto",
       "doc": "Project a synthesized indexed triangle mesh through the Fast HLR backend."
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.Operations.meshIllustration",
+      "identity": "geometry.mesh_illustration.a0",
+      "request_contract": "geometry.mesh_illustration.request.a0",
+      "result_contract": "geometry.mesh_illustration.result.a0",
+      "input_attachments": [
+        {
+          "name": "mesh_collection",
+          "required": true,
+          "media_types": [
+            "application/vnd.wavenumber.geometer.mesh-collection+json"
+          ],
+          "max_bytes": 268435456
+        }
+      ],
+      "output_attachments": [],
+      "runtime_available": true,
+      "native_runtime_available": false,
+      "runtime_dispatch": "logical_dto",
+      "doc": "Render colored meshes to the existing deterministic A0 SVG result without JavaScript."
     },
     {
       "name": "Wavenumber.Geometer.Contracts.Operations.modelBounds",

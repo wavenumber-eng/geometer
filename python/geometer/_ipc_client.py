@@ -36,6 +36,8 @@ from ._generated.contracts.models import (
     IpcWelcomeA0,
     HlrProjectionOptionsA0,
     HlrProjectionResultA0,
+    MeshIllustrationInputA0,
+    MeshIllustrationResultA0,
     OperationFailureA0,
     OperationOutcomeA0,
     OperationSuccessA0,
@@ -442,6 +444,14 @@ class _GeometerIpcExecution(_GeometerIpcSession):
         from ._tessellation import model_tessellation
 
         return model_tessellation(cast("GeometerIpcClient", self), model, options, timeout)
+
+    def mesh_illustration(
+        self, input: MeshIllustrationInputA0, *, timeout: float | None = None
+    ) -> MeshIllustrationResultA0:
+        """Render generated A0 mesh illustration through the native executable."""
+        from ._illustration import mesh_illustration
+
+        return mesh_illustration(cast("GeometerIpcClient", self), input, timeout)
 
     def model_hlr_projection(
         self,

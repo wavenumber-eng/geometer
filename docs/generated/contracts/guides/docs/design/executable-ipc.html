@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="a8c0c77000c376613d20f6968bb2a7c0fea38b4b829ab02b0f13e453a9dfd297">
+  <meta name="wn-catalog-sha256" content="9ad4359655f2012a16e498224cf8bf56e835be17d9185e2ca5212d01b9d8e472">
   <title>Calling The Geometer Executable — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="a8c0c77000c376613d20f6968bb2a7c0fea38b4b829ab02b0f13e453a9dfd297" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="9ad4359655f2012a16e498224cf8bf56e835be17d9185e2ca5212d01b9d8e472" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../design/executable-ipc.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="calling-the-geometer-executable">Calling The Geometer Executable</h1></header>
 <p>Use persistent IPC when an application wants to reuse one geometry process and
@@ -57,6 +57,10 @@ the process. Substitute your platform executable path on Linux/macOS.
 The source-checkout import points to the distributable package; installed
 package consumers use its exported package specifier above.</p>
 <h2 id="mesh-attachment-example-python">Mesh Attachment Example (Python)</h2>
+<p>Feature builds also offer <a href="mesh-illustration-native.html">native mesh illustration</a>:
+Rust/Python accept the shared generated illustration input, send a governed
+colored-mesh attachment and receive the existing A0 SVG result. STEP consumers
+first use <code>model_tessellation</code>; no JavaScript/WASM runtime is needed.</p>
 <p>The public client packs the mesh and sends a named binary attachment; JSON
 contains HLR options, not base64 geometry:</p>
 <pre><code class="language-python">import geometer

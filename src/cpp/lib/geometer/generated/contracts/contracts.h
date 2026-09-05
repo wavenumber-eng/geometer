@@ -775,6 +775,71 @@ struct IpcReasonA0
     std::optional<std::string> reason{};
 };
 
+using IllustrationVector3 = std::vector<double>;
+
+struct MeshIllustrationView
+{
+    IllustrationVector3 direction{};
+    IllustrationVector3 up{};
+    std::optional<bool> mirror_x{};
+};
+
+struct MeshIllustrationPrepareOptions
+{
+    std::optional<std::uint32_t> max_triangles{};
+    std::optional<double> weld_tolerance{};
+};
+
+enum class MeshIllustrationShading
+{
+    unlit,
+    flat,
+    lambert,
+    banded,
+    toon,
+};
+
+struct MeshIllustrationStyleA0
+{
+    std::optional<MeshIllustrationShading> shading{};
+    std::optional<double> ambient{};
+    std::optional<double> key_intensity{};
+    std::optional<IllustrationVector3> light_direction{};
+    std::optional<std::uint32_t> bands{};
+    std::optional<bool> source_colors{};
+    std::optional<IllustrationVector3> fallback_color{};
+    std::optional<std::string> background{};
+    std::optional<bool> transparent_background{};
+    std::optional<bool> fuse_surfaces{};
+    std::optional<bool> layer_coplanar_materials{};
+    std::optional<bool> show_hlr_outline{};
+    std::optional<bool> show_hlr_detail{};
+    std::optional<bool> show_outlines{};
+    std::optional<bool> show_creases{};
+    std::optional<double> crease_angle_degrees{};
+    std::optional<std::string> outline_color{};
+    std::optional<std::string> crease_color{};
+    std::optional<double> outline_width{};
+    std::optional<double> crease_width{};
+    std::optional<bool> double_sided{};
+    std::optional<double> rim_amount{};
+};
+
+struct MeshIllustrationSvgOptions
+{
+    std::optional<std::uint32_t> coordinate_span{};
+    std::optional<std::string> title{};
+};
+
+struct MeshIllustrationRequestA0
+{
+    std::string schema = "geometry.mesh_illustration.request.a0";
+    MeshIllustrationView view{};
+    std::optional<MeshIllustrationPrepareOptions> prepare{};
+    std::optional<MeshIllustrationStyleA0> style{};
+    std::optional<MeshIllustrationSvgOptions> svg{};
+};
+
 enum class ModelRootPlacement
 {
     strip,
@@ -1250,13 +1315,15 @@ struct StepTopologyAnalyzeRecoveryRequestA0
     std::vector<RecoveryGroupRequest> groups{};
 };
 
-using IpcRequestValueA0 = std::variant<
-    ModelTessellationRequestA0, ModelBoundsOptionsA0, HlrProjectionOptionsA0,
-    PackedAttachmentProjectionA0, StepTopologyOpenRequestA0, StepTopologyCloseRequestA0,
-    StepTopologyInspectRequestA0, StepTopologyRenderRequestA0, StepTopologyResolveHitRequestA0,
-    StepTopologyApplyLogicalGroupsRequestA0, StepTopologyApplyMetadataProbesRequestA0,
-    StepTopologyCheckpointEditJournalRequestA0, StepTopologyApplyHierarchyRequestA0,
-    StepTopologySaveRequestA0, StepTopologyRestoreRequestA0, StepTopologyAnalyzeRecoveryRequestA0>;
+using IpcRequestValueA0 =
+    std::variant<MeshIllustrationRequestA0, ModelTessellationRequestA0, ModelBoundsOptionsA0,
+                 HlrProjectionOptionsA0, PackedAttachmentProjectionA0, StepTopologyOpenRequestA0,
+                 StepTopologyCloseRequestA0, StepTopologyInspectRequestA0,
+                 StepTopologyRenderRequestA0, StepTopologyResolveHitRequestA0,
+                 StepTopologyApplyLogicalGroupsRequestA0, StepTopologyApplyMetadataProbesRequestA0,
+                 StepTopologyCheckpointEditJournalRequestA0, StepTopologyApplyHierarchyRequestA0,
+                 StepTopologySaveRequestA0, StepTopologyRestoreRequestA0,
+                 StepTopologyAnalyzeRecoveryRequestA0>;
 
 struct IpcRequestA0
 {
@@ -1284,8 +1351,6 @@ struct IpcWelcomeA0
 
 using IllustrationMatrix4x4 = std::vector<double>;
 
-using IllustrationVector3 = std::vector<double>;
-
 struct MeshIllustrationMaterial
 {
     IllustrationVector3 color{};
@@ -1303,60 +1368,6 @@ struct MeshIllustrationMesh
     std::vector<MeshIllustrationMaterial> materials{};
     std::optional<std::vector<std::uint32_t>> triangle_material_indices{};
     std::optional<bool> double_sided{};
-};
-
-struct MeshIllustrationView
-{
-    IllustrationVector3 direction{};
-    IllustrationVector3 up{};
-    std::optional<bool> mirror_x{};
-};
-
-struct MeshIllustrationPrepareOptions
-{
-    std::optional<std::uint32_t> max_triangles{};
-    std::optional<double> weld_tolerance{};
-};
-
-enum class MeshIllustrationShading
-{
-    unlit,
-    flat,
-    lambert,
-    banded,
-    toon,
-};
-
-struct MeshIllustrationStyleA0
-{
-    std::optional<MeshIllustrationShading> shading{};
-    std::optional<double> ambient{};
-    std::optional<double> key_intensity{};
-    std::optional<IllustrationVector3> light_direction{};
-    std::optional<std::uint32_t> bands{};
-    std::optional<bool> source_colors{};
-    std::optional<IllustrationVector3> fallback_color{};
-    std::optional<std::string> background{};
-    std::optional<bool> transparent_background{};
-    std::optional<bool> fuse_surfaces{};
-    std::optional<bool> layer_coplanar_materials{};
-    std::optional<bool> show_hlr_outline{};
-    std::optional<bool> show_hlr_detail{};
-    std::optional<bool> show_outlines{};
-    std::optional<bool> show_creases{};
-    std::optional<double> crease_angle_degrees{};
-    std::optional<std::string> outline_color{};
-    std::optional<std::string> crease_color{};
-    std::optional<double> outline_width{};
-    std::optional<double> crease_width{};
-    std::optional<bool> double_sided{};
-    std::optional<double> rim_amount{};
-};
-
-struct MeshIllustrationSvgOptions
-{
-    std::optional<std::uint32_t> coordinate_span{};
-    std::optional<std::string> title{};
 };
 
 struct MeshIllustrationInputA0
@@ -1934,9 +1945,9 @@ struct StepTopologyAnalyzeRecoveryResultA0
 };
 
 using OperationResultValueA0 =
-    std::variant<ModelTessellationResultA0, ModelBoundsResultA0, HlrProjectionResultA0,
-                 PackedAttachmentProjectionA0, StepTopologyOpenResultA0, StepTopologyCloseResultA0,
-                 StepTopologyInspectResultA0, StepTopologyRenderResultA0,
+    std::variant<MeshIllustrationResultA0, ModelTessellationResultA0, ModelBoundsResultA0,
+                 HlrProjectionResultA0, PackedAttachmentProjectionA0, StepTopologyOpenResultA0,
+                 StepTopologyCloseResultA0, StepTopologyInspectResultA0, StepTopologyRenderResultA0,
                  StepTopologyResolveHitResultA0, StepTopologyApplyLogicalGroupsResultA0,
                  StepTopologyApplyMetadataProbesResultA0, StepTopologyCheckpointEditJournalResultA0,
                  StepTopologyApplyHierarchyResultA0, StepTopologySaveResultA0,
@@ -2017,6 +2028,11 @@ bool encode_json(const MeshIllustrationResultA0& value, std::string* json,
 bool decode_json(const unsigned char* data, std::size_t size, MeshIllustrationStyleA0* value,
                  ContractError* error = nullptr);
 bool encode_json(const MeshIllustrationStyleA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, MeshIllustrationRequestA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const MeshIllustrationRequestA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, ModelBoundsOptionsA0* value,

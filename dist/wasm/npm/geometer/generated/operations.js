@@ -1,5 +1,5 @@
 // Generated from wn_geometer_contract_catalog.a0.json. Do not edit.
-export const NORMALIZED_CONTRACT_CATALOG_SHA256 = "a8c0c77000c376613d20f6968bb2a7c0fea38b4b829ab02b0f13e453a9dfd297";
+export const NORMALIZED_CONTRACT_CATALOG_SHA256 = "9ad4359655f2012a16e498224cf8bf56e835be17d9185e2ca5212d01b9d8e472";
 export const operationCatalog = {
     "geometry.analytic_planar_boolean_batch.a0": {
         identity: "geometry.analytic_planar_boolean_batch.a0",
@@ -53,6 +53,24 @@ export const operationCatalog = {
         ],
         outputAttachments: [],
         documentation: "Project a synthesized indexed triangle mesh through the Fast HLR backend.",
+    },
+    "geometry.mesh_illustration.a0": {
+        identity: "geometry.mesh_illustration.a0",
+        requestContract: "geometry.mesh_illustration.request.a0",
+        resultContract: "geometry.mesh_illustration.result.a0",
+        runtimeAvailable: true,
+        nativeRuntimeAvailable: false,
+        runtimeDispatch: "logical_dto",
+        inputAttachments: [
+            {
+                name: "mesh_collection",
+                required: true,
+                media_types: ["application/vnd.wavenumber.geometer.mesh-collection+json"],
+                max_bytes: 268435456,
+            },
+        ],
+        outputAttachments: [],
+        documentation: "Render colored meshes to the existing deterministic A0 SVG result without JavaScript.",
     },
     "geometry.model_bounds.a0": {
         identity: "geometry.model_bounds.a0",

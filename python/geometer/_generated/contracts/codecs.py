@@ -22,6 +22,7 @@ from .models import (
     MeshIllustrationInputA0,
     MeshIllustrationResultA0,
     MeshIllustrationStyleA0,
+    MeshIllustrationRequestA0,
     ModelBoundsOptionsA0,
     ModelBoundsResultA0,
     MeshCollectionA0,
@@ -2134,6 +2135,10 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
         "variants": [
             {
                 "kind": "reference",
+                "target": "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0",
+            },
+            {
+                "kind": "reference",
                 "target": "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationRequestA0",
             },
             {
@@ -3000,6 +3005,57 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
             },
         },
     },
+    "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0": {
+        "kind": "object",
+        "properties": {
+            "schema": {
+                "type": {
+                    "kind": "literal",
+                    "value_type": "string",
+                    "value": "geometry.mesh_illustration.request.a0",
+                },
+                "optional": False,
+                "constraints": {},
+                "field": "schema",
+            },
+            "view": {
+                "type": {
+                    "kind": "reference",
+                    "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationView",
+                },
+                "optional": False,
+                "constraints": {},
+                "field": "view",
+            },
+            "prepare": {
+                "type": {
+                    "kind": "reference",
+                    "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationPrepareOptions",
+                },
+                "optional": True,
+                "constraints": {},
+                "field": "prepare",
+            },
+            "style": {
+                "type": {
+                    "kind": "reference",
+                    "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationStyleA0",
+                },
+                "optional": True,
+                "constraints": {},
+                "field": "style",
+            },
+            "svg": {
+                "type": {
+                    "kind": "reference",
+                    "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationSvgOptions",
+                },
+                "optional": True,
+                "constraints": {},
+                "field": "svg",
+            },
+        },
+    },
     "Wavenumber.Geometer.Contracts.ModelBoundsA0.Matrix4x4": {
         "kind": "array",
         "element": {
@@ -3476,6 +3532,10 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
     "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationResultValueA0": {
         "kind": "union",
         "variants": [
+            {
+                "kind": "reference",
+                "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationResultA0",
+            },
             {
                 "kind": "reference",
                 "target": "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationResultA0",
@@ -9317,6 +9377,29 @@ def encode_mesh_illustration_style_a0_json(value: MeshIllustrationStyleA0) -> by
     )
 
 
+def decode_mesh_illustration_request_a0_json(data: str | bytes | bytearray | memoryview) -> MeshIllustrationRequestA0:
+    return cast(
+        MeshIllustrationRequestA0,
+        decode_contract_json(
+            data,
+            "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0",
+            DECLARATIONS,
+            MODEL_TYPES,
+            ENUM_TYPES,
+        ),
+    )
+
+
+def encode_mesh_illustration_request_a0_json(value: MeshIllustrationRequestA0) -> bytes:
+    return encode_contract_json(
+        value,
+        "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0",
+        DECLARATIONS,
+        MODEL_TYPES,
+        ENUM_TYPES,
+    )
+
+
 def decode_model_bounds_options_a0_json(data: str | bytes | bytearray | memoryview) -> ModelBoundsOptionsA0:
     return cast(
         ModelBoundsOptionsA0,
@@ -10059,6 +10142,7 @@ ROOT_DECODERS: dict[str, Callable[[str | bytes | bytearray | memoryview], Any]] 
     "geometry.mesh_illustration.input.a0": decode_mesh_illustration_input_a0_json,
     "geometry.mesh_illustration.result.a0": decode_mesh_illustration_result_a0_json,
     "geometry.mesh_illustration.style.a0": decode_mesh_illustration_style_a0_json,
+    "geometry.mesh_illustration.request.a0": decode_mesh_illustration_request_a0_json,
     "geometry.model_bounds.options.a0": decode_model_bounds_options_a0_json,
     "geometry.model_bounds.a0": decode_model_bounds_result_a0_json,
     "geometry.mesh_collection.a0": decode_mesh_collection_a0_json,

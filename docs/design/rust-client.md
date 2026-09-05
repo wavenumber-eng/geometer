@@ -8,6 +8,12 @@ TypeSpec catalog. The live client spawns one persistent native
 `geometer(.exe) serve --stdio` process and executes model bounds, model/mesh
 HLR, and analytic planar Boolean through their governed attachments.
 
+Feature builds additionally provide typed `model_tessellation` and
+`mesh_illustration` methods using generated A0 values. The complete
+[native STEP-to-SVG example](mesh-illustration-native.md) needs no JS/WASM runtime
+or handwritten subprocess protocol. These additions require a matching feature
+executable and are not available in the previous release.
+
 The analytic operation is experimental and not production-ready. It may fail
 closed on valid inputs and is not the dependable path for whole-board or
 whole-layer copper union. Prefer the Clipper2-backed planar APIs when

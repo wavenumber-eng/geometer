@@ -17,6 +17,7 @@ import type {
   IpcWelcomeA0,
   MeshCollectionA0,
   MeshIllustrationInputA0,
+  MeshIllustrationRequestA0,
   MeshIllustrationResultA0,
   MeshIllustrationStyleA0,
   ModelBoundsOptionsA0,
@@ -1222,6 +1223,11 @@ const declarations: ContractDescriptorMap = {
     variants: [
       {
         kind: "reference",
+        target:
+          "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0",
+      },
+      {
+        kind: "reference",
         target: "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationRequestA0",
       },
       {
@@ -1751,6 +1757,52 @@ const declarations: ContractDescriptorMap = {
       mirror_x: { type: { kind: "primitive", name: "boolean" }, optional: true, constraints: {} },
     },
   },
+  "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0": {
+    kind: "object",
+    properties: {
+      schema: {
+        type: {
+          kind: "literal",
+          value_type: "string",
+          value: "geometry.mesh_illustration.request.a0",
+        },
+        optional: false,
+        constraints: {},
+      },
+      view: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationView",
+        },
+        optional: false,
+        constraints: {},
+      },
+      prepare: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationPrepareOptions",
+        },
+        optional: true,
+        constraints: {},
+      },
+      style: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationStyleA0",
+        },
+        optional: true,
+        constraints: {},
+      },
+      svg: {
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationSvgOptions",
+        },
+        optional: true,
+        constraints: {},
+      },
+    },
+  },
   "Wavenumber.Geometer.Contracts.ModelBoundsA0.Matrix4x4": {
     kind: "array",
     element: { kind: "primitive", name: "float64" },
@@ -2052,6 +2104,10 @@ const declarations: ContractDescriptorMap = {
   "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationResultValueA0": {
     kind: "union",
     variants: [
+      {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationResultA0",
+      },
       {
         kind: "reference",
         target: "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationResultA0",
@@ -5812,6 +5868,30 @@ export function encodeMeshIllustrationStyleA0Json(value: MeshIllustrationStyleA0
     {
       kind: "reference",
       target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationStyleA0",
+    },
+    declarations,
+  );
+}
+
+export function decodeMeshIllustrationRequestA0Json(
+  data: string | Uint8Array,
+): MeshIllustrationRequestA0 {
+  return decodeContractJson(
+    data,
+    {
+      kind: "reference",
+      target: "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0",
+    },
+    declarations,
+  ) as MeshIllustrationRequestA0;
+}
+
+export function encodeMeshIllustrationRequestA0Json(value: MeshIllustrationRequestA0): string {
+  return encodeContractJson(
+    value,
+    {
+      kind: "reference",
+      target: "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0",
     },
     declarations,
   );

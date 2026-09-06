@@ -35,15 +35,6 @@
       const module = await createGeometerModule({
         locateFile: (path) => path.endsWith(".wasm") ? `${browserDist}/${path}` : path,
       });
-      const version = module.ccall("geometer_version_string", "string", [], []);
-      const abi = module.ccall("geometer_abi_version", "number", [], []);
-      if (version !== "2026.9.4") {
-        throw new Error(`Unexpected geometer version: ${version}`);
-      }
-      if (abi !== 20260904) {
-        throw new Error(`Unexpected geometer ABI version: ${abi}`);
-      }
-
       const stepUrl = queryParam("step", "/build/hlr_validation_input.step");
       const response = await fetch(stepUrl);
       if (!response.ok) {

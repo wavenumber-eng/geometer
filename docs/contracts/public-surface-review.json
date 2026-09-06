@@ -415,6 +415,10 @@
       "sha256": "c345d06be4e292508f0a47894383d16c118f9ab6f4f886fbb4612c1afcd89d06"
     },
     {
+      "path": "src/rust/geometer-client/src/analytic_client.rs",
+      "sha256": "872895f86d28d7827f252f8ee706cd74ea4e6a021a5a7cd31eb723229a9f68d8"
+    },
+    {
       "path": "src/rust/geometer-client/src/analytic_packet_a0/error.rs",
       "sha256": "b6c683dcd6bfc4c68302920cc26152c8df3c04f43541a4cedede2b3cbc15a874"
     },
@@ -472,11 +476,15 @@
     },
     {
       "path": "src/rust/geometer-client/src/client.rs",
-      "sha256": "6e2de103a2a9e36fe67263799f1e2e828bed728d5a58d699d30ddcb04aa8d082"
+      "sha256": "253ef0a8870856d1f86d59b868a1579b429df809957612ec590714d50dab6146"
+    },
+    {
+      "path": "src/rust/geometer-client/src/client_lifecycle.rs",
+      "sha256": "d3b36271e5c23fd67a8c11f0f9c7ba1c01d05c3a01f491e03fbc6c2c1fa979b7"
     },
     {
       "path": "src/rust/geometer-client/src/client_tests.rs",
-      "sha256": "d83c5c2e8ae0b019f3bfae5021fe686d1cc20bbcece4b103bfda48608d39a559"
+      "sha256": "2676189a7766e18053673314410dea7557a63f9b8016af8363ac5dbbd2b2ed37"
     },
     {
       "path": "src/rust/geometer-client/src/hlr.rs",
@@ -496,7 +504,7 @@
     },
     {
       "path": "src/rust/geometer-client/src/lib.rs",
-      "sha256": "b2b7dcc500dfb8045d976d42797683054549b5673dc1c43ad14f6bfdfb86ac45"
+      "sha256": "8b0cd6f33dcf01abca247ac5e7ee9f41be141b1f21963e38f41bf4dad6fc99f5"
     },
     {
       "path": "src/rust/geometer-client/src/model_bounds.rs",
@@ -509,6 +517,10 @@
     {
       "path": "src/rust/geometer-client/src/operation_validation/tests.rs",
       "sha256": "6fa99429a5e99083ec2502c6b210aebe7949515741cb8f9b7169bb1312022bae"
+    },
+    {
+      "path": "src/rust/geometer-client/src/process.rs",
+      "sha256": "8a7e8e16c09026e33adb6ad20677bac9480e53d708dbe0fdc37f459e54400237"
     },
     {
       "path": "src/rust/geometer-client/src/session_validation.rs",
@@ -584,7 +596,7 @@
     },
     {
       "path": "src/ts/geometer/package.json",
-      "sha256": "0aa9e0175ac105e7b5e1c0fa89855d1500db4c28885bbb74a1cbe6710185acfd"
+      "sha256": "c9d8a04eab8b80dc48b9213cf1c5e34c9afc65d74b67979cfc3abbe2ecf61eaf"
     },
     {
       "path": "src/ts/geometer/step-topology-validation.ts",

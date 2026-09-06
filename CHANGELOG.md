@@ -4,6 +4,28 @@ All notable changes to geometer are documented here.
 
 ## [Unreleased]
 
+## [2026.9.7] - 2026-09-07
+
+### Added
+
+- Added `GeometerClient::from_process` and explicit client options so Rust
+  desktop applications can apply Windows Job Object or POSIX containment
+  before transferring async stdio and lifecycle ownership to Geometer.
+- Added a complete supervised-process example and packaged external-consumer
+  coverage for tessellation, Fast HLR, and composed mesh illustration.
+
+### Changed
+
+- Process shutdown, terminal protocol failures, cancellation, and final-handle
+  cleanup now share bounded, retryable process-reaping and stream-task cleanup.
+- Python, native runtime, Rust, and TypeScript version surfaces advance together
+  to keep executable catalogs and client packages unambiguous.
+
+### Fixed
+
+- Generated-document completeness tests now include manifest-listed guides and
+  coverage pages while continuing to reject remotely loaded assets.
+
 ## [2026.9.6] - 2026-09-06
 
 ### Added

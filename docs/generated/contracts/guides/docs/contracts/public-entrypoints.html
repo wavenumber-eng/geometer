@@ -11,7 +11,7 @@
 <body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/contracts/public-entrypoints.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="public-entry-point-reconciliation">Public Entry-Point Reconciliation</h1></header>
-<p>Release target <code>v2026-09-06</code>. This maps semantic operations separately from
+<p>Release target <code>v2026-09-07</code>. This maps semantic operations separately from
 aliases, byte projections and implementation helpers. The
 <a href="../../../coverage.html">generated inventory</a> supplies individual
 operation/root identities; the <a href="../../../../../contracts/public-surface-review.json">source review lock</a>
@@ -121,7 +121,10 @@ utility. Their file schema/alias normalization belongs to wave 3.</li>
 mappings are owned by the package manifest. Root wildcard re-exports do not
 create new semantic operations.</li>
 <li>Rust exposes generated contracts, model-bounds/HLR request conveniences,
-analytic and indexed-mesh codecs, IPC and its client. Python's public
+analytic and indexed-mesh codecs, IPC and its client. Its process-support
+surface includes both an easy Tokio launcher and caller-supervised async
+streams plus lifecycle-controller adoption; both retain one client-owned A0
+connection and do not create another wire operation. Python's public
 <code>__all__</code> and TypeScript/Rust export sources remain review boundaries, not
 evidence that every client implementation is generated.</li>
 </ul>

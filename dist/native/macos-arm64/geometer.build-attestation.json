@@ -1,19 +1,19 @@
 {
   "artifact": {
     "name": "geometer",
-    "sha256": "4553b5495c26583fb6ed8dab1528f40e3c248ea2b59958a79bbd1087f2b0dd28"
+    "sha256": "88222e37d29a4665725ca30fa07ea360b6c9bf59f48474940a3294f40f63f6e4"
   },
   "build": {
     "arch": "arm64",
     "build_type": "Release",
-    "c_abi_version": 20260906,
+    "c_abi_version": 20260907,
     "compiler": {
       "authority": "cmake_compiler_id_and_version",
       "id": "AppleClang",
       "version": "17.0.0.17000013"
     },
     "generator": "Ninja",
-    "geometer_version": "2026.9.6",
+    "geometer_version": "2026.9.7",
     "occt": {
       "authority": "geometer_occt_profile_verified",
       "profile_sha256": "fd0720e021020e7a43ba2f239450ab535e64c5dd702094965519e608d2fffeff",
@@ -24,7 +24,7 @@
     "platform": "macos",
     "source": {
       "authority": "git_head_and_source_worktree_excluding_dist_build_deps_out",
-      "revision": "31abddf52958efa91877e569772a00ef4804277a",
+      "revision": "bab90ae3cbc83c029abed97a7e7831409b734e94",
       "tree_state": "clean"
     }
   },

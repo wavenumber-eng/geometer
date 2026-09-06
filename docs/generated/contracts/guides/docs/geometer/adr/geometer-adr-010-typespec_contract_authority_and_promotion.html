@@ -109,8 +109,11 @@ planned TypeScript upgrade targets <code>@wavenumber/geometer</code>; compatibil
 not transfer until Viz passes its own integration suite on the generated client
 and the promotion manifest records a replacement snapshot.</p>
 <p>The Rust client crate identity is <code>geometer-client</code>. Its first supported client
-is asynchronous and uses Tokio for process and pipe I/O. Generated wire models
-use Serde; a synchronous facade is deferred until a named consumer requires it.</p>
+is asynchronous and uses Tokio for pipe I/O and its convenient default process
+launcher. A caller may instead transfer already-contained async streams and a
+generic lifecycle controller before negotiation; this changes process policy,
+not the governed stdio protocol. Generated wire models use Serde; a synchronous
+facade is deferred until a named consumer requires it.</p>
 <p>The existing PyPI distribution and import identities remain <code>wn-geometer</code> and
 <code>geometer</code>. Generated Python lives in an internal package namespace and depends
 on a small in-package strict-codec runtime using the Python standard library.

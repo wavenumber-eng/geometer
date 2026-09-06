@@ -2,7 +2,7 @@
 
 ## Current status
 
-`src/rust/geometer-client` is the Tokio-based `geometer-client` crate. Its
+`src/rust/geometer-client` is the async, Tokio-based `geometer-client` crate. Its
 operation DTOs and strict Serde codecs are generated from the normalized
 TypeSpec catalog. The live client spawns one persistent native
 `geometer(.exe) serve --stdio` process and executes model bounds, model/mesh
@@ -93,6 +93,45 @@ all required capabilities, and effective limits no larger than the A0 maxima.
 `discover_and_spawn()` additionally checks `GEOMETER_EXECUTABLE`, an executable
 sibling, and the source checkout's grouped native distribution path.
 
+Production desktop applications may instead launch and contain the executable
+themselves, then call `GeometerClient::from_process()` (or
+`from_process_with_options()` for explicit bounds). A `GeometerProcess`
+atomically transfers three binary async streams and a
+`GeometerProcessController`; the client still owns all framing, negotiation,
+request routing, stderr draining and shutdown. This lets a consumer assign a
+Windows Job Object or POSIX process group/session before any protocol bytes are
+sent. The controller's `try_wait()` reports completion only after the whole
+containment unit is reaped or proven empty, `terminate()` is prompt and
+idempotent, and its `Drop` is the final cleanup backstop. Production containment
+controllers should synchronously prove their tree empty in `Drop`; the portable
+Tokio launcher and example can only request termination and delegate final
+reaping to Tokio's process runtime.
+
+`GeometerClientOptions` bounds handshake time, graceful/forced cleanup time and
+captured stderr. Negotiation failure, handshake timeout or cancellation drops
+the construction guard, terminates the supplied process and continues reaping
+it on the current Tokio runtime. Dropping the final public client handle does
+the same; internal reader tasks do not keep an abandoned child alive. A caller
+that wraps blocking OS pipe handles can use an async adapter such as
+`tokio::fs::File::from_std`; the adapter, not Geometer's protocol reader, must
+keep blocking reads off Tokio worker threads.
+
+One absolute shutdown deadline covers protocol acknowledgment, escalation,
+process reaping and stream-task cleanup. A stream adapter that never reports EOF
+is aborted at that deadline. Protocol-terminal state and verified cleanup are
+tracked separately, so cleanup errors are surfaced and a later `close()` can
+retry containment proof instead of treating the earlier failure as success.
+Cancelling a `close()` future aborts any stream tasks whose handles it had
+claimed, and a later `close()` escalates an interrupted graceful shutdown to
+termination. Terminal reader failures start the same bounded task-cleanup
+supervisor without requiring another public API call.
+
+The complete [supervised-process example](../../src/rust/geometer-client/examples/supervised_process.rs)
+shows the portable ownership contract. Platform containment remains consumer
+policy: assign it before constructing `GeometerProcess`, retain it in the
+controller, and make the controller's `Drop` prove the contained process tree
+is empty.
+
 Calls receive monotonically increasing nonzero `u64` request identifiers. One
 reader task routes responses exclusively by identifier and verifies that the
 generated outcome operation matches the pending operation. Unknown,
@@ -153,6 +192,12 @@ corpus parity, mutation rejection, normative standalone job digests, graceful
 shutdown, and empty plus nontrivial friendly analytic IPC calls from a clean
 packaged-crate consumer against the platform executable in
 `dist/native/<platform>/`.
+The external-process suite additionally proves a caller-supplied lifecycle
+controller through model tessellation, Fast HLR and HLR-composed illustration;
+last-handle drop, handshake timeout and cancelled construction must terminate,
+reap and drop that controller. Non-EOF stream adapters are aborted at the
+shared deadline, cancelled shutdown writes and task joins remain retryable, and
+injected controller errors remain visible and retryable.
 The failure-path matrix additionally covers incompatible negotiation,
 oversized fixed headers before payload reads, broken stdout, explicit forced
 termination with pending requests, the server shutdown deadline, and an

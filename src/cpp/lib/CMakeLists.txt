@@ -157,7 +157,9 @@ add_library(geometer_lib STATIC ${GEOMETER_LIB_SOURCES})
 set_target_properties(geometer_lib PROPERTIES OUTPUT_NAME geometer)
 
 if(NOT DEFINED GEOMETER_ABI_VERSION)
-    set(GEOMETER_ABI_VERSION "20260904" CACHE STRING "Geometer C ABI generation date")
+    message(FATAL_ERROR
+        "GEOMETER_ABI_VERSION must be defined by the top-level Geometer configuration"
+    )
 endif()
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/geometer/version_config.h.in"

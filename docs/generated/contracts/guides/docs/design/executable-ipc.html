@@ -34,7 +34,7 @@ and <a href="python-package.html">Python convenience API</a> are simpler.</p>
 </tr>
 <tr>
 <td>Rust</td>
-<td><code>geometer-client</code>: generated contracts and Tokio executable client; see <a href="rust-client.html">Rust client</a>.</td>
+<td><code>geometer-client</code>: generated contracts and async executable client, with easy Tokio spawn and caller-supervised process adoption; see <a href="rust-client.html">Rust client</a>.</td>
 </tr>
 <tr>
 <td>Implementing a new transport/client</td>
@@ -96,6 +96,12 @@ deadline. It does not execute all accepted queued requests.</li>
 <p>Never decode stdout as text, merge stderr into stdout, or share the process
 pipes with a second owner. Drain stderr so logging cannot block the process.
 The maintained clients handle these details.</p>
+<p>Rust applications with stricter process policy should launch and contain the
+executable first, then transfer its three async streams and lifecycle controller
+through <code>GeometerProcess</code> and <code>GeometerClient::from_process()</code>. This is still
+the same local A0 stdio transport; it does not create a daemon or network API.
+The supplied controller owns containment until the client closes or is dropped
+and must prove the full containment unit empty before reporting exit.</p>
 <p>A local timeout does not stop the geometry solver. A0 cancellation is queue
 only: active work is not interruptible. The Python client sends cancellation
 after timeout and must drain the terminal response before reuse; an immediate

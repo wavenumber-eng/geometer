@@ -1,6 +1,6 @@
 # Public Entry-Point Reconciliation
 
-Release target `v2026-09-06`. This maps semantic operations separately from
+Release target `v2026-09-07`. This maps semantic operations separately from
 aliases, byte projections and implementation helpers. The
 [generated inventory](../generated/contracts/coverage.html) supplies individual
 operation/root identities; the [source review lock](public-surface-review.json)
@@ -48,7 +48,10 @@ in that boundary requires documentation review, not automatic promotion.
   mappings are owned by the package manifest. Root wildcard re-exports do not
   create new semantic operations.
 - Rust exposes generated contracts, model-bounds/HLR request conveniences,
-  analytic and indexed-mesh codecs, IPC and its client. Python's public
+  analytic and indexed-mesh codecs, IPC and its client. Its process-support
+  surface includes both an easy Tokio launcher and caller-supervised async
+  streams plus lifecycle-controller adoption; both retain one client-owned A0
+  connection and do not create another wire operation. Python's public
   `__all__` and TypeScript/Rust export sources remain review boundaries, not
   evidence that every client implementation is generated.
 

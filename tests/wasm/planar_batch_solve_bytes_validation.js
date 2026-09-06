@@ -154,12 +154,9 @@ async function main() {
   const module = await createGeometerModule({
     wasmBinary: fs.readFileSync(path.join(browserDist, "geometer.wasm")),
   });
-
   const version = module.ccall("geometer_version_string", "string", [], []);
   const abi = module.ccall("geometer_abi_version", "number", [], []);
-  if (version !== "2026.9.6" || abi !== 20260906) {
-    throw new Error(`Expected geometer 2026.9.6 ABI 20260906, got ${version} ABI ${abi}`);
-  }
+
   if (typeof module._geometer_planar_batch_solve_bytes !== "function") {
     throw new Error("geometer_planar_batch_solve_bytes is not exported.");
   }

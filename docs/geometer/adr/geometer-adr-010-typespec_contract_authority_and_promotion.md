@@ -128,8 +128,11 @@ not transfer until Viz passes its own integration suite on the generated client
 and the promotion manifest records a replacement snapshot.
 
 The Rust client crate identity is `geometer-client`. Its first supported client
-is asynchronous and uses Tokio for process and pipe I/O. Generated wire models
-use Serde; a synchronous facade is deferred until a named consumer requires it.
+is asynchronous and uses Tokio for pipe I/O and its convenient default process
+launcher. A caller may instead transfer already-contained async streams and a
+generic lifecycle controller before negotiation; this changes process policy,
+not the governed stdio protocol. Generated wire models use Serde; a synchronous
+facade is deferred until a named consumer requires it.
 
 The existing PyPI distribution and import identities remain `wn-geometer` and
 `geometer`. Generated Python lives in an internal package namespace and depends

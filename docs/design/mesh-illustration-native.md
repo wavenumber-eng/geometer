@@ -144,11 +144,34 @@ calls still do not compute HLR. For a finished layered SVG, use the C++ overload
 before outline, above fills, exactly as in the web Lab. Consumers do not manage
 SVG z-order. They may retain the original HLR result for independent layers.
 
-`fuse_surfaces` is a Geometer rendering option implemented in both TypeScript
-and native C++, not a Rust/display-only optimization. It merges compatible
-adjacent rendered surfaces while preserving visibility. `layer_coplanar_materials`
-separately controls coplanar material layering. SVG CSS style deduplication and
-same-style line chaining are automatic; they do not require a consumer pass.
+### Fuse surfaces — enabled by default
+
+`MeshIllustrationStyleA0.fuse_surfaces` defaults to **`true` when omitted** in
+both the native C++ and TypeScript renderers. The Rust demo also explicitly
+starts with it enabled. Leave it on for normal illustration and SVG export.
+
+Fusion combines compatible adjacent projected triangles with matching rendered
+fill color and opacity into larger drawing surfaces, subject to the renderer's
+visibility-order constraints. This can reduce SVG paths, browser Canvas draw
+commands and visible internal tessellation seams. Savings depend on the model,
+view and shading; it does not guarantee a single path per source material.
+
+This is an **illustration rendering option**, not CAD solid union, source-mesh
+decimation, color-palette reduction, or the experimental analytic planar solver.
+It does not modify the source STEP/mesh or independently computed HLR geometry.
+Rust/Python clients pass the generated style option to the native renderer;
+they do not perform a separate fusion pass.
+
+Set `fuse_surfaces: false` for comparison or diagnostics. The renderer then
+draws ordered individual triangles, usually producing more surface commands.
+Fusion adds rendering work and remains subject to the documented resource
+limits. `stats.surface_draws` and SVG byte size help compare a particular model;
+`stats.triangles` still counts rendered source triangles, not fused surfaces.
+
+`layer_coplanar_materials` is separate: it controls coplanar material layering
+within the fusion path and has no effect when fusion is disabled. SVG CSS style
+deduplication and same-style line chaining are automatic even without surface
+fusion; they do not require a consumer pass.
 
 SVG text escapes XML delimiters and rejects XML 1.0 forbidden characters or
 invalid Unicode. That hardening is shared with TypeScript. CSS color validation

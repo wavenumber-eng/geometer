@@ -6,6 +6,12 @@ eframe/egui + wgpu depth-buffered 3D viewport. It calls a separate native
 All operation values/codecs come from Geometer's TypeSpec-generated contracts.
 The independent C++ demo continues to demonstrate direct linking.
 
+The GUI toolkit is **egui**, hosted by **eframe** for the desktop application
+and event loop. **wgpu** renders the GUI and our depth-buffered 3D preview;
+it is the graphics backend, not the widget toolkit. **resvg** rasterizes the
+native SVG for display, and **rfd** supplies file dialogs. Geometry and SVG
+generation remain in the separate Geometer executable.
+
 ## Build and launch
 
 From the repository root, with Rust 1.95.0 and a native linker:
@@ -40,6 +46,13 @@ Controls scroll vertically in short windows. The 3D diagnostic preview is
 transparency. The native illustration and original SVG preserve source opacity.
 
 ## Native outputs and job behavior
+
+**Fuse compatible surfaces is enabled by default.** Keep it enabled for normal
+illustration: Geometer merges compatible adjacent rendered triangle fills while
+respecting visibility, often reducing SVG size and draw commands. It does not
+union CAD solids, simplify the source mesh or reduce the color palette. Turning
+it off is useful for comparison/diagnostics. See the [fusion semantics and
+related options](../../../docs/design/mesh-illustration-native.md#fuse-surfaces--enabled-by-default).
 
 - Colored mesh: `geometry.model_tessellation.a0`, millimeters, stripped root
   placement, generated mesh-collection attachment.

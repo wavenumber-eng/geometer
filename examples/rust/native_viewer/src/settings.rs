@@ -255,6 +255,7 @@ mod tests {
     #[test]
     fn lab_style_defaults_use_generated_contract_and_hide_raw_lines() {
         let style = lab_style();
+        assert_eq!(style.fuse_surfaces, Some(true));
         assert_eq!(style.show_outlines, Some(false));
         assert_eq!(style.show_creases, Some(false));
         assert_eq!(style.crease_angle_degrees, Some(42.0));

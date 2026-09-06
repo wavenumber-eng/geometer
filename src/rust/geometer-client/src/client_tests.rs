@@ -2,6 +2,7 @@ use std::path::{Path, PathBuf};
 
 use super::*;
 use crate::generated::contracts::{AnalyticPlanarBooleanBatchRequestA0, IpcShutdownAckA0};
+use crate::generated::operations::ANALYTIC_PLANAR_BOOLEAN_BATCH_A0_IDENTITY;
 
 #[tokio::test]
 async fn invalid_analytic_result_is_fatal_protocol_failure() {

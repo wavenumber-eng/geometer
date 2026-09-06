@@ -54,7 +54,10 @@ Release qualification is separate from those earlier feature-build observations.
 <p>IPC runs headlessly in <code>geometer(.exe) serve --stdio</code>: no JS runtime, WASM,
 GPU or UI toolkit is needed. Python is executable-backed, not a second renderer
 or static-link binding. TypeSpec-generated contracts govern values, discovery
-and attachment declarations. Wrappers do not maintain another protocol.</p>
+and attachment declarations. Wrappers do not maintain another protocol.
+Rust desktop consumers may use the default launcher or transfer an already
+contained process through <code>GeometerClient::from_process</code>; both paths use the
+same negotiation, typed operations and lifecycle implementation.</p>
 <p>Use the complete <a href="../design/mesh-illustration-native.html">STEP-to-SVG examples and limits</a>,
 <a href="../design/python-package.html">Python API guide</a>, and <a href="../design/rust-client.html">Rust guide</a>.
 Clients and executable catalogs must match. The release requires 2026.9.6 or

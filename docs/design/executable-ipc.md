@@ -11,7 +11,7 @@ and [Python convenience API](python-package.md) are simpler.
 | --- | --- |
 | Python | Public `geometer.GeometerClient`: synchronous HLR, tessellation, illustration and experimental analytic calls. The package resolves its bundled executable; `executable=` selects an explicit compatible binary. |
 | Node/TypeScript | `GeometerNodeProcessA0` from `@wavenumber/geometer/node-process-a0`: process ownership plus typed generic IPC calls. |
-| Rust | `geometer-client`: generated contracts and Tokio executable client; see [Rust client](rust-client.md). |
+| Rust | `geometer-client`: generated contracts and async executable client, with easy Tokio spawn and caller-supervised process adoption; see [Rust client](rust-client.md). |
 | Implementing a new transport/client | [A0 framing and lifecycle specification](executable-ipc-a0.md), not a hand-built application protocol. |
 
 Use a client and executable generated from a compatible catalog. The clients
@@ -80,6 +80,13 @@ persistent IPC; use the Node example above for the generated bounds operation.
 Never decode stdout as text, merge stderr into stdout, or share the process
 pipes with a second owner. Drain stderr so logging cannot block the process.
 The maintained clients handle these details.
+
+Rust applications with stricter process policy should launch and contain the
+executable first, then transfer its three async streams and lifecycle controller
+through `GeometerProcess` and `GeometerClient::from_process()`. This is still
+the same local A0 stdio transport; it does not create a daemon or network API.
+The supplied controller owns containment until the client closes or is dropped
+and must prove the full containment unit empty before reporting exit.
 
 A local timeout does not stop the geometry solver. A0 cancellation is queue
 only: active work is not interruptible. The Python client sends cancellation

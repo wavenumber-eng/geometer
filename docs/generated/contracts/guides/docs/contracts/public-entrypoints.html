@@ -121,7 +121,10 @@ utility. Their file schema/alias normalization belongs to wave 3.</li>
 mappings are owned by the package manifest. Root wildcard re-exports do not
 create new semantic operations.</li>
 <li>Rust exposes generated contracts, model-bounds/HLR request conveniences,
-analytic and indexed-mesh codecs, IPC and its client. Python's public
+analytic and indexed-mesh codecs, IPC and its client. Its process-support
+surface includes both an easy Tokio launcher and caller-supervised async
+streams plus lifecycle-controller adoption; both retain one client-owned A0
+connection and do not create another wire operation. Python's public
 <code>__all__</code> and TypeScript/Rust export sources remain review boundaries, not
 evidence that every client implementation is generated.</li>
 </ul>

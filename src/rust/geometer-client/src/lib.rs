@@ -1,7 +1,9 @@
 //! Generated Geometer contracts and the persistent executable IPC A0 client.
 
+mod analytic_client;
 pub mod analytic_packet_a0;
 pub mod client;
+mod client_lifecycle;
 pub mod generated;
 mod hlr;
 mod illustration;
@@ -9,6 +11,7 @@ pub mod indexed_mesh_packet_a0;
 pub mod ipc;
 mod model_bounds;
 mod operation_validation;
+mod process;
 mod session_validation;
 mod tessellation;
 
@@ -26,6 +29,9 @@ pub use indexed_mesh_packet_a0::{
     IndexedTriangleMeshA0, encode_indexed_triangle_mesh_a0_packet,
 };
 pub use model_bounds::ModelBoundsRequest;
+pub use process::{
+    GeometerClientOptions, GeometerProcess, GeometerProcessController, GeometerProcessExit,
+};
 pub use tessellation::{ModelTessellation, ModelTessellationRequest};
 
 pub const IPC_IDENTITY: &str = "a0";

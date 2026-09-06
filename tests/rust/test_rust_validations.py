@@ -122,6 +122,23 @@ def test_clean_external_consumer_runs_analytic_and_illustration_ipc(tmp_path: Pa
 
     assert ET.parse(svg).getroot().tag == "{http://www.w3.org/2000/svg}svg"
     assert svg.stat().st_size > 1000
+    # Compile and run caller-supervised process adoption from the extracted
+    # package so the published surface cannot accidentally depend on workspace
+    # visibility or an unpackaged source file.
+    (binary_dir / "supervised_process.rs").write_text(
+        (crate / "examples" / "supervised_process.rs").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    run(
+        "cargo",
+        "run",
+        "--locked",
+        "--bin",
+        "supervised_process",
+        "--",
+        str(_native_executable()),
+        cwd=consumer,
+    )
 
 
 def _native_executable() -> Path:

@@ -16,7 +16,7 @@ SITE = ROOT / "docs" / "generated" / "contracts"
 class _References(HTMLParser):
     def __init__(self) -> None:
         super().__init__()
-        self.references: list[str] = []
+        self.references: list[tuple[str, str]] = []
 
     def handle_starttag(
         self,
@@ -26,10 +26,10 @@ class _References(HTMLParser):
         del tag
         for name, value in attrs:
             if name in {"href", "src"} and value:
-                self.references.append(value)
+                self.references.append((name, value))
 
 
-def _html_references(path: Path) -> list[str]:
+def _html_references(path: Path) -> list[tuple[str, str]]:
     parser = _References()
     parser.feed(path.read_text(encoding="utf-8"))
     return parser.references
@@ -55,8 +55,10 @@ def test_generated_contract_docs_are_complete_and_offline() -> None:
     html_paths = sorted(SITE.rglob("*.html"))
     expected_pages = {
         SITE / "index.html",
+        SITE / site_manifest["coverage"],
         *(SITE / path for path in site_manifest["contracts"].values()),
         *(SITE / path for path in site_manifest["operations"].values()),
+        *(SITE / path for path in site_manifest["guides"]),
     }
     assert set(html_paths) == expected_pages
 
@@ -68,12 +70,15 @@ def test_generated_contract_docs_are_complete_and_offline() -> None:
         assert 'data-generated="true"' in text
         assert 'data-wn-watermark="true"' in text
         assert site_manifest["catalog_sha256"] in text
-        assert "https://" not in text
-        assert "http://" not in text
         assert "file:" not in text
-        for reference in _html_references(path):
+        for attribute, reference in _html_references(path):
             parsed = urlsplit(reference)
-            assert not parsed.scheme and not parsed.netloc, (path, reference)
+            if parsed.scheme or parsed.netloc:
+                # Reference guides may cite external sources, but the generated
+                # site must never load a remote image, script, or stylesheet.
+                assert attribute == "href", (path, reference)
+                assert parsed.scheme in {"http", "https"} and parsed.netloc, (path, reference)
+                continue
             if not parsed.path:
                 continue
             target = (path.parent / parsed.path).resolve()

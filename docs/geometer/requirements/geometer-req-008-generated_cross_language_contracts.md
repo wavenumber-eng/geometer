@@ -37,7 +37,13 @@ TypeScript, and Python consumers.
    allocation, output-pointer decoding, or free calls for supported operations.
 6. Provide a packaged Rust client for the framed `geometer` executable pipe,
    including handshake, request correlation, typed failures, raw attachments,
-   timeout, queue cancellation, shutdown, and unexpected-exit handling.
+   timeout, queue cancellation, shutdown, unexpected-exit handling, and an
+   additive process-adoption boundary for callers that apply platform
+   containment before negotiation. While the async runtime remains available,
+   every construction, close, failure and final-handle-drop path must terminate
+   and reap or prove the supplied containment unit empty within one bounded
+   deadline; a production controller's `Drop` is the synchronous platform
+   backstop when the runtime itself is unavailable.
 7. Use generated contract models and strict codecs at the public Python
    package's executable boundary while preserving documented names, call
    signatures, result conveniences, accepted aliases, and error behavior unless

@@ -16,6 +16,33 @@ from geometer._ipc_a0 import Attachment
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def test_public_one_shot_helpers_match_persistent_and_close_processes(monkeypatch: pytest.MonkeyPatch) -> None:
+    import subprocess
+
+    processes = []
+    original = subprocess.Popen
+
+    def capture(*args, **kwargs):
+        process = original(*args, **kwargs)
+        processes.append(process)
+        return process
+
+    monkeypatch.setattr(subprocess, "Popen", capture)
+    model = (ROOT / "tests/fixtures/step/embedded_models/SOT-23.STEP").read_bytes()
+    meshes = geometer.model_tessellation(model)
+    input = geometer.MeshIllustrationInputA0(
+        schema="geometry.mesh_illustration.input.a0",
+        meshes=meshes.mesh_collection.meshes,
+        view=geometer.MeshIllustrationView(direction=(0.4, 0.7, 1.0), up=(0.0, 1.0, 0.0)),
+    )
+    once = geometer.mesh_illustration(input, executable=geometer.executable_path())
+    with geometer.GeometerClient() as client:
+        assert once == client.mesh_illustration(input)
+    with pytest.raises(geometer.GeometerOperationError):
+        geometer.mesh_illustration(replace(input, prepare=geometer.MeshIllustrationPrepareOptions(max_triangles=1)))
+    assert len(processes) == 4 and all(process.poll() is not None for process in processes)
+
+
 def test_native_hlr_composition_and_optional_attachment_validation() -> None:
     model = (ROOT / "tests/fixtures/step/embedded_models/SOT-23.STEP").read_bytes()
     with geometer.GeometerClient() as client:

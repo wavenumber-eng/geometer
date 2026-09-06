@@ -48,6 +48,12 @@ Both clients accept the existing generated `MeshIllustrationInputA0` and adapt
 it to generated settings plus the mesh attachment. This keeps the public
 illustration input shape consistent with the browser and direct C++ API.
 
+Python also exposes public one-shot `geometer.model_tessellation(step_bytes)`
+and `geometer.mesh_illustration(input, hlr_projection=hlr)` helpers. Each owns
+and closes one maintained IPC client; no additional wire implementation exists.
+They accept optional `executable=` and `timeout=` keywords. Prefer the persistent
+client in the complete workflow below so all stages reuse one process.
+
 The complete [Rust example](../../src/rust/geometer-client/examples/mesh_illustration.rs)
 spawns the executable, tessellates STEP bytes, computes visible Fast HLR,
 renders the combined illustration through the typed client,
@@ -216,8 +222,11 @@ warnings, Unicode CSS, title/viewport options and the colored SOT-23 STEP model.
 Windows has local conformance evidence, including typed Rust and Python
 STEP-to-SVG calls and exact Rust IPC output versus the TypeScript oracle.
 Malformed attachments, triangle limits and oversized inline SVG recover without
-poisoning the process. macOS/Linux runtime qualification, installed-wheel
-validation and GUI acceptance remain open. Native composition additionally has
+poisoning the process. Windows installed-wheel and clean packaged-Rust consumer
+checks now pass, and the user accepted the Rust demo as proof of the workflow.
+macOS/Linux runtime qualification and clean public-release gates remain open;
+see the [API readiness handoff](../developer/native-api-readiness.md).
+Native composition additionally has
 24 exact TypeScript/IPC comparisons (three views, reflection and four line
 toggle combinations), deterministic repeats, Python typed composition and
 malformed-attachment checks, and C++ basis/finite-value/segment-cap regressions.

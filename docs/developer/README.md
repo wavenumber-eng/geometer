@@ -30,6 +30,8 @@ formats, start at [../design/README.md](../design/README.md).
 For authored/generated documentation ownership and focused freshness checks,
 see [documentation maintenance](documentation.md). The [demo audit](demo-status.md)
 records current runtime evidence and remaining verification gaps.
+The [native illustration API readiness handoff](native-api-readiness.md)
+separates implemented surfaces and package evidence from remaining release gates.
 
 ## Repository Layout
 

@@ -19,6 +19,13 @@ native CLI and keeps the file-oriented convenience API byte/path oriented.</p>
 builds include <a href="mesh-illustration-native.html">colored STEP tessellation and native mesh illustration</a>
 with a complete Python STEP-to-SVG example. Those new methods require a matching
 feature executable; the previously released wheel does not provide them.</p>
+<p>The public one-shot helpers <code>geometer.model_tessellation(step_bytes, ...)</code> and
+<code>geometer.mesh_illustration(input, hlr_projection=..., ...)</code> reuse that same
+client with automatic process cleanup. Both accept <code>executable=</code> for an explicit
+override and <code>timeout=</code> for the local operation deadline; startup/shutdown have
+the client's separate bounds. Prefer one <code>with geometer.GeometerClient() as client:</code> block for a STEP/tessellation/HLR/illustration sequence or repeated work.
+The optional HLR argument is already computed visible polyline geometry, not an
+instruction to compute HLR or re-occlude arbitrary 2D lines.</p>
 <pre><code class="language-python">from pathlib import Path
 
 import geometer

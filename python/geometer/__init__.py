@@ -21,6 +21,7 @@ from ._api import (
     write_planar_step,
 )
 from ._errors import GeometerError
+from ._native_helpers import mesh_illustration, model_tessellation
 from ._tessellation import ModelTessellation
 from ._analytic_packet_a0 import (
     AnalyticPacketError,
@@ -106,6 +107,8 @@ from ._types import (
 )
 
 __all__ = [
+    "mesh_illustration",
+    "model_tessellation",
     "MeshIllustrationInputA0",
     "MeshIllustrationMaterial",
     "MeshIllustrationMesh",

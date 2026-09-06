@@ -8,6 +8,13 @@ created = "2026-09-05"
 
 # Expose Production Mesh Illustration Through Native Geometer IPC, Rust And Python
 
+Current status: the requested native/Rust/Python surfaces and Windows installed
+package workflow are implemented. The user accepted the Rust demo as proof.
+See the [readiness handoff](../../developer/native-api-readiness.md) for current
+APIs and evidence. Cross-platform qualification/public release remain open.
+The brief below retains the original baseline and requirements, not a claim
+that the implemented native operation is still absent.
+
 Issue-ready upstream brief, incorporating the consumer report supplied by the
 user. This records requested work for the other Geometer agent, not an already
 available API, an assigned external issue, or implementation completed here.

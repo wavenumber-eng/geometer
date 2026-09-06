@@ -4,7 +4,7 @@
   "files": [
     {
       "path": "python/geometer/__init__.py",
-      "sha256": "bc4e0909b15bb6c9e8ceaa671751130a82dca5210b15232b949133d4692b6c5b"
+      "sha256": "42b3f31822b658c8dc06abc1139bdd6e928e7c28a6873963be71e7423bad1f5c"
     },
     {
       "path": "python/geometer/_analytic_packet_a0.py",
@@ -49,6 +49,10 @@
     {
       "path": "python/geometer/_ipc_client.py",
       "sha256": "7227872da41712d9d034cc43976f8d36e6629fbf3bdf2877b4dcbf241807832e"
+    },
+    {
+      "path": "python/geometer/_native_helpers.py",
+      "sha256": "5990a63bc1bef8d8f86aa5e45601da693be0c2dd9cfc213cdf92f97f27b5e5bd"
     },
     {
       "path": "python/geometer/_paths.py",

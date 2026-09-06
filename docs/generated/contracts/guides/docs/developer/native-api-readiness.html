@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>Native illustration API readiness — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../developer/native-api-readiness.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="native-illustration-api-readiness">Native illustration API readiness</h1></header>
+<p>Feature branch <code>feature/native-api-rust-demo</code>, assessed 2026-09-05. The user
+accepted the Rust demo as proof of the workflow; further GUI polish is deferred.
+Native illustration is implemented and exercised on Windows, <strong>not yet a
+qualified public release</strong>.</p>
+<h2 id="callable-surfaces">Callable surfaces</h2>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Public Python API</th>
+<th>Rust executable client</th>
+<th>Direct C++ / native process</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Colored STEP tessellation</td>
+<td><code>GeometerClient.model_tessellation</code>; one-shot <code>geometer.model_tessellation</code></td>
+<td><code>model_tessellation(ModelTessellationRequest)</code></td>
+<td><code>model_tessellation_from_bytes</code>; IPC <code>geometry.model_tessellation.a0</code></td>
+</tr>
+<tr>
+<td>Mesh illustration</td>
+<td><code>GeometerClient.mesh_illustration</code>; one-shot <code>geometer.mesh_illustration</code></td>
+<td><code>mesh_illustration(MeshIllustrationInputA0)</code></td>
+<td><code>illustrate_mesh(input, result, status)</code>; IPC <code>geometry.mesh_illustration.a0</code></td>
+</tr>
+<tr>
+<td>Illustration with visible HLR</td>
+<td>Either Python illustration entry point with <code>hlr_projection=</code></td>
+<td><code>mesh_illustration_with_hlr(input, hlr)</code></td>
+<td>C++ overload with HLR result; same IPC operation plus optional governed HLR attachment</td>
+</tr>
+<tr>
+<td>Independent HLR geometry</td>
+<td><code>GeometerClient.model_hlr_projection</code> / <code>mesh_hlr_projection</code></td>
+<td>Typed model/mesh HLR methods</td>
+<td>Existing model/mesh operations and file CLI remain unchanged</td>
+</tr>
+</tbody>
+</table>
+<p>IPC runs headlessly in <code>geometer(.exe) serve --stdio</code>: no JS runtime, WASM,
+GPU or UI toolkit is needed. Python is executable-backed, not a second renderer
+or static-link binding. TypeSpec-generated contracts govern values, discovery
+and attachment declarations. Wrappers do not maintain another protocol.</p>
+<p>Use the complete <a href="../design/mesh-illustration-native.html">STEP-to-SVG examples and limits</a>,
+<a href="../design/python-package.html">Python API guide</a>, and <a href="../design/rust-client.html">Rust guide</a>.
+Clients and executable must match: development builds still say <code>2026.9.4</code>,
+but have a different catalog from the previous release. Negotiation checks it.</p>
+<p><code>fuse_surfaces</code> defaults to true. Native composition handles SVG layer order;
+callers supply visible-only polyline HLR for the same millimeter model,
+placement and view. Arbitrary 2D lines cannot authenticate those relationships.
+Experimental AO remains unavailable, raw mesh lines remain diagnostic, and
+the unrelated analytic planar solver has not been promoted.</p>
+<h2 id="package-level-evidence">Package-level evidence</h2>
+<p>Windows x64 now passes:</p>
+<ul>
+<li>A real wheel installed in a fresh virtual environment, executing outside the
+source package with bundled-executable discovery and explicit override.
+Public tessellation, pure illustration, Fast-HLR composition, determinism,
+fusion default, limit recovery and both one-shot helpers are exercised.
+SOT-23 produces 220 rendered triangles and 13,085 SVG bytes. Existing legacy
+package/CLI examples also pass.</li>
+<li>A clean external Cargo consumer against the extracted packaged crate,
+running analytic checks and the complete public STEP/HLR/illustration example.</li>
+<li>Existing native/TypeScript parity (40 pure cases, 24 composed cases), typed
+IPC and error tests. Python source tests additionally prove owned one-shot
+processes exit after success and operation failure.</li>
+</ul>
+<p>The installed check is wired into <a href="../../../../../../scripts/validate_python_package.py">package validation</a>
+through <a href="../../../../../../scripts/validate_illustration_package.py">the isolated illustration check</a>.
+Packaged Rust coverage is in Rack <code>RUST_001</code>; Python coverage is <code>PY_020</code>/<code>PY_021</code>.
+These lanes already run in the four-platform native/release matrix; their
+presence does not claim those platform jobs have run for this feature.</p>
+<h2 id="remaining-release-gates">Remaining release gates</h2>
+<table>
+<thead>
+<tr>
+<th>Platform</th>
+<th>Qualification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Windows x64</td>
+<td>Local native, installed-wheel and packaged-Rust API checks passed; clean release provenance and full release gates remain.</td>
+</tr>
+<tr>
+<td>Linux x64</td>
+<td>Feature runtime/package qualification not run here.</td>
+</tr>
+<tr>
+<td>Linux ARM64</td>
+<td>Feature runtime/package qualification not run here.</td>
+</tr>
+<tr>
+<td>macOS ARM64</td>
+<td>Native runtime/package qualification remains; GUI/Metal testing is separately deferred.</td>
+</tr>
+</tbody>
+</table>
+<p>The staged wheel is <strong>test evidence only</strong>: it retains the development version
+and bundles an executable whose attestation reports a dirty source tree and an
+unverified cached OCCT profile. Do not publish it. The executable SHA-256 tested
+is <code>04da2a7625131b73172e0137879082aef58477693b3154f8b38102a4cd0794e7</code>.</p>
+<p>Before publication: assign the release version; build the reviewed clean
+revision with qualified OCCT provenance; regenerate matching artifacts; pass
+platform/package/parity and full release gates; publish supported artifacts.
+No tag, push, upload or PyPI release occurred in this readiness pass. Demo
+packaging and the later C++ GPU viewer remain separate decisions.</p>
+
+</main>
+</body>
+</html>

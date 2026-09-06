@@ -11,6 +11,15 @@ builds include [colored STEP tessellation and native mesh illustration](mesh-ill
 with a complete Python STEP-to-SVG example. Those new methods require a matching
 feature executable; the previously released wheel does not provide them.
 
+The public one-shot helpers `geometer.model_tessellation(step_bytes, ...)` and
+`geometer.mesh_illustration(input, hlr_projection=..., ...)` reuse that same
+client with automatic process cleanup. Both accept `executable=` for an explicit
+override and `timeout=` for the local operation deadline; startup/shutdown have
+the client's separate bounds. Prefer one `with geometer.GeometerClient() as
+client:` block for a STEP/tessellation/HLR/illustration sequence or repeated work.
+The optional HLR argument is already computed visible polyline geometry, not an
+instruction to compute HLR or re-occlude arbitrary 2D lines.
+
 ```python
 from pathlib import Path
 

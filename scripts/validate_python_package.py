@@ -280,6 +280,19 @@ def validate_wheel_install(wheel: Path, step_path: Path, *, keep_temp: bool) -> 
         env["GEOMETER_VALIDATION_STEP"] = str(step_path)
         env["GEOMETER_VALIDATION_OUT"] = str(output_dir)
         run([str(test_python), "-c", PACKAGE_VALIDATION_CODE], env=env, cwd=run_dir)
+        run(
+            [
+                str(test_python),
+                "-I",
+                str(ROOT / "scripts" / "validate_illustration_package.py"),
+                "--step",
+                str(step_path),
+                "--out-dir",
+                str(output_dir),
+            ],
+            env=env,
+            cwd=run_dir,
+        )
         run([str(venv_script(venv_dir, "geometer")), "--version"], env=env, cwd=run_dir)
 
         run(
@@ -362,7 +375,9 @@ def expected_macos_wheel_platform_tag() -> str:
 def expected_linux_wheel_platform_tag() -> str:
     libc_name, libc_version = platform.libc_ver()
     if libc_name != "glibc" or not libc_version:
-        raise RuntimeError(f"Linux wheels require glibc for PyPI publishing, got {libc_name or 'unknown'} {libc_version}")
+        raise RuntimeError(
+            f"Linux wheels require glibc for PyPI publishing, got {libc_name or 'unknown'} {libc_version}"
+        )
     major, minor = version_pair(libc_version)
     return f"manylinux_{major}_{minor}_{linux_wheel_arch()}"
 

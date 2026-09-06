@@ -42,13 +42,13 @@ depends_on = ["rust-demo-foundation", "native-illustration-windows"]
 [[steps]]
 id = "rust-windows-acceptance"
 title = "Validate the priority Windows Rust API demonstration with the user"
-status = "pending"
+status = "done"
 depends_on = ["rust-demo-integration"]
 
 [[steps]]
 id = "python-native-illustration"
 title = "Accept required executable-backed Python illustration methods and installed-package tests"
-status = "pending"
+status = "done"
 depends_on = ["native-illustration-windows"]
 
 [[steps]]

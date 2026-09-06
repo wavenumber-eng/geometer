@@ -21,7 +21,7 @@ objectives = [
 id = "RUST_001"
 file = "test_rust_validations.py"
 name = "Generated Rust And Executable IPC"
-description = "Runs format, lint, contract-vector, framing, live-process, and packaged-consumer analytic IPC checks."
+description = "Runs format, lint, contract-vector, framing, live-process, and packaged-consumer analytic plus STEP/HLR/illustration IPC checks."
 test_case_type = "integration"
 
 [[subtests]]

@@ -275,3 +275,30 @@ helper, pole-safe orbit, raster pixels proving round caps and mirrored HLR,
 and the existing native illustration/HLR job tests. Clippy passed. A rebuilt
 real-window smoke and app screenshot provide a fresh visual checkpoint;
 interactive view selection remains for the user to inspect.
+
+## API-readiness wrap-up
+
+The user accepted the Rust demo as proving the point and requested API/package
+readiness rather than more GUI work. Added public Python one-shot tessellation
+and illustration helpers that reuse the maintained context-managed client.
+Source tests prove parity and process cleanup after success/failure. Native
+IPC/direct C++, Rust and persistent Python exposure was independently audited;
+no missing callable surface or error-handling blocker was found.
+
+The installed-wheel validation lane now runs isolated public illustration
+checks using the wheel's bundled executable, with automatic discovery and
+explicit override, STEP tessellation, pure/composed SVG, default fusion,
+determinism, resource-limit recovery and both one-shot helpers. This passed in
+a fresh Windows environment outside the checkout, alongside legacy package
+tests. The packaged Rust consumer also compiles/runs the complete STEP/HLR/SVG
+example against the extracted crate (passed, 25.30 seconds). Six focused Python
+tests, both native renderer CTests, Ruff/Pyright and documentation gates passed.
+Final independent review approved the helpers and isolated package test lanes.
+
+The [readiness handoff](../../developer/native-api-readiness.md) is the durable
+record of callable surfaces and release gaps. Python Windows package acceptance
+and the Rust demonstration are marked done. The larger cross-platform API
+acceptance remains open: Linux/macOS runtime qualification and clean qualified
+release provenance are not implied by this local wheel. The wheel is a staged
+development test artifact, not publishable; tracked release binaries were not
+replaced and no release/push/tag/upload was performed.

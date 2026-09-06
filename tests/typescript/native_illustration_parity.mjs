@@ -41,6 +41,36 @@ for (const direction of [
   });
 }
 try {
+  const numericValues = [
+    0, -0, 1e23, -1e23, 1e21, 1e20, 1e-6, -1e-6, 1e-7,
+    Number.MIN_VALUE, -Number.MIN_VALUE, Number.MAX_VALUE, -Number.MAX_VALUE,
+    0.5001220703125, -0.5001220703125, 1000000000000000100, -0.5,
+  ];
+  let numericSeed = 12345;
+  for (let i = 0; i < 300; ++i) {
+    numericSeed = (Math.imul(numericSeed, 1664525) + 1013904223) >>> 0;
+    numericValues.push((numericSeed / 2 ** 32 - 0.5) * 10 ** (((i * 37) % 601) - 300));
+  }
+  const numericPath = join(temporary, "numbers.json");
+  const bits = new DataView(new ArrayBuffer(8));
+  for (let exponent = -1074; exponent <= 1023; ++exponent) {
+    bits.setFloat64(0, 2 ** exponent);
+    const center = bits.getBigUint64(0);
+    for (const offset of [-1n, 0n, 1n]) {
+      bits.setBigUint64(0, center + offset);
+      const value = bits.getFloat64(0);
+      if (Number.isFinite(value)) numericValues.push(value);
+    }
+  }
+  writeFileSync(numericPath, JSON.stringify(numericValues));
+  const formatted = native(["--numbers", numericPath]);
+  numericValues.forEach((value, index) => {
+    const rounded = Number(value.toPrecision(12));
+    assert.deepEqual(formatted[index], [
+      Number.isFinite(rounded) ? String(rounded) : "overflow",
+      String(Math.round(value)),
+    ], `numeric format ${value}`);
+  });
   const documents = [];
   for (const { name, input } of fixtures) {
     const inputPath = join(temporary, `${name}.json`);

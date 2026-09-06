@@ -4,16 +4,57 @@
 #include "mesh_illustration_svg.h"
 
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <iterator>
+#include <locale>
+#include <rapidjson/document.h>
 #include <stdexcept>
 
 namespace
 {
+class CommaDecimal final : public std::numpunct<char>
+{
+    char do_decimal_point() const override
+    {
+        return ',';
+    }
+};
+
 void require(bool condition, const char* message)
 {
     if (!condition)
         throw std::runtime_error(message);
+}
+
+void numeric_formats(const char* path)
+{
+    std::ifstream file(path);
+    const std::string bytes{std::istreambuf_iterator<char>(file), {}};
+    rapidjson::Document values;
+    values.Parse<rapidjson::kParseFullPrecisionFlag>(bytes.data(), bytes.size());
+    require(!values.HasParseError() && values.IsArray(), "invalid numeric fixture");
+    std::cout << '[';
+    bool first = true;
+    for (const auto& item : values.GetArray())
+    {
+        if (!first)
+            std::cout << ',';
+        first = false;
+        const auto value = item.GetDouble();
+        std::string number;
+        try
+        {
+            number = geometer::illustration_detail::number_text(value);
+        }
+        catch (const std::runtime_error&)
+        {
+            number = "overflow";
+        }
+        std::cout << '[' << std::quoted(number) << ','
+                  << std::quoted(geometer::illustration_detail::integer_text(value)) << ']';
+    }
+    std::cout << ']';
 }
 
 geometer::contracts::MeshIllustrationInputA0 fixture()
@@ -56,6 +97,20 @@ void smoke()
             "ECMAScript precision halfway rounding mismatch");
     require(geometer::illustration_detail::fixed_text(.5001220703125) == "0.500122070313",
             "ECMAScript fixed halfway rounding mismatch");
+    const auto previous_locale = std::locale();
+    std::locale::global(std::locale(previous_locale, new CommaDecimal));
+    require(geometer::illustration_detail::number_text(.5001220703125) == "0.500122070313" &&
+                geometer::illustration_detail::fixed_text(.5001220703125) == "0.500122070313",
+            "illustration formatting depends on global decimal locale");
+    std::locale::global(previous_locale);
+    require(geometer::illustration_detail::number_text(1e-7) == "1e-7" &&
+                geometer::illustration_detail::number_text(1e21) == "1e+21" &&
+                geometer::illustration_detail::number_text(-0.0) == "0" &&
+                geometer::illustration_detail::integer_text(42) == "42",
+            "portable JS notation thresholds or integer suffix mismatch");
+    require(geometer::illustration_detail::number_text(1e23) == "1e+23" &&
+                geometer::illustration_detail::integer_text(1e23) == "1e+23",
+            "shortest decimal differs from ECMAScript at 1e23");
     std::string bounded;
     geometer::illustration_detail::append_bounded(bounded, "abcd", 4);
     bool rejected = false;
@@ -152,6 +207,11 @@ int main(int argc, char** argv)
         {
             smoke();
             hlr_smoke();
+            return 0;
+        }
+        if (argc == 3 && std::string(argv[1]) == "--numbers")
+        {
+            numeric_formats(argv[2]);
             return 0;
         }
         if (argc == 3 && std::string(argv[1]) == "--step")

@@ -584,7 +584,7 @@
     },
     {
       "path": "src/ts/geometer/package.json",
-      "sha256": "f1a71a1dd52636d05c4c0539d4f3db9c38a1e41e14af932e835338cc516cb12d"
+      "sha256": "0aa9e0175ac105e7b5e1c0fa89855d1500db4c28885bbb74a1cbe6710185acfd"
     },
     {
       "path": "src/ts/geometer/step-topology-validation.ts",

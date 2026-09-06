@@ -1,9 +1,9 @@
 #include "mesh_illustration_internal.h"
 
 #include <algorithm>
-#include <charconv>
 #include <iomanip>
 #include <locale>
+#include <rapidjson/document.h>
 #include <sstream>
 
 namespace geometer::illustration_detail
@@ -22,6 +22,58 @@ double js_round(double value)
 
 namespace
 {
+bool parse_decimal(const std::string& text, double& value)
+{
+    rapidjson::Document parsed;
+    parsed.Parse<rapidjson::kParseFullPrecisionFlag>(text.data(), text.size());
+    if (parsed.HasParseError() || !parsed.IsNumber())
+        return false;
+    value = parsed.GetDouble();
+    return std::isfinite(value);
+}
+
+std::string adjacent_decimal(const std::string& text, int delta)
+{
+    const auto exponent_at = text.find('e');
+    const bool negative = text.front() == '-';
+    auto digits = text.substr(negative ? 1 : 0, exponent_at - (negative ? 1 : 0));
+    const auto point = digits.find('.');
+    if (point != std::string::npos)
+        digits.erase(point, 1);
+    const auto significand = std::stoull(digits);
+    auto adjacent = std::to_string(delta < 0 ? significand - 1 : significand + 1);
+    const int exponent = std::stoi(text.substr(exponent_at + 1)) +
+                         static_cast<int>(adjacent.size()) - static_cast<int>(digits.size());
+    if (adjacent.size() > 1)
+        adjacent.insert(1, ".");
+    return (negative ? "-" : "") + adjacent + "e" + std::to_string(exponent);
+}
+
+std::string shortest_decimal(double value)
+{
+    // Select the nearest decimal with the fewest significant digits that
+    // round-trips to this binary64. Grisu2 can choose a longer decimal (1e23).
+    for (int digits = 1; digits <= 17; ++digits)
+    {
+        std::ostringstream stream;
+        stream.imbue(std::locale::classic());
+        stream << std::scientific << std::setprecision(digits - 1) << value;
+        const auto text = stream.str();
+        double decoded = 0;
+        if (stream && parse_decimal(text, decoded) && decoded == value)
+            return text;
+        // Powers of two have asymmetric binary rounding intervals. A decimal
+        // neighbor can round-trip even when the nearest decimal does not.
+        for (const int delta : {-1, 1})
+        {
+            const auto neighbor = adjacent_decimal(text, delta);
+            if (parse_decimal(neighbor, decoded) && decoded == value)
+                return neighbor;
+        }
+    }
+    throw std::runtime_error("Illustration shortest decimal formatting failed.");
+}
+
 double finite_result(double value)
 {
     if (!std::isfinite(value))
@@ -35,13 +87,15 @@ double finite_result(double value)
 // suffice for every binary64, including the smallest subnormal.
 std::string rounded_decimal(double value, unsigned digits, bool scientific)
 {
-    char buffer[1500];
-    const auto written =
-        std::to_chars(buffer, buffer + sizeof(buffer), std::abs(value),
-                      scientific ? std::chars_format::scientific : std::chars_format::fixed, 1074);
-    if (written.ec != std::errc{})
+    // Floating charconv is unavailable in the pinned Emscripten library and
+    // requires macOS 13.3. Classic-locale streams preserve the macOS 11 floor.
+    std::ostringstream expansion;
+    expansion.imbue(std::locale::classic());
+    expansion << (scientific ? std::scientific : std::fixed) << std::setprecision(1074)
+              << std::abs(value);
+    if (!expansion)
         throw std::runtime_error("Illustration decimal formatting failed.");
-    std::string text(buffer, written.ptr);
+    std::string text = expansion.str();
     const auto exponent_at = text.find('e');
     int exponent = scientific ? std::stoi(text.substr(exponent_at + 1)) : 0;
     if (scientific)
@@ -84,17 +138,13 @@ std::string js_number(double value, bool precision12)
         throw std::runtime_error("Mesh illustration numeric overflow.");
     if (value == 0)
         return "0";
-    char buffer[128];
     if (precision12 && !(std::trunc(value) == value && std::abs(value) < 1e12))
     {
         const auto rounded = rounded_decimal(value, 12, true);
-        const auto parsed = std::from_chars(rounded.data(), rounded.data() + rounded.size(), value);
-        if (parsed.ec != std::errc{})
+        if (!parse_decimal(rounded, value))
             throw std::runtime_error("Illustration decimal rounding overflow.");
     }
-    const auto written =
-        std::to_chars(buffer, buffer + sizeof(buffer), value, std::chars_format::general);
-    std::string text(buffer, written.ptr);
+    std::string text = shortest_decimal(value);
     const auto exponent_at = text.find('e');
     if (exponent_at == std::string::npos)
         return text;

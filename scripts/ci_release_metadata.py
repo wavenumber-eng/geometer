@@ -74,6 +74,15 @@ def check_surfaces() -> None:
         if actual != expected:
             raise SystemExit(f"{name} mismatch: expected {expected}, got {actual}")
 
+    library_cmake = (ROOT / "src" / "cpp" / "lib" / "CMakeLists.txt").read_text(
+        encoding="utf-8"
+    )
+    for name in expected_cmake:
+        if re.search(rf"set\(\s*{name}\b", library_cmake):
+            raise SystemExit(
+                f"{name} must be defined only by the top-level Geometer configuration"
+            )
+
     with (ROOT / "scripts" / "pyproject.toml").open("rb") as handle:
         script_version = tomllib.load(handle)["project"]["version"]
     ts_version = json.loads((ROOT / "src" / "ts" / "geometer" / "package.json").read_text(encoding="utf-8"))[

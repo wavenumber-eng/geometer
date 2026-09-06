@@ -1,9 +1,8 @@
 # Native illustration API readiness
 
-Release target `2026.9.6`, assessed 2026-09-05. The user
-accepted the Rust demo as proof of the workflow; further GUI polish is deferred.
-Native illustration is implemented and exercised on Windows, **not yet a
-qualified public release**.
+Native illustration API and consumer handoff for `2026.9.6`. The user accepted
+the Windows Rust demo as proof of the workflow; further GUI polish is deferred.
+Release qualification is separate from those earlier feature-build observations.
 
 ## Callable surfaces
 
@@ -52,7 +51,27 @@ Packaged Rust coverage is in Rack `RUST_001`; Python coverage is `PY_020`/`PY_02
 These lanes already run in the four-platform native/release matrix; their
 presence does not claim those platform jobs have run for this feature.
 
-## Remaining release gates
+## Release qualification
+
+The [release PR](https://github.com/wavenumber-eng/geometer/pull/27) and
+[Publish workflow](https://github.com/wavenumber-eng/geometer/actions/workflows/release.yml)
+record authoritative hosted outcomes. Publication requires all four native
+platforms, installed Python wheels, packaged Rust consumers, browser WASM and
+cross-transport parity, plus L99, contracts and repository standards. Native
+artifacts must bind their exact bytes to clean source and verified OCCT profile
+provenance. Do not substitute the historical development wheel below.
+
+Portability qualification added locale-independent decimal conversion without
+raising the macOS 11 deployment floor or changing the pinned WASM toolchain.
+Exact Node comparisons cover 6,611 numeric cases, including powers of two and
+adjacent ULPs, alongside 40 complete renderer cases and 24 HLR compositions.
+Client tests select the platform's built executable from the repository root,
+independent of Cargo's working directory. GUI/Metal acceptance remains deferred.
+
+## Historical platform gaps at the Windows feature checkpoint
+
+This table records the pre-release feature assessment, not current release
+support. Use the hosted release results above for subsequent qualification.
 
 | Platform | Qualification |
 | --- | --- |
@@ -66,8 +85,5 @@ and bundles an executable whose attestation reports a dirty source tree and an
 unverified cached OCCT profile. Do not publish it. The executable SHA-256 tested
 is `04da2a7625131b73172e0137879082aef58477693b3154f8b38102a4cd0794e7`.
 
-Before publication: assign the release version; build the reviewed clean
-revision with qualified OCCT provenance; regenerate matching artifacts; pass
-platform/package/parity and full release gates; publish supported artifacts.
 No tag, push, upload or PyPI release occurred in that feature readiness pass. Demo
 packaging and the later C++ GPU viewer remain separate decisions.

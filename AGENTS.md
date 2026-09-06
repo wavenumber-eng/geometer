@@ -2,8 +2,8 @@
 
 Geometer is a focused C++17 geometry library and CLI built on OpenCASCADE
 Technology (OCCT). It provides generic CAD/kernel operations for STEP conversion,
-hidden-line projection, planar contouring, browser WASM workflows, and future
-Python tooling.
+hidden-line projection, planar contouring, mesh illustration, browser WASM
+workflows, and executable-backed Rust/Python tooling.
 
 For build setup, dependency policy, tests, and troubleshooting, read
 [docs/developer/README.md](docs/developer/README.md). Treat that file as the

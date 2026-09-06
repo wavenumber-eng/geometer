@@ -9,6 +9,24 @@ fn root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..")
 }
 
+fn executable() -> PathBuf {
+    let platform = match (std::env::consts::OS, std::env::consts::ARCH) {
+        ("windows", "x86_64") => "windows-x64",
+        ("macos", "aarch64") => "macos-arm64",
+        ("linux", "aarch64") => "linux-arm64",
+        ("linux", "x86_64") => "linux-x64",
+        other => panic!("unsupported native test platform: {other:?}"),
+    };
+    std::env::var_os("GEOMETER_EXECUTABLE")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| {
+            root().join(format!(
+                "dist/native/{platform}/geometer{}",
+                std::env::consts::EXE_SUFFIX
+            ))
+        })
+}
+
 fn reference(
     input: &MeshIllustrationInputA0,
     hlr: &HlrProjectionResultA0,
@@ -65,8 +83,7 @@ async fn projection(
 
 #[tokio::test]
 async fn native_composition_matches_browser_for_views_mirror_and_line_toggles() {
-    let executable = GeometerClient::find_executable().unwrap();
-    let client = GeometerClient::spawn(executable, "composition-test", "a0")
+    let client = GeometerClient::spawn(executable(), "composition-test", "a0")
         .await
         .unwrap();
     let step =

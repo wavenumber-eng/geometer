@@ -58,9 +58,11 @@ std::string shortest_decimal(double value)
         std::ostringstream stream;
         stream.imbue(std::locale::classic());
         stream << std::scientific << std::setprecision(digits - 1) << value;
+        if (!stream)
+            throw std::runtime_error("Illustration decimal formatting failed.");
         const auto text = stream.str();
         double decoded = 0;
-        if (stream && parse_decimal(text, decoded) && decoded == value)
+        if (parse_decimal(text, decoded) && decoded == value)
             return text;
         // Powers of two have asymmetric binary rounding intervals. A decimal
         // neighbor can round-trip even when the nearest decimal does not.

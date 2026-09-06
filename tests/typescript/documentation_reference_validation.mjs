@@ -40,5 +40,10 @@ assert.match(guide, /data-authority="authored-markdown"/);
 assert.match(guide, /<header><h1 id="calling-the-geometer-executable">/);
 assert.match(guide, /id="runnable-model-bounds-example"/);
 assert.match(guide, /Documentation index/);
+assert.match(guide, /Edit Markdown source <code>docs\/design\/executable-ipc\.md<\/code>/);
+const adrGuide = reference(
+  "guides/docs/geometer/adr/geometer-adr-001-cmake_fetchcontent_for_dependencies.html",
+);
+assert.doesNotMatch(adrGuide, /href="[^"]*\.md"/);
 assert.match(reference("guides.html"), /guides\/docs\/developer\/demo-status.html/);
 console.log("Documentation availability, maturity and handwritten-gap regressions passed.");

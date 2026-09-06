@@ -10,15 +10,15 @@
 </head>
 <body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
 <main>
-<nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../design/python-package.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="python-package-interface">Python Package Interface</h1></header>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/python-package.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="python-package-interface">Python Package Interface</h1></header>
 <h2 id="python-interface">Python Interface</h2>
 <p>The source checkout and PyPI wheel include a thin Python package named
 <code>geometer</code>; the PyPI distribution name is <code>wn-geometer</code>. The package drives the
 native CLI and keeps the file-oriented convenience API byte/path oriented.</p>
-<p>The persistent <code>GeometerClient</code> also exposes generated-value operations. Feature
-builds include <a href="mesh-illustration-native.html">colored STEP tessellation and native mesh illustration</a>
+<p>The persistent <code>GeometerClient</code> also exposes generated-value operations. Since
+2026.9.5 these include <a href="mesh-illustration-native.html">colored STEP tessellation and native mesh illustration</a>
 with a complete Python STEP-to-SVG example. Those new methods require a matching
-feature executable; the previously released wheel does not provide them.</p>
+2026.9.5 or later compatible executable; the 2026.9.4 wheel does not provide them.</p>
 <p>The public one-shot helpers <code>geometer.model_tessellation(step_bytes, ...)</code> and
 <code>geometer.mesh_illustration(input, hlr_projection=..., ...)</code> reuse that same
 client with automatic process cleanup. Both accept <code>executable=</code> for an explicit

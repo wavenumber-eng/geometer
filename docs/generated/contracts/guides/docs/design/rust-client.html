@@ -10,20 +10,20 @@
 </head>
 <body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
 <main>
-<nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../design/rust-client.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="rust-contracts-and-executable-ipc-client">Rust Contracts And Executable IPC Client</h1></header>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/rust-client.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="rust-contracts-and-executable-ipc-client">Rust Contracts And Executable IPC Client</h1></header>
 <h2 id="current-status">Current status</h2>
 <p><code>src/rust/geometer-client</code> is the Tokio-based <code>geometer-client</code> crate. Its
 operation DTOs and strict Serde codecs are generated from the normalized
 TypeSpec catalog. The live client spawns one persistent native
 <code>geometer(.exe) serve --stdio</code> process and executes model bounds, model/mesh
 HLR, and analytic planar Boolean through their governed attachments.</p>
-<p>Feature builds additionally provide typed <code>model_tessellation</code> and
+<p>Since 2026.9.5, the client additionally provides typed <code>model_tessellation</code> and
 <code>mesh_illustration</code> methods using generated A0 values. Optional
 <code>mesh_illustration_with_hlr(input, hlr)</code> returns the native composed SVG with
 visibility-filtered outline/detail; consumers do not arrange SVG layers. The complete
 <a href="mesh-illustration-native.html">native STEP-to-SVG example</a> needs no JS/WASM runtime
-or handwritten subprocess protocol. These additions require a matching feature
-executable and are not available in the previous release.</p>
+or handwritten subprocess protocol. These additions require a matching catalog
+and a compatible 2026.9.5 or later executable.</p>
 <p>The analytic operation is experimental and not production-ready. It may fail
 closed on valid inputs and is not the dependable path for whole-board or
 whole-layer copper union. Prefer the Clipper2-backed planar APIs when
@@ -70,10 +70,10 @@ promotion. New logical operations must join the authored TypeSpec unions and
 catalog, then regenerate all bindings, rather than add handwritten Rust
 dispatch cases. Attachment and runtime-availability checks still use the
 negotiated operation declaration; packed packet dispatch stays separate.</p>
-<p>The feature-build <code>model_tessellation()</code> facade returns colored millimeter
+<p>The <code>model_tessellation()</code> facade returns colored millimeter
 meshes through a generated attachment contract. See
 <a href="model-tessellation-a0.html">model tessellation A0</a> for defaults, limits and current
-release-qualification status. It requires a matching feature executable; it is
+release-qualification status. It requires a matching executable; it is
 not present in the released 2026.9.4 binary.</p>
 <h2 id="client-lifecycle">Client lifecycle</h2>
 <p><code>GeometerClient::find_executable()</code> resolves the same local path as

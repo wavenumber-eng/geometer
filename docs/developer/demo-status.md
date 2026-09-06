@@ -5,6 +5,9 @@ browser artifacts. Owner for all retained entries: Geometer maintainers;
 application-specific consumers retain their own support responsibility.
 Passing a demo does not promote its solver. No demo has been deleted.
 
+See [native demo follow-ups](native-demo-followups.md) for remaining C++ GPU
+requirements, deferred UI acceptance and the separate Mac agent handoff.
+
 User decision on 2026-09-05: retain all 11 demos/examples for now. Pruning is
 deferred to a separate explicitly approved change. Retention does not alter
 experimental maturity or resolve the verification gaps recorded below.
@@ -24,8 +27,9 @@ is a twelfth entry added on the native API feature branch, not a replacement
 for the 11 retained demos. It uses the maintained Rust executable client and
 TypeSpec-generated contracts. Windows Radeon RX 7600 XT/Vulkan smoke produced
 colored STEP triangles, native illustrated SVG and separate Fast HLR layers;
-the app-window screenshot was inspected. Full mouse/docking/resize acceptance
-and macOS build/Metal testing remain pending. The 3D preview is explicitly
+the app-window screenshot was inspected. The user accepted this Rust workflow
+proof; further GUI polish, exhaustive mouse/docking/resize checks and macOS
+build/Metal testing are deferred. The 3D preview is explicitly
 opaque; native SVG preserves source opacity. Public packaging is deferred.
 
 The [Lab parity analysis](native-illustration-lab-parity.md) identifies raw
@@ -40,7 +44,7 @@ browser AO remains explicitly unavailable, not a hidden fallback.
 
 | Demo / audience | Source | Verification on this host | Approved disposition: retain for now |
 | --- | --- | --- | --- |
-| Native Rust API Lab / executable-backed Rust consumers | [source](../../examples/rust/native_viewer/src/main.rs), [guide](../../examples/rust/native_viewer/README.md) | Feature native STEP/illustration/Fast HLR smoke and GPU screenshot inspected on Windows; focused camera/opaque-material/epoch/raster tests. Human UI and Mac acceptance pending. | Keep separate from direct-linked C++; optional Cargo crate, not release-packaged. |
+| Native Rust API Lab / executable-backed Rust consumers | [source](../../examples/rust/native_viewer/src/main.rs), [guide](../../examples/rust/native_viewer/README.md) | Native STEP/illustration/Fast HLR smoke and GPU screenshot inspected on Windows; focused camera/opaque-material/epoch/raster tests. User accepted workflow proof; exhaustive UI and Mac checks deferred. | Keep separate from direct-linked C++; optional Cargo crate, not release-packaged. |
 | Model bounds / generated browser consumers | [page](../../examples/wasm/model_bounds_demo.html) | Real Worker-client validation passed; page interaction not separately tested. | Keep as generated-contract pilot. |
 | HLR Lab / browser integration | [page](../../examples/wasm/embedded_model_viewer.html) | Chrome upload, projection and SVG export passed. | Keep primary browser demo. |
 | Illustration Lab / package evaluation | [page](../../examples/wasm/illustration_demo.html) | Chrome mesh/render/upload/export passed. | Keep evaluation demo; not a production renderer application. |

@@ -10,7 +10,7 @@
 </head>
 <body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
 <main>
-<nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../design/interface-policy.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="interface-policy-and-versioning">Interface Policy And Versioning</h1></header>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/interface-policy.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="interface-policy-and-versioning">Interface Policy And Versioning</h1></header>
 <h2 id="interface-policy">Interface Policy</h2>
 <p>Geometer interfaces must describe generic geometry operations. Keep downstream
 application concepts such as PCB placement policy, Altium/KiCad names,
@@ -49,8 +49,8 @@ geometry transport considered for browser tools.</p>
 <h2 id="version">Version</h2>
 <p>Defined in <code>src/cpp/lib/geometer/version.h</code>.</p>
 <p>Geometer uses date-based release versions per ADR 006. The current package and
-runtime version is <code>2026.9.4</code>, corresponding to release tag <code>v2026-09-04</code>.
-The current C ABI generation is <code>20260904</code>. Consumers should check both the
+runtime version is <code>2026.9.5</code>, corresponding to release tag <code>v2026-09-05</code>.
+The current C ABI generation is <code>20260905</code>. Consumers should check both the
 project version and ABI generation at runtime.</p>
 <pre><code class="language-cpp">struct Version {
     int major = 0;

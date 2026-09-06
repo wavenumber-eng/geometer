@@ -10,7 +10,7 @@
 </head>
 <body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
 <main>
-<nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../developer/README.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="geometer-development">Geometer Development</h1></header>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/developer/README.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="geometer-development">Geometer Development</h1></header>
 <p>This document is the practical setup guide for building, testing, and working on
 Geometer from a fresh checkout.</p>
 <h2 id="project-summary">Project Summary</h2>
@@ -26,7 +26,8 @@ for browser, native CLI, and Python tooling.</p>
 geometry.</li>
 <li>Experimental analytic line/arc planar Boolean solving; retained for research
 and diagnostics, not production use.</li>
-<li>Future STEP mesh/tessellation APIs for browser rendering.</li>
+<li>Colored STEP tessellation and native mesh illustration with optional visible
+HLR composition, exposed through direct C++, IPC, Rust and Python.</li>
 </ul>
 <p>The core library must stay generic. Do not put board placement rules, Altium
 specific names, visualizer policy, or downstream application semantics into
@@ -279,7 +280,9 @@ temporary environment, verifies that Python resolves the bundled executable from
 inside the installed package, imports the public analytic DTO/client surface,
 executes empty and nontrivial analytic IPC calls against that bundled
 executable, verifies the generated <code>geometer</code> console script, and runs the
-headless package example:</p>
+headless package example. It also exercises installed public tessellation,
+illustration, Fast-HLR composition, deterministic SVG, default surface fusion,
+limit recovery and one-shot Python helpers outside the source checkout:</p>
 <pre><code class="language-powershell">uv run python scripts\validate_python_package.py
 </code></pre>
 <p>The wheel build copies the platform executable into
@@ -303,7 +306,7 @@ uv run python scripts/validate_python_package.py --skip-native-validation
 </code></pre>
 <p>Before uploading, verify both the filename and the bundled executable:</p>
 <pre><code class="language-bash">otool -l dist/native/macos-arm64/geometer | rg -A5 'LC_BUILD_VERSION|LC_VERSION_MIN_MACOSX'
-python -m twine check out/wheelhouse/macos-arm64/wn_geometer-2026.9.4-py3-none-macosx_11_0_arm64.whl
+python -m twine check out/wheelhouse/macos-arm64/wn_geometer-2026.9.5-py3-none-macosx_11_0_arm64.whl
 </code></pre>
 <p>The Mach-O <code>minos</code> value must not be newer than the wheel platform tag. Do not
 retag an existing macOS wheel to a lower version without rebuilding native
@@ -326,19 +329,19 @@ that baseline.</p>
 tag.</p>
 <p>PyPI upload commands:</p>
 <pre><code class="language-powershell"># Preflight metadata.
-python -m twine check out\wheelhouse\windows-x64\wn_geometer-2026.9.4-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.4-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.4-py3-none-macosx_11_0_arm64.whl
+python -m twine check out\wheelhouse\windows-x64\wn_geometer-2026.9.5-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.5-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.5-py3-none-macosx_11_0_arm64.whl
 
 # Optional dry-run project on TestPyPI.
-python -m twine upload --repository testpypi out\wheelhouse\windows-x64\wn_geometer-2026.9.4-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.4-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.4-py3-none-macosx_11_0_arm64.whl
+python -m twine upload --repository testpypi out\wheelhouse\windows-x64\wn_geometer-2026.9.5-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.5-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.5-py3-none-macosx_11_0_arm64.whl
 
 # Public PyPI release.
-python -m twine upload --repository pypi out\wheelhouse\windows-x64\wn_geometer-2026.9.4-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.4-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.4-py3-none-macosx_11_0_arm64.whl
+python -m twine upload --repository pypi out\wheelhouse\windows-x64\wn_geometer-2026.9.5-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.5-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.5-py3-none-macosx_11_0_arm64.whl
 </code></pre>
 <p>For token-based upload, set <code>TWINE_USERNAME=__token__</code> and put the PyPI or
 TestPyPI API token in <code>TWINE_PASSWORD</code>, or use an equivalent <code>.pypirc</code>/keyring
 setup. Do not write upload tokens into the repository.</p>
-<p>The current release target is <code>wn-geometer==2026.9.4</code>; callers install
-<code>wn-geometer==2026.9.4</code> and import <code>geometer</code>.</p>
+<p>The current release target is <code>wn-geometer==2026.9.5</code>; callers install
+<code>wn-geometer==2026.9.5</code> and import <code>geometer</code>.</p>
 <p>For local token setup, copy <code>.env.example</code> to <code>.env</code>, fill the token values,
 and keep <code>.env</code> out of version control.</p>
 <h2 id="manual-occt-rebuild">Manual OCCT Rebuild</h2>
@@ -475,11 +478,11 @@ direct byte-buffer calls from JavaScript or a Web Worker.</p>
 <code>geometer_abi_version</code>. Downstream browser consumers should check those before
 depending on a specific ABI. Earlier pre-date ABI integers tracked planar batch,
 diagnostic, and triangulation additions; current releases use the ADR 006
-date-based ABI generation, for example <code>20260904</code>.</p>
+date-based ABI generation, for example <code>20260905</code>.</p>
 <h2 id="versioning">Versioning</h2>
 <p>Geometer follows <a href="../geometer/adr/geometer-adr-006-date_based_versioning_policy.html">ADR 006</a>.
-The current release identity is <code>v2026-09-04</code>; the CMake/PyPI package version
-is <code>2026.9.4</code>; the C ABI generation is <code>20260904</code>.</p>
+The current release identity is <code>v2026-09-05</code>; the CMake/PyPI package version
+is <code>2026.9.5</code>; the C ABI generation is <code>20260905</code>.</p>
 <p>The root <code>CMakeLists.txt</code> declares <code>GEOMETER_RELEASE_DATE</code>,
 <code>GEOMETER_RELEASE_VERSION</code>, and <code>GEOMETER_ABI_VERSION</code>. The root
 <code>pyproject.toml</code> package version must match <code>GEOMETER_RELEASE_VERSION</code>.

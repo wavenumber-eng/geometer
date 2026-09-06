@@ -1,6 +1,6 @@
 # Native illustration API readiness
 
-Feature branch `feature/native-api-rust-demo`, assessed 2026-09-05. The user
+Release target `2026.9.5`, assessed 2026-09-05. The user
 accepted the Rust demo as proof of the workflow; further GUI polish is deferred.
 Native illustration is implemented and exercised on Windows, **not yet a
 qualified public release**.
@@ -21,8 +21,8 @@ and attachment declarations. Wrappers do not maintain another protocol.
 
 Use the complete [STEP-to-SVG examples and limits](../design/mesh-illustration-native.md),
 [Python API guide](../design/python-package.md), and [Rust guide](../design/rust-client.md).
-Clients and executable must match: development builds still say `2026.9.4`,
-but have a different catalog from the previous release. Negotiation checks it.
+Clients and executable catalogs must match. The release requires 2026.9.5 or
+later compatible artifacts; released 2026.9.4 lacks these operations.
 
 `fuse_surfaces` defaults to true. Native composition handles SVG layer order;
 callers supply visible-only polyline HLR for the same millimeter model,
@@ -30,7 +30,7 @@ placement and view. Arbitrary 2D lines cannot authenticate those relationships.
 Experimental AO remains unavailable, raw mesh lines remain diagnostic, and
 the unrelated analytic planar solver has not been promoted.
 
-## Package-level evidence
+## Historical feature-build package evidence
 
 Windows x64 now passes:
 
@@ -69,5 +69,5 @@ is `04da2a7625131b73172e0137879082aef58477693b3154f8b38102a4cd0794e7`.
 Before publication: assign the release version; build the reviewed clean
 revision with qualified OCCT provenance; regenerate matching artifacts; pass
 platform/package/parity and full release gates; publish supported artifacts.
-No tag, push, upload or PyPI release occurred in this readiness pass. Demo
+No tag, push, upload or PyPI release occurred in that feature readiness pass. Demo
 packaging and the later C++ GPU viewer remain separate decisions.

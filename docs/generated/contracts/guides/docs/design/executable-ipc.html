@@ -10,7 +10,7 @@
 </head>
 <body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
 <main>
-<nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../design/executable-ipc.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="calling-the-geometer-executable">Calling The Geometer Executable</h1></header>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/executable-ipc.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="calling-the-geometer-executable">Calling The Geometer Executable</h1></header>
 <p>Use persistent IPC when an application wants to reuse one geometry process and
 exchange model/mesh bytes without temporary files. Start <code>geometer serve --stdio</code>
 through a maintained client. For one-off conversions, the <a href="cli.html">file CLI</a>
@@ -26,7 +26,7 @@ and <a href="python-package.html">Python convenience API</a> are simpler.</p>
 <tbody>
 <tr>
 <td>Python</td>
-<td>Public <code>geometer.GeometerClient</code>: synchronous HLR and experimental analytic convenience calls. The package resolves its bundled executable; <code>executable=</code> selects an explicit compatible binary.</td>
+<td>Public <code>geometer.GeometerClient</code>: synchronous HLR, tessellation, illustration and experimental analytic calls. The package resolves its bundled executable; <code>executable=</code> selects an explicit compatible binary.</td>
 </tr>
 <tr>
 <td>Node/TypeScript</td>
@@ -57,7 +57,7 @@ the process. Substitute your platform executable path on Linux/macOS.
 The source-checkout import points to the distributable package; installed
 package consumers use its exported package specifier above.</p>
 <h2 id="mesh-attachment-example-python">Mesh Attachment Example (Python)</h2>
-<p>Feature builds also offer <a href="mesh-illustration-native.html">native mesh illustration</a>:
+<p>Since 2026.9.5, clients also offer <a href="mesh-illustration-native.html">native mesh illustration</a>:
 Rust/Python accept the shared generated illustration input, send a governed
 colored-mesh attachment and receive the existing A0 SVG result. STEP consumers
 first use <code>model_tessellation</code>; no JavaScript/WASM runtime is needed.</p>

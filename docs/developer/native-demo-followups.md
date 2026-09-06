@@ -1,0 +1,83 @@
+# Native demo scope and deferred validation
+
+The user accepted the Windows Rust API Lab as proof of the native-process
+workflow on 2026-09-05 and prioritized API release over further GUI work.
+The [demo audit](demo-status.md) records observed behavior; the
+[API readiness record](native-api-readiness.md) owns headless qualification.
+Owner for the follow-ups below: Geometer maintainers. These are not claims of
+implemented capabilities or acceptance requirements waived for a future GUI release.
+
+## Two integration boundaries
+
+The optional [Rust Lab](../../examples/rust/native_viewer/README.md) uses
+eframe/egui, wgpu and the public executable-backed Rust client. The retained
+C++ demo directly links Geometer and uses Dear ImGui/SDL3/OpenGL with a software
+depth preview. A Rust success does not qualify the C++ demo or a Mac GUI.
+All demos are retained; pruning requires a separate decision.
+
+## Remaining GUI work
+
+- Build and test the Rust app on actual macOS ARM64 hardware. Record the GUI
+  deployment floor independently of the headless Geometer wheel's floor.
+- Audit both demos at 1280x720 and larger, with narrow left/right controls and
+  Windows 100%, 150% and 200% scaling (Retina on Mac). Test resize, minimize,
+  dialogs, large-model responsiveness, rapid changes, failures and closing
+  during work. Record frame responsiveness separately from geometry duration.
+- Layout persistence/reset, governed style JSON import, standalone linework
+  SVG export and atomic completion of export files remain follow-up expectations;
+  existing geometry/style JSON and illustrated SVG export do not imply all of
+  these are implemented. Never export a silently stale model/view snapshot.
+- The repaired C++ angled body/pin preview still needs final human recheck.
+  Its automatic projected-bounds refit is a known camera limitation.
+- The later C++ GPU replacement should retain direct linking and use a reviewed
+  pinned docking-capable ImGui/SDL GPU integration, D3D12 on Windows and Metal
+  on Mac. Validate backend compatibility, build-time shader tooling and shader
+  source/hash provenance; do not add handwritten per-platform renderers.
+- That C++ track requires hardware depth, explicit opaque-material scope,
+  stable orthographic orbit/pan/zoom with explicit Fit, responsive left/right
+  controls, and off-thread serialized geometry jobs. UI/GPU access stays on the
+  UI thread; revision-tagged results prevent stale publication. Report actual
+  phases/elapsed time, not fabricated percentage or unsupported active cancellation.
+- Reuse native illustration and governed geometry exports; preserve millimeter
+  units, signed axes, placement, mirroring, materials and web SVG semantics.
+  Keep experimental AO and raw diagnostic lines explicit, with no hidden fallback.
+
+## Mac agent handoff
+
+Supply the exact source revision, locked toolchain, artifact hashes, architecture,
+GUI deployment minimum, compatible Geometer executable/catalog, licenses and
+any shaders. Use the Rust README's locked Cargo build on a Mac; the later C++
+app needs its own CMake/Metal build. No Mac GUI artifact is currently qualified.
+
+Test from outside the checkout: executable/asset discovery, actual Metal device,
+trackpad/mouse camera controls, named views, stable camera extent, body/pin
+occlusion, resize/Retina and file dialogs. Include SOT-23, a larger existing STEP
+and a colored-material fixture. Check busy/retry/close behavior and stale-result
+protection. Compare geometry and vector SVG with matching Windows/web inputs;
+open SVG independently. GPU pixels need not be byte-identical across drivers.
+
+Return OS/hardware/GPU, source/artifact hashes, commands, logs, screenshots and
+per-check pass/fail/not-run results. Compilation and interactive acceptance are
+separate. Recheck fixes at a newly identified revision with independent review.
+GUI packaging, installers, signing/notarization and automatic kernel bundling
+remain deferred user decisions, not part of Geometer 2026.9.5 publication.
+
+## Documentation closeout
+
+Measured validation impact: the documentation/promotion selection passed nine
+tests in 0.62 seconds; four existing Chrome demo checks took 25.62 seconds.
+The dependency-free C++ depth regression took 0.01 seconds. Native renderer
+parity covers 40 pure cases and 24 composed TypeScript comparisons, separately
+from the 14 opt-in GUI tests (including 240 web view-preset combinations).
+Installed-wheel checks execute outside the checkout; the clean packaged Rust
+consumer passed in 25.30 seconds. These are Windows feature observations, not
+cross-platform timing guarantees. New checks are indexed in the existing Rack
+strata; interactive GPU qualification is distinct from headless release gates.
+
+Temporary documentation/API execution plans were retired for release after
+transferring current interfaces, TypeSpec migration gaps, demo dispositions,
+validation evidence and these unfinished GUI requirements into maintained docs.
+Their full content remains in Git history at `8a57634`; retiring the working
+plans does not mark the deferred tasks above complete. The documentation
+cleanup's runtime checks and independent reviews are summarized in the demo
+audit, documentation-maintenance guide and native API readiness record.

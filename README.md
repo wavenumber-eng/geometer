@@ -11,7 +11,7 @@ application rendering decisions belong to callers, not the geometry kernel.
 | --- | --- |
 | STEP bounds, GLB conversion, HLR, planar STEP synthesis | Supported geometry APIs. Model bounds has promoted generated contracts; HLR's generated contracts remain pilots. |
 | Clipper2 Boolean/offset, planar batch solve and triangulation | Supported polygonized planar workflows; packed interfaces remain handwritten. |
-| Fast vector HLR and browser mesh illustration | Supported package interfaces; the demonstration applications are evaluation tools, not production renderers. |
+| Fast vector HLR, colored STEP tessellation and mesh illustration | Browser APIs plus direct C++, native IPC, Rust and Python illustration since 2026.9.5; see the [STEP-to-SVG guide](docs/design/mesh-illustration-native.md). Demo applications are evaluation tools, not production renderers. |
 | Analytic line/arc planar Boolean | Experimental, not production-ready. May fail closed on valid inputs. Not the dependable whole-board/layer copper-union path; prefer Clipper2 when polygonized output is suitable. |
 | Persistent STEP-topology sessions | Experimental native-only subset. Structural declarations do not imply runtime availability. |
 

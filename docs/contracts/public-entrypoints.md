@@ -1,7 +1,6 @@
 # Public Entry-Point Reconciliation
 
-Release baseline `v2026-09-04`, with explicitly labeled native development
-additions below. This maps semantic operations separately from
+Release target `v2026-09-05`. This maps semantic operations separately from
 aliases, byte projections and implementation helpers. The
 [generated inventory](../generated/contracts/coverage.html) supplies individual
 operation/root identities; the [source review lock](public-surface-review.json)
@@ -21,8 +20,8 @@ in that boundary requires documentation review, not automatic promotion.
 | Triangulation, Clipper2 Boolean/open inflate | `planar_triangulate.h`, `clipper2_bytes.h`; matching C ABI and WASM functions | No invented public Python/Rust convenience method; use documented existing byte boundary | Wave 2, then wave 4; three distinct operation families. |
 | Analytic Boolean batch | `analytic_filtered_batch.h`, generic dispatch; packed request/result projections | Python/TS/Rust analytic convenience calls | Logical candidate generated; packed codec remains handwritten. Wave 0 inventory and wave 4 codec assessment, never a production-promotion claim. |
 | Topology sessions and mutations | `step_topology_session.h`; nine native IPC operations and three structural-only declarations | Generic generated clients plus native Node research reference | Wave 0 preserves each operation's availability. Save/analyze-recovery/apply-hierarchy are not executable capabilities. |
-| Colored model tessellation (development) | `model_tessellation.h`; governed native IPC operation | Typed Rust/Python executable methods | Generated mesh collection/request/result/operation; unreleased candidate. |
-| Mesh illustration | Browser renderer; unreleased direct C++ `mesh_illustration.h` and `geometry.mesh_illustration.a0` native operation | Browser exports, typed Rust/Python executable methods and Python one-shot helper | Existing generated A0 input/style/result reused; generated settings plus mesh attachment and optional bounded HLR-result attachment. Native composition handles selected detail/outline ordering. See [native boundary](../design/mesh-illustration-native.md). |
+| Colored model tessellation | `model_tessellation.h`; governed native IPC operation since 2026.9.5 | Typed Rust/Python executable methods and Python one-shot helper | Generated mesh collection/request/result/operation. |
+| Mesh illustration | Browser renderer; direct C++ `mesh_illustration.h` and `geometry.mesh_illustration.a0` native operation since 2026.9.5 | Browser exports, typed Rust/Python executable methods and Python one-shot helper | Existing generated A0 input/style/result reused; generated settings plus mesh attachment and optional bounded HLR-result attachment. Native composition handles selected detail/outline ordering. See [native boundary](../design/mesh-illustration-native.md). |
 
 ## Helpers, Aliases And Ownership Are Not Additional Wire Operations
 

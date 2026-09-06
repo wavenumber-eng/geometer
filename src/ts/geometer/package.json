@@ -1,6 +1,6 @@
 {
   "name": "@wavenumber/geometer",
-  "version": "2026.9.4",
+  "version": "2026.9.5",
   "description": "Generated Geometer contracts and direct plus Worker browser WASM clients",
   "license": "MIT",
   "type": "module",

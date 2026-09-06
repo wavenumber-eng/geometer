@@ -10,7 +10,7 @@
 </head>
 <body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
 <main>
-<nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../contracts/typespec-coverage-assessment.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="typespec-coverage-and-alx-html-generation-assessment">TypeSpec Coverage And ALX HTML Generation Assessment</h1></header>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/contracts/typespec-coverage-assessment.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="typespec-coverage-and-alx-html-generation-assessment">TypeSpec Coverage And ALX HTML Generation Assessment</h1></header>
 <p>Assessment date: 2026-09-05. Geometer baseline: <code>v2026-09-04</code> plus ADR-017.
 ALX reference: the local <code>appz/data_models</code> checkout at appz revision
 <code>27a6c567d69c3a61f367774aed5dcab6fc09164a</code>. The inspected ALX generator and
@@ -92,8 +92,10 @@ adapter; adding a TypeSpec declaration alone does not expose a solver via IPC.</
 around an opaque packet is operation coverage but leaves that packet's internal
 layout and codec handwritten. Model all public operations, including retained
 compatibility entry points, without treating every CLI alias as a new semantic
-operation. Browser-only illustration has generated contracts but executes in
-TypeScript; document that boundary rather than promising executable support.</p>
+operation. Illustration now reuses its generated contracts across the browser
+TypeScript renderer and the native C++/IPC implementation in 2026.9.5. Colored
+STEP tessellation is also governed and callable through Rust and Python. These
+additions do not complete the legacy-operation or packed-codec migration waves.</p>
 <h2 id="proposed-migration-waves">Proposed Migration Waves</h2>
 <p>The <a href="public-entrypoints.html">public entry-point reconciliation</a> maps current
 user-facing families, aliases, native helper boundaries and client exports.

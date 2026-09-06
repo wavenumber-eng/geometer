@@ -8,13 +8,13 @@ TypeSpec catalog. The live client spawns one persistent native
 `geometer(.exe) serve --stdio` process and executes model bounds, model/mesh
 HLR, and analytic planar Boolean through their governed attachments.
 
-Feature builds additionally provide typed `model_tessellation` and
+Since 2026.9.5, the client additionally provides typed `model_tessellation` and
 `mesh_illustration` methods using generated A0 values. Optional
 `mesh_illustration_with_hlr(input, hlr)` returns the native composed SVG with
 visibility-filtered outline/detail; consumers do not arrange SVG layers. The complete
 [native STEP-to-SVG example](mesh-illustration-native.md) needs no JS/WASM runtime
-or handwritten subprocess protocol. These additions require a matching feature
-executable and are not available in the previous release.
+or handwritten subprocess protocol. These additions require a matching catalog
+and a compatible 2026.9.5 or later executable.
 
 The analytic operation is experimental and not production-ready. It may fail
 closed on valid inputs and is not the dependable path for whole-board or
@@ -71,10 +71,10 @@ catalog, then regenerate all bindings, rather than add handwritten Rust
 dispatch cases. Attachment and runtime-availability checks still use the
 negotiated operation declaration; packed packet dispatch stays separate.
 
-The feature-build `model_tessellation()` facade returns colored millimeter
+The `model_tessellation()` facade returns colored millimeter
 meshes through a generated attachment contract. See
 [model tessellation A0](model-tessellation-a0.md) for defaults, limits and current
-release-qualification status. It requires a matching feature executable; it is
+release-qualification status. It requires a matching executable; it is
 not present in the released 2026.9.4 binary.
 
 ## Client lifecycle

@@ -9,7 +9,7 @@ and [Python convenience API](python-package.md) are simpler.
 
 | Consumer | Maintained boundary |
 | --- | --- |
-| Python | Public `geometer.GeometerClient`: synchronous HLR and experimental analytic convenience calls. The package resolves its bundled executable; `executable=` selects an explicit compatible binary. |
+| Python | Public `geometer.GeometerClient`: synchronous HLR, tessellation, illustration and experimental analytic calls. The package resolves its bundled executable; `executable=` selects an explicit compatible binary. |
 | Node/TypeScript | `GeometerNodeProcessA0` from `@wavenumber/geometer/node-process-a0`: process ownership plus typed generic IPC calls. |
 | Rust | `geometer-client`: generated contracts and Tokio executable client; see [Rust client](rust-client.md). |
 | Implementing a new transport/client | [A0 framing and lifecycle specification](executable-ipc-a0.md), not a hand-built application protocol. |
@@ -36,7 +36,7 @@ package consumers use its exported package specifier above.
 
 ## Mesh Attachment Example (Python)
 
-Feature builds also offer [native mesh illustration](mesh-illustration-native.md):
+Since 2026.9.5, clients also offer [native mesh illustration](mesh-illustration-native.md):
 Rust/Python accept the shared generated illustration input, send a governed
 colored-mesh attachment and receive the existing A0 SVG result. STEP consumers
 first use `model_tessellation`; no JavaScript/WASM runtime is needed.

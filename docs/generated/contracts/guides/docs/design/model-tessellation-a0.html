@@ -10,8 +10,8 @@
 </head>
 <body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
 <main>
-<nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../design/model-tessellation-a0.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="colored-model-tessellation-a0">Colored model tessellation A0</h1></header>
-<p>Development candidate, not yet release-qualified on all four native platforms.
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/model-tessellation-a0.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="colored-model-tessellation-a0">Colored model tessellation A0</h1></header>
+<p>Introduced in 2026.9.5; see <a href="../developer/native-api-readiness.html">release qualification</a>.
 <code>geometry.model_tessellation.a0</code> is a stateless STEP-to-colored-mesh operation.
 Its TypeSpec definitions live in <code>src/tsp/geometer/operations/model-tessellation-a0.tsp</code>;
 the catalog generates C++, Rust, Python, TypeScript, JSON Schema and HTML.
@@ -52,7 +52,7 @@ While serving IPC, OCCT diagnostics go to stderr, never the binary stdout stream
 <p>These are input/output acceptance limits, <strong>not a hard peak-memory or CPU bound
 inside OCCT</strong>. STEP transfer and meshing precede output validation; generated
 JSON serialization also has transient allocation costs. Do not use this
-development candidate as an untrusted-model sandbox. Active OCCT work cannot be
+operation as an untrusted-model sandbox. Active OCCT work cannot be
 queue-cancelled; use the existing client timeout/process-termination semantics
 and OS-level resource isolation where required.</p>
 <h2 id="rust-and-python">Rust and Python</h2>
@@ -67,13 +67,14 @@ with geometer.GeometerClient() as client:
     result = client.model_tessellation(step_bytes)
     meshes = result.mesh_collection.meshes
 </code></pre>
-<p>Use a feature-built executable matching the generated catalog. Source Rust
+<p>Use a 2026.9.5 or later compatible executable matching the generated catalog. Source Rust
 process tests accept <code>GEOMETER_EXECUTABLE</code>; Python uses <code>GEOMETER_EXE</code>. Released
 2026.9.4 executables do not advertise this operation. A generated TypeScript DTO
 does not prove that an older browser WASM binary supports the new operation.</p>
-<p>This operation is the input boundary for the forthcoming Rust GPU preview and
-native illustration. It does <strong>not</strong> implement illustration: the shared vector
-compositor and composed Fast HLR operation remain separate work.</p>
+<p>This operation supplies the <a href="../../../../../../examples/rust/native_viewer/README.md">Rust GPU preview</a>
+and <a href="mesh-illustration-native.html">native illustration</a>. Tessellation itself does
+not render SVG: call mesh illustration next, optionally supplying the visible
+result of a separate Fast HLR request for native line composition.</p>
 
 </main>
 </body>

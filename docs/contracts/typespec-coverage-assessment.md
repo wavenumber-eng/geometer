@@ -65,8 +65,10 @@ Count operation coverage and payload coverage separately. A generated envelope
 around an opaque packet is operation coverage but leaves that packet's internal
 layout and codec handwritten. Model all public operations, including retained
 compatibility entry points, without treating every CLI alias as a new semantic
-operation. Browser-only illustration has generated contracts but executes in
-TypeScript; document that boundary rather than promising executable support.
+operation. Illustration now reuses its generated contracts across the browser
+TypeScript renderer and the native C++/IPC implementation in 2026.9.5. Colored
+STEP tessellation is also governed and callable through Rust and Python. These
+additions do not complete the legacy-operation or packed-codec migration waves.
 
 ## Proposed Migration Waves
 

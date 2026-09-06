@@ -1,6 +1,6 @@
 # Colored model tessellation A0
 
-Development candidate, not yet release-qualified on all four native platforms.
+Introduced in 2026.9.5; see [release qualification](../developer/native-api-readiness.md).
 `geometry.model_tessellation.a0` is a stateless STEP-to-colored-mesh operation.
 Its TypeSpec definitions live in `src/tsp/geometer/operations/model-tessellation-a0.tsp`;
 the catalog generates C++, Rust, Python, TypeScript, JSON Schema and HTML.
@@ -49,7 +49,7 @@ While serving IPC, OCCT diagnostics go to stderr, never the binary stdout stream
 These are input/output acceptance limits, **not a hard peak-memory or CPU bound
 inside OCCT**. STEP transfer and meshing precede output validation; generated
 JSON serialization also has transient allocation costs. Do not use this
-development candidate as an untrusted-model sandbox. Active OCCT work cannot be
+operation as an untrusted-model sandbox. Active OCCT work cannot be
 queue-cancelled; use the existing client timeout/process-termination semantics
 and OS-level resource isolation where required.
 
@@ -70,11 +70,12 @@ with geometer.GeometerClient() as client:
     meshes = result.mesh_collection.meshes
 ```
 
-Use a feature-built executable matching the generated catalog. Source Rust
+Use a 2026.9.5 or later compatible executable matching the generated catalog. Source Rust
 process tests accept `GEOMETER_EXECUTABLE`; Python uses `GEOMETER_EXE`. Released
 2026.9.4 executables do not advertise this operation. A generated TypeScript DTO
 does not prove that an older browser WASM binary supports the new operation.
 
-This operation is the input boundary for the forthcoming Rust GPU preview and
-native illustration. It does **not** implement illustration: the shared vector
-compositor and composed Fast HLR operation remain separate work.
+This operation supplies the [Rust GPU preview](../../examples/rust/native_viewer/README.md)
+and [native illustration](mesh-illustration-native.md). Tessellation itself does
+not render SVG: call mesh illustration next, optionally supplying the visible
+result of a separate Fast HLR request for native line composition.

@@ -18,13 +18,12 @@ From the repository root, with Rust 1.95.0 and a native linker:
 
 ```powershell
 cargo build --manifest-path examples/rust/native_viewer/Cargo.toml --locked
-examples/rust/native_viewer/target/debug/geometer-native-viewer.exe --geometer out/docs-cleanup/native-build/src/cpp/cli/geometer.exe --step tests/fixtures/step/embedded_models/SOT-23.STEP
+examples/rust/native_viewer/target/debug/geometer-native-viewer.exe --geometer dist/native/windows-x64/geometer.exe --step tests/fixtures/step/embedded_models/SOT-23.STEP
 ```
 
-The executable shown above is a local feature build, not a packaged dependency.
-Use an executable built from the same revision/catalog. The previous 2026.9.4
-release is incompatible with these additive operations even though development
-builds have not yet changed the release version. Negotiation rejects mismatches;
+Use a 2026.9.5 or later compatible executable built with the same catalog as
+the client. The previous 2026.9.4 release does not provide these additive
+operations. Negotiation rejects mismatches;
 the demo never downloads an executable or silently switches renderers.
 
 `--geometer PATH` overrides maintained-client discovery: `GEOMETER_EXECUTABLE`,

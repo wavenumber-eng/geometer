@@ -60,7 +60,7 @@ export async function generateGuides(root, output) {
       title: `${title} — Geometer`,
       depth: destination.split("/").length - 1,
       bodyAttributes: 'data-page-kind="guide" data-authority="authored-markdown"',
-      content: `<nav class="nav"><a href="${escapeMarkup(relativeLink(resolve(output, "guides.html")))}">Documentation index</a><a href="${escapeMarkup(relativeLink(resolve(root, source)))}">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside>${rendered}`,
+      content: `<nav class="nav"><a href="${escapeMarkup(relativeLink(resolve(output, "guides.html")))}">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>${escapeMarkup(source)}</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside>${rendered}`,
     });
   }
   pages.push({

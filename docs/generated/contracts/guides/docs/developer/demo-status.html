@@ -10,11 +10,13 @@
 </head>
 <body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
 <main>
-<nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../developer/demo-status.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="demo-and-example-audit">Demo And Example Audit</h1></header>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/developer/demo-status.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="demo-and-example-audit">Demo And Example Audit</h1></header>
 <p>Audited 2026-09-05 using committed <code>v2026-09-04</code> Windows x64/native and
 browser artifacts. Owner for all retained entries: Geometer maintainers;
 application-specific consumers retain their own support responsibility.
 Passing a demo does not promote its solver. No demo has been deleted.</p>
+<p>See <a href="native-demo-followups.html">native demo follow-ups</a> for remaining C++ GPU
+requirements, deferred UI acceptance and the separate Mac agent handoff.</p>
 <p>User decision on 2026-09-05: retain all 11 demos/examples for now. Pruning is
 deferred to a separate explicitly approved change. Retention does not alter
 experimental maturity or resolve the verification gaps recorded below.</p>
@@ -31,8 +33,9 @@ is a twelfth entry added on the native API feature branch, not a replacement
 for the 11 retained demos. It uses the maintained Rust executable client and
 TypeSpec-generated contracts. Windows Radeon RX 7600 XT/Vulkan smoke produced
 colored STEP triangles, native illustrated SVG and separate Fast HLR layers;
-the app-window screenshot was inspected. Full mouse/docking/resize acceptance
-and macOS build/Metal testing remain pending. The 3D preview is explicitly
+the app-window screenshot was inspected. The user accepted this Rust workflow
+proof; further GUI polish, exhaustive mouse/docking/resize checks and macOS
+build/Metal testing are deferred. The 3D preview is explicitly
 opaque; native SVG preserves source opacity. Public packaging is deferred.</p>
 <p>The <a href="native-illustration-lab-parity.html">Lab parity analysis</a> identifies raw
 mesh lines drawn over foreground surfaces: the browser Lab disables them and
@@ -56,7 +59,7 @@ browser AO remains explicitly unavailable, not a hidden fallback.</p>
 <tr>
 <td>Native Rust API Lab / executable-backed Rust consumers</td>
 <td><a href="../../../../../../examples/rust/native_viewer/src/main.rs">source</a>, <a href="../../../../../../examples/rust/native_viewer/README.md">guide</a></td>
-<td>Feature native STEP/illustration/Fast HLR smoke and GPU screenshot inspected on Windows; focused camera/opaque-material/epoch/raster tests. Human UI and Mac acceptance pending.</td>
+<td>Native STEP/illustration/Fast HLR smoke and GPU screenshot inspected on Windows; focused camera/opaque-material/epoch/raster tests. User accepted workflow proof; exhaustive UI and Mac checks deferred.</td>
 <td>Keep separate from direct-linked C++; optional Cargo crate, not release-packaged.</td>
 </tr>
 <tr>

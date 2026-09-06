@@ -10,8 +10,8 @@
 </head>
 <body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
 <main>
-<nav class="nav"><a href="../../../guides.html">Documentation index</a><a href="../../../../../developer/native-api-readiness.md">Authored Markdown</a></nav><aside class="callout">Generated presentation of authored documentation. Edit the linked Markdown source, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="native-illustration-api-readiness">Native illustration API readiness</h1></header>
-<p>Feature branch <code>feature/native-api-rust-demo</code>, assessed 2026-09-05. The user
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/developer/native-api-readiness.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="native-illustration-api-readiness">Native illustration API readiness</h1></header>
+<p>Release target <code>2026.9.5</code>, assessed 2026-09-05. The user
 accepted the Rust demo as proof of the workflow; further GUI polish is deferred.
 Native illustration is implemented and exercised on Windows, <strong>not yet a
 qualified public release</strong>.</p>
@@ -58,14 +58,14 @@ or static-link binding. TypeSpec-generated contracts govern values, discovery
 and attachment declarations. Wrappers do not maintain another protocol.</p>
 <p>Use the complete <a href="../design/mesh-illustration-native.html">STEP-to-SVG examples and limits</a>,
 <a href="../design/python-package.html">Python API guide</a>, and <a href="../design/rust-client.html">Rust guide</a>.
-Clients and executable must match: development builds still say <code>2026.9.4</code>,
-but have a different catalog from the previous release. Negotiation checks it.</p>
+Clients and executable catalogs must match. The release requires 2026.9.5 or
+later compatible artifacts; released 2026.9.4 lacks these operations.</p>
 <p><code>fuse_surfaces</code> defaults to true. Native composition handles SVG layer order;
 callers supply visible-only polyline HLR for the same millimeter model,
 placement and view. Arbitrary 2D lines cannot authenticate those relationships.
 Experimental AO remains unavailable, raw mesh lines remain diagnostic, and
 the unrelated analytic planar solver has not been promoted.</p>
-<h2 id="package-level-evidence">Package-level evidence</h2>
+<h2 id="historical-feature-build-package-evidence">Historical feature-build package evidence</h2>
 <p>Windows x64 now passes:</p>
 <ul>
 <li>A real wheel installed in a fresh virtual environment, executing outside the
@@ -119,7 +119,7 @@ is <code>04da2a7625131b73172e0137879082aef58477693b3154f8b38102a4cd0794e7</code>
 <p>Before publication: assign the release version; build the reviewed clean
 revision with qualified OCCT provenance; regenerate matching artifacts; pass
 platform/package/parity and full release gates; publish supported artifacts.
-No tag, push, upload or PyPI release occurred in this readiness pass. Demo
+No tag, push, upload or PyPI release occurred in that feature readiness pass. Demo
 packaging and the later C++ GPU viewer remain separate decisions.</p>
 
 </main>

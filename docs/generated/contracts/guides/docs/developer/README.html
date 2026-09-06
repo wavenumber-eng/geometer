@@ -327,6 +327,27 @@ that baseline.</p>
 </code></pre>
 <p><code>auditwheel show</code> should not report a newer glibc floor than the wheel filename
 tag.</p>
+<h3 id="public-release-workflow">Public release workflow</h3>
+<p>The normal publication path is <a href="../../../../../../.github/workflows/release.yml">Publish</a>,
+triggered by publishing a GitHub release. Prepare the UTC date version, release
+notes, generated contracts/docs and a release PR first. Require the
+<a href="../../../../../../.github/workflows/ci.yml">CI</a> four-platform native/client/installed-wheel
+matrix, L99 and standards checks, plus <a href="../../../../../../.github/workflows/wasm.yml">WASM</a>
+browser and cross-transport checks before tagging. Inspect native artifact
+attestations for clean source and verified OCCT provenance, then refresh
+committed <code>dist/</code> outputs from those qualified builds. Do not publish a local
+development wheel or change attestation fields to make it qualify.</p>
+<p>After the reviewed release PR merges, tag its exact revision and publish the
+GitHub release using the dated notes. Publish rebuilds and tests Windows x64,
+Linux x64, Linux ARM64 and macOS ARM64 wheels plus WASM, uploads GitHub assets
+and checksums, and publishes wheels through PyPI trusted publishing. Verify
+workflow completion, release assets and PyPI version/platform files. Then
+install from PyPI in WSL2 and run the headless package example (REQ-006),
+including the installed native illustration workflow. Native Rust GUI binaries
+remain outside release packaging pending a separate decision.</p>
+<p>The commands below are optional manual upload procedures, not a bypass of the
+same qualification gates. Include every supported platform, including Linux
+ARM64, when performing a complete manual release.</p>
 <p>PyPI upload commands:</p>
 <pre><code class="language-powershell"># Preflight metadata.
 python -m twine check out\wheelhouse\windows-x64\wn_geometer-2026.9.6-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.6-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.6-py3-none-macosx_11_0_arm64.whl

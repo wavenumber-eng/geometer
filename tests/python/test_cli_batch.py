@@ -479,7 +479,7 @@ def test_python_batch_runner_chunks_jobs(tmp_path: Path) -> None:
         chunk_size=3,
         work_dir=tmp_path / "batches",
     )
-    assert runner.version().string == "2026.9.4"
+    assert runner.version().string == "2026.9.6"
     result = runner.run(
         jobs,
         options={
@@ -492,8 +492,8 @@ def test_python_batch_runner_chunks_jobs(tmp_path: Path) -> None:
     assert [job["id"] for job in result.jobs] == [f"projection-{index}" for index in range(7)]
     assert [batch["job_count"] for batch in result.batches] == [3, 3, 1]
     assert result.work_dir == tmp_path / "batches"
-    assert result.version == "2026.9.4"
-    assert result.abi == 20260904
+    assert result.version == "2026.9.6"
+    assert result.abi == 20260906
     for output_path in outputs:
         payload = json.loads(output_path.read_text(encoding="utf-8"))
         assert payload["views"][0]["id"] == "chunked-top"

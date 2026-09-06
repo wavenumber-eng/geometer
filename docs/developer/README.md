@@ -415,6 +415,31 @@ uvx --from auditwheel --with patchelf auditwheel show out/wheelhouse/linux-x64/w
 `auditwheel show` should not report a newer glibc floor than the wheel filename
 tag.
 
+### Public release workflow
+
+The normal publication path is [Publish](../../.github/workflows/release.yml),
+triggered by publishing a GitHub release. Prepare the UTC date version, release
+notes, generated contracts/docs and a release PR first. Require the
+[CI](../../.github/workflows/ci.yml) four-platform native/client/installed-wheel
+matrix, L99 and standards checks, plus [WASM](../../.github/workflows/wasm.yml)
+browser and cross-transport checks before tagging. Inspect native artifact
+attestations for clean source and verified OCCT provenance, then refresh
+committed `dist/` outputs from those qualified builds. Do not publish a local
+development wheel or change attestation fields to make it qualify.
+
+After the reviewed release PR merges, tag its exact revision and publish the
+GitHub release using the dated notes. Publish rebuilds and tests Windows x64,
+Linux x64, Linux ARM64 and macOS ARM64 wheels plus WASM, uploads GitHub assets
+and checksums, and publishes wheels through PyPI trusted publishing. Verify
+workflow completion, release assets and PyPI version/platform files. Then
+install from PyPI in WSL2 and run the headless package example (REQ-006),
+including the installed native illustration workflow. Native Rust GUI binaries
+remain outside release packaging pending a separate decision.
+
+The commands below are optional manual upload procedures, not a bypass of the
+same qualification gates. Include every supported platform, including Linux
+ARM64, when performing a complete manual release.
+
 PyPI upload commands:
 
 ```powershell

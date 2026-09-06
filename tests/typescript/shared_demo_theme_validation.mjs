@@ -18,12 +18,15 @@ if (!theme.includes('font-family: "JetBrains Mono"')) {
 if (!theme.includes("border-radius: 0 !important")) {
   throw new Error("Shared demo theme must enforce flat component geometry.");
 }
-for (const stylesheet of [theme, designTheme]) {
+for (const [stylesheet, accent, background, label] of [
+  [theme, "#b45309", "#fff1e6", "Demo orange"],
+  [designTheme, "#006c67", "#e5f3f0", "ALX documentation teal"],
+]) {
   if (
-    !stylesheet.includes("--wn-accent: #b45309;") ||
-    !stylesheet.includes("--wn-accent-bg: #fff1e6;")
+    !stylesheet.includes(`--wn-accent: ${accent};`) ||
+    !stylesheet.includes(`--wn-accent-bg: ${background};`)
   ) {
-    throw new Error("Shared visual-system highlights must use the governed orange palette.");
+    throw new Error(`${label} highlights must use their governed palette.`);
   }
 }
 for (const rootSelector of ["#pour-shell", ".illustration-app", ".bounds-app", "#pcb-shell"]) {

@@ -1,16 +1,26 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { illustrateMesh } from "../../dist/wasm/npm/geometer/mesh-illustration.js";
 import { nativeIllustrationFixtures } from "./native_illustration_fixtures.mjs";
 
-const executable = resolve(
-  process.argv[2] ??
-    process.env.GEOMETER_ILLUSTRATION_TEST ??
-    `build/tests/cpp/geometer_mesh_illustration_test${process.platform === "win32" ? ".exe" : ""}`,
-);
+const platformDirectory = {
+  "win32-x64": "windows-x64",
+  "darwin-arm64": "macos-arm64",
+  "linux-x64": "linux-x64",
+  "linux-arm64": "linux-arm64",
+}[`${process.platform}-${process.arch}`];
+const testName = `geometer_mesh_illustration_test${process.platform === "win32" ? ".exe" : ""}`;
+const explicitExecutable = process.argv[2] ?? process.env.GEOMETER_ILLUSTRATION_TEST;
+const executable = explicitExecutable
+  ? resolve(explicitExecutable)
+  : [
+      ...(platformDirectory ? [`build-native-${platformDirectory}/tests/cpp/${testName}`] : []),
+      `build/tests/cpp/${testName}`,
+    ].map((path) => resolve(path)).find(existsSync);
+assert.ok(executable, "Build the current platform's geometer_mesh_illustration_test target first.");
 const temporary = mkdtempSync(join(tmpdir(), "geometer-illustration-parity-"));
 const fixtures = nativeIllustrationFixtures();
 function native(args) {

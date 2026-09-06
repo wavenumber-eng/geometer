@@ -1,6 +1,21 @@
 {
   "files": [
     {
+      "bytes": 94588,
+      "path": "JetBrainsMono-Bold.woff2",
+      "sha256": "c503cc5ec5f8b2c7666b7ecda1adf44bd45f2e6579b2eba0fc292150416588a2"
+    },
+    {
+      "bytes": 4398,
+      "path": "JetBrainsMono-OFL.txt",
+      "sha256": "60d55f23c6ce05a81099a762cb67ca2c9b6ea251c7912720998b4c89ebfd4faa"
+    },
+    {
+      "bytes": 92164,
+      "path": "JetBrainsMono-Regular.woff2",
+      "sha256": "a9cb1cd82332b23a47e3a1239d25d13c86d16c4220695e34b243effa999f45f2"
+    },
+    {
       "bytes": 733,
       "path": "_headers",
       "sha256": "a0e49c68d9da8d89214044ee52904352a40ecdd8540aae44a182f3b90b992fae"
@@ -33,12 +48,12 @@
     {
       "bytes": 163460,
       "path": "geometer.js",
-      "sha256": "b966f2da17e3cfdcfbaf43eaf71b71518e28adfb689eb9c552e5fc6d967fe90e"
+      "sha256": "361d29258cf29ffa7d2a2e1a33cc66f2a95b3a5cfb906535756b445ed9466d42"
     },
     {
-      "bytes": 19066970,
+      "bytes": 19318500,
       "path": "geometer.wasm",
-      "sha256": "78fc2b0e85e6298dc43d1da9513c7611b229377607ea6ae2fe3bab995cfdfdb7"
+      "sha256": "155488af70d53ff1e0afe41beafc7edc3240b8943fd4ba6e52abbb69be5a1f6a"
     },
     {
       "bytes": 33342,
@@ -51,19 +66,9 @@
       "sha256": "13320a8b241c0b812722ed87cc0c56b5f0ea2e0be16c98af2e4796a96a8f85fd"
     },
     {
-      "bytes": 94588,
-      "path": "JetBrainsMono-Bold.woff2",
-      "sha256": "c503cc5ec5f8b2c7666b7ecda1adf44bd45f2e6579b2eba0fc292150416588a2"
-    },
-    {
-      "bytes": 4398,
-      "path": "JetBrainsMono-OFL.txt",
-      "sha256": "60d55f23c6ce05a81099a762cb67ca2c9b6ea251c7912720998b4c89ebfd4faa"
-    },
-    {
-      "bytes": 92164,
-      "path": "JetBrainsMono-Regular.woff2",
-      "sha256": "a9cb1cd82332b23a47e3a1239d25d13c86d16c4220695e34b243effa999f45f2"
+      "bytes": 6042,
+      "path": "package/README.md",
+      "sha256": "72402bc9f5dd33ce45ce6eb16697ceda1f54de96e42578e81d510f7ab204daeb"
     },
     {
       "bytes": 4160,
@@ -126,19 +131,19 @@
       "sha256": "fa949ab7bb094df35c3fb5bb90dc050a2e2ea72ad0b5e824ff334834a9c74cae"
     },
     {
-      "bytes": 10413,
+      "bytes": 11353,
       "path": "package/generated/codecs.d.ts",
-      "sha256": "0380107fe8c9a1ec06cced2134a8d56120135d9672a26f9ebe48e7fff65bb0d9"
+      "sha256": "1a38fa1058313fdac21086c134dc9ae4e312a3b866ec81a4fc1bfcc53ee9fe05"
     },
     {
-      "bytes": 214997,
+      "bytes": 224204,
       "path": "package/generated/codecs.js",
-      "sha256": "3ca950d49457317062ab0e854ee5bf3fecb90a133bdccad70cae7f9ebc129bd3"
+      "sha256": "1ae9987729eac8ff2efe119f9c1a8a47a3202d541dee4ae3ff2a8b0a90bc2a4e"
     },
     {
-      "bytes": 54172,
+      "bytes": 56553,
       "path": "package/generated/contracts.d.ts",
-      "sha256": "5178d1e7801920208eaab6791c929ebd28717e97d81a9a0d5a5f9692ad26aa78"
+      "sha256": "538b3dcf0a313e41364bd6863b68376c3b6bd9794a87f2c49747dc8ba333604f"
     },
     {
       "bytes": 80,
@@ -156,14 +161,14 @@
       "sha256": "6e4731631af8b7473f72ecb2d014453cfa89d93f2b3d4b4b6a14f7d9be60145a"
     },
     {
-      "bytes": 13276,
+      "bytes": 15455,
       "path": "package/generated/operations.d.ts",
-      "sha256": "48ff69db7c87e59b69b7cd5a7a70ff1cdf5a02303d32fc4f9fc41287a433c2be"
+      "sha256": "74f1b1b26c9bfaed7867b712a8b3dd90648b8d03cf919f1c9b30d3e96376c634"
     },
     {
-      "bytes": 11301,
+      "bytes": 13245,
       "path": "package/generated/operations.js",
-      "sha256": "77ee92cd2a1a162354c545a1d0981c05fac1bdbc4d4e000d295b39442f217451"
+      "sha256": "0d099386b5e916756a5e874341d56e82f2cda916ffdcdcc30c7abd9d59a1e042"
     },
     {
       "bytes": 1891,
@@ -231,9 +236,9 @@
       "sha256": "ffdf33cbe05012136dac97fe6cebb981d394e5956614b1bcabcc8a9116d5e4df"
     },
     {
-      "bytes": 79268,
+      "bytes": 79690,
       "path": "package/mesh-illustration.js",
-      "sha256": "3685af7593a48163b8af9947f8356d66d647379c4836b8c04b9fb55f80c0f27d"
+      "sha256": "35cd8a009134488c9c52882b357584e54a53aaef984c77a885bc0fcdcbc30b1e"
     },
     {
       "bytes": 1069,
@@ -258,12 +263,7 @@
     {
       "bytes": 1437,
       "path": "package/package.json",
-      "sha256": "02d3b583c70a755cc4867b86a0264b6050cc500c0e6c08a6e4810482e7d8afe7"
-    },
-    {
-      "bytes": 6042,
-      "path": "package/README.md",
-      "sha256": "72402bc9f5dd33ce45ce6eb16697ceda1f54de96e42578e81d510f7ab204daeb"
+      "sha256": "0aa9e0175ac105e7b5e1c0fa89855d1500db4c28885bbb74a1cbe6710185acfd"
     },
     {
       "bytes": 3832,
@@ -312,5 +312,5 @@
     }
   ],
   "schema": "wn.geometer.static_site.a0",
-  "sha256": "9cbd83fff9456690d7f0ce5d1dcc66b05ce947587306b50e8202cbd543800109"
+  "sha256": "a61f01e34a5a7863c446e75bf6ea8f23bb272be189942cad0bcd8ff65f802a17"
 }

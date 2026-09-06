@@ -50,7 +50,7 @@ def test_version_reports_geometer_abi() -> None:
     assert version.string == "2026.9.6"
     assert version.major == 2026
     assert version.minor == 9
-    assert version.patch == 4
+    assert version.patch == 6
     assert version.abi == 20260906
 
 

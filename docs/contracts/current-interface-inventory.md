@@ -1,6 +1,6 @@
 # Current Interface And Contract Authority
 
-Updated for release target `v2026-09-06`. This inventory
+Updated for release target `v2026-09-07`. This inventory
 describes interfaces, not a promotion decision. The
 [promotion manifest](promotion-manifest.toml) governs lifecycle evidence;
 the [generated coverage matrix](../generated/contracts/coverage.html) joins

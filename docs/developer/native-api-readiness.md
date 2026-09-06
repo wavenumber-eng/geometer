@@ -1,6 +1,6 @@
 # Native illustration API readiness
 
-Native illustration API and consumer handoff for `2026.9.6`. The user accepted
+Native illustration API and consumer handoff for `2026.9.7`. The user accepted
 the Windows Rust demo as proof of the workflow; further GUI polish is deferred.
 Release qualification is separate from those earlier feature-build observations.
 
@@ -23,8 +23,9 @@ same negotiation, typed operations and lifecycle implementation.
 
 Use the complete [STEP-to-SVG examples and limits](../design/mesh-illustration-native.md),
 [Python API guide](../design/python-package.md), and [Rust guide](../design/rust-client.md).
-Clients and executable catalogs must match. The release requires 2026.9.6 or
-later compatible artifacts; released 2026.9.4 lacks these operations.
+Clients and executable catalogs must match. The externally supervised Rust
+boundary requires 2026.9.7 or later compatible client sources; released
+2026.9.6 has the geometry operations but not that adoption API.
 
 `fuse_surfaces` defaults to true. Native composition handles SVG layer order;
 callers supply visible-only polyline HLR for the same millimeter model,
@@ -56,7 +57,7 @@ presence does not claim those platform jobs have run for this feature.
 
 ## Release qualification
 
-The [release PR](https://github.com/wavenumber-eng/geometer/pull/27) and
+The [release PR](https://github.com/wavenumber-eng/geometer/pull/28) and
 [Publish workflow](https://github.com/wavenumber-eng/geometer/actions/workflows/release.yml)
 record authoritative hosted outcomes. Publication requires all four native
 platforms, installed Python wheels, packaged Rust consumers, browser WASM and

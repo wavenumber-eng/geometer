@@ -306,7 +306,7 @@ uv run python scripts/validate_python_package.py --skip-native-validation
 </code></pre>
 <p>Before uploading, verify both the filename and the bundled executable:</p>
 <pre><code class="language-bash">otool -l dist/native/macos-arm64/geometer | rg -A5 'LC_BUILD_VERSION|LC_VERSION_MIN_MACOSX'
-python -m twine check out/wheelhouse/macos-arm64/wn_geometer-2026.9.6-py3-none-macosx_11_0_arm64.whl
+python -m twine check out/wheelhouse/macos-arm64/wn_geometer-2026.9.7-py3-none-macosx_11_0_arm64.whl
 </code></pre>
 <p>The Mach-O <code>minos</code> value must not be newer than the wheel platform tag. Do not
 retag an existing macOS wheel to a lower version without rebuilding native
@@ -350,19 +350,19 @@ same qualification gates. Include every supported platform, including Linux
 ARM64, when performing a complete manual release.</p>
 <p>PyPI upload commands:</p>
 <pre><code class="language-powershell"># Preflight metadata.
-python -m twine check out\wheelhouse\windows-x64\wn_geometer-2026.9.6-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.6-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.6-py3-none-macosx_11_0_arm64.whl
+python -m twine check out\wheelhouse\windows-x64\wn_geometer-2026.9.7-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.7-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.7-py3-none-macosx_11_0_arm64.whl
 
 # Optional dry-run project on TestPyPI.
-python -m twine upload --repository testpypi out\wheelhouse\windows-x64\wn_geometer-2026.9.6-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.6-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.6-py3-none-macosx_11_0_arm64.whl
+python -m twine upload --repository testpypi out\wheelhouse\windows-x64\wn_geometer-2026.9.7-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.7-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.7-py3-none-macosx_11_0_arm64.whl
 
 # Public PyPI release.
-python -m twine upload --repository pypi out\wheelhouse\windows-x64\wn_geometer-2026.9.6-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.6-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.6-py3-none-macosx_11_0_arm64.whl
+python -m twine upload --repository pypi out\wheelhouse\windows-x64\wn_geometer-2026.9.7-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.7-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.7-py3-none-macosx_11_0_arm64.whl
 </code></pre>
 <p>For token-based upload, set <code>TWINE_USERNAME=__token__</code> and put the PyPI or
 TestPyPI API token in <code>TWINE_PASSWORD</code>, or use an equivalent <code>.pypirc</code>/keyring
 setup. Do not write upload tokens into the repository.</p>
-<p>The current release target is <code>wn-geometer==2026.9.6</code>; callers install
-<code>wn-geometer==2026.9.6</code> and import <code>geometer</code>.</p>
+<p>The current release target is <code>wn-geometer==2026.9.7</code>; callers install
+<code>wn-geometer==2026.9.7</code> and import <code>geometer</code>.</p>
 <p>For local token setup, copy <code>.env.example</code> to <code>.env</code>, fill the token values,
 and keep <code>.env</code> out of version control.</p>
 <h2 id="manual-occt-rebuild">Manual OCCT Rebuild</h2>
@@ -499,11 +499,11 @@ direct byte-buffer calls from JavaScript or a Web Worker.</p>
 <code>geometer_abi_version</code>. Downstream browser consumers should check those before
 depending on a specific ABI. Earlier pre-date ABI integers tracked planar batch,
 diagnostic, and triangulation additions; current releases use the ADR 006
-date-based ABI generation, for example <code>20260906</code>.</p>
+date-based ABI generation, for example <code>20260907</code>.</p>
 <h2 id="versioning">Versioning</h2>
 <p>Geometer follows <a href="../geometer/adr/geometer-adr-006-date_based_versioning_policy.html">ADR 006</a>.
-The current release identity is <code>v2026-09-06</code>; the CMake/PyPI package version
-is <code>2026.9.6</code>; the C ABI generation is <code>20260906</code>.</p>
+The current release identity is <code>v2026-09-07</code>; the CMake/PyPI package version
+is <code>2026.9.7</code>; the C ABI generation is <code>20260907</code>.</p>
 <p>The root <code>CMakeLists.txt</code> declares <code>GEOMETER_RELEASE_DATE</code>,
 <code>GEOMETER_RELEASE_VERSION</code>, and <code>GEOMETER_ABI_VERSION</code>. The root
 <code>pyproject.toml</code> package version must match <code>GEOMETER_RELEASE_VERSION</code>.

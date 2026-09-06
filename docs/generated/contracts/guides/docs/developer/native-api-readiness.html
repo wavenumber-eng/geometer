@@ -11,7 +11,7 @@
 <body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/developer/native-api-readiness.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="native-illustration-api-readiness">Native illustration API readiness</h1></header>
-<p>Native illustration API and consumer handoff for <code>2026.9.6</code>. The user accepted
+<p>Native illustration API and consumer handoff for <code>2026.9.7</code>. The user accepted
 the Windows Rust demo as proof of the workflow; further GUI polish is deferred.
 Release qualification is separate from those earlier feature-build observations.</p>
 <h2 id="callable-surfaces">Callable surfaces</h2>
@@ -60,8 +60,9 @@ contained process through <code>GeometerClient::from_process</code>; both paths 
 same negotiation, typed operations and lifecycle implementation.</p>
 <p>Use the complete <a href="../design/mesh-illustration-native.html">STEP-to-SVG examples and limits</a>,
 <a href="../design/python-package.html">Python API guide</a>, and <a href="../design/rust-client.html">Rust guide</a>.
-Clients and executable catalogs must match. The release requires 2026.9.6 or
-later compatible artifacts; released 2026.9.4 lacks these operations.</p>
+Clients and executable catalogs must match. The externally supervised Rust
+boundary requires 2026.9.7 or later compatible client sources; released
+2026.9.6 has the geometry operations but not that adoption API.</p>
 <p><code>fuse_surfaces</code> defaults to true. Native composition handles SVG layer order;
 callers supply visible-only polyline HLR for the same millimeter model,
 placement and view. Arbitrary 2D lines cannot authenticate those relationships.
@@ -88,7 +89,7 @@ Packaged Rust coverage is in Rack <code>RUST_001</code>; Python coverage is <cod
 These lanes already run in the four-platform native/release matrix; their
 presence does not claim those platform jobs have run for this feature.</p>
 <h2 id="release-qualification">Release qualification</h2>
-<p>The <a href="https://github.com/wavenumber-eng/geometer/pull/27">release PR</a> and
+<p>The <a href="https://github.com/wavenumber-eng/geometer/pull/28">release PR</a> and
 <a href="https://github.com/wavenumber-eng/geometer/actions/workflows/release.yml">Publish workflow</a>
 record authoritative hosted outcomes. Publication requires all four native
 platforms, installed Python wheels, packaged Rust consumers, browser WASM and

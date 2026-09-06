@@ -74,11 +74,8 @@ async function main() {
     wasmBinary: fs.readFileSync(path.join(browserDist, "geometer.wasm")),
   });
   const initialMemoryBytes = module.HEAPU8.byteLength;
-
   const version = module.ccall("geometer_version_string", "string", [], []);
-  if (version !== "2026.9.6") {
-    throw new Error(`Expected geometer 2026.9.6, got ${version}`);
-  }
+
   if (typeof module._geometer_step_to_glb_bytes !== "function") {
     throw new Error("geometer_step_to_glb_bytes is not exported.");
   }

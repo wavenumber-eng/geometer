@@ -1,6 +1,6 @@
 # Public Entry-Point Reconciliation
 
-Release target `v2026-09-06`. This maps semantic operations separately from
+Release target `v2026-09-07`. This maps semantic operations separately from
 aliases, byte projections and implementation helpers. The
 [generated inventory](../generated/contracts/coverage.html) supplies individual
 operation/root identities; the [source review lock](public-surface-review.json)

@@ -4,7 +4,21 @@
 
 The source checkout and PyPI wheel include a thin Python package named
 `geometer`; the PyPI distribution name is `wn-geometer`. The package drives the
-native CLI and keeps the public API byte/path oriented:
+native CLI and keeps the file-oriented convenience API byte/path oriented.
+
+The persistent `GeometerClient` also exposes generated-value operations. Since
+2026.9.6 these include [colored STEP tessellation and native mesh illustration](mesh-illustration-native.md)
+with a complete Python STEP-to-SVG example. Those new methods require a matching
+2026.9.6 or later compatible executable; the 2026.9.4 wheel does not provide them.
+
+The public one-shot helpers `geometer.model_tessellation(step_bytes, ...)` and
+`geometer.mesh_illustration(input, hlr_projection=..., ...)` reuse that same
+client with automatic process cleanup. Both accept `executable=` for an explicit
+override and `timeout=` for the local operation deadline; startup/shutdown have
+the client's separate bounds. Prefer one `with geometer.GeometerClient() as
+client:` block for a STEP/tessellation/HLR/illustration sequence or repeated work.
+The optional HLR argument is already computed visible polyline geometry, not an
+instruction to compute HLR or re-occlude arbitrary 2D lines.
 
 ```python
 from pathlib import Path
@@ -148,6 +162,11 @@ with geometer.GeometerClient() as client:
 
 The analytic planar Boolean candidate is integrated through the same
 executable-backed lane:
+
+> This method is experimental and not production-ready. It may fail closed on
+> valid inputs and is not the dependable path for whole-board or whole-layer
+> copper union. Prefer the Clipper2-backed planar APIs when polygonized output
+> is suitable.
 
 ```python
 import geometer

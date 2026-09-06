@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>ADR-015: Native static libraries are build outputs — Geometer</title>
+  <link rel="stylesheet" href="../../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/geometer/adr/geometer-adr-015-native_static_libraries_are_build_outputs.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="adr-015-native-static-libraries-are-build-outputs">ADR-015: Native static libraries are build outputs</h1></header>
+<h2 id="status">Status</h2>
+<p>Accepted.</p>
+<h2 id="context">Context</h2>
+<p>Geometer historically copied its native static library into
+<code>dist/native/&lt;platform&gt;/</code> and committed it alongside runtime artifacts. On
+Windows the build also copied the same bytes under both <code>geometer.lib</code> and
+<code>libgeometer.a</code>. The archive grew beyond GitHub's recommended per-file size.</p>
+<p>No known Wavenumber consumer links either persisted filename. Current consumers
+use the native executable through the Python package or executable IPC, or use
+the browser WASM distribution. The native release archive also lacks the public
+header installation, exported CMake targets, toolchain/ABI contract, and OCCT
+dependency-link closure required for a usable native SDK.</p>
+<h2 id="decision">Decision</h2>
+<p>Native <code>.lib</code> and <code>.a</code> files are generated build/cache outputs:</p>
+<ul>
+<li>CMake continues to build <code>geometer_lib</code> for Geometer targets and tests;</li>
+<li>the library remains under the configured CMake build tree;</li>
+<li>CMake does not copy it into <code>dist/native/&lt;platform&gt;/</code>;</li>
+<li>Git ignores native libraries under <code>dist/native/</code>;</li>
+<li>native runtime archives exclude and reject <code>.lib</code> and <code>.a</code> files; and</li>
+<li>CI caches may retain build-tree libraries only as an optimization, never as
+an authoritative distribution channel.</li>
+</ul>
+<p>The native executable, its build attestation, licenses, Python wheels, and WASM
+artifacts retain their existing distribution channels.</p>
+<h2 id="future-native-sdk">Future native SDK</h2>
+<p>A native SDK may be introduced only as a separately named, versioned artifact
+with:</p>
+<ul>
+<li>the supported public headers;</li>
+<li>exported CMake package targets;</li>
+<li>compiler, runtime, architecture, and ABI compatibility metadata;</li>
+<li>required notices and licenses;</li>
+<li>an explicit OCCT and other transitive dependency strategy; and</li>
+<li>an external-consumer build and link test.</li>
+</ul>
+<p>A bare static archive is not considered a supported SDK.</p>
+<h2 id="consequences">Consequences</h2>
+<p>New commits and runtime releases no longer grow by one static-library blob per
+platform build. Existing blobs remain in reachable Git history until a
+separately approved repository-history rewrite. Full historical clones may
+therefore still download those objects; shallow or partial clones may avoid
+some historical payload.</p>
+
+</main>
+</body>
+</html>

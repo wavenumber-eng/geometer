@@ -36,6 +36,8 @@ from ._generated.contracts.models import (
     IpcWelcomeA0,
     HlrProjectionOptionsA0,
     HlrProjectionResultA0,
+    MeshIllustrationInputA0,
+    MeshIllustrationResultA0,
     OperationFailureA0,
     OperationOutcomeA0,
     OperationSuccessA0,
@@ -60,6 +62,8 @@ from ._generated.contracts.operations import expected_operation_catalog
 from ._paths import executable_path
 
 if TYPE_CHECKING:
+    from ._tessellation import ModelTessellation
+    from ._generated.contracts.models import ModelTessellationRequestA0
     from ._indexed_mesh_packet_a0 import IndexedTriangleMeshA0
     from ._generated.contracts.models import (
         AnalyticPlanarBooleanBatchRequestA0,
@@ -428,6 +432,34 @@ class _GeometerIpcExecution(_GeometerIpcSession):
         except Exception as error:
             client._terminate()
             raise GeometerIpcProtocolError("analytic response contains an invalid packed result") from error
+
+    def model_tessellation(
+        self,
+        model: bytes,
+        options: ModelTessellationRequestA0 | None = None,
+        *,
+        timeout: float | None = None,
+    ) -> ModelTessellation:
+        """Tessellate STEP bytes into the shared colored millimeter mesh contract."""
+        from ._tessellation import model_tessellation
+
+        return model_tessellation(cast("GeometerIpcClient", self), model, options, timeout)
+
+    def mesh_illustration(
+        self,
+        input: MeshIllustrationInputA0,
+        *,
+        hlr_projection: HlrProjectionResultA0 | None = None,
+        timeout: float | None = None,
+    ) -> MeshIllustrationResultA0:
+        """Render A0 SVG, optionally with visible-only polyline HLR from the same
+        millimeter model/frame and exactly one matching view. Native composition
+        applies show_hlr_* styling, layer ordering and mirror_x. Arcs and more
+        than 1,000,000 segments are rejected; hidden lines are not re-filtered.
+        """
+        from ._illustration import mesh_illustration
+
+        return mesh_illustration(cast("GeometerIpcClient", self), input, timeout, hlr_projection)
 
     def model_hlr_projection(
         self,

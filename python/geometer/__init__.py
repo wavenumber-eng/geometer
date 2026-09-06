@@ -21,12 +21,28 @@ from ._api import (
     write_planar_step,
 )
 from ._errors import GeometerError
+from ._native_helpers import mesh_illustration, model_tessellation
+from ._tessellation import ModelTessellation
 from ._analytic_packet_a0 import (
     AnalyticPacketError,
     decode_analytic_planar_boolean_batch_result_a0_packet,
     encode_analytic_planar_boolean_batch_request_a0_packet,
 )
 from ._generated.contracts.models import (
+    MeshCollectionA0,
+    MeshIllustrationInputA0,
+    MeshIllustrationMaterial,
+    MeshIllustrationMesh,
+    MeshIllustrationPrepareOptions,
+    MeshIllustrationRequestA0,
+    MeshIllustrationResultA0,
+    MeshIllustrationShading,
+    MeshIllustrationStyleA0,
+    MeshIllustrationSvgOptions,
+    MeshIllustrationView,
+    ModelRootPlacement,
+    ModelTessellationRequestA0,
+    ModelTessellationResultA0,
     AnalyticPlanarBooleanBatchRequestA0,
     AnalyticPlanarBooleanBatchResultA0,
     AnalyticPlanarBooleanJob,
@@ -91,6 +107,23 @@ from ._types import (
 )
 
 __all__ = [
+    "mesh_illustration",
+    "model_tessellation",
+    "MeshIllustrationInputA0",
+    "MeshIllustrationMaterial",
+    "MeshIllustrationMesh",
+    "MeshIllustrationPrepareOptions",
+    "MeshIllustrationRequestA0",
+    "MeshIllustrationResultA0",
+    "MeshIllustrationShading",
+    "MeshIllustrationStyleA0",
+    "MeshIllustrationSvgOptions",
+    "MeshIllustrationView",
+    "MeshCollectionA0",
+    "ModelRootPlacement",
+    "ModelTessellation",
+    "ModelTessellationRequestA0",
+    "ModelTessellationResultA0",
     "AnalyticPlanarBooleanBatchRequestA0",
     "AnalyticPlanarBooleanBatchResultA0",
     "AnalyticPlanarBooleanJob",

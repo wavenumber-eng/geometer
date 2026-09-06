@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>STEP Topology Contract Slice B — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/step-topology-contract-slice-b.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="step-topology-contract-slice-b">STEP Topology Contract Slice B</h1></header>
+<p>Status: unpromoted experimental candidate; native mutation/checkpoint subset available</p>
+<p>Date: 2026-08-23</p>
+<h2 id="purpose-and-authority">Purpose And Authority</h2>
+<p>Slice B projects the stabilized native logical-group, neutral metadata-probe,
+synthetic hierarchy, and exact-source checkpoint shapes into generated TypeSpec
+contracts. It adds four candidate operations: apply logical groups, apply
+metadata probes, apply hierarchy, and checkpoint the edit journal. It does not
+expose a callable C ABI or browser WASM route; the native executable routes the
+three non-hierarchy operations through the bounded session store.</p>
+<p>TypeSpec owns the candidate JSON structure. The native C++ session remains the
+behavioral authority for atomic mutation, generation and revision checks,
+target resolution, accounting, cancellation, source binding, replay, and the
+binary journal encoding. All eight roots and four operations remain
+<code>experimental_candidate</code> and portable <code>runtime_available: false</code>. The native
+catalog additionally advertises apply logical groups, apply metadata probes,
+and checkpoint edit journal; hierarchy remains structural-only.</p>
+<p>This is carrier research, not the future Appz annotation contract. The names
+<code>wn.geometer.research.group.*</code>, <code>wn.geometer.research.probe.*</code>, and
+<code>wn.geometer.research.probe.key.*</code> intentionally prevent these temporary
+records from being mistaken for durable application semantics. No legacy GLTF
+enrichment vocabulary is reused.</p>
+<h2 id="mutation-shapes">Mutation Shapes</h2>
+<p>Logical-group commands form a closed discriminated union:</p>
+<ul>
+<li><code>create</code> carries an authored id, name, and nonempty body/face handle list;</li>
+<li><code>rename</code> carries an authored id, expected revision, and name;</li>
+<li><code>replace_members</code> carries an authored id, expected revision, and nonempty
+handle list; and</li>
+<li><code>erase</code> carries only the authored id and expected revision.</li>
+</ul>
+<p>Metadata-probe commands are likewise closed. <code>attach</code> carries a target, key,
+and value; <code>replace</code> adds an expected revision; and <code>erase</code> carries only the
+authored id and expected revision. Probe targets are a second discriminated
+union covering document, definition, root occurrence, component occurrence,
+body, face, and logical group. The document target has no locator, topology
+targets have exactly one generation-scoped handle, and a logical-group target
+has exactly one authored group id. This makes the native canonical erase rule
+structural rather than relying on ignored placeholder fields.</p>
+<p>Successful results publish the refreshed session/generation, edit-journal
+revision, bounded accounting, and the complete applicable group/probe state.
+Target handles in results belong only to that refreshed generation. The native
+adapter pre-encodes that exact candidate outcome and applies the executable
+IPC 8 MiB JSON limit before commit; rejection rolls back generation, journal,
+handles, and authored state.</p>
+<p>Generated codecs enforce the closed union variants, required fields, bounded
+arrays and strings, positive <code>uint32</code> revisions, and numeric resource ceilings.
+The shared TypeScript semantic helpers additionally enforce the ASCII research
+namespaces, exact <code>gtt_</code> target-handle shape for group members, duplicate
+member/create rejection with sequential erase/recreate semantics,
+probe-key/group-target namespaces, and the 100,000 aggregate group-member
+limit for both transaction payloads and published results. The same aggregate
+transaction limit is native policy rather than a wire-only restriction.
+Live-state preconditions and target existence remain native responsibilities.</p>
+<h2 id="checkpoint-attachment">Checkpoint Attachment</h2>
+<p>Checkpoint returns exact source SHA-256, normalized B-rep SHA-256, ordered
+target-inventory SHA-256, OCCT version, transaction count, and one required
+<code>edit_journal</code> descriptor. The separately transported attachment is limited to
+64 MiB and uses media type
+<code>application/vnd.wavenumber.geometer.step-topology-edit-journal</code> with format
+<code>geometer.step_topology_edit_journal.a0</code>.</p>
+<p>The semantic attachment validator requires exactly one declared attachment,
+matching name, media type, byte count, and SHA-256. It also requires the
+reported transaction count to equal the session edit-journal revision. The
+binary payload layout, internal checksum, replay limits, and exact-source
+preflight remain governed by the native edit-journal design and tests.</p>
+<h2 id="hierarchy-extension">Hierarchy Extension</h2>
+<p>The hierarchy command union covers create product, create assembly, create
+occurrence, reparent occurrence, rename node, erase occurrence, and erase node.
+Products, assemblies, and occurrences use their native kind-specific,
+lowercase-suffix research namespaces. The semantic validators accept
+erase/recreate lifecycle sequences for both product and occurrence ids,
+enforce the full <code>uint32</code> revision domain, require products to bind definition
+or body sources, require source-free assemblies and assembly parents, and use
+an iterative cycle check so maximum-size valid graphs do not recurse.</p>
+<h2 id="validation">Validation</h2>
+<p>Forty Slice B vectors are recorded in the promotion manifest: eleven
+strict/schema vectors and twenty-nine semantic vectors. They cover canonical
+round-trip and accepted create/rename/replace/erase/recreate group sequencing;
+accepted attach/replace/erase/re-attach probe sequencing over every target
+variant; both mutation result roots; the checkpoint request; maximum <code>uint32</code>
+group revision; unknown fields; wrong command variants; malformed target
+handles; duplicate members/creates/attaches; invalid group, probe, key, and
+group-target namespaces; exact-limit acceptance and aggregate request/result
+group-member exhaustion across multiple individually valid collections;
+canonical probe erase; the 64 MiB checkpoint ceiling; and accepted plus
+name/media/byte/count/digest/revision-mismatched journal relationships.
+They also govern the intended casing split: logical-group and metadata-probe
+names retain the native case-permitting research syntax, while hierarchy ids
+remain lowercase-only. They cover all seven hierarchy commands in one
+lifecycle, the exact
+<code>uint32</code> revision maximum and overflow rejection, a valid published hierarchy,
+and a rejected assembly cycle.</p>
+<p>The generated JSON Schema, C++, TypeScript, Rust, Python, and HTML projections
+are deterministic. TypeScript and the vector harness own the extra semantic
+checks; Python replays the generated structural projection. Native focused
+tests remain the behavioral evidence.</p>
+<h2 id="native-runtime-and-deferred-surface">Native Runtime And Deferred Surface</h2>
+<ul>
+<li>hierarchy process routing and all browser session routing;</li>
+<li>changed-source, changed-OCCT, partial, or ambiguous recovery;</li>
+<li>logical-group/journal projection into the now-proven standard XBF/XML carrier;</li>
+<li>STEP/AP242 projection and survival evidence;</li>
+<li>sidecar and GLB transport comparison; and</li>
+<li>the carrier-neutral Appz annotation contract and Annotation Lab implementation.</li>
+</ul>
+<p>The native executable routes atomic logical-group and metadata-probe
+transactions plus edit-journal checkpoints. The real Node integration verifies
+that every mutation advances the generation and remints topology handles before
+checkpointing.</p>
+
+</main>
+</body>
+</html>

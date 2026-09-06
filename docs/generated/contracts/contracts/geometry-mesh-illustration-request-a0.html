@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>geometry.mesh_illustration.request.a0 — Geometer</title>
+  <link rel="stylesheet" href="../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="contract" data-contract-identity="geometry.mesh_illustration.request.a0" data-promotion-status="pilot_candidate">
+<main>
+<header>
+  <p class="page-type">Contract root</p>
+  <h1><code>geometry.mesh_illustration.request.a0</code></h1>
+  <p class="lede">Native one-shot illustration settings. Meshes arrive in the required
+mesh_collection attachment governed by geometry.mesh_collection.a0.
+Reuses existing illustration A0 options and result; does not compute HLR.
+Optional hlr_projection attachment is geometry.hlr_projection.result.a0:
+exactly one matching view, millimeters, polyline outline/detail only.
+Supply visibility-filtered HLR from the same model, placement and transform
+as the meshes. The renderer mirrors and composes detail then outline over
+surfaces according to show_hlr_detail/show_hlr_outline; it does not infer
+visibility from arbitrary supplied segments. Maximum 1,000,000 segments.</p>
+</header>
+<nav class="nav" aria-label="Contract navigation"><a href="../index.html">All contracts</a><a href="../../../../contracts/geometer/generated/schema/MeshIllustrationRequestA0.json">JSON Schema</a><a href="../../../../src/tsp/geometer/main.tsp">TypeSpec entry point</a><a href="../../../design/contract-semantics.md">Compatibility policy</a></nav>
+<aside class="callout"><strong>Generated, not authored.</strong> Edit TypeSpec and regenerate. Lifecycle evidence remains in the promotion manifest.</aside>
+
+<section><h2>Identity</h2><table><tbody>
+<tr><th>Contract</th><td><code>geometry.mesh_illustration.request.a0</code></td></tr>
+<tr><th>Schema</th><td><code>urn:wavenumber:schema:geometer:geometry.mesh_illustration.request:a0</code></td></tr>
+<tr><th>Declaration</th><td><code>Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0</code></td></tr>
+<tr><th>Lifecycle</th><td><span class="status">pilot_candidate</span></td></tr>
+<tr><th>Maturity</th><td>See interface support policy; promotion is not maturity</td></tr>
+<tr><th>Current authority</th><td><code>typespec_candidate</code></td></tr>
+</tbody></table></section>
+<section class="model-section"><h2>Declarations <span class="tag">7</span></h2><details open id="declaration-wavenumber-geometer-contracts-meshillustrationoperationa0-meshillustrationrequesta0"><summary><h2><code>MeshIllustrationRequestA0</code> <span class="tag">model</span></h2></summary><p>Native one-shot illustration settings. Meshes arrive in the required
+mesh_collection attachment governed by geometry.mesh_collection.a0.
+Reuses existing illustration A0 options and result; does not compute HLR.
+Optional hlr_projection attachment is geometry.hlr_projection.result.a0:
+exactly one matching view, millimeters, polyline outline/detail only.
+Supply visibility-filtered HLR from the same model, placement and transform
+as the meshes. The renderer mirrors and composes detail then outline over
+surfaces according to show_hlr_detail/show_hlr_outline; it does not infer
+visibility from arbitrary supplied segments. Maximum 1,000,000 segments.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>schema</code></td><td>required</td><td><code>&quot;geometry.mesh_illustration.request.a0&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>view</code></td><td>required</td><td><code><a href="#declaration-wavenumber-geometer-contracts-meshillustrationa0-meshillustrationview">MeshIllustrationView</a></code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>prepare</code></td><td>optional</td><td><code><a href="#declaration-wavenumber-geometer-contracts-meshillustrationa0-meshillustrationprepareoptions">MeshIllustrationPrepareOptions</a></code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>style</code></td><td>optional</td><td><code><a href="#declaration-wavenumber-geometer-contracts-meshillustrationa0-meshillustrationstylea0">MeshIllustrationStyleA0</a></code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>svg</code></td><td>optional</td><td><code><a href="#declaration-wavenumber-geometer-contracts-meshillustrationa0-meshillustrationsvgoptions">MeshIllustrationSvgOptions</a></code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-meshillustrationa0-illustrationvector3"><summary><h2><code>IllustrationVector3</code> <span class="tag">model</span></h2></summary><p></p><p><span class="tag">array</span> element <code>float64</code>; <code>min_items=3</code> <code>max_items=3</code></p></details>
+<details open id="declaration-wavenumber-geometer-contracts-meshillustrationa0-meshillustrationprepareoptions"><summary><h2><code>MeshIllustrationPrepareOptions</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>max_triangles</code></td><td>optional</td><td><code>uint32</code></td><td><code>750000</code></td><td><code>min_value=1</code> <code>max_value=2000000</code></td><td></td></tr>
+<tr><td><code>weld_tolerance</code></td><td>optional</td><td><code>float64</code></td><td><code>1e-7</code></td><td><code>min_value_exclusive=0</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-meshillustrationa0-meshillustrationshading"><summary><h2><code>MeshIllustrationShading</code> <span class="tag">enum</span></h2></summary><p></p><table><thead><tr><th>Member</th><th>Wire value</th><th>Description</th></tr></thead><tbody><tr><td><code>unlit</code></td><td><code>unlit</code></td><td></td></tr>
+<tr><td><code>flat</code></td><td><code>flat</code></td><td></td></tr>
+<tr><td><code>lambert</code></td><td><code>lambert</code></td><td></td></tr>
+<tr><td><code>banded</code></td><td><code>banded</code></td><td></td></tr>
+<tr><td><code>toon</code></td><td><code>toon</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-meshillustrationa0-meshillustrationstylea0"><summary><h2><code>MeshIllustrationStyleA0</code> <span class="tag">model</span></h2></summary><p>Presence-preserving illustration style. Package defaults apply to absent fields.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>shading</code></td><td>optional</td><td><code><a href="#declaration-wavenumber-geometer-contracts-meshillustrationa0-meshillustrationshading">MeshIllustrationShading</a></code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>ambient</code></td><td>optional</td><td><code>float64</code></td><td>—</td><td><code>min_value=0</code> <code>max_value=1</code></td><td></td></tr>
+<tr><td><code>key_intensity</code></td><td>optional</td><td><code>float64</code></td><td>—</td><td><code>min_value=0</code> <code>max_value=4</code></td><td></td></tr>
+<tr><td><code>light_direction</code></td><td>optional</td><td><code><a href="#declaration-wavenumber-geometer-contracts-meshillustrationa0-illustrationvector3">IllustrationVector3</a></code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>bands</code></td><td>optional</td><td><code>uint32</code></td><td>—</td><td><code>min_value=1</code> <code>max_value=256</code></td><td></td></tr>
+<tr><td><code>source_colors</code></td><td>optional</td><td><code>boolean</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>fallback_color</code></td><td>optional</td><td><code><a href="#declaration-wavenumber-geometer-contracts-meshillustrationa0-illustrationvector3">IllustrationVector3</a></code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>background</code></td><td>optional</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>transparent_background</code></td><td>optional</td><td><code>boolean</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>fuse_surfaces</code></td><td>optional</td><td><code>boolean</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>layer_coplanar_materials</code></td><td>optional</td><td><code>boolean</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>show_hlr_outline</code></td><td>optional</td><td><code>boolean</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>show_hlr_detail</code></td><td>optional</td><td><code>boolean</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>show_outlines</code></td><td>optional</td><td><code>boolean</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>show_creases</code></td><td>optional</td><td><code>boolean</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>crease_angle_degrees</code></td><td>optional</td><td><code>float64</code></td><td>—</td><td><code>min_value=0</code> <code>max_value=180</code></td><td></td></tr>
+<tr><td><code>outline_color</code></td><td>optional</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>crease_color</code></td><td>optional</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>outline_width</code></td><td>optional</td><td><code>float64</code></td><td>—</td><td><code>min_value=0</code></td><td></td></tr>
+<tr><td><code>crease_width</code></td><td>optional</td><td><code>float64</code></td><td>—</td><td><code>min_value=0</code></td><td></td></tr>
+<tr><td><code>double_sided</code></td><td>optional</td><td><code>boolean</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>rim_amount</code></td><td>optional</td><td><code>float64</code></td><td>—</td><td><code>min_value=0</code> <code>max_value=1</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-meshillustrationa0-meshillustrationsvgoptions"><summary><h2><code>MeshIllustrationSvgOptions</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>coordinate_span</code></td><td>optional</td><td><code>uint32</code></td><td><code>1000000</code></td><td><code>min_value=10000</code> <code>max_value=1000000000</code></td><td></td></tr>
+<tr><td><code>title</code></td><td>optional</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=1024</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-meshillustrationa0-meshillustrationview"><summary><h2><code>MeshIllustrationView</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>direction</code></td><td>required</td><td><code><a href="#declaration-wavenumber-geometer-contracts-meshillustrationa0-illustrationvector3">IllustrationVector3</a></code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>up</code></td><td>required</td><td><code><a href="#declaration-wavenumber-geometer-contracts-meshillustrationa0-illustrationvector3">IllustrationVector3</a></code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>mirror_x</code></td><td>optional</td><td><code>boolean</code></td><td><code>false</code></td><td>none</td><td></td></tr></tbody></table></details></section>
+</main>
+</body>
+</html>

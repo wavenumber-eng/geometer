@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>ADR-011: Generic Operation Transports — Geometer</title>
+  <link rel="stylesheet" href="../../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/geometer/adr/geometer-adr-011-generic_operation_transports.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="adr-011-generic-operation-transports">ADR-011: Generic Operation Transports</h1></header>
+<h2 id="status">Status</h2>
+<p>Accepted. Independent review approved the generic transport packet at review
+head <code>b86a065c5926c35f1eee23a9ba1cef890689c7d7</code> on 2026-08-12, covering
+normative remediation revision <code>529c768e559b4c88874264748d4186e775c8a4dd</code>.
+Work is tracked by <a href="https://github.com/wavenumber-eng/geometer/issues/18">GitHub issue
+#18</a>.</p>
+<h2 id="context">Context</h2>
+<p>ADR-010 makes TypeSpec and the normalized catalog the structural authority for
+individually promoted operations. Generated browser and native clients still
+need stable ways to invoke those operations.</p>
+<p>The existing browser surface has one or more C functions per operation. It does
+not expose model bounds, and adding every future operation would require
+handwritten C declarations, C++ wrappers, Emscripten export edits, and direct
+pointer code in each consumer. The executable has a file-based batch command
+but no persistent binary-safe pipe suitable for a Rust client.</p>
+<p>These transports must carry large model/result bytes separately from JSON,
+preserve existing interfaces, bound untrusted sizes before allocation, and
+avoid claiming concurrency or cancellation behavior that the geometry kernels
+have not established.</p>
+<h2 id="decision">Decision</h2>
+<p>Add two transports over the same generated operation catalog:</p>
+<ol>
+<li>an additive generic operation/attachment C ABI for native and browser WASM;
+and</li>
+<li>executable IPC generation <code>a0</code>, a persistent framed stdin/stdout protocol.</li>
+</ol>
+<p>The exact A0 specifications are:</p>
+<ul>
+<li><a href="../../design/generic-operation-c-abi.html">Generic Operation C ABI</a>; and</li>
+<li><a href="../../design/executable-ipc-a0.html">Executable IPC A0</a>.</li>
+</ul>
+<p>Both carry generated JSON values plus named raw byte attachments. The C ABI
+passes operation identity as a separate argument and accepts the
+operation-specific request DTO directly. IPC wraps that same request DTO with
+operation and correlation metadata in frame JSON. Both return the same generic
+operation-outcome shape. Neither base64-encodes attachments. Operation identity
+and allowed attachments come from the normalized catalog.</p>
+<h3 id="execution-policy">Execution policy</h3>
+<p>IPC A0 accepts multiple correlated requests but executes geometry operations
+one at a time. The server has a bounded queue and may write control outcomes
+independently, so clients correlate all frames by request identifier and do not
+assume response order.</p>
+<p>Cancellation removes queued requests only. An active operation is not
+cancelled; the server returns <code>geometer.transport.not_cancellable</code> and the
+original operation continues. Client timeout is local and does not imply
+cancellation. A client may terminate the child as an explicit escalation, which
+fails all outstanding requests.</p>
+<p>The C ABI call is synchronous and is not specified as reentrant or thread-safe.
+A host or generated adapter serializes catalog and execute calls until a later
+concurrency decision says otherwise.</p>
+<h3 id="compatibility">Compatibility</h3>
+<p>Existing per-operation C ABI symbols, the file-based <code>run</code> CLI, command aliases,
+and the executable-backed Python path remain supported. They become explicit
+adapters to promoted contracts where practical and are retired only through a
+separate compatibility decision.</p>
+<p>The executable's stdout is exclusively protocol frames in stdio server mode;
+stderr is exclusively logs. Windows stdin and stdout are switched to binary
+mode before the handshake.</p>
+<h3 id="review-gate">Review gate</h3>
+<p>The independent review gate was satisfied on 2026-08-12 with no blocking
+findings. The promotion manifest records the reviewed revision, review head,
+reviewer identity, date, and artifact digests. Any later normative change to
+this ADR or either transport specification returns the gate to pending before
+implementation continues.</p>
+<h2 id="consequences">Consequences</h2>
+<ul>
+<li>New catalog operations can become browser-callable without a bespoke C entry
+point.</li>
+<li>TypeScript and Rust clients can share operation identities, envelopes,
+attachments, diagnostics, and capability data.</li>
+<li>The opaque C result handle centralizes ownership and avoids exposing output
+allocation layouts to JavaScript.</li>
+<li>IPC request concurrency is a client/API concept in A0, not parallel geometry
+execution.</li>
+<li>A0 deliberately leaves active cancellation and parallel OCCT execution for a
+later evidenced protocol generation or capability.</li>
+<li>The transport implementations require adversarial limits, framing, race,
+shutdown, broken-pipe, and ownership tests in addition to operation tests.</li>
+</ul>
+
+</main>
+</body>
+</html>

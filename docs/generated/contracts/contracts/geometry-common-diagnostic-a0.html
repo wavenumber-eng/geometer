@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
   <title>geometry.common.diagnostic.a0 — Geometer</title>
   <link rel="stylesheet" href="../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="contract" data-contract-identity="geometry.common.diagnostic.a0" data-promotion-status="promoted">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="contract" data-contract-identity="geometry.common.diagnostic.a0" data-promotion-status="promoted">
 <main>
 <header>
   <p class="page-type">Contract root</p>
@@ -23,10 +23,11 @@
 <tr><th>Schema</th><td><code>urn:wavenumber:schema:geometer:geometry.common.diagnostic:a0</code></td></tr>
 <tr><th>Declaration</th><td><code>Wavenumber.Geometer.Contracts.Common.DiagnosticA0</code></td></tr>
 <tr><th>Lifecycle</th><td><span class="status">promoted</span></td></tr>
+<tr><th>Maturity</th><td>See interface support policy; promotion is not maturity</td></tr>
 <tr><th>Current authority</th><td><code>typespec_normalized_catalog</code></td></tr>
 </tbody></table></section>
 <section class="model-section"><h2>Declarations <span class="tag">2</span></h2><details open id="declaration-wavenumber-geometer-contracts-common-diagnostica0"><summary><h2><code>DiagnosticA0</code> <span class="tag">model</span></h2></summary><p>A strict cross-transport diagnostic; message text is informative rather than identity.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>code</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code></td><td>Stable namespaced diagnostic identity.</td></tr>
-<tr><td><code>category</code></td><td>required</td><td><code>DiagnosticCategory</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>category</code></td><td>required</td><td><code><a href="#declaration-wavenumber-geometer-contracts-common-diagnosticcategory">DiagnosticCategory</a></code></td><td>—</td><td>none</td><td></td></tr>
 <tr><td><code>message</code></td><td>required</td><td><code>string</code></td><td>—</td><td>none</td><td>Human-readable non-normative detail.</td></tr>
 <tr><td><code>retryable</code></td><td>required</td><td><code>boolean</code></td><td>—</td><td>none</td><td></td></tr>
 <tr><td><code>path</code></td><td>optional</td><td><code>string</code></td><td>—</td><td>none</td><td>RFC 6901 JSON Pointer when a document location is meaningful.</td></tr>

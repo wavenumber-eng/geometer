@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>REQ-002: STEP Geometry Operations — Geometer</title>
+  <link rel="stylesheet" href="../../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/geometer/requirements/geometer-req-002-step_geometry_operations.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="req-002-step-geometry-operations">REQ-002: STEP Geometry Operations</h1></header>
+<h2 id="summary">Summary</h2>
+<p>Geometer converts STEP models to renderable 3D GLB bytes and projects STEP
+models into backend-neutral hidden-line geometry.</p>
+<h2 id="requirements">Requirements</h2>
+<ol>
+<li>Accept STEP input from filesystem paths for native CLI workflows.</li>
+<li>Accept STEP input as byte buffers for C ABI, WASM, and Python workflows.</li>
+<li>Convert STEP to GLB while preserving model colors and names where OCCT
+exposes them.</li>
+<li>Support configurable tessellation through linear and angular deflection.</li>
+<li>Project one or more orthographic HLR views, including top and bottom helper
+presets.</li>
+<li>Preserve the compatibility <code>geometry.projection.b0</code> JSON writer and return
+governed operations as <code>geometry.hlr_projection.result.a0</code>; both expose
+independently composable <code>detail</code>, <code>outline</code>, and <code>bbox</code> modes.</li>
+<li>Preserve line segments and circular arcs when <code>native_arcs</code> mode is
+requested.</li>
+<li>Support deterministic polyline flattening with configurable samples per
+curve.</li>
+<li>Support row-major 4x4 <code>model_transform</code> source-model normalization before
+projection.</li>
+<li>Provide CLI output to JSON, SVG, and GLB for visual inspection and release
+validation.</li>
+<li>Provide transformed source-model bounds as <code>geometry.model_bounds.a0</code> JSON.</li>
+<li>Prefer generic <code>model_*</code> source-model operation names while STEP remains the
+only supported source format.</li>
+<li>Keep polygonal projection as the default, exact projection explicit, and
+Fast vector HLR additive under the option and operation boundaries in
+REQ-010.</li>
+</ol>
+
+</main>
+</body>
+</html>

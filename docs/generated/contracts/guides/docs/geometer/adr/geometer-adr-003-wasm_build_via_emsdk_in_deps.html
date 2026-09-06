@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>ADR-003: WASM build via emsdk managed in .deps — Geometer</title>
+  <link rel="stylesheet" href="../../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/geometer/adr/geometer-adr-003-wasm_build_via_emsdk_in_deps.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="adr-003-wasm-build-via-emsdk-managed-in-deps">ADR-003: WASM build via emsdk managed in .deps</h1></header>
+<h2 id="status">Status</h2>
+<p>Accepted</p>
+<h2 id="context">Context</h2>
+<p>Geometer needs a WASM build for browser-based geometry operations. Emscripten
+(emsdk) is required to cross-compile OCCT and Geometer to WebAssembly.</p>
+<p>Options considered:</p>
+<ul>
+<li>Global emsdk install: rejected because each developer must install and
+version-match manually.</li>
+<li>emsdk managed in <code>.deps/</code>: adopted because it follows the same generated
+dependency pattern as OCCT.</li>
+</ul>
+<h2 id="decision">Decision</h2>
+<p><code>scripts/build_wasm.py</code> manages the full WASM toolchain:</p>
+<ol>
+<li>Clones emsdk into <code>.deps/emsdk/</code> and installs a pinned Emscripten version.</li>
+<li>Restores prebuilt OCCT WASM static libraries from the public dependency
+cache, or cross-compiles OCCT to <code>.deps/occt-wasm-install/</code>.</li>
+<li>Cross-compiles Geometer against the WASM OCCT build.</li>
+<li>Copies the Node CLI and browser C ABI WASM outputs to grouped
+<code>dist/wasm/&lt;target&gt;/</code> folders.</li>
+</ol>
+<p>OCCT source is shared with the native <code>build_occt.py</code> flow when a source build
+is needed. RapidJSON is vendored under <code>third_party/rapidjson</code> and passed to
+OCCT during configure.</p>
+<h2 id="wasm-build-specifics">WASM Build Specifics</h2>
+<ul>
+<li><code>NODERAWFS=1</code>: the WASM CLI uses Node's real filesystem for file I/O.</li>
+<li><code>ALLOW_MEMORY_GROWTH=1</code>: STEP models vary in size.</li>
+<li><code>INITIAL_MEMORY=64MB</code>: reasonable starting point for OCCT.</li>
+<li><code>ENVIRONMENT=node</code>: the Node CLI target.</li>
+<li><code>ENVIRONMENT=web,worker</code>: the modular browser target.</li>
+<li><code>EXIT_RUNTIME=1</code>: clean exit after the Node CLI <code>main()</code> returns.</li>
+<li><code>NO_EXIT_RUNTIME=1</code>: keep the browser runtime alive for repeated C ABI calls.</li>
+<li>OCCT is built with <code>-pthread</code> flags for threading support.</li>
+</ul>
+<h2 id="usage">Usage</h2>
+<pre><code class="language-bash">python scripts/build_wasm.py
+node dist/wasm/node-test/geometer-node-test.js step-to-glb input.step output.glb
+python scripts/build_wasm.py --clean
+</code></pre>
+<h2 id="rationale">Rationale</h2>
+<ul>
+<li>No global toolchain install required.</li>
+<li>Pinned emsdk version ensures reproducible builds.</li>
+<li>Same pattern as the native OCCT build, so contributors use one mental model.</li>
+<li>WASM and native builds are independent build trees using the same source.</li>
+</ul>
+<h2 id="consequences">Consequences</h2>
+<ul>
+<li><code>.deps/emsdk/</code> is about 1.5 GB on disk.</li>
+<li>OCCT WASM source builds take about 15-20 minutes on a cold cache.</li>
+<li>Total first-time WASM setup is about 20-30 minutes without an OCCT cache hit.</li>
+</ul>
+
+</main>
+</body>
+</html>

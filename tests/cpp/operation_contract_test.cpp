@@ -747,8 +747,11 @@ void generic_c_abi_catalog_and_typed_failures()
     catalog_document.Parse(catalog_text.data(), catalog_text.size());
     require(!catalog_document.HasParseError() && catalog_document.IsObject(),
             "generated runtime catalog should be valid JSON");
-    require(catalog_document["operations"].Size() == 4U,
+    require(catalog_document["operations"].Size() == 6U,
             "runtime catalog should contain every generated operation exactly once");
+    require(catalog_text.find("geometry.model_tessellation.a0") != std::string::npos &&
+                catalog_text.find("geometry.mesh_illustration.a0") != std::string::npos,
+            "portable catalog should advertise tessellation and illustration");
     require(catalog_text.find("geometry.model_hlr_projection.a0") != std::string::npos &&
                 catalog_text.find("geometry.mesh_hlr_projection.a0") != std::string::npos,
             "portable catalog should advertise model and indexed-mesh HLR");
@@ -769,7 +772,7 @@ void generic_c_abi_catalog_and_typed_failures()
     native_catalog_document.Parse(native_catalog_text.data(), native_catalog_text.size());
     require(!native_catalog_document.HasParseError() && native_catalog_document.IsObject(),
             "generated native runtime catalog should be valid JSON");
-    require(native_catalog_document["operations"].Size() == 13U,
+    require(native_catalog_document["operations"].Size() == 15U,
             "native catalog should add the nine bounded topology research operations");
     require(native_catalog_text.find("geometry.step_topology.open.a0") != std::string::npos &&
                 native_catalog_text.find("geometry.step_topology.inspect.a0") !=

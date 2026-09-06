@@ -1,5 +1,9 @@
 # Node STEP Topology Annotation Reference
 
+For a minimal, non-topology introduction, use the
+[model-bounds IPC quick start](../../docs/design/executable-ipc.md).
+The topology reference below remains experimental and is not production-ready.
+
 This student-facing TypeScript example exercises the bounded native research
 surface without exposing OCCT or raw STEP internals. It opens and inspects a
 STEP model, validates a sealed GLB work packet before Three.js parses it, uses
@@ -30,7 +34,7 @@ durable annotation identity.
 
 The example is a Geometer transport/research reference, not an Appz annotation
 domain contract. See the
-[Annotation Lab handoff](../../docs/design/step-topology-appz-annotation-lab-handoff.md)
+[Annotation Lab handoff](../../docs/research/step-topology/step-topology-appz-annotation-lab-handoff.md)
 before adapting the flow in Appz. General save/export and changed-source
 recovery analysis are intentionally absent because those operations are not yet
 advertised by the native runtime.

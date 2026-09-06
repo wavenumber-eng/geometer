@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>ADR-010: TypeSpec Contract Authority And Promotion — Geometer</title>
+  <link rel="stylesheet" href="../../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/geometer/adr/geometer-adr-010-typespec_contract_authority_and_promotion.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="adr-010-typespec-contract-authority-and-promotion">ADR-010: TypeSpec Contract Authority And Promotion</h1></header>
+<h2 id="status">Status</h2>
+<p>Accepted on 2026-08-12. Implementation is tracked by
+<a href="https://github.com/wavenumber-eng/geometer/issues/18">GitHub issue #18</a>.</p>
+<h2 id="context">Context</h2>
+<p>Geometer currently expresses its callable structures in several handwritten
+forms: C++ value types, JSON readers and writers, C ABI declarations,
+Emscripten export lists, Python dataclasses and mappings, JavaScript examples,
+CLI dispatch, and prose design documents. These surfaces implement useful
+contracts, but a new operation must be reproduced in several languages and can
+drift between native, browser, and executable-backed consumers.</p>
+<p>The ALX domain in <code>appz/data_models</code> demonstrated a useful pattern: author
+portable structure in TypeSpec, lower it into a normalized catalog, and drive
+language projections and conformance evidence from that catalog. Geometer
+needs the same mechanics without acquiring an ALX, application, or sibling
+repository dependency.</p>
+<p>TypeSpec cannot own geometry behavior, C allocation rules, Emscripten exports,
+executable framing, or packed binary layouts by itself. Authority must remain
+explicit for those concerns. Existing public interfaces also cannot change
+merely because a generated representation differs from a handwritten one.</p>
+<h2 id="decision">Decision</h2>
+<p>Geometer will use authored TypeSpec plus an in-repository normalized catalog as
+the structural authority for each contract after that contract is individually
+promoted.</p>
+<p>Before promotion, the existing implementation remains authority. The promotion
+manifest under <code>docs/contracts/</code> records the current authority, target
+authority, compatibility posture, required projections, and evidence state for
+every known contract. A contract is promoted only when the manifest and all
+required evidence agree; adding TypeSpec source alone does not transfer
+authority.</p>
+<h3 id="authority-boundaries">Authority boundaries</h3>
+<p>For a promoted contract, TypeSpec owns:</p>
+<ul>
+<li>serialized field names and types;</li>
+<li>required, optional, nullable, and default intent;</li>
+<li>closed objects, discriminated unions, and scalar constraints;</li>
+<li>operation request and response envelope structure;</li>
+<li>diagnostic payload structure; and</li>
+<li>attachment descriptors and their relationship to an operation.</li>
+</ul>
+<p>The normalized catalog is a deterministic, loss-checked lowering of the
+TypeSpec program. JSON Schema, generated reference documentation, C++ wire
+DTOs/codecs, TypeScript, Rust, and Python projections consume that catalog.
+Generators must reject unsupported or lossy constructs and must not maintain a
+smaller handwritten root list.</p>
+<p>C++ remains behavioral authority for model loading, OCCT work, planar solving,
+projection, tessellation, topology, and all other geometry semantics. Generated
+C++ values are wire DTOs mapped explicitly to focused public C++ value APIs;
+they do not replace public semantic value types without a separate
+compatibility decision.</p>
+<p>The following remain separately governed transport authorities:</p>
+<ul>
+<li>C ABI names, fixed-width layouts, generations, ownership, allocation, free
+functions, and Emscripten exports;</li>
+<li>executable process lifecycle, framing, limits, correlation, cancellation,
+logging, and shutdown; and</li>
+<li>packed planar magic values, versions, endianness, flags, and layouts.</li>
+</ul>
+<p>Reviewed Geometer-specific metadata may enter the normalized catalog so that
+generators can verify these surfaces. Ordinary JSON Schema is not sufficient
+authority for them.</p>
+<h3 id="presence-defaults-and-compatibility">Presence, defaults, and compatibility</h3>
+<p>Wire presence is distinct from an effective operation value. Generated input
+decoders must preserve absent versus present fields. Partial option-patch DTOs
+must not eagerly materialize defaults. Compatibility and batch layers merge
+defaults, top-level patches, and job patches before mapping to canonical C++
+options.</p>
+<p>Canonical contracts are closed by default. Compatibility aliases and legacy
+input shapes stay in explicit adapters and normalize to canonical DTOs; they do
+not enter generated canonical types. Existing C++, C ABI, CLI, Python, JSON,
+binary, and browser surfaces remain supported until their manifest entry has an
+approved compatibility disposition and migration evidence.</p>
+<h3 id="required-projections">Required projections</h3>
+<p>The production projection set is:</p>
+<ul>
+<li>JSON Schema and generated HTML contract reference documentation using the
+shared Wavenumber visual system;</li>
+<li>C++17 wire DTOs and strict codecs;</li>
+<li>TypeScript types, strict codecs, and browser/Web Worker WASM client helpers;</li>
+<li>Rust types, strict codecs, and executable-pipe client helpers; and</li>
+<li>Python types and strict codecs integrated behind the compatible public
+executable-backed package.</li>
+</ul>
+<p>Generated Python is required promotion scope, not an optional follow-up. Public
+Python names and behavior remain behind wrappers or adapters where direct
+generated-class exposure would be incompatible.</p>
+<h3 id="package-identities-and-runtime-posture">Package identities and runtime posture</h3>
+<p>The TypeScript package identity is <code>@wavenumber/geometer</code>. It is an ESM package
+with generated declarations and explicit exports for the high-level client,
+contracts/codecs, direct WASM transport, and Web Worker transport. Standalone
+browser demo output may be bundled from that source, but is not a second package
+authority.</p>
+<p><code>appz/viz</code> is a named compatibility consumer. Its vendored Geometer 2026.6.10
+browser artifacts, factories, runtime helpers, per-operation C ABI symbols, and
+packed planar formats remain supported while Viz is JavaScript-based. Its
+planned TypeScript upgrade targets <code>@wavenumber/geometer</code>; compatibility does
+not transfer until Viz passes its own integration suite on the generated client
+and the promotion manifest records a replacement snapshot.</p>
+<p>The Rust client crate identity is <code>geometer-client</code>. Its first supported client
+is asynchronous and uses Tokio for process and pipe I/O. Generated wire models
+use Serde; a synchronous facade is deferred until a named consumer requires it.</p>
+<p>The existing PyPI distribution and import identities remain <code>wn-geometer</code> and
+<code>geometer</code>. Generated Python lives in an internal package namespace and depends
+on a small in-package strict-codec runtime using the Python standard library.
+No new validation framework becomes a wheel runtime dependency unless the
+Python compatibility analysis demonstrates that the internal runtime cannot
+meet the governed constraints.</p>
+<p>These names were unclaimed in the public npm and crates.io registry queries
+performed on 2026-08-12. Registry availability is not a substitute for
+Wavenumber publication authorization.</p>
+<h3 id="promotion-rule">Promotion rule</h3>
+<p>Promotion is operation-by-operation. Each operation must:</p>
+<ol>
+<li>have an approved canonical identity and compatibility posture;</li>
+<li>be present in TypeSpec and the normalized catalog;</li>
+<li>generate every required projection deterministically;</li>
+<li>pass shared strict, schema, semantic, diagnostic, and transport vectors as
+applicable;</li>
+<li>complete native executable and browser WASM round trips;</li>
+<li>migrate its maintained examples and demos to the generated TypeScript
+client;</li>
+<li>update docs of record, guides, compatibility notes, and release notes; and</li>
+<li>pass named downstream compatibility snapshots, including Viz while its
+legacy lane remains active; and</li>
+<li>remove displaced handwritten structural authority or retain it only as a
+named compatibility adapter.</li>
+</ol>
+<p><code>model_bounds</code> is the first vertical pilot. Inventorying another operation does
+not promote it or require its full TypeSpec graph in the pilot.</p>
+<h2 id="consequences">Consequences</h2>
+<ul>
+<li>A new logical interface can be projected consistently into the languages
+used by Geometer consumers.</li>
+<li>Browser applications and Rust executable clients gain supported high-level
+paths instead of reproducing allocation, JSON, or framing details.</li>
+<li>The Python package participates in the same structural authority while
+retaining its documented executable backend and compatibility surface.</li>
+<li>TypeSpec and generator tooling become build-time development dependencies,
+but never Geometer runtime dependencies.</li>
+<li>Generated HTML is a deterministic review projection. Geometer vendors the
+approved Wavenumber stylesheet/assets and never reads them from a sibling
+checkout during normal generation.</li>
+<li>Contract work carries an explicit conformance, documentation, compatibility,
+and release burden before promotion.</li>
+<li>Packed binary formats and transport ABIs continue to require focused design
+review rather than being inferred from a schema generator.</li>
+</ul>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,707 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>Geometer Development — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/developer/README.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="geometer-development">Geometer Development</h1></header>
+<p>This document is the practical setup guide for building, testing, and working on
+Geometer from a fresh checkout.</p>
+<h2 id="project-summary">Project Summary</h2>
+<p>Geometer is a focused C++17 geometry library and CLI built on OpenCASCADE
+Technology (OCCT). Its job is to provide generic CAD/kernel geometry operations
+for browser, native CLI, and Python tooling.</p>
+<p>Current library surfaces include:</p>
+<ul>
+<li>STEP to GLB conversion.</li>
+<li>STEP hidden-line projection geometry.</li>
+<li>Planar contour extraction for simplified projected outlines.</li>
+<li>Production Clipper2-backed planar batch boolean/offset solving for filled 2D
+geometry.</li>
+<li>Experimental analytic line/arc planar Boolean solving; retained for research
+and diagnostics, not production use.</li>
+<li>Colored STEP tessellation and native mesh illustration with optional visible
+HLR composition, exposed through direct C++, IPC, Rust and Python.</li>
+</ul>
+<p>The core library must stay generic. Do not put board placement rules, Altium
+specific names, visualizer policy, or downstream application semantics into
+<code>geometer</code>.</p>
+<p>For the current callable C++, C ABI, Python, WASM, CLI, JSON, and binary
+formats, start at <a href="../design/README.html">../design/README.md</a>.</p>
+<p>For authored/generated documentation ownership and focused freshness checks,
+see <a href="documentation.html">documentation maintenance</a>. The <a href="demo-status.html">demo audit</a>
+records current runtime evidence and remaining verification gaps.
+The <a href="native-api-readiness.html">native illustration API readiness handoff</a>
+separates implemented surfaces and package evidence from remaining release gates.</p>
+<h2 id="repository-layout">Repository Layout</h2>
+<ul>
+<li><code>src/cpp/lib/</code> - reusable C++ library code.</li>
+<li><code>src/cpp/cli/</code> - thin CLI wrapper around the library.</li>
+<li><code>python/geometer/</code> - executable-backed Python package.</li>
+<li><code>examples/</code> - Python, C++, and WASM-facing examples.</li>
+<li><code>tests/</code> - stratified tests and C++ test sources.</li>
+<li><code>docs/geometer/adr/</code> - architecture decisions.</li>
+<li><code>docs/geometer/requirements/</code> - numbered requirements.</li>
+<li><code>docs/design/</code> - maintained interface and format documentation.</li>
+<li><code>docs/developer/</code> - developer setup, validation, and release commands.</li>
+<li><code>scripts/</code> - dependency/build helper scripts.</li>
+<li><code>dist/</code> - distributable binaries and WASM outputs.</li>
+<li><code>.deps/</code> - local generated dependencies and toolchains.</li>
+</ul>
+<h2 id="dependency-policy">Dependency Policy</h2>
+<p><code>.deps/</code> is local generated state and must not be committed. It contains cloned
+and built dependencies such as OCCT, emsdk, and OCCT WASM artifacts. It is
+intentionally ignored by Git.</p>
+<p><code>third_party/rapidjson/</code> is different. RapidJSON is header-only, small enough to
+vendor, and required by OCCT's GLB export path. The vendored copy is checked in
+so a fresh clone does not need a separate RapidJSON git checkout.</p>
+<p><code>third_party/clipper2/</code> is also different. Clipper2 is a compact BSL-1.0 C++
+library used by Geometer's generic planar batch solve API. The checked-in copy
+contains only the C++ library sources, headers, upstream license, and a local
+vendoring note.</p>
+<p><code>dist/</code> is different. This repository currently treats <code>dist/</code> as the location
+for distributable binaries. CMake and WASM builds copy final outputs there.
+Those outputs are committed when publishing changes so another project can clone
+and use Geometer without a local native/WASM rebuild. Canonical native artifacts
+live under <code>dist/native/&lt;platform&gt;/</code>, canonical WASM artifacts live under
+<code>dist/wasm/&lt;target&gt;/</code>, and the generated ESM package lives under
+<code>dist/wasm/npm/geometer/</code>. Root-level <code>dist/geometer*</code> artifacts are intentionally
+not produced.</p>
+<p>OCCT is not vendored into the repository and is not added with CMake
+<code>FetchContent</code>, because OCCT uses <code>CMAKE_SOURCE_DIR</code> internally and does not work
+correctly as a subdirectory dependency. Instead, Geometer restores or builds
+OCCT as generated dependency state and finds it with
+<code>find_package(OpenCASCADE)</code>.</p>
+<p>Geometer can optionally restore prebuilt OCCT install trees from the Wavenumber
+public artifact cache. This is a speed optimization only: restored archives are
+validated by manifest and SHA-256, still land under <code>.deps/</code>, and source builds
+remain the fallback when the cache misses.</p>
+<p>For dependency cache setup, see
+<a href="r2-dependency-cache.html">r2-dependency-cache.md</a>.</p>
+<p>Pinned dependency versions live in scripts:</p>
+<ul>
+<li>OCCT and emsdk: <code>scripts/dependency_versions.py</code></li>
+<li>Boost.Multiprecision: <code>scripts/dependency_versions.py</code> and <code>scripts/build_boost.py</code></li>
+<li>RapidJSON: <code>third_party/rapidjson/</code></li>
+<li>Clipper2: <code>third_party/clipper2/</code></li>
+</ul>
+<p>The non-primary exact real-algebraic oracle and bounded fallback use the pinned
+header-only Boost
+source tree under <code>.deps/boost_1_92_0/</code>. CMake restores it automatically after
+verifying the official archive SHA-256, or it can be prepared explicitly:</p>
+<pre><code class="language-powershell">python scripts\build_boost.py
+</code></pre>
+<p>The archive cache and extracted headers are generated <code>.deps/</code> state and must
+not be committed.</p>
+<h2 id="typespec-contract-toolchain">TypeSpec Contract Toolchain</h2>
+<p>Contract generation uses Node 24 and exact npm 11.16.0 as build/test tools;
+neither is a Geometer runtime dependency. Provision and restore the pinned
+toolchain from the repository root:</p>
+<pre><code class="language-powershell">npm install --global npm@11.16.0
+if ((npm --version).Trim() -ne &quot;11.16.0&quot;) { throw &quot;npm version mismatch&quot; }
+npm ci
+</code></pre>
+<p>Regenerate the committed normalized catalog, JSON Schemas, and styled HTML
+reference after editing <code>src/tsp/geometer/</code>, then run the deterministic
+freshness check:</p>
+<pre><code class="language-powershell">npm run generate:contracts
+npm run check:contracts
+</code></pre>
+<p>The same generation command typechecks and bundles the native-process STEP
+topology annotation reference to
+<code>dist/native/examples/step-topology-annotation-reference.mjs</code>. Run it as
+documented in <a href="../../../../../../examples/node/README.md"><code>examples/node/README.md</code></a> after a
+native build.</p>
+<p>The check compiles with warnings as errors, validates the normalized catalog,
+cross-checks pilot roots and operations against the promotion manifest,
+rejects stale, missing, unexpected, unlinked, or externally dependent generated
+files, verifies vendored documentation assets, and replays the governed raw
+contract vectors under <code>tests/contracts/vectors/</code>. Use <code>npm run generate:docs</code>
+or <code>npm run check:docs</code> for a focused documentation-only pass. See
+<a href="../contracts/typespec-toolchain.html">../design/typespec-toolchain.md</a> for authority,
+supported constructs, identities, and output paths.</p>
+<h2 id="workspace-copy-setup">Workspace Copy Setup</h2>
+<p>For agent workspaces or downstream monorepo workspaces, prefer copying an
+already-prepared Geometer checkout when one is available locally. A prepared
+checkout includes:</p>
+<ul>
+<li><code>.deps/</code> with native OCCT state and WASM emsdk/OCCT state.</li>
+<li><code>build/</code> for the native CMake build.</li>
+<li><code>build-wasm/</code> for the Emscripten build.</li>
+<li><code>dist/</code> with the committed/runtime artifacts.</li>
+</ul>
+<p>On this development machine, the prepared checkout may live at
+<code>C:\ELI\geometer</code>. Copying that directory into a sibling workspace preserves the
+expensive dependency builds and allows fast API iteration. A fresh clone is still
+valid, but the first native/WASM dependency build can take tens of minutes.</p>
+<p>After copying into a workspace:</p>
+<pre><code class="language-powershell">git status --short --branch
+.\dist\native\windows-x64\geometer.exe --version
+node .\dist\wasm\node-test\geometer-node-test.js --version
+</code></pre>
+<p>Do not run <code>python scripts\build_occt.py --clean</code>,
+<code>python scripts\build_wasm.py --clean</code>, or delete <code>.deps/</code> unless intentionally
+refreshing dependencies. Those operations remove the cached dependency builds.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<p>Native builds require:</p>
+<ul>
+<li>Git.</li>
+<li>Python 3.</li>
+<li>uv.</li>
+<li>CMake 3.24 or newer.</li>
+<li>Ninja.</li>
+<li>A C++17 compiler toolchain.</li>
+</ul>
+<p>On Windows, use a Visual Studio developer environment or another shell where the
+selected C++ compiler is available to CMake. The default CMake preset uses
+Ninja. The OCCT dependency is built with the active native compiler for that
+platform, so use the same shell consistently for configure/build/validation.
+Binary-cache keys and local install markers include the native toolchain ABI and
+complete build-recipe hash; a compiler, configuration, or recipe change cannot
+silently reuse a stale local install. The published <code>windows-x64</code> OCCT 8.0.1
+cache is an MSVC v143-ABI install and must be consumed from a Visual Studio
+Developer PowerShell or Developer Command Prompt. MinGW and other compiler
+families use a different key and cannot restore the MSVC archive.</p>
+<p>On WSL2/Linux, install the usual build toolchain first. For Debian/Ubuntu
+distros, the minimum package set is:</p>
+<pre><code class="language-bash">sudo apt update
+sudo apt install -y build-essential git cmake ninja-build python3 python3-venv
+</code></pre>
+<p>On macOS, install equivalent tools with Homebrew:</p>
+<pre><code class="language-bash">brew install cmake ninja python
+</code></pre>
+<p>WASM builds additionally require enough disk space for emsdk and a WASM OCCT
+build. The script manages emsdk locally under <code>.deps/</code>.</p>
+<h2 id="native-build">Native Build</h2>
+<p>From the repository root:</p>
+<pre><code class="language-powershell">uv sync --group dev
+cmake --preset default
+cmake --build build --config Release
+</code></pre>
+<p>From WSL2/Linux/macOS, the same preset is intended to work:</p>
+<pre><code class="language-bash">uv sync --group dev
+cmake --preset default
+cmake --build build --config Release
+</code></pre>
+<p>The native validation script runs the native build, verifies the
+platform-specific <code>dist/native/&lt;platform&gt;/geometer</code> executable, projects the
+SOT-23 STEP fixture to JSON/SVG/GLB, exercises the source-checkout Python wrapper
+through <code>GEOMETER_EXE</code>, checks Linux dynamic dependencies where applicable, and
+runs CTest:</p>
+<pre><code class="language-bash">uv run python scripts/validate_native.py
+</code></pre>
+<p>Pass <code>--skip-ctest</code> to run only the build, CLI, source-checkout Python-wrapper,
+and dependency checks.</p>
+<p>On first configure, CMake looks for OCCT at:</p>
+<pre><code class="language-text">.deps/native/&lt;platform&gt;/occt-install/lib/cmake/opencascade
+</code></pre>
+<p>If OCCT is missing, top-level CMake automatically invokes:</p>
+<pre><code class="language-powershell">python scripts\build_occt.py
+</code></pre>
+<p>That script uses vendored RapidJSON, checks the public binary dependency cache,
+and otherwise clones OCCT, builds OCCT as static libraries, and installs it into
+<code>.deps/native/&lt;platform&gt;/occt-install/</code>. The first uncached source build is
+slow. Later configures reuse that platform-specific <code>.deps/</code> state and should be
+fast.</p>
+<p>Normal local and CI builds use public HTTPS reads from:</p>
+<pre><code class="language-env">GEOMETER_OCCT_BINARY=auto
+GEOMETER_OCCT_CACHE_PUBLIC_BASE_URL=https://artifacts.wavenumber.net
+</code></pre>
+<p><code>GEOMETER_OCCT_BINARY</code> accepts:</p>
+<ul>
+<li><code>auto</code> - use public cache, then any configured signed R2 fallback, then
+source.</li>
+<li><code>off</code> - ignore binary caches and build from source.</li>
+<li><code>only</code> - require a binary cache hit and fail otherwise.</li>
+</ul>
+<p>Cache recipe keys cover structured CMake definitions and explicit semantic
+values that can change the installed OCCT bytes. The same definition records
+emit the CMake <code>-D</code> arguments and feed the recipe hash. Workspace paths, build
+parallelism, orchestration scripts, cache transport code, and the indirect
+dependency-version file are not hashed. The selected OCCT repository/tag,
+platform, configuration, library type, Emscripten version when applicable, and
+platform baselines are included directly. Native profiles also identify the
+compiler family, ABI-relevant major version, and C++ runtime/ABI selection;
+compiler patch releases do not rotate the key.
+Previously accepted OCCT 8.0.1 archives may be reached only through exact
+profile, destination-recipe, and SHA aliases; there is no generic stale-cache
+fallback. Reviewed local marker-only recipe transitions are also exact and
+one-way: all non-recipe profile fields and the installed OCCT version must
+already match, and the install tree is retained without a rebuild.</p>
+<p>R2 credentials are only needed for producer uploads or explicit private fallback
+testing. Copy <code>.env.example</code> to <code>.env</code> for those cases and fill the <code>R2_*</code>
+values locally.</p>
+<p>Root <code>.env</code> is for local development only and must not be present when running
+release signoff or <code>wn-dev-std check</code>. Move it to an ignored local location, or
+set the same variables in the shell environment before signoff.</p>
+<p>The vendored RapidJSON v1.1.0 copy includes Geometer's small modern Clang
+compatibility patch so OCCT's GLTF toolkit compiles in native and WASM builds.</p>
+<p>Build outputs are copied into <code>dist/native/&lt;platform&gt;/</code> after a successful
+native build. The CLI post-build step also writes
+<code>geometer.build-attestation.json</code> beside the build-tree executable and copies
+it beside the distributed executable. The deterministic sidecar binds the
+exact executable SHA-256 and version/C ABI to compiler, platform, build type,
+OCCT tag, CMake generator, and Git source state. Validate it directly with:</p>
+<pre><code class="language-powershell">uv run python scripts/native_build_attestation.py validate --executable dist/native/windows-x64/geometer.exe
+</code></pre>
+<p>Dirty worktrees produce diagnostic sidecars but cannot set the qualification
+promotion field <code>build_provenance_attested</code> to true. Release qualification
+therefore requires a rebuild from a clean authoritative Git worktree.
+Current platform directory names use <code>windows-x64</code>, <code>linux-x64</code>, <code>linux-arm64</code>,
+and <code>macos-arm64</code>.</p>
+<p>Common native CLI commands:</p>
+<pre><code class="language-powershell">.\dist\native\windows-x64\geometer.exe --version
+.\dist\native\windows-x64\geometer.exe step-to-glb input.step output.glb
+.\dist\native\windows-x64\geometer.exe step-project-hlr input.step output.json
+.\dist\native\windows-x64\geometer.exe step-project-svg input.step output.svg --mode outline --view top
+.\dist\native\windows-x64\geometer.exe init-request request.json --step input.step --operation step_hlr_projection_json --output output.json
+.\dist\native\windows-x64\geometer.exe run request.json response.json
+.\dist\native\windows-x64\geometer.exe planar-batch-solve request.bin response.bin --warmup 1 --repeat 5 --metrics metrics.json
+</code></pre>
+<p>The Python package uses the native CLI by default. From a source checkout,
+<code>GEOMETER_EXE</code> is optional if <code>dist/native/&lt;platform&gt;/geometer(.exe)</code> exists.
+The old Python wheel direction based on <code>geometer.dll</code> plus OCCT <code>TK*.dll</code>
+runtime files is retired; <code>dist/</code> should not persist those files.</p>
+<p>The PyPI distribution name is <code>wn-geometer</code>; the import package remains
+<code>geometer</code>.</p>
+<p>To build a local Python wheel, first build the native CLI so
+<code>dist/native/&lt;platform&gt;/geometer(.exe)</code> exists. Then run:</p>
+<pre><code class="language-powershell">python -m build --wheel --outdir out\wheelhouse
+python -m twine check out\wheelhouse\*.whl
+</code></pre>
+<p>The package validation script builds the local wheel, installs it into a clean
+temporary environment, verifies that Python resolves the bundled executable from
+inside the installed package, imports the public analytic DTO/client surface,
+executes empty and nontrivial analytic IPC calls against that bundled
+executable, verifies the generated <code>geometer</code> console script, and runs the
+headless package example. It also exercises installed public tessellation,
+illustration, Fast-HLR composition, deterministic SVG, default surface fusion,
+limit recovery and one-shot Python helpers outside the source checkout:</p>
+<pre><code class="language-powershell">uv run python scripts\validate_python_package.py
+</code></pre>
+<p>The wheel build copies the platform executable into
+<code>geometer/native/&lt;platform&gt;/</code> inside the wheel, exposes the <code>geometer</code> console
+script, and marks the wheel platform-specific. The Windows executable wheel
+should use a <code>py3-none-win_amd64</code> tag because it contains no CPython extension
+module.</p>
+<h3 id="macos-arm64-wheels">macOS arm64 wheels</h3>
+<p>Geometer currently publishes Apple Silicon macOS wheels and does not publish an
+Intel macOS wheel. The standard macOS release target is:</p>
+<pre><code class="language-text">py3-none-macosx_11_0_arm64
+</code></pre>
+<p>The release scripts default Darwin native and wheel builds to
+<code>MACOSX_DEPLOYMENT_TARGET=11.0</code>. When changing the target, rebuild OCCT and the
+native CLI from clean generated state because static OCCT objects carry their
+own Mach-O minimum OS metadata:</p>
+<pre><code class="language-bash">python scripts/build_occt.py --clean
+rm -rf build-native-macos-arm64
+uv run python scripts/validate_native.py
+uv run python scripts/validate_python_package.py --skip-native-validation
+</code></pre>
+<p>Before uploading, verify both the filename and the bundled executable:</p>
+<pre><code class="language-bash">otool -l dist/native/macos-arm64/geometer | rg -A5 'LC_BUILD_VERSION|LC_VERSION_MIN_MACOSX'
+python -m twine check out/wheelhouse/macos-arm64/wn_geometer-2026.9.6-py3-none-macosx_11_0_arm64.whl
+</code></pre>
+<p>The Mach-O <code>minos</code> value must not be newer than the wheel platform tag. Do not
+retag an existing macOS wheel to a lower version without rebuilding native
+artifacts.</p>
+<p>Treat GitHub Actions <code>macos-latest</code> as a moving CI label, not as a release
+target. GitHub announces <code>macos-latest</code> migrations and rolls them out gradually,
+so normal maintenance is to keep the Geometer wheel target pinned to the
+supported floor (<code>macosx_11_0_arm64</code>) and test that wheel on the current
+<code>macos-latest</code> runner. A <code>macos-latest</code> migration only requires repackaging if
+the wheel install or native smoke test fails on the new hosted runner, or if a
+new SDK/toolchain raises the Mach-O <code>minos</code> above the published wheel tag.</p>
+<p>For WSL/Linux release wheels, build on the Ubuntu 22.04 release runners. The
+expected Linux x64 wheel tag is <code>manylinux_2_35_x86_64</code>; the Linux ARM64 tag is
+<code>manylinux_2_35_aarch64</code>. Do not retag a wheel to a lower glibc baseline
+without rebuilding the bundled native executable and OCCT dependency tree on
+that baseline.</p>
+<pre><code class="language-bash">uvx --from auditwheel --with patchelf auditwheel show out/wheelhouse/linux-x64/wn_geometer-*.whl
+</code></pre>
+<p><code>auditwheel show</code> should not report a newer glibc floor than the wheel filename
+tag.</p>
+<h3 id="public-release-workflow">Public release workflow</h3>
+<p>The normal publication path is <a href="../../../../../../.github/workflows/release.yml">Publish</a>,
+triggered by publishing a GitHub release. Prepare the UTC date version, release
+notes, generated contracts/docs and a release PR first. Require the
+<a href="../../../../../../.github/workflows/ci.yml">CI</a> four-platform native/client/installed-wheel
+matrix, L99 and standards checks, plus <a href="../../../../../../.github/workflows/wasm.yml">WASM</a>
+browser and cross-transport checks before tagging. Inspect native artifact
+attestations for clean source and verified OCCT provenance, then refresh
+committed <code>dist/</code> outputs from those qualified builds. Do not publish a local
+development wheel or change attestation fields to make it qualify.</p>
+<p>After the reviewed release PR merges, tag its exact revision and publish the
+GitHub release using the dated notes. Publish rebuilds and tests Windows x64,
+Linux x64, Linux ARM64 and macOS ARM64 wheels plus WASM, uploads GitHub assets
+and checksums, and publishes wheels through PyPI trusted publishing. Verify
+workflow completion, release assets and PyPI version/platform files. Then
+install from PyPI in WSL2 and run the headless package example (REQ-006),
+including the installed native illustration workflow. Native Rust GUI binaries
+remain outside release packaging pending a separate decision.</p>
+<p>The commands below are optional manual upload procedures, not a bypass of the
+same qualification gates. Include every supported platform, including Linux
+ARM64, when performing a complete manual release.</p>
+<p>PyPI upload commands:</p>
+<pre><code class="language-powershell"># Preflight metadata.
+python -m twine check out\wheelhouse\windows-x64\wn_geometer-2026.9.6-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.6-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.6-py3-none-macosx_11_0_arm64.whl
+
+# Optional dry-run project on TestPyPI.
+python -m twine upload --repository testpypi out\wheelhouse\windows-x64\wn_geometer-2026.9.6-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.6-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.6-py3-none-macosx_11_0_arm64.whl
+
+# Public PyPI release.
+python -m twine upload --repository pypi out\wheelhouse\windows-x64\wn_geometer-2026.9.6-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.6-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.6-py3-none-macosx_11_0_arm64.whl
+</code></pre>
+<p>For token-based upload, set <code>TWINE_USERNAME=__token__</code> and put the PyPI or
+TestPyPI API token in <code>TWINE_PASSWORD</code>, or use an equivalent <code>.pypirc</code>/keyring
+setup. Do not write upload tokens into the repository.</p>
+<p>The current release target is <code>wn-geometer==2026.9.6</code>; callers install
+<code>wn-geometer==2026.9.6</code> and import <code>geometer</code>.</p>
+<p>For local token setup, copy <code>.env.example</code> to <code>.env</code>, fill the token values,
+and keep <code>.env</code> out of version control.</p>
+<h2 id="manual-occt-rebuild">Manual OCCT Rebuild</h2>
+<p>Use this when changing the pinned OCCT version or when the local OCCT build is
+suspect:</p>
+<pre><code class="language-powershell">python scripts\build_occt.py --clean
+python scripts\build_occt.py
+cmake --preset default
+cmake --build build --config Release
+</code></pre>
+<p><code>--clean</code> removes OCCT build/install state for the current native platform under
+<code>.deps/native/&lt;platform&gt;/</code>; it does not remove vendored RapidJSON, the shared
+OCCT source checkout, or the Geometer <code>build/</code> directory. Add <code>--clean-source</code>
+only when intentionally refreshing the shared OCCT source checkout too.</p>
+<p>To inspect the dependency cache key without building:</p>
+<pre><code class="language-powershell">python scripts\build_occt.py --print-binary-cache-key
+python scripts\build_wasm.py --print-occt-binary-cache-key
+</code></pre>
+<p>For a side-by-side kernel upgrade decision, use the isolated exact-tag
+qualification harness rather than editing <code>dependency_versions.py</code> between
+builds. See <a href="occt-qualification.html">OCCT qualification</a>. It keeps dependency
+state below <code>.deps/occt-qualification/&lt;tag&gt;/</code>, build evidence below
+<code>out/occt-qualification/&lt;tag&gt;/</code>, and committed <code>dist/</code> artifacts untouched.</p>
+<p>The trusted GitHub workflow <code>.github/workflows/occt-deps.yml</code> publishes OCCT
+archives to R2. Normal CI and release workflows consume the public artifact
+cache and do not need R2 secrets. When the printed keys are missing from
+<code>https://artifacts.wavenumber.net/deps/v1/geometer/occt/</code>, run the <code>OCCT Dependency Cache</code> workflow with <code>target=all</code> to publish the current generation.</p>
+<p>The public Python package uses the executable backend only. Keep ctypes/native
+loading experiments out of the normal wheel and application path unless a future
+ADR explicitly reopens that backend.</p>
+<h2 id="experimental-analytic-qualification">Experimental Analytic Qualification</h2>
+<p>This tooling characterizes the retained experimental analytic solver. Passing
+the governed fixtures or historical production-oriented gates does not make the
+operation production-ready. In particular, do not use it as the dependable
+whole-board or whole-layer copper-union path; use Clipper2-backed planar
+operations when polygonized output is suitable. See
+<a href="../geometer/adr/geometer-adr-017-retain_analytic_planar_boolean_as_experimental.html">ADR-017</a>.</p>
+<p>Use an existing Release executable to replay the governed analytic request
+through the same release IPC transport without rebuilding OCCT:</p>
+<pre><code class="language-powershell">uv run python scripts\qualify_analytic_planar_boolean.py --power-mode balanced
+</code></pre>
+<p>The default governed request is synthetic cross-transport evidence. Supply an
+external corpus with <code>--corpus</code>; its <code>external_real_board</code> cases require source
+and exporter identity, source digest, exporter revision, explicit qualification
+redistribution authorization, and license scope. Reports are written below
+<code>out/analytic-qualification/</code> by default. Process RSS remains a separately
+labelled external envelope.</p>
+<p>Corpus request paths are contained relative paths. Canonical lowercase <code>.hex</code>
+files and exact raw <code>.gmabrq01</code> files are supported; the suffix selects the
+decoder, and magic/accounting mismatches fail closed. Replay the governed RT
+local candidate without duplicating its raw bytes as hex:</p>
+<pre><code class="language-powershell">uv run python scripts\qualify_analytic_planar_boolean.py `
+  --corpus tests\contracts\vectors\analytic\real-board\rt_super_c1_pwr4\corpus.json `
+  --executable build\src\cpp\cli\geometer.exe `
+  --telemetry-helper build\tests\cpp\geometer_analytic_solver_telemetry_helper.exe `
+  --warmup-count 1 --repeat-count 2 --require-target --require-solver-telemetry
+</code></pre>
+<p>The checked-in report is a local Ryzen 9 5950X, dirty-build observation. It is
+not a clean-build promotion record. Its machine identity and the 1-second/
+512-MiB target remain comparative observations rather than release gates.</p>
+<p>Native builds also produce the test/qualification-only
+<code>geometer_analytic_solver_telemetry_helper</code> target. The harness discovers it
+only from <code>--telemetry-helper</code>, <code>GEOMETER_ANALYTIC_TELEMETRY_HELPER</code>, or the
+canonical current-workspace native build paths. Use the required gate explicitly:</p>
+<pre><code class="language-powershell">uv run python scripts\qualify_analytic_planar_boolean.py --require-solver-telemetry
+</code></pre>
+<p>Release runs must additionally pass
+<code>--require-promotion-attested</code>; the command then exits unsuccessfully unless
+the executable sidecar matches the current authoritative clean source and a
+verified resolved OCCT install profile, and any external real-board case passes
+the portable expected-result, repeat, byte-equality, zero-failure/fallback, and
+5-second/1-GiB hard-ceiling gates.</p>
+<p>An external real-board corpus enables this requirement automatically. Missing,
+unexecutable, or incompatible helpers fail closed. For every measured run the
+helper consumes the identical <code>GMABRQ01</code> bytes through
+<code>decode_analytic_request_packet</code> and <code>build_analytic_filtered_batch</code>; the
+harness rejects its counters unless its complete result packet is byte-for-byte
+equal to the production executable IPC result.</p>
+<p>Auto-discovered helpers must also be newer than their adjacent <code>geometer_lib</code>
+artifact, and that library must be newer than the current native solver source
+closure. A stale build is rejected with the exact helper target to rebuild.</p>
+<p>The report schema is
+<code>wn.geometer.analytic_planar_boolean_qualification.a2</code>; the internal counter
+schema is <code>wn.geometer.analytic_solver_telemetry.a0</code>. Report identity binds the
+request and expected-result digests, production executable/toolchain profile,
+helper executable SHA-256, telemetry schema, machine profile, run counts, power
+mode, and target policy. Runtime timing, RSS, and counter observations are not
+identity inputs. Per-job <code>emitted_bytes</code> is the logical encoded footprint of
+that isolated job before canonical batch merging and shared-table
+deduplication; batch <code>emitted_bytes</code> is the exact canonical result-packet size.
+The helper is neither distributed nor a public operation/API, and it does not
+change the A0 request/result wire. Internal telemetry alone cannot claim the
+real-board promotion gate: build-attested executable provenance is a separate
+required gate. Machine identity is recorded for comparison but does not affect
+portable production eligibility. Missing
+sidecars fall back to explicitly un-attested workspace hints; invalid or stale
+adjacent sidecars fail closed. Every external real-board
+case also needs a governed expected-result SHA-256; deterministic self-output
+without that authority remains comparative evidence only. Promotion also needs
+at least two production-result and byte-matched telemetry observations; a
+single run is permitted for smoke/diagnostic use but cannot establish the
+promotion determinism gate.</p>
+<h2 id="wasm-build">WASM Build</h2>
+<p>From the repository root:</p>
+<pre><code class="language-powershell">python scripts\build_wasm.py
+</code></pre>
+<p>This script:</p>
+<ol>
+<li>Clones and activates pinned emsdk under <code>.deps/emsdk/</code>.</li>
+<li>Uses vendored RapidJSON and reuses or clones OCCT source under <code>.deps/</code>.</li>
+<li>Cross-compiles OCCT to <code>.deps/occt-wasm-install/</code>.</li>
+<li>Builds Geometer in <code>build-wasm/</code>.</li>
+<li>Copies the full browser/Web Worker C ABI outputs <code>geometer.js</code> /
+<code>geometer.wasm</code> into <code>dist/wasm/browser/</code>. This is the official application
+integration WASM and includes OCCT-backed STEP/HLR/GLB plus planar byte APIs.</li>
+<li>Copies the Node CLI parity/test outputs <code>geometer-node-test.js</code> /
+<code>geometer-node-test.wasm</code> into <code>dist/wasm/node-test/</code> and writes its local
+CommonJS package boundary for direct execution beneath the repository's ESM
+root.</li>
+<li>Copies the planar-only browser C ABI outputs <code>geometer-planar-browser.js</code> /
+<code>geometer-planar-browser.wasm</code> into <code>dist/wasm/planar-browser/</code>. This
+smaller build intentionally excludes OCCT/STEP and is retained for
+planar-only browser workers.</li>
+<li>Writes <code>dist/README.md</code>.</li>
+</ol>
+<p>To remove WASM-specific generated state:</p>
+<pre><code class="language-powershell">python scripts\build_wasm.py --clean
+</code></pre>
+<p>The Node CLI target uses filesystem access for command-line parity. The full
+browser target is modularized and exports the flat C ABI entry points
+<code>geometer_step_hlr_projection_json_bytes</code> and <code>geometer_step_to_glb_bytes</code> for
+direct byte-buffer calls from JavaScript or a Web Worker.</p>
+<p>The full browser target also exports <code>geometer_version_string</code> and
+<code>geometer_abi_version</code>. Downstream browser consumers should check those before
+depending on a specific ABI. Earlier pre-date ABI integers tracked planar batch,
+diagnostic, and triangulation additions; current releases use the ADR 006
+date-based ABI generation, for example <code>20260906</code>.</p>
+<h2 id="versioning">Versioning</h2>
+<p>Geometer follows <a href="../geometer/adr/geometer-adr-006-date_based_versioning_policy.html">ADR 006</a>.
+The current release identity is <code>v2026-09-06</code>; the CMake/PyPI package version
+is <code>2026.9.6</code>; the C ABI generation is <code>20260906</code>.</p>
+<p>The root <code>CMakeLists.txt</code> declares <code>GEOMETER_RELEASE_DATE</code>,
+<code>GEOMETER_RELEASE_VERSION</code>, and <code>GEOMETER_ABI_VERSION</code>. The root
+<code>pyproject.toml</code> package version must match <code>GEOMETER_RELEASE_VERSION</code>.
+Generated build metadata must use UTC. Rebuild the persisted <code>dist/</code> artifacts
+when version or interface values change.</p>
+<h2 id="embedded-model-viewer">Embedded Model Viewer</h2>
+<p>To refresh the copied STEP fixtures, GLB display meshes, and manifest from an
+embedded model folder:</p>
+<pre><code class="language-powershell">powershell -NoProfile -ExecutionPolicy Bypass -File scripts\prepare_embedded_model_fixtures.ps1
+</code></pre>
+<p>The script copies STEP/STP files into <code>tests/fixtures/step/embedded_models/</code>,
+converts each one to GLB under <code>tests/fixtures/glb/embedded_models/</code>, and writes
+<code>tests/fixtures/embedded_models_manifest.json</code>.</p>
+<p>Serve the repository root and open the viewer:</p>
+<pre><code class="language-powershell">python -m http.server 8123 --bind 127.0.0.1
+</code></pre>
+<p><code>http://127.0.0.1:8123/examples/wasm/embedded_model_viewer.html</code></p>
+<p>The source viewer loads the GLB for the 3D pane and sends the matching STEP
+bytes to the browser WASM HLR API for the projection pane. The maintained HLR
+Lab also accepts local STEP uploads, keeps OCCT work in a Worker, and uses the
+shared TypeScript panel system.</p>
+<p>Build the self-contained artifact and its deploy-unchanged review directory:</p>
+<pre><code class="language-powershell">python scripts\build_hlr_site.py
+python -m http.server 8123 --bind 127.0.0.1 --directory dist\wasm\demos\hlr
+</code></pre>
+<p>Open <code>http://127.0.0.1:8123/</code>. The page runtime is only <code>index.html</code>; the
+adjacent <code>_headers</code> and <code>asset-manifest.json</code> files are deployment and closure
+metadata. This command builds and serves locally—it does not publish. See
+<a href="browser-demos.html">Browser demo packaging and UI</a> before adding or
+hosting another demo.</p>
+<p>The generated TypeScript model-bounds example uses the packaged high-level
+Worker client and the same full-browser WASM artifact. It keeps synchronous
+OCCT execution off the window event loop:</p>
+<pre><code class="language-powershell">npm run generate:contracts
+python -m http.server 8123 --bind 127.0.0.1
+</code></pre>
+<p><code>http://127.0.0.1:8123/examples/wasm/model_bounds_demo.html</code></p>
+<p>The HLR timing page runs the same browser worker projection path across the
+fixture set and reports STEP fetch-to-bytes timing separately from HLR timing:</p>
+<p><code>http://127.0.0.1:8123/tests/wasm/hlr_benchmark.html</code></p>
+<h2 id="tests">Tests</h2>
+<p>After a native CMake build:</p>
+<pre><code class="language-powershell">ctest --test-dir build -C Release --output-on-failure
+</code></pre>
+<p>After a WASM build, validate the generic operation ABI/model-bounds round trip,
+the retained STEP-to-GLB export, and the packed planar export:</p>
+<pre><code class="language-powershell">node tests\wasm\operation_contract_validation.js
+node tests\wasm\step_to_glb_bytes_validation.js
+node tests\wasm\planar_batch_solve_bytes_validation.js
+</code></pre>
+<p>Validate generated TypeScript codecs, a clean packed consumer, and the direct
+plus real Worker-thread high-level WASM clients:</p>
+<pre><code class="language-powershell">npm run check:typescript
+uv run pytest tests\typescript -q
+</code></pre>
+<p>Validate generated Rust codecs, formatting/lints, exact A0 framing, a clean
+packaged-crate consumer running friendly analytic IPC against the platform
+<code>dist</code> executable, and live persistent native-process model bounds:</p>
+<pre><code class="language-powershell">node scripts\generate-rust-contracts.mjs --check
+cargo fmt --manifest-path src\rust\geometer-client\Cargo.toml --all -- --check
+cargo clippy --manifest-path src\rust\geometer-client\Cargo.toml --all-targets --locked -- -D warnings
+wn-dev-std audit src\rust\geometer-client --scope language
+uv run pytest tests\rust -q
+</code></pre>
+<p>To benchmark the browser C ABI planar batch solver against a packed request:</p>
+<pre><code class="language-powershell">node tests\wasm\planar_batch_solve_bytes_benchmark.js request.bin response.bin --warmup 1 --repeat 5 --metrics metrics.json
+</code></pre>
+<p>To run the same benchmark in headless Chrome, including the Web Worker path:</p>
+<pre><code class="language-powershell">python tests\wasm\planar_batch_solve_bytes_chrome_benchmark.py request.bin --worker --warmup 1 --repeat 5 --metrics metrics.json
+</code></pre>
+<p>The Rack metadata under <code>tests/</code> describes test strata, but the C++ tests are
+registered through CTest.</p>
+<p>The experimental native STEP topology research has an additional contained
+worker test. It opens a real OCCT session, then verifies hard deadline/cancel
+replacement (including descendants), private temporary-directory cleanup,
+injected supervisor-failure cleanup, cooperative native cancellation, and the
+platform OS memory ceiling (Windows Job Object or Linux exec-launcher
+<code>RLIMIT_AS</code>). The experimental supervisor explicitly rejects macOS until a
+native hard-containment bootstrap is available; that follow-up is tracked by
+<a href="https://github.com/wavenumber-eng/geometer/issues/25">issue #25</a>:</p>
+<pre><code class="language-powershell">cmake --build build --config Release --target geometer_step_topology_worker_test_server
+uv run pytest tests\python\test_topology_worker_supervisor.py -q
+</code></pre>
+<p>The helper worker protocol is test-only. Do not build application code against
+it. Persistent-topology operation models are generated from TypeSpec. Nine
+experimental operations have native executable IPC adapters; hierarchy,
+recovery analysis, and save remain structural-only. None are browser/WASM
+operations or production-ready topology APIs. Check the advertised catalog
+before calling them. See
+<a href="../design/step-topology-contract-a0.html">STEP topology contract Slice A</a>.</p>
+<p>The experimental direct topology-to-triangle binding proof has a separate
+native target. It verifies indexed face spans, repeated-occurrence instances,
+reverse hit resolution, transforms/reflections, winding/normals, limits, and
+generation invalidation. The fixture baseline test also resolves every
+triangle of every instance across the measured corpus:</p>
+<pre><code class="language-powershell">cmake --build build --config Release --target `
+  geometer_step_topology_render_binding_test `
+  geometer_step_topology_fixture_inventory
+ctest --test-dir build -C Release --output-on-failure -R `
+  &quot;geometer_step_topology_(render_binding|fixture_baseline)_test&quot;
+</code></pre>
+<p>The experimental topology GLB proof adds a native fixture emitter and a real
+Three.js loader/raycast integration test. Node dependencies are pinned by the
+repository lockfile; this command runs every checked STEP fixture plus a
+reflected-coordinate case and writes all temporary artifacts under the pytest
+directory:</p>
+<pre><code class="language-powershell">cmake --build build --config Release --target `
+  geometer_step_topology_glb_fixture_emitter
+uv run pytest tests\python\test_topology_glb_raycast.py -q
+</code></pre>
+<p>The emitted GLB is a neutral-material topology work packet and is not the existing
+presentation-oriented STEP-to-GLB output.</p>
+<p>The native persistence research has focused same-build XBF/XML and AP242
+product/body/face tests. The AP242 test uses the OCCT model API and generated
+geometry; it does not require or copy the licensed ISO package:</p>
+<pre><code class="language-powershell">cmake --build build --config Release --target `
+  geometer_step_topology_xcaf_persistence_test `
+  geometer_step_topology_xcaf_custom_driver_test `
+  geometer_step_topology_ap242_persistence_test `
+  geometer_step_topology_recovery_test `
+  geometer_step_topology_hierarchy_test
+ctest --test-dir build -C Release --output-on-failure -R `
+  &quot;geometer_step_topology_(xcaf|ap242|recovery|hierarchy).*test&quot;
+</code></pre>
+<p>The XCAF baseline uses standard names and NamedData. The separate custom-driver
+test registers one test-only namespaced attribute for binary and XML, checks
+serialized OCAF version 12, and proves that a stock reader can report success
+while dropping the attribute when its retrieval driver is absent. Neither is a
+cross-version or STEP interoperability claim.</p>
+<p>The selected custom-driver compatibility matrix uses OCCT 7.9.3 and 8.0.1 with
+the same MSVC v143 x64 static <code>/MD</code> ABI. Prepare the isolated older dependency
+once, then run the reusable matrix harness:</p>
+<pre><code class="language-powershell">python scripts\build_occt.py `
+  --occt-tag V7_9_3 `
+  --occt-state-root .deps\occt-qualification\7.9.3 `
+  --binary-cache auto
+python scripts\run_xcaf_custom_driver_matrix.py
+</code></pre>
+<p>The harness compiles one source file against both installs and exercises
+same-version, old-write/new-read, new-write/old-read, and missing-reader-driver
+behavior for XBF and XML. Its artifacts and provenance report remain generated
+under <code>.deps/xcaf-matrix/automated/</code>; do not commit them. The durable measured
+result and its narrow scope are recorded in
+<code>docs/research/step-topology/step-topology-xcaf-persistence.md</code>.</p>
+<p>Specification traceability is recorded as relative locators in the design
+docs. <code>GEOMETER_AP242_SPEC_ROOT</code> is only a manual reviewer convention; no test
+or script consumes it. A reviewer may point it at the locally licensed ISO
+10303-242:2025 package and resolve the recorded relative paths, for example:</p>
+<pre><code class="language-powershell">$env:GEOMETER_AP242_SPEC_ROOT = '&lt;licensed-package-root&gt;'
+Test-Path (Join-Path $env:GEOMETER_AP242_SPEC_ROOT `
+  'data/resources/shape_tolerance_schema/shape_tolerance_schema.htm')
+</code></pre>
+<p>Never commit the licensed contents or an absolute workstation path.</p>
+<p>Current limitation: the top-level CMake configure always resolves OCCT first.
+That means even low-level tests need the native dependency setup when run
+through CMake. For isolated low-level work before <code>.deps/</code> exists, direct
+compile checks are acceptable, but they are not a replacement for the CMake/CTest
+path before publishing changes.</p>
+<p>Example isolated contour test compile:</p>
+<pre><code class="language-powershell">New-Item -ItemType Directory -Force out\developer | Out-Null
+clang++ -std=c++17 -Isrc\cpp\lib src\cpp\lib\planar_contours.cpp tests\cpp\planar_contours_test.cpp -o out\developer\geometer_planar_contours_test.exe
+.\out\developer\geometer_planar_contours_test.exe
+Remove-Item .\out\developer\geometer_planar_contours_test.exe
+</code></pre>
+<h2 id="formatting-and-checks">Formatting And Checks</h2>
+<p>Format touched C++ files with the repository <code>.clang-format</code>:</p>
+<pre><code class="language-powershell">clang-format -i &lt;files&gt;
+</code></pre>
+<p>Useful lightweight checks:</p>
+<pre><code class="language-powershell">git diff --check
+clang++ -std=c++17 -Isrc\cpp\lib -fsyntax-only &lt;files&gt;
+</code></pre>
+<p>Run the full native build and CTest path before treating C++ changes as ready.</p>
+<p>Release signoff also requires:</p>
+<pre><code class="language-powershell">uv sync --group dev
+uv run pytest tests\L99_release -q
+uv run python scripts\validate_native.py
+uv run python scripts\validate_python_package.py
+</code></pre>
+<p>The L99 release stratum includes Ruff, Pyright, <code>uv lock --check</code>,
+clang-format dry-run, Lizard complexity checking, and repository hygiene checks.</p>
+<h2 id="common-troubleshooting">Common Troubleshooting</h2>
+<p>If CMake cannot find OCCT:</p>
+<pre><code class="language-powershell">python scripts\build_occt.py
+cmake --preset default
+</code></pre>
+<p>If OCCT configure/build state looks stale:</p>
+<pre><code class="language-powershell">python scripts\build_occt.py --clean
+python scripts\build_occt.py
+</code></pre>
+<p>If CMake cached the wrong dependency path, remove or recreate <code>build/</code> and
+configure again:</p>
+<pre><code class="language-powershell">Remove-Item -Recurse -Force .\build
+cmake --preset default
+</code></pre>
+<p>Before deleting generated directories, verify the path is inside this repository.
+Never delete <code>.deps/</code> or <code>build/</code> paths computed from an untrusted variable.</p>
+
+</main>
+</body>
+</html>

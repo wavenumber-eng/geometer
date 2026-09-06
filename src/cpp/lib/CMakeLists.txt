@@ -45,7 +45,22 @@ set(GEOMETER_LIB_SOURCES
     indexed_mesh_packet.cpp
     mesh_shadow_outline.cpp
     mesh_hlr_projection.cpp
+    mesh_illustration.cpp
+    mesh_illustration_hlr.cpp
+    mesh_illustration_fusion.cpp
+    mesh_illustration_fusion_geometry.cpp
+    mesh_illustration_grid.cpp
+    mesh_illustration_layers.cpp
+    mesh_illustration_math.cpp
+    mesh_illustration_operation.cpp
+    mesh_illustration_prepare.cpp
+    mesh_illustration_style.cpp
+    mesh_illustration_svg.cpp
+    mesh_illustration_svg_lines.cpp
+    mesh_illustration_visibility.cpp
     model_bounds.cpp
+    model_tessellation.cpp
+    model_tessellation_operation.cpp
     model_bounds_options_json.cpp
     operation_c_api.cpp
     operation_registry.cpp

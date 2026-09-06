@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>STEP Topology GLB Work-Packet Research — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/step-topology-glb-binding.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="step-topology-glb-work-packet-research">STEP Topology GLB Work-Packet Research</h1></header>
+<p>Status: selected experimental encoding; available through unpromoted native executable operations</p>
+<p>Date: 2026-08-22</p>
+<h2 id="outcome">Outcome</h2>
+<p>Geometer now emits a deterministic GLB 2.0 work packet from the sealed native
+topology render artifact. A real pinned Three.js 0.161 <code>GLTFLoader</code> and
+<code>Raycaster</code> test proves that every rendered primitive across the checked corpus
+and a reflected case resolves to the exact native occurrence, body, and face
+handles.</p>
+<p>The native executable's experimental render operation returns the GLB as a
+bounded attachment and retains only the authoritative sealed render artifact,
+not a second copy of the GLB. The retained artifact, including its outer
+identity wrapper, is memory-accounted,
+session/generation-bound, replaced by the next render, and destroyed on close,
+eviction, expiry, mutation, or process replacement. Resolve-hit validates the
+browser's returned indices and target claims against that retained artifact.
+The portable C ABI and browser/WASM runtime do not advertise these operations.</p>
+<p>The retained artifact is trusted immutable store state. Resolve-hit therefore
+uses direct instance, mesh, and primitive indexing and performs one bounded
+lookup plus exact target-claim checks; it does not rehash or rescan the whole
+artifact for every click. The public C++ value API keeps its full validation
+path for caller-supplied mutable artifacts.</p>
+<p>The selected A0 experiment uses:</p>
+<ul>
+<li>one shared glTF mesh for each simple-shape definition;</li>
+<li>one glTF node for each leaf occurrence, with its accumulated transform;</li>
+<li>one indexed glTF primitive per selectable face;</li>
+<li><code>asset.extras.wn_geometer</code> for source, session, generation, artifact, content
+digest, coordinate, unit, and layout identity;</li>
+<li>mesh extras for the definition handle;</li>
+<li>node extras for occurrence and instance identity; and</li>
+<li>primitive extras for body/face handles and the exact triangle span.</li>
+</ul>
+<p>The asset repeats the opaque artifact handle and complete content SHA-256 from
+the native render artifact. The containing work packet additionally carries an
+exact GLB-byte SHA-256 and a session-secret <code>gtg_</code> seal over that digest and the
+sealed render identity. This avoids an impossible self-referential digest
+inside the GLB JSON. Consumers validate the downloaded bytes against the
+out-of-band work-packet digest before accepting a hit, then return both GLB
+identities, indices, and claimed target handles to the native validator.
+Handles remain live-session and generation-scoped; GLB metadata is not durable
+annotation identity.</p>
+<h2 id="emission-route-comparison">Emission-Route Comparison</h2>
+<p>The OCCT 8.0.1 writer exposes face merge control and protected virtual
+<code>writePrimArray</code> and <code>writeExtrasAttributes</code> hooks. The experiments and source
+surface review produced these results:</p>
+<table>
+<thead>
+<tr>
+<th>Route</th>
+<th>What works</th>
+<th>Blocking limitation for exact selection</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>XCAF <code>TDataStd_NamedData</code> through <code>writeExtrasAttributes</code></td>
+<td>OCCT projects supported scalar and array values into node <code>extras</code></td>
+<td>The output is flat and node-only. Definition and occurrence attributes can collide, and it cannot express a nested, sealed asset/mesh/primitive binding table.</td>
+</tr>
+<tr>
+<td>Focused <code>RWGltf_CafWriter</code> subclass</td>
+<td>The protected hooks can change primitive and extras emission</td>
+<td><code>writePrimArray</code> receives an internal glTF-face object, while node/occurrence traversal context is owned by the writer. Joining both safely would couple Geometer to private traversal/order behavior or duplicate substantial writer logic.</td>
+</tr>
+<tr>
+<td>Deterministic JSON-chunk postprocessing of an OCCT GLB</td>
+<td>Nested asset and primitive extras can be inserted without rewriting binary buffers</td>
+<td>The completed GLB does not carry enough authoritative OCCT face/occurrence identity to prove which primitive belongs to which live target. Inferring it by order would make ordering identity. Existing corpus output also duplicates mesh objects per occurrence even where accessors are shared.</td>
+</tr>
+<tr>
+<td>Deterministic GLB encoding from Geometer's sealed OCCT tessellation</td>
+<td>Exact occurrence/body/face provenance is already present, definition geometry remains shared, output is bounded, and metadata is placed at the level Three.js returns</td>
+<td>Selected for the research work packet. It is intentionally a small geometry/binding encoder, not a replacement for OCCT's production material-aware STEP-to-GLB path.</td>
+</tr>
+</tbody>
+</table>
+<p>The direct route remains OCCT-backed: OCCT owns STEP transfer, XCAF structure,
+tessellation, face orientation, normals, and occurrence locations. Geometer
+only serializes the already-validated value artifact. No face association is
+reconstructed from glTF names, array order, or geometric coincidence.</p>
+<h2 id="coordinates-units-and-materials">Coordinates, Units, And Materials</h2>
+<p>Positions are written in meters, as required by glTF convention. Node matrices
+contain the accumulated occurrence transform and the explicit signed-rigid
+source-to-render conversion. The GLB default converts Geometer's OCCT frame
+(+Y forward, +Z up) to glTF (+Y up, -Z forward). Matrices are emitted in glTF
+column-major form, and translations are converted from millimeters to meters.</p>
+<p>This research packet currently emits normals and one explicit neutral,
+double-sided PBR material, but it does not preserve source materials, textures,
+colors, or lights. Every face primitive references that material so the real
+loader test covers glTF primitive/material handling. The asset declares
+<code>single-neutral-research-material</code> so a caller cannot mistake it for the
+existing presentation-oriented <code>step_to_glb</code> output. A later student sandbox
+may replace the neutral presentation, but production material parity is
+outside this topology proof.</p>
+<h2 id="face-layout-and-size-evidence">Face Layout And Size Evidence</h2>
+<p>One primitive per face gives the simplest exact Three.js result: each loaded
+<code>Mesh</code> carries one primitive's extras, and <code>faceIndex</code> is local to that face.
+Its cost is a draw call for every occurrence/face pair. A merged primitive
+would reduce the projected draw calls to one per leaf occurrence, but requires
+a separately validated triangle-range lookup. A compact binary table is the
+preferred future layout if larger models make repeated JSON handles or draw
+calls unacceptable.</p>
+<p>The checked A2 fixture report records actual work-packet sizes and per-face
+draw-call counts. <code>projected_merged_draw_calls</code> is a cardinality projection,
+not a measured GPU timing:</p>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th style="text-align:right">Existing presentation GLB</th>
+<th style="text-align:right">Binding GLB</th>
+<th style="text-align:right">JSON</th>
+<th style="text-align:right">Binary</th>
+<th style="text-align:right">Per-face calls</th>
+<th style="text-align:right">Projected merged calls</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>miniature test point</td>
+<td style="text-align:right">72,512</td>
+<td style="text-align:right">87,388</td>
+<td style="text-align:right">25,150</td>
+<td style="text-align:right">62,208</td>
+<td style="text-align:right">50</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>SOT-23</td>
+<td style="text-align:right">41,048</td>
+<td style="text-align:right">44,984</td>
+<td style="text-align:right">26,427</td>
+<td style="text-align:right">18,528</td>
+<td style="text-align:right">53</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>RESC1608X06L</td>
+<td style="text-align:right">13,448</td>
+<td style="text-align:right">17,072</td>
+<td style="text-align:right">14,116</td>
+<td style="text-align:right">2,928</td>
+<td style="text-align:right">32</td>
+<td style="text-align:right">4</td>
+</tr>
+<tr>
+<td>SOIC-20-300</td>
+<td style="text-align:right">66,184</td>
+<td style="text-align:right">55,576</td>
+<td style="text-align:right">31,787</td>
+<td style="text-align:right">23,760</td>
+<td style="text-align:right">312</td>
+<td style="text-align:right">21</td>
+</tr>
+<tr>
+<td>ABM3B</td>
+<td style="text-align:right">131,336</td>
+<td style="text-align:right">142,532</td>
+<td style="text-align:right">86,197</td>
+<td style="text-align:right">56,304</td>
+<td style="text-align:right">185</td>
+<td style="text-align:right">7</td>
+</tr>
+<tr>
+<td>generated repeated assembly</td>
+<td style="text-align:right">n/a</td>
+<td style="text-align:right">6,504</td>
+<td style="text-align:right">5,753</td>
+<td style="text-align:right">720</td>
+<td style="text-align:right">24</td>
+<td style="text-align:right">4</td>
+</tr>
+<tr>
+<td>generated fused slab</td>
+<td style="text-align:right">n/a</td>
+<td style="text-align:right">9,976</td>
+<td style="text-align:right">8,268</td>
+<td style="text-align:right">1,680</td>
+<td style="text-align:right">14</td>
+<td style="text-align:right">1</td>
+</tr>
+<tr>
+<td>generated flat multi-solid</td>
+<td style="text-align:right">n/a</td>
+<td style="text-align:right">8,816</td>
+<td style="text-align:right">7,345</td>
+<td style="text-align:right">1,440</td>
+<td style="text-align:right">12</td>
+<td style="text-align:right">1</td>
+</tr>
+</tbody>
+</table>
+<p>The existing and binding GLBs differ in tessellation, materials, and purpose,
+so their byte counts are contextual rather than a codec benchmark. The SOIC
+case already shows the key tradeoff: exact per-face selection uses 312 logical
+draw calls versus a projected 21 for merged occurrence meshes. Slice A should
+therefore keep GLB bindings compact and leave room for a later binary range
+attachment without changing authored target identity.</p>
+<h2 id="validation-and-failure-behavior">Validation And Failure Behavior</h2>
+<p>Native encoding is bounded independently for GLB bytes and inherits all render
+vertex, index, primitive, instance, binding, instanced-triangle, and memory
+limits. Byte/cancel checks run while copying vertices, normals, indices, JSON
+records, final chunks, and SHA-256 chunks rather than only after a complete
+allocation. Cancellation or any encoding failure clears the entire output
+packet. POSITION bounds are computed from the exact finite FLOAT values stored
+in the BIN chunk.</p>
+<p>Store rendering also supplies an aggregate transient budget equal to the
+remaining store allowance while the prior retained artifact stays live.
+Render records are charged progressively, and GLB encoding receives only the
+budget left after the candidate render plus a distinct 256 MiB wire ceiling.
+The encoder uses one shared budget-enforcing allocator for BIN, layout tables,
+and both RapidJSON stacks. Vector growth and RapidJSON reallocation charge the
+simultaneously live old-plus-new allocations before calling the system
+allocator. The destination GLB reserves once from empty only after its final
+size and coexistence with all live source storage are preflighted. Regression
+tests prove both boundaries: source growth is rejected before the denied
+allocation, and a final GLB which fits the wire ceiling is still rejected when
+source and destination cannot coexist under the transient ceiling. Failure
+keeps the prior retained artifact intact.</p>
+<p>The native structural test checks GLB framing, metadata, shared mesh/instance
+counts, exact topology extras, coordinate conversion, cancellation, the GLB
+byte ceiling, and the sealed return-path validator. It rejects modified BIN
+bytes and mismatched primitive/target claims before resolving the live target.</p>
+<p>The integration test runs every fixture in the checked corpus plus a reflected
+coordinate variant. It validates buffer/accessor ranges, FLOAT accessor
+bounds, indices, node matrices, millimeter-to-meter translation, explicit
+material use, and exact GLB SHA-256 before loading with repository-pinned
+Three.js. It raycasts the first triangle of every primitive instance and
+compares the loaded occurrence, body, face, and reconstructed mesh-local native
+triangle ordinal to an independently emitted native expectation. The emitter
+also sends every such descriptor through the native validator. Stripped or
+reordered extras, overlapping ranges, modified BIN bytes, detached digests,
+and reflected-front-face mismatches fail closed.</p>
+<pre><code class="language-powershell">cmake --build build --config Release --target `
+  geometer_step_topology_render_binding_test `
+  geometer_step_topology_glb_fixture_emitter
+ctest --test-dir build -C Release --output-on-failure -R `
+  geometer_step_topology_render_binding_test
+uv run pytest tests\python\test_topology_glb_raycast.py -q
+</code></pre>
+<p>This test proves a browser-compatible render hit and exact native target
+agreement. It does not make GLB resumable authoring state, prove persistence in
+STEP, or define the future annotation contract.</p>
+
+</main>
+</body>
+</html>

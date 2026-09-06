@@ -1,0 +1,1481 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>Analytic Planar Boolean Packet A0 — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/analytic-planar-boolean-packet-a0.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="analytic-planar-boolean-packet-a0">Analytic Planar Boolean Packet A0</h1></header>
+<h2 id="status">Status</h2>
+<p><strong>Frozen experimental packet; not a production-readiness claim.</strong> The solver
+behind this packet may fail closed on valid inputs and is not recommended for
+whole-board or whole-layer copper union. API availability and stable A0 bytes
+do not change the experimental maturity established by
+<a href="../geometer/adr/geometer-adr-017-retain_analytic_planar_boolean_as_experimental.html">ADR-017</a>.</p>
+<p>This packet generation was created under the former MATZ integration. This
+separately governed binary projection carries the logical models in
+<a href="analytic-planar-boolean-a0.html">Analytic Planar Boolean A0 Design</a>. Existing
+line and integer-center arc rows and their raw-byte goldens remain stable. The
+owner has authorized adding the endpoint/radius arc interpretation before the
+planned MATZ visualization release; future incompatible changes require a new
+packet generation and magic.</p>
+<p>An implementation-review erratum dated 2026-08-14 resolves the only
+pre-golden layout contradiction: table offsets are eight-byte aligned, while
+table byte lengths remain the exact <code>record count * record bytes</code> value and
+therefore may be four modulo eight for kinds 106 and 114. Minimum zero padding
+aligns the following table. This records the uniquely encodable intent of A0;
+the generation and magic are unchanged because no raw golden or deployed codec
+preceded the correction.</p>
+<p>ADR-013 governs the solver-facing numeric limits. In particular, the 1 nm
+coordinate grid is retained while the production topology-resolution and
+boundary-displacement envelope is 50 nm. The endpoint/radius row carries an
+exact integer radius; its generally irrational center is reconstructed by the
+trusted solver and is not rounded onto the source grid.</p>
+<p>Every numeric enum, flag, role, status, event, diagnostic, and path token is
+assigned in the machine-readable governed catalog
+<code>docs/contracts/analytic-planar-boolean-a0-catalog.toml</code>. This document names
+the fields and the catalog supplies their exact wire values; drift tests require
+the two to remain aligned.</p>
+<p>The packet travels through named attachments on the generic operation C ABI and
+executable IPC. No operation-specific C symbol is added.</p>
+<h2 id="attachments-and-envelope">Attachments And Envelope</h2>
+<p>The operation request JSON contains only generated attachment metadata:</p>
+<pre><code class="language-json">{
+  &quot;schema&quot;: &quot;geometry.analytic_planar_boolean_batch.request.a0&quot;,
+  &quot;packet&quot;: {
+    &quot;attachment&quot;: &quot;analytic_planar_boolean_request&quot;,
+    &quot;format&quot;: &quot;geometry.analytic_planar_boolean.packet.a0&quot;
+  }
+}
+</code></pre>
+<p>The required request attachment is:</p>
+<ul>
+<li>name: <code>analytic_planar_boolean_request</code></li>
+<li>media type:
+<code>application/vnd.wavenumber.geometer.analytic-planar-boolean-request</code></li>
+<li>packet magic: <code>GMABRQ01</code></li>
+</ul>
+<p>The successful response envelope references:</p>
+<ul>
+<li>name: <code>analytic_planar_boolean_result</code></li>
+<li>media type:
+<code>application/vnd.wavenumber.geometer.analytic-planar-boolean-result</code></li>
+<li>packet magic: <code>GMABRS01</code></li>
+</ul>
+<p>Small noncanonical call telemetry may appear in the response JSON. It is not in
+the canonical result attachment or its digest.</p>
+<h2 id="scalar-rules">Scalar Rules</h2>
+<ul>
+<li>All integers are little-endian.</li>
+<li><code>u8</code>, <code>u16</code>, <code>u32</code>, <code>u64</code>, and <code>i64</code> have their normal exact widths.</li>
+<li>Booleans are <code>u8</code> with only <code>0</code> and <code>1</code> accepted.</li>
+<li>There are no pointers, platform-sized integers, floating-point values,
+strings, or NUL-terminated fields in A0 packets.</li>
+<li>Coordinates and lengths are integer nanometers. A0 packets contain no angle
+or trigonometric fields.</li>
+<li>Every packet offset is relative to byte zero of that packet.</li>
+<li>Every table offset is a multiple of eight. Table byte lengths are exact and
+need not be aligned. Minimum inter-table padding bytes and reserved fields
+must be zero.</li>
+<li>Decoders read fields explicitly; they do not cast packet memory to host
+structs.</li>
+</ul>
+<h2 id="fixed-header">Fixed Header</h2>
+<p>Every request and result begins with this 64-byte header:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">Offset</th>
+<th style="text-align:right">Size</th>
+<th>Type</th>
+<th>Field</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">0</td>
+<td style="text-align:right">8</td>
+<td>bytes</td>
+<td>request or result magic</td>
+</tr>
+<tr>
+<td style="text-align:right">8</td>
+<td style="text-align:right">2</td>
+<td><code>u16</code></td>
+<td>packet generation, exactly <code>1</code></td>
+</tr>
+<tr>
+<td style="text-align:right">10</td>
+<td style="text-align:right">2</td>
+<td><code>u16</code></td>
+<td>header bytes, exactly <code>64</code></td>
+</tr>
+<tr>
+<td style="text-align:right">12</td>
+<td style="text-align:right">4</td>
+<td><code>u32</code></td>
+<td>flags, zero in A0</td>
+</tr>
+<tr>
+<td style="text-align:right">16</td>
+<td style="text-align:right">8</td>
+<td><code>u64</code></td>
+<td>total packet bytes</td>
+</tr>
+<tr>
+<td style="text-align:right">24</td>
+<td style="text-align:right">8</td>
+<td><code>u64</code></td>
+<td>directory offset, exactly <code>64</code></td>
+</tr>
+<tr>
+<td style="text-align:right">32</td>
+<td style="text-align:right">4</td>
+<td><code>u32</code></td>
+<td>directory entry count</td>
+</tr>
+<tr>
+<td style="text-align:right">36</td>
+<td style="text-align:right">4</td>
+<td><code>u32</code></td>
+<td>job or job-result count</td>
+</tr>
+<tr>
+<td style="text-align:right">40</td>
+<td style="text-align:right">4</td>
+<td><code>u32</code></td>
+<td>relationship query or result count</td>
+</tr>
+<tr>
+<td style="text-align:right">44</td>
+<td style="text-align:right">4</td>
+<td><code>u32</code></td>
+<td>reserved, zero</td>
+</tr>
+<tr>
+<td style="text-align:right">48</td>
+<td style="text-align:right">8</td>
+<td><code>u64</code></td>
+<td>canonical payload bytes after directory/padding</td>
+</tr>
+<tr>
+<td style="text-align:right">56</td>
+<td style="text-align:right">8</td>
+<td><code>u64</code></td>
+<td>reserved, zero</td>
+</tr>
+</tbody>
+</table>
+<p><code>total packet bytes</code> must equal the attachment length. <code>canonical payload bytes</code> is the sum of declared table byte lengths, excluding the header,
+directory, and zero padding. It supports accounting but is not trusted until
+every range is validated.</p>
+<h2 id="table-directory">Table Directory</h2>
+<p>The directory immediately follows the header. Entries are 32 bytes and sorted
+by ascending table kind:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">Offset</th>
+<th style="text-align:right">Size</th>
+<th>Type</th>
+<th>Field</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">0</td>
+<td style="text-align:right">2</td>
+<td><code>u16</code></td>
+<td>table kind</td>
+</tr>
+<tr>
+<td style="text-align:right">2</td>
+<td style="text-align:right">2</td>
+<td><code>u16</code></td>
+<td>record version, exactly <code>1</code></td>
+</tr>
+<tr>
+<td style="text-align:right">4</td>
+<td style="text-align:right">4</td>
+<td><code>u32</code></td>
+<td>fixed record bytes</td>
+</tr>
+<tr>
+<td style="text-align:right">8</td>
+<td style="text-align:right">8</td>
+<td><code>u64</code></td>
+<td>table offset</td>
+</tr>
+<tr>
+<td style="text-align:right">16</td>
+<td style="text-align:right">8</td>
+<td><code>u64</code></td>
+<td>table byte length</td>
+</tr>
+<tr>
+<td style="text-align:right">24</td>
+<td style="text-align:right">8</td>
+<td><code>u64</code></td>
+<td>record count</td>
+</tr>
+</tbody>
+</table>
+<p>For every fixed table, <code>record count * record bytes == table byte length</code> with
+overflow-safe arithmetic. A request directory contains exactly kinds 1 through
+13 and a result directory contains exactly kinds 101 through 114, each exactly
+once, even when its record count is zero. Consequently the A0 request directory
+has exactly 13 entries and the result directory has exactly 14. Unknown,
+missing, or duplicate kinds are rejected.</p>
+<p>Zero-count tables have byte length zero and use the current minimum-aligned
+payload cursor as their offset; they do not advance it. Nonempty ranges may not
+overlap the header, directory, or another nonempty table. Tables are packed in
+directory order with only the minimum zero-filled alignment between them. This
+rule gives an empty/minimal logical model one unique directory and offset
+encoding.</p>
+<p>Indices are zero-based <code>u32</code> indices into the named table. <code>(first, count)</code> is
+valid only when <code>first + count</code> does not overflow and is within the target
+record count. An empty range uses <code>first == 0</code> and <code>count == 0</code>.</p>
+<h2 id="request-tables">Request Tables</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">Kind</th>
+<th>Name</th>
+<th style="text-align:right">Record bytes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">1</td>
+<td>jobs</td>
+<td style="text-align:right">24</td>
+</tr>
+<tr>
+<td style="text-align:right">2</td>
+<td>stages</td>
+<td style="text-align:right">32</td>
+</tr>
+<tr>
+<td style="text-align:right">3</td>
+<td>operands</td>
+<td style="text-align:right">24</td>
+</tr>
+<tr>
+<td style="text-align:right">4</td>
+<td>planar regions</td>
+<td style="text-align:right">32</td>
+</tr>
+<tr>
+<td style="text-align:right">5</td>
+<td>ring references</td>
+<td style="text-align:right">4</td>
+</tr>
+<tr>
+<td style="text-align:right">6</td>
+<td>rings</td>
+<td style="text-align:right">32</td>
+</tr>
+<tr>
+<td style="text-align:right">7</td>
+<td>authored vertices</td>
+<td style="text-align:right">24</td>
+</tr>
+<tr>
+<td style="text-align:right">8</td>
+<td>authored segments</td>
+<td style="text-align:right">40</td>
+</tr>
+<tr>
+<td style="text-align:right">9</td>
+<td>disks</td>
+<td style="text-align:right">32</td>
+</tr>
+<tr>
+<td style="text-align:right">10</td>
+<td>annuli</td>
+<td style="text-align:right">40</td>
+</tr>
+<tr>
+<td style="text-align:right">11</td>
+<td>capsules</td>
+<td style="text-align:right">48</td>
+</tr>
+<tr>
+<td style="text-align:right">12</td>
+<td>swept paths</td>
+<td style="text-align:right">32</td>
+</tr>
+<tr>
+<td style="text-align:right">13</td>
+<td>relationship queries</td>
+<td style="text-align:right">24</td>
+</tr>
+</tbody>
+</table>
+<h3 id="job-record-24-bytes">Job record, 24 bytes</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">Offset</th>
+<th>Type</th>
+<th>Field</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">0</td>
+<td><code>u64</code></td>
+<td>job id</td>
+</tr>
+<tr>
+<td style="text-align:right">8</td>
+<td><code>u32</code></td>
+<td>first stage index</td>
+</tr>
+<tr>
+<td style="text-align:right">12</td>
+<td><code>u32</code></td>
+<td>stage count</td>
+</tr>
+<tr>
+<td style="text-align:right">16</td>
+<td><code>u64</code></td>
+<td>reserved, zero</td>
+</tr>
+</tbody>
+</table>
+<p>Jobs sort by job id in the packet. Stage ranges retain authored stage order.
+The job stage ranges are pairwise disjoint and, in job-table order, form a
+gapless complete partition of the stage table. Every stage has exactly one job
+owner; no unowned stage record is permitted.</p>
+<h3 id="stage-record-32-bytes">Stage record, 32 bytes</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">Offset</th>
+<th>Type</th>
+<th>Field</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">0</td>
+<td><code>u64</code></td>
+<td>stage id</td>
+</tr>
+<tr>
+<td style="text-align:right">8</td>
+<td><code>u8</code></td>
+<td>operation: <code>1</code> union, <code>2</code> difference</td>
+</tr>
+<tr>
+<td style="text-align:right">9</td>
+<td>7 bytes</td>
+<td>reserved, zero</td>
+</tr>
+<tr>
+<td style="text-align:right">16</td>
+<td><code>u32</code></td>
+<td>first operand index</td>
+</tr>
+<tr>
+<td style="text-align:right">20</td>
+<td><code>u32</code></td>
+<td>operand count</td>
+</tr>
+<tr>
+<td style="text-align:right">24</td>
+<td><code>u64</code></td>
+<td>reserved, zero</td>
+</tr>
+</tbody>
+</table>
+<p>Operands within a stage sort by operand id.
+A stage range may be empty; this encodes the governed zero-operand no-op
+semantics. A job may contain zero stages and then succeeds with an empty result.
+The stage operand ranges are pairwise disjoint and, in stage-table order, form
+a gapless complete partition of the operand table. Every operand has exactly
+one stage owner; no unowned operand record is permitted.</p>
+<h3 id="operand-record-24-bytes">Operand record, 24 bytes</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">Offset</th>
+<th>Type</th>
+<th>Field</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">0</td>
+<td><code>u64</code></td>
+<td>operand id</td>
+</tr>
+<tr>
+<td style="text-align:right">8</td>
+<td><code>u16</code></td>
+<td>geometry kind</td>
+</tr>
+<tr>
+<td style="text-align:right">10</td>
+<td><code>u16</code></td>
+<td>flags, zero in A0</td>
+</tr>
+<tr>
+<td style="text-align:right">12</td>
+<td><code>u32</code></td>
+<td>geometry-table index</td>
+</tr>
+<tr>
+<td style="text-align:right">16</td>
+<td><code>u64</code></td>
+<td>reserved, zero</td>
+</tr>
+</tbody>
+</table>
+<p>Geometry kinds are <code>1</code> planar region, <code>2</code> disk, <code>3</code> annulus, <code>4</code> capsule, and
+<code>5</code> swept path. The geometry-table index addresses the table implied by the
+kind. The referenced geometry record may be owned by only one operand and is
+the sole authority for its region/feature id.</p>
+<h3 id="planar-region-record-32-bytes">Planar-region record, 32 bytes</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">Offset</th>
+<th>Type</th>
+<th>Field</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">0</td>
+<td><code>u64</code></td>
+<td>authored region id</td>
+</tr>
+<tr>
+<td style="text-align:right">8</td>
+<td><code>u32</code></td>
+<td>outer ring index</td>
+</tr>
+<tr>
+<td style="text-align:right">12</td>
+<td><code>u32</code></td>
+<td>first hole-ring-reference index</td>
+</tr>
+<tr>
+<td style="text-align:right">16</td>
+<td><code>u32</code></td>
+<td>hole-ring-reference count</td>
+</tr>
+<tr>
+<td style="text-align:right">20</td>
+<td><code>u32</code></td>
+<td>reserved, zero</td>
+</tr>
+<tr>
+<td style="text-align:right">24</td>
+<td><code>u64</code></td>
+<td>reserved, zero</td>
+</tr>
+</tbody>
+</table>
+<p>Each ring-reference record is one <code>u32</code> ring-table index. Hole references are
+unique and may not name the outer ring.
+Planar-region hole-reference ranges are pairwise disjoint and form a gapless
+complete partition of the ring-reference table. Across all planar-region outer
+indices, hole references, and swept-path indices, every ring-table record has
+exactly one owner and is referenced exactly once. A ring cannot be both a
+region ring and a swept path.</p>
+<h3 id="ring-record-32-bytes">Ring record, 32 bytes</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">Offset</th>
+<th>Type</th>
+<th>Field</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">0</td>
+<td><code>u64</code></td>
+<td>ring or path id</td>
+</tr>
+<tr>
+<td style="text-align:right">8</td>
+<td><code>u32</code></td>
+<td>first vertex index</td>
+</tr>
+<tr>
+<td style="text-align:right">12</td>
+<td><code>u32</code></td>
+<td>vertex count</td>
+</tr>
+<tr>
+<td style="text-align:right">16</td>
+<td><code>u32</code></td>
+<td>first segment index</td>
+</tr>
+<tr>
+<td style="text-align:right">20</td>
+<td><code>u32</code></td>
+<td>segment count</td>
+</tr>
+<tr>
+<td style="text-align:right">24</td>
+<td><code>u32</code></td>
+<td>flags: bit 0 means open path</td>
+</tr>
+<tr>
+<td style="text-align:right">28</td>
+<td><code>u32</code></td>
+<td>reserved, zero</td>
+</tr>
+</tbody>
+</table>
+<p>Closed rings require equal vertex/segment counts. Open paths require exactly
+one more vertex than segment. Ranges are owned and non-overlapping.
+Taken in ring-table order, the vertex ranges form a gapless complete partition
+of the authored-vertex table and the segment ranges form a gapless complete
+partition of the authored-segment table. Every authored vertex and segment has
+exactly one ring/path owner.</p>
+<h3 id="authored-vertex-record-24-bytes">Authored-vertex record, 24 bytes</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">Offset</th>
+<th>Type</th>
+<th>Field</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">0</td>
+<td><code>u64</code></td>
+<td>vertex id</td>
+</tr>
+<tr>
+<td style="text-align:right">8</td>
+<td><code>i64</code></td>
+<td>x nanometers</td>
+</tr>
+<tr>
+<td style="text-align:right">16</td>
+<td><code>i64</code></td>
+<td>y nanometers</td>
+</tr>
+</tbody>
+</table>
+<h3 id="authored-segment-record-40-bytes">Authored-segment record, 40 bytes</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">Offset</th>
+<th>Type</th>
+<th>Field</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">0</td>
+<td><code>u64</code></td>
+<td>segment id</td>
+</tr>
+<tr>
+<td style="text-align:right">8</td>
+<td><code>u64</code></td>
+<td>curve id</td>
+</tr>
+<tr>
+<td style="text-align:right">16</td>
+<td><code>u8</code></td>
+<td>kind: <code>1</code> line, <code>2</code> integer-center circular arc, <code>3</code> endpoint/radius circular arc</td>
+</tr>
+<tr>
+<td style="text-align:right">17</td>
+<td><code>u8</code></td>
+<td>direction: <code>0</code> line, <code>1</code> CCW, <code>2</code> CW</td>
+</tr>
+<tr>
+<td style="text-align:right">18</td>
+<td><code>u8</code></td>
+<td>major arc boolean</td>
+</tr>
+<tr>
+<td style="text-align:right">19</td>
+<td>5 bytes</td>
+<td>reserved, zero</td>
+</tr>
+<tr>
+<td style="text-align:right">24</td>
+<td><code>i64</code> or <code>u64</code></td>
+<td>kind 2 center x; kind 3 positive radius; zero for line</td>
+</tr>
+<tr>
+<td style="text-align:right">32</td>
+<td><code>i64</code> or reserved</td>
+<td>kind 2 center y; zero for line and kind 3</td>
+</tr>
+</tbody>
+</table>
+<p>The owning ring/path supplies endpoints by topology. Full-circle arc segments,
+zero-length segments, radii shorter than half the chord, major-flagged
+semicircles, and incoherent circle branches are invalid. Kind 3 selects the
+unique center branch from its ordered endpoints, radius, direction, and
+minor/major flag; the center need not lie on the integer-nanometer grid.
+Kind 3 is valid only for segments owned by closed planar rings. Open swept-path
+rings reject kind 3 before geometry execution.</p>
+<p>The filtered A0 implementation identifies coincident kind-3 carriers by their
+canonical unordered endpoint pair, radius, and selected center side. Equal
+circles expressed with different endpoint pairs, or with mixed kind-2/kind-3
+records, may therefore return the governed job-local
+<code>resource_limit_exceeded</code> diagnostic. This bounded unresolved-predicate outcome
+is deterministic and does not authorize approximation or partial success.
+General carrier canonicalization and endpoint/radius swept paths are tracked in
+<a href="https://github.com/wavenumber-eng/geometer/issues/21">Geometer issue #21</a>.</p>
+<h3 id="disk-record-32-bytes">Disk record, 32 bytes</h3>
+<p><code>feature id u64</code>, <code>center x i64</code>, <code>center y i64</code>, <code>radius u64</code>.</p>
+<h3 id="annulus-record-40-bytes">Annulus record, 40 bytes</h3>
+<p><code>feature id u64</code>, <code>center x i64</code>, <code>center y i64</code>, <code>inner radius u64</code>, <code>outer radius u64</code>.</p>
+<h3 id="capsule-record-48-bytes">Capsule record, 48 bytes</h3>
+<p><code>feature id u64</code>, start <code>x/y i64</code>, end <code>x/y i64</code>, and <code>width u64</code>.</p>
+<h3 id="swept-path-record-32-bytes">Swept-path record, 32 bytes</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">Offset</th>
+<th>Type</th>
+<th>Field</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">0</td>
+<td><code>u64</code></td>
+<td>feature id</td>
+</tr>
+<tr>
+<td style="text-align:right">8</td>
+<td><code>u32</code></td>
+<td>path record index in the ring table</td>
+</tr>
+<tr>
+<td style="text-align:right">12</td>
+<td><code>u32</code></td>
+<td>reserved, zero</td>
+</tr>
+<tr>
+<td style="text-align:right">16</td>
+<td><code>u64</code></td>
+<td>width nanometers</td>
+</tr>
+<tr>
+<td style="text-align:right">24</td>
+<td><code>u64</code></td>
+<td>A0 cap/join policy, zero means round/round</td>
+</tr>
+</tbody>
+</table>
+<p>The ring-table record must have the open-path flag. Width is positive.</p>
+<h3 id="relationship-query-record-24-bytes">Relationship-query record, 24 bytes</h3>
+<p><code>query id u64</code>, <code>left job id u64</code>, <code>right job id u64</code>. Query records sort by
+query id.</p>
+<h2 id="result-tables">Result Tables</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">Kind</th>
+<th>Name</th>
+<th style="text-align:right">Record bytes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">101</td>
+<td>job results</td>
+<td style="text-align:right">48</td>
+</tr>
+<tr>
+<td style="text-align:right">102</td>
+<td>diagnostics</td>
+<td style="text-align:right">56</td>
+</tr>
+<tr>
+<td style="text-align:right">103</td>
+<td>result vertices</td>
+<td style="text-align:right">32</td>
+</tr>
+<tr>
+<td style="text-align:right">104</td>
+<td>directed fragments</td>
+<td style="text-align:right">48</td>
+</tr>
+<tr>
+<td style="text-align:right">105</td>
+<td>result rings</td>
+<td style="text-align:right">32</td>
+</tr>
+<tr>
+<td style="text-align:right">106</td>
+<td>fragment references</td>
+<td style="text-align:right">4</td>
+</tr>
+<tr>
+<td style="text-align:right">107</td>
+<td>result regions</td>
+<td style="text-align:right">24</td>
+</tr>
+<tr>
+<td style="text-align:right">108</td>
+<td>ring/region references</td>
+<td style="text-align:right">8</td>
+</tr>
+<tr>
+<td style="text-align:right">109</td>
+<td>source sets</td>
+<td style="text-align:right">8</td>
+</tr>
+<tr>
+<td style="text-align:right">110</td>
+<td>source references</td>
+<td style="text-align:right">32</td>
+</tr>
+<tr>
+<td style="text-align:right">111</td>
+<td>operand outcome events</td>
+<td style="text-align:right">48</td>
+</tr>
+<tr>
+<td style="text-align:right">112</td>
+<td>relationship results</td>
+<td style="text-align:right">32</td>
+</tr>
+<tr>
+<td style="text-align:right">113</td>
+<td>relationship region pairs</td>
+<td style="text-align:right">32</td>
+</tr>
+<tr>
+<td style="text-align:right">114</td>
+<td>source-reference indices</td>
+<td style="text-align:right">4</td>
+</tr>
+</tbody>
+</table>
+<p>All generated result ids are deterministic nonzero one-based <code>u64</code> ordinals in
+their own result spaces after canonical sorting.</p>
+<h3 id="job-result-record-48-bytes">Job-result record, 48 bytes</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">Offset</th>
+<th>Type</th>
+<th>Field</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">0</td>
+<td><code>u64</code></td>
+<td>caller job id</td>
+</tr>
+<tr>
+<td style="text-align:right">8</td>
+<td><code>u8</code></td>
+<td>status: <code>0</code> success, <code>1</code> failure</td>
+</tr>
+<tr>
+<td style="text-align:right">9</td>
+<td>7 bytes</td>
+<td>reserved, zero</td>
+</tr>
+<tr>
+<td style="text-align:right">16</td>
+<td><code>u32</code></td>
+<td>first diagnostic index</td>
+</tr>
+<tr>
+<td style="text-align:right">20</td>
+<td><code>u32</code></td>
+<td>diagnostic count</td>
+</tr>
+<tr>
+<td style="text-align:right">24</td>
+<td><code>u32</code></td>
+<td>first result-region index</td>
+</tr>
+<tr>
+<td style="text-align:right">28</td>
+<td><code>u32</code></td>
+<td>result-region count</td>
+</tr>
+<tr>
+<td style="text-align:right">32</td>
+<td><code>u32</code></td>
+<td>first operand-event index</td>
+</tr>
+<tr>
+<td style="text-align:right">36</td>
+<td><code>u32</code></td>
+<td>operand-event count</td>
+</tr>
+<tr>
+<td style="text-align:right">40</td>
+<td><code>u64</code></td>
+<td>reserved, zero</td>
+</tr>
+</tbody>
+</table>
+<p>Failed jobs own no geometry/result-region records. Successful empty jobs own a
+zero-length result-region range.</p>
+<h3 id="diagnostic-record-56-bytes">Diagnostic record, 56 bytes</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">Offset</th>
+<th>Type</th>
+<th>Field</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">0</td>
+<td><code>u32</code></td>
+<td>governed diagnostic code</td>
+</tr>
+<tr>
+<td style="text-align:right">4</td>
+<td><code>u8</code></td>
+<td>severity: <code>1</code> error, <code>2</code> warning</td>
+</tr>
+<tr>
+<td style="text-align:right">5</td>
+<td><code>u8</code></td>
+<td>scope: exactly <code>1</code> job</td>
+</tr>
+<tr>
+<td style="text-align:right">6</td>
+<td><code>u16</code></td>
+<td>trusted-id presence flags</td>
+</tr>
+<tr>
+<td style="text-align:right">8</td>
+<td><code>u64</code></td>
+<td>job id or zero</td>
+</tr>
+<tr>
+<td style="text-align:right">16</td>
+<td><code>u64</code></td>
+<td>stage id or zero</td>
+</tr>
+<tr>
+<td style="text-align:right">24</td>
+<td><code>u64</code></td>
+<td>operand id or zero</td>
+</tr>
+<tr>
+<td style="text-align:right">32</td>
+<td><code>u64</code></td>
+<td>geometry/source id or zero</td>
+</tr>
+<tr>
+<td style="text-align:right">40</td>
+<td><code>u32</code></td>
+<td>generated path token</td>
+</tr>
+<tr>
+<td style="text-align:right">44</td>
+<td><code>u32</code></td>
+<td>detail token, zero in A0</td>
+</tr>
+<tr>
+<td style="text-align:right">48</td>
+<td><code>u64</code></td>
+<td>reserved, zero</td>
+</tr>
+</tbody>
+</table>
+<p>Path tokens are generated catalog integers mapped one-to-one to the same-named
+logical <code>JobDiagnosticPath</code> identity; A0 carries no arbitrary strings in the
+hot packet. Token zero maps to an absent identity. Decoding requires no original
+request or array indexes. RFC 6901 paths remain available on batch-rejecting
+outer contract diagnostics, not on these standalone job-result records.</p>
+<h3 id="result-vertex-record-32-bytes">Result-vertex record, 32 bytes</h3>
+<p><code>result vertex id u64</code>, <code>x i64</code>, <code>y i64</code>, <code>intersection source-set handle u32</code>,
+and <code>flags u32</code>.</p>
+<h3 id="directed-fragment-record-48-bytes">Directed-fragment record, 48 bytes</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">Offset</th>
+<th>Type</th>
+<th>Field</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">0</td>
+<td><code>u64</code></td>
+<td>generated fragment id</td>
+</tr>
+<tr>
+<td style="text-align:right">8</td>
+<td><code>u32</code></td>
+<td>start vertex index</td>
+</tr>
+<tr>
+<td style="text-align:right">12</td>
+<td><code>u32</code></td>
+<td>end vertex index</td>
+</tr>
+<tr>
+<td style="text-align:right">16</td>
+<td><code>u8</code></td>
+<td>kind: line or circular arc</td>
+</tr>
+<tr>
+<td style="text-align:right">17</td>
+<td><code>u8</code></td>
+<td>direction: line, CCW, or CW</td>
+</tr>
+<tr>
+<td style="text-align:right">18</td>
+<td><code>u8</code></td>
+<td>major arc boolean</td>
+</tr>
+<tr>
+<td style="text-align:right">19</td>
+<td>5 bytes</td>
+<td>reserved, zero</td>
+</tr>
+<tr>
+<td style="text-align:right">24</td>
+<td><code>u64</code></td>
+<td>radius nanometers, zero for line</td>
+</tr>
+<tr>
+<td style="text-align:right">32</td>
+<td><code>u32</code></td>
+<td>coincident positive source-set handle</td>
+</tr>
+<tr>
+<td style="text-align:right">36</td>
+<td><code>u32</code></td>
+<td>surviving subtraction source-set handle</td>
+</tr>
+<tr>
+<td style="text-align:right">40</td>
+<td><code>u64</code></td>
+<td>reserved, zero</td>
+</tr>
+</tbody>
+</table>
+<p>Every fragment is an independently replayable analytic record. Its endpoints
+are the exact shared result vertices. A line is the exact segment between them.
+A circular arc is the endpoint/radius/direction/major-branch solution; its
+center is derived and is not serialized. Full circles use the governed two-half
+arc decomposition. Source curve identity is carried through source references,
+not a competing normalized result-curve table.</p>
+<p>Every source-set field is a handle rather than a raw zero-based table index:
+zero denotes the empty set and nonzero value <code>n</code> addresses source-set table
+record <code>n - 1</code>. The table contains nonempty sets only. This convention applies
+uniformly to vertices, fragments, regions, and operand events.</p>
+<h3 id="result-ring-record-32-bytes">Result-ring record, 32 bytes</h3>
+<p><code>ring id u64</code>, first fragment-reference <code>u32</code>, fragment-reference count <code>u32</code>,
+parent ring index <code>u32</code> or <code>UINT32_MAX</code>, depth <code>u32</code>, flags <code>u32</code> (bit 0 hole),
+and reserved <code>u32</code>. Fragment-reference records are <code>u32</code> fragment indices.</p>
+<p>The ring hierarchy is the sole containment authority. A root has parent
+<code>UINT32_MAX</code> and depth zero. Every other ring names exactly one parent whose
+depth is one less. Parent links are acyclic, and the parent must be the
+geometrically smallest ring that strictly contains the child without crossing
+it. The hole flag is set exactly for odd depth. Even-depth rings are CCW and
+odd-depth rings are CW.</p>
+<h3 id="result-region-record-24-bytes">Result-region record, 24 bytes</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">Offset</th>
+<th>Type</th>
+<th>Field</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">0</td>
+<td><code>u64</code></td>
+<td>generated result-region id</td>
+</tr>
+<tr>
+<td style="text-align:right">8</td>
+<td><code>u32</code></td>
+<td>outer ring index</td>
+</tr>
+<tr>
+<td style="text-align:right">12</td>
+<td><code>u32</code></td>
+<td>positive contributor source-set handle</td>
+</tr>
+<tr>
+<td style="text-align:right">16</td>
+<td><code>u32</code></td>
+<td>flags, zero in A0</td>
+</tr>
+<tr>
+<td style="text-align:right">20</td>
+<td><code>u32</code></td>
+<td>reserved, zero</td>
+</tr>
+</tbody>
+</table>
+<p>Every even-depth ring is named as the outer ring of exactly one result region;
+no odd-depth ring is named by a result region. Thus an island nested inside a
+hole is a separate connected result region while retaining its ring parent.
+The former child/hole range is deliberately absent, so no second hierarchy can
+disagree with the ring parent/depth authority.</p>
+<p>Ring/region-reference records remain only for operand outcome references. They
+are <code>u64</code>: high 32 bits are kind (<code>1</code> ring, <code>2</code> result region) and low 32 bits
+are the table index.</p>
+<h3 id="source-set-source-reference-and-source-reference-index-records">Source-set, source-reference, and source-reference-index records</h3>
+<p>A source-set record is: first source-reference-index-table index <code>u32</code> and
+count <code>u32</code>. Each source-reference-index record is one <code>u32</code> zero-based index
+into the source-reference table. The index range for a set lists its members in
+strictly increasing source-reference tuple order. The source-reference-index
+ranges owned by source sets are pairwise disjoint and, in source-set order,
+form a gapless complete partition of the source-reference-index table. Empty
+sets have no source-set record and use handle zero as defined above.</p>
+<p>The source-reference table contains each referenced canonical source-reference
+tuple exactly once and sorts globally by that tuple. Sets sort
+lexicographically by their complete member tuple sequence and are interned only
+after full equality comparison. The indirection permits overlapping sets such
+as <code>{A, B}</code> and <code>{A, C}</code> without duplicating <code>A</code> or imposing incompatible
+contiguous ranges. An implementation may use a private hash, but no hash is
+serialized or participates in canonical ordering.</p>
+<p>A 32-byte source reference is:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">Offset</th>
+<th>Type</th>
+<th>Field</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right">0</td>
+<td><code>u16</code></td>
+<td>source kind</td>
+</tr>
+<tr>
+<td style="text-align:right">2</td>
+<td><code>u16</code></td>
+<td>canonical feature/boundary role</td>
+</tr>
+<tr>
+<td style="text-align:right">4</td>
+<td><code>u32</code></td>
+<td>flags, zero in A0</td>
+</tr>
+<tr>
+<td style="text-align:right">8</td>
+<td><code>u64</code></td>
+<td>operand id</td>
+</tr>
+<tr>
+<td style="text-align:right">16</td>
+<td><code>u64</code></td>
+<td>primary id governed by source kind</td>
+</tr>
+<tr>
+<td style="text-align:right">24</td>
+<td><code>u64</code></td>
+<td>secondary id governed by source kind</td>
+</tr>
+</tbody>
+</table>
+<p>The mapping is exhaustive:</p>
+<table>
+<thead>
+<tr>
+<th>Source kind</th>
+<th>Primary id</th>
+<th>Secondary id</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>authored segment/curve</td>
+<td>authored segment id</td>
+<td>authored curve id</td>
+<td><code>authored_line</code> or <code>authored_circular_arc</code></td>
+</tr>
+<tr>
+<td>compact feature role</td>
+<td>compact feature id</td>
+<td>boundary-occurrence key below</td>
+<td>one compatible compact role</td>
+</tr>
+<tr>
+<td>subtractive operand effect</td>
+<td>stage id</td>
+<td>zero</td>
+<td><code>none</code></td>
+</tr>
+</tbody>
+</table>
+<p>For disks, annuli, and capsules, the compact role uniquely identifies the
+boundary and the occurrence key is zero. Swept offset occurrences use the
+one-based centerline segment ordinal in the high 32 bits and zero in the low
+32 bits. A round join uses the incoming one-based segment ordinal in the high
+half and outgoing ordinal in the low half. Start and end caps use respectively
+vertex ordinal 1 and the final centerline vertex ordinal in the high half, with
+zero low halves. Swept roles distinguish left/right line offsets, left/right
+circular-arc offsets, round joins, and start/end caps. Splitting one occurrence
+at intersections repeats the same source reference on every surviving
+fragment. Any source-kind/id/role combination outside the catalog mapping is a
+contract error. References sort by their full tuple.</p>
+<h3 id="operand-outcome-event-record-48-bytes">Operand-outcome-event record, 48 bytes</h3>
+<p><code>operand id u64</code>, event code <code>u16</code>, flags <code>u16</code>, first result-reference <code>u32</code>,
+result-reference count <code>u32</code>, source-set handle <code>u32</code>, two reserved <code>u32</code>
+fields, and two reserved <code>u64</code> fields. Result references use the
+ring/region-reference table.
+Several records may exist for one operand and sort by operand/event/reference
+key.</p>
+<p><code>subtraction_effect_survives</code> normally references every final ring/result
+boundary attributable to that still-unfilled removal. When still-unfilled
+attributed removal has no final material boundary, the event is still required
+and its result-reference range is empty. This includes complete subtraction
+and a disconnected removed component left empty after another component was
+refilled; in the latter case it coexists with
+<code>subtraction_effect_overwritten_later</code>. An effectful operand is never
+represented by omission or <code>no_effect</code> merely because its remaining removal
+has no attributable boundary.</p>
+<h3 id="relationship-result-record-32-bytes">Relationship-result record, 32 bytes</h3>
+<p><code>query id u64</code>, status <code>u8</code> (<code>0</code> success, <code>1</code> skipped dependency failed),
+aggregate dimension <code>u8</code> (<code>0</code> disjoint, <code>1</code> point, <code>2</code> curve, <code>3</code> area), flags
+<code>u16</code>, first pair index <code>u32</code>, pair count <code>u32</code>, reserved <code>u32</code>, and reserved
+<code>u64</code>.</p>
+<p>For <code>skipped_dependency_failed</code>, aggregate dimension is exactly <code>disjoint</code>
+(<code>0</code>), flags are zero, and the pair range is exactly <code>first pair index = 0</code>,
+<code>pair count = 0</code>. All reserved fields remain zero. A successful disjoint query
+uses those same aggregate/range values and is distinguished only by status.</p>
+<p>A 32-byte relationship pair is: left result-region id <code>u64</code>, right
+result-region id <code>u64</code>, dimension <code>u8</code>, equality <code>u8</code>, left-contains-right
+<code>u8</code>, right-contains-left <code>u8</code>, four reserved zero bytes, and reserved <code>u64</code>.</p>
+<h2 id="diagnostic-codes">Diagnostic Codes</h2>
+<p>The packet uses these <code>u32</code> assignments, mapped exactly to generated string
+identities and duplicated in the governed numeric catalog:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">Code</th>
+<th>Generated identity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right"><code>0x00010003</code></td>
+<td><code>geometer.operation.analytic_planar_boolean.invalid_topology</code></td>
+</tr>
+<tr>
+<td style="text-align:right"><code>0x00010004</code></td>
+<td><code>geometer.operation.analytic_planar_boolean.invalid_arc</code></td>
+</tr>
+<tr>
+<td style="text-align:right"><code>0x00010005</code></td>
+<td><code>geometer.operation.analytic_planar_boolean.unsupported_geometry</code></td>
+</tr>
+<tr>
+<td style="text-align:right"><code>0x00010007</code></td>
+<td><code>geometer.operation.analytic_planar_boolean.normalization_error_exceeded</code></td>
+</tr>
+<tr>
+<td style="text-align:right"><code>0x00010008</code></td>
+<td><code>geometer.operation.analytic_planar_boolean.normalization_topology_collapse</code></td>
+</tr>
+<tr>
+<td style="text-align:right"><code>0x00010009</code></td>
+<td><code>geometer.operation.analytic_planar_boolean.nonanalytic_result</code></td>
+</tr>
+<tr>
+<td style="text-align:right"><code>0x0001000a</code></td>
+<td><code>geometer.operation.analytic_planar_boolean.solver_failed</code></td>
+</tr>
+<tr>
+<td style="text-align:right"><code>0x0001000b</code></td>
+<td><code>geometer.operation.analytic_planar_boolean.resource_limit_exceeded</code></td>
+</tr>
+</tbody>
+</table>
+<p>Code <code>0x00010006</code>, formerly proposed for an ambiguous normalization tie, is
+reserved in A0 and must not be emitted or accepted as a known diagnostic. Exact
+comparison now resolves side/tie or produces <code>resource_limit_exceeded</code>.</p>
+<p>Contract diagnostics for packet/id/reference defects use the governed
+<code>geometer.contract.analytic_planar_boolean_packet.*</code> identities in the response
+JSON and reject the batch without a result attachment. They are not entries in
+the result-packet operation diagnostic table. Raw foreign-memory/framing
+failures retain the generic transport behavior.</p>
+<h2 id="canonical-encoding">Canonical Encoding</h2>
+<p>Canonical request packets:</p>
+<ul>
+<li>sort jobs and queries by id;</li>
+<li>preserve stage order within a job;</li>
+<li>sort same-stage operands by id;</li>
+<li>emit owned topology ranges once in their owner order;</li>
+<li>emit directory/table kinds in ascending order;</li>
+<li>use minimum alignment and zero padding; and</li>
+<li>reject unused records and unreferenced ids.</li>
+</ul>
+<p>Canonical result packets follow the ordering rules in the logical design.
+The complete directed-fragment key includes direction between kind and
+major-arc branch; every other canonical key likewise contains every semantic
+field before generated ids are assigned.</p>
+<p>For a batch result, caller job id is the leading outer key for the job-owned
+vertex, fragment, ring, and result-region tables, followed by the complete key
+below. Identical geometry from distinct jobs remains distinct and is never
+coalesced across standalone job closures. This is the only
+allocator-independent ordering of semantic multiplicity when two jobs produce
+the same geometry. Within each job the keys below are unchanged. Immutable
+source references and source sets remain globally content-interned, while
+fragment-reference and ring/region-reference records retain their governed
+owner sequence. A pre-golden implementation review clarified this omitted
+batch tie without changing packet generation or magic.</p>
+<p>The total result-table keys are:</p>
+<ul>
+<li>job results: caller job id;</li>
+<li>diagnostics: <code>(job id, severity, code, presence flags, stage id, operand id, geometry/source id, path token, detail token)</code>;</li>
+<li>vertices: the complete logical vertex key from the design;</li>
+<li>fragments: <code>(start vertex key, end vertex key, kind, direction, majorArc, radius, complete positive source-set tuple, complete subtraction source-set tuple)</code>;</li>
+<li>rings: <code>(depth, canonical rotated directed-fragment-key sequence, parent ring key)</code> after winding normalization;</li>
+<li>result regions: <code>(outer ring key, complete positive-contributor source-set tuple)</code>;</li>
+<li>source references: their complete <code>(kind, role, flags, operand id, primary id, secondary id)</code> tuple;</li>
+<li>source sets: their complete sorted source-reference tuple sequence;</li>
+<li>source-reference indices: the referenced source-reference tuple sequence in
+their owning source-set order;</li>
+<li>operand events: <code>(operand id, event code, complete sorted result-reference tuple, complete source-set tuple)</code>;</li>
+<li>relationship pairs: <code>(left result-region id, right result-region id, dimension, equality, leftContainsRight, rightContainsLeft)</code>; and</li>
+<li>relationship results: query id, with each owned pair range already sorted by
+the preceding key.</li>
+</ul>
+<p>Fragment-reference and ring/region-reference tables retain the canonical owner
+sequence. Generated result ids are assigned only after these semantic sort
+keys have been sorted. If two records have identical complete semantic keys,
+they must be interned where the model permits one record or retained in their
+governed owner range where multiplicity is semantic; allocator/traversal order
+is never a tiebreaker.
+Tables contain no telemetry. A canonical job-result digest is SHA-256 over a
+standalone result packet with zero relationship results and exactly one
+job-result record. Its closure and rebasing are normative:</p>
+<ol>
+<li>begin with the job's diagnostic, result-region, and operand-event ranges;</li>
+<li>follow regions to their outer rings and contributor source sets, then
+repeatedly include every ring whose parent is already included;</li>
+<li>follow all included rings to fragment references and fragments;</li>
+<li>follow fragments to endpoint vertices and both source sets;</li>
+<li>follow vertices to intersection source sets;</li>
+<li>follow source sets through source-reference indices to source references;</li>
+<li>follow operand events to every ring/region reference and source set; and</li>
+<li>reject any record reached from two job closures unless it is immutable
+source content deliberately duplicated into each standalone subpacket.</li>
+</ol>
+<p>For each table, selected records sort by the normal complete canonical key,
+receive dense local indices from zero, and every reference is rewritten to the
+new local index. Generated nonzero ids are recomputed as one-based local
+ordinals. Directory entries and offsets are regenerated with minimum alignment.
+No original batch index, offset, unused record, query, padding choice, or
+telemetry survives. Enclosing batch layout and queries therefore cannot affect
+the digest.</p>
+<p>The digest is a deterministic derived field of each logical successful or
+failed job result. It is not present in the 48-byte job-result record or any
+other result table. Decoders compute it from the standalone bytes above;
+encoders verify a supplied lowercase hexadecimal digest against those bytes.</p>
+<h2 id="limits">Limits</h2>
+<p>The generic transport already limits an individual attachment to 256 MiB and
+aggregate WASM input/output attachments to 256 MiB. This packet never advertises
+larger limits.</p>
+<p>Additional A0 maxima are:</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th style="text-align:right">Maximum</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Jobs</td>
+<td style="text-align:right">65,535</td>
+</tr>
+<tr>
+<td>Stages per batch</td>
+<td style="text-align:right">1,048,576</td>
+</tr>
+<tr>
+<td>Operands per batch</td>
+<td style="text-align:right">4,194,304, additionally packet-size limited</td>
+</tr>
+<tr>
+<td>Relationship queries</td>
+<td style="text-align:right">1,048,576</td>
+</tr>
+<tr>
+<td>Records in any one table</td>
+<td style="text-align:right"><code>UINT32_MAX</code> and packet-size limited</td>
+</tr>
+<tr>
+<td>Job-local coordinate span per axis</td>
+<td style="text-align:right"><code>1,000,000,000,000 nm</code></td>
+</tr>
+<tr>
+<td>Job-local positive radius or width</td>
+<td style="text-align:right"><code>1,000,000,000,000 nm</code></td>
+</tr>
+<tr>
+<td>Published coordinate grid</td>
+<td style="text-align:right"><code>1 nm</code></td>
+</tr>
+<tr>
+<td>Topology-resolution envelope</td>
+<td style="text-align:right"><code>50 nm</code></td>
+</tr>
+<tr>
+<td>Maximum published vertex displacement</td>
+<td style="text-align:right"><code>50 nm</code> (<code>2,500 nm^2</code> squared)</td>
+</tr>
+<tr>
+<td>Maximum published radius displacement</td>
+<td style="text-align:right"><code>50 nm</code></td>
+</tr>
+<tr>
+<td>Maximum published arc Hausdorff displacement</td>
+<td style="text-align:right"><code>50 nm</code></td>
+</tr>
+<tr>
+<td>Analytic boundary occurrences per job</td>
+<td style="text-align:right">131,072</td>
+</tr>
+<tr>
+<td>Curve pairs examined after conservative pruning per job</td>
+<td style="text-align:right">8,388,608</td>
+</tr>
+<tr>
+<td>Narrow-phase intersections per job</td>
+<td style="text-align:right">1,048,576</td>
+</tr>
+<tr>
+<td>Arrangement vertices per job</td>
+<td style="text-align:right">1,048,576</td>
+</tr>
+<tr>
+<td>Arrangement half-edges per job</td>
+<td style="text-align:right">2,097,152</td>
+</tr>
+<tr>
+<td>Arrangement faces per job</td>
+<td style="text-align:right">1,048,576</td>
+</tr>
+<tr>
+<td>Fallback/oracle live real-algebraic scalars per job</td>
+<td style="text-align:right">4,194,304</td>
+</tr>
+<tr>
+<td>Fallback/oracle defining-polynomial degree</td>
+<td style="text-align:right">64</td>
+</tr>
+<tr>
+<td>Fallback/oracle algebraic coefficient bits</td>
+<td style="text-align:right">16,384</td>
+</tr>
+<tr>
+<td>Fallback/oracle integer/coefficient storage per job</td>
+<td style="text-align:right">256 MiB</td>
+</tr>
+<tr>
+<td>Fallback/oracle algebraic work units per job</td>
+<td style="text-align:right">1,000,000,000</td>
+</tr>
+<tr>
+<td>Provenance source references per job</td>
+<td style="text-align:right">8,388,608</td>
+</tr>
+<tr>
+<td>Source-reference-index memberships per job</td>
+<td style="text-align:right">8,388,608</td>
+</tr>
+<tr>
+<td>Logical source-reference expansions per decoded batch</td>
+<td style="text-align:right">1,048,576</td>
+</tr>
+<tr>
+<td>Narrow-phase predicate calls per job</td>
+<td style="text-align:right">100,000,000</td>
+</tr>
+<tr>
+<td>Fallback/oracle interval-refinement steps per job</td>
+<td style="text-align:right">100,000,000</td>
+</tr>
+<tr>
+<td>Solver working memory per job</td>
+<td style="text-align:right">1 GiB</td>
+</tr>
+</tbody>
+</table>
+<p>Implementations advertise smaller effective limits when required by available
+memory. Every multiplication, addition, alignment, index/range, signed-origin
+subtraction, and native-size conversion is checked before allocation. The
+decoder validates the full structural graph before invoking the analytic
+production solver.
+Before materializing logical DTOs, a decoder also sums each referenced source
+set's member count once for every vertex, fragment source-set field, region,
+and operand event that projects it. The checked batch-wide sum must not exceed
+1,048,576. This deliberately counts repeated handles repeatedly: packed
+source-set interning cannot authorize unbounded logical object expansion.
+The filtered arrangement and any isolated fallback charge each counter before performing the work
+or allocation that would exceed it. Hitting any solver counter is the stable
+job-local <code>resource_limit_exceeded</code> outcome. Native and WASM use the same hard
+counts; an advertised effective limit may only be smaller, and clients target
+the minimum negotiated capability when cross-runtime parity is required.</p>
+<p>The algebraic limits do not make that backend primary. Ordinary production
+fixtures and performance qualification must remain on the filtered path;
+algebraic work is reserved for conformance, diagnosis, and explicitly governed
+fallback cases.</p>
+<h2 id="generated-codec-tests">Generated Codec Tests</h2>
+<p>The governed native-produced corpus at
+<code>tests/contracts/vectors/analytic/manifest.json</code> currently contains six exact
+accepted vectors: empty and exemplar requests, a canonical mixed result, and
+success, mixed-success, and failure standalone result closures. Its manifest,
+writer, and the two native producer identities are digest-pinned in the
+candidate promotion manifest. C++, TypeScript, Rust, and Python consume those
+same bytes; their focused suites additionally cover:</p>
+<ul>
+<li>empty/minimal packets and every record kind;</li>
+<li>exact uint64 maximum handling and JavaScript <code>bigint</code> enforcement;</li>
+<li>duplicate ids and invalid cross-table references;</li>
+<li>truncated headers/directories/tables, overlaps, misalignment, nonzero
+padding/reserved bits, count multiplication overflow, and oversized packets;</li>
+<li>logical encode/decode equivalence for every portable MATZ case;</li>
+<li>canonical request byte equality across languages;</li>
+<li>canonical native/WASM result byte equality;</li>
+<li>standalone versus mixed-batch canonical job-result digests; and</li>
+<li>unknown magic/generation/kind/code behavior.</li>
+</ul>
+<p>The same manifest separately governs a production-boundary cross-transport
+vector derived from MATZ <code>analytic_primitive_family</code> case 3 with a self
+relationship query. Its validator sends the exact request bytes through the
+native executable IPC framing and the distributed full-browser WASM generic C
+ABI. Both result attachments must equal the pinned 4,936-byte result packet,
+and strict decoding must recompute the pinned standalone job digest. The
+required WASM and release workflows supply freshly built artifacts explicitly;
+the validator does not skip or fall back to an unrelated executable.</p>
+<p>The corpus is candidate evidence, not a promotion or release claim. Complete
+multi-platform qualification and release gates remain required before
+promotion.</p>
+
+</main>
+</body>
+</html>

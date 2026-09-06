@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>STEP Topology Edit-Journal Checkpoint — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/step-topology-edit-journal.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="step-topology-edit-journal-checkpoint">STEP Topology Edit-Journal Checkpoint</h1></header>
+<p>Status: experimental exact-source restart checkpoint</p>
+<p>Date: 2026-08-23</p>
+<h2 id="purpose">Purpose</h2>
+<p>The native STEP topology session records every successfully committed logical
+group or neutral metadata-probe transaction in one bounded edit journal. A
+caller can checkpoint that journal as deterministic binary bytes and later
+reopen the exact original STEP source plus the checkpoint. Replay reconstructs
+authored group and probe state while issuing entirely new session, generation,
+and target handles.</p>
+<p>This is the first restart-safe authoring mechanism. It is not the later
+cross-version or geometry-changing recovery model, and it does not make a
+runtime handle, STEP entity number, XCAF label, topology ordinal, or geometry
+fingerprint into durable semantic identity.</p>
+<h2 id="source-binding">Source Binding</h2>
+<p>A checkpoint is accepted only when all of these match the newly opened native
+session:</p>
+<ul>
+<li>SHA-256 of the exact submitted STEP bytes;</li>
+<li>normalized B-rep evidence digest; and</li>
+<li>SHA-256 of the complete ordered definition, occurrence hierarchy, body,
+shell, face, membership, transform, label, and geometric target inventory;
+and</li>
+<li>exact OCCT build version.</li>
+</ul>
+<p>Each body or face member is encoded as a bounded source-local ordinal plus a
+definition ordinal and target evidence digest. Replay validates all three
+before translating the member into a fresh runtime handle. These locators are
+strict replay preconditions for an identical source, not portable identifiers.
+The first <a href="step-topology-recovery.html">multidimensional recovery policy</a> now
+reports ambiguity, topology changes, and member-level outcomes instead of
+using this strict path. Candidate extraction from a changed STEP/XBF/GLB
+artifact remains later work.</p>
+<h2 id="encoding-and-integrity">Encoding And Integrity</h2>
+<p><code>geometer.step_topology_edit_journal.a0</code> is a deterministic little-endian
+binary checkpoint containing:</p>
+<ul>
+<li>format magic and version;</li>
+<li>exact source, B-rep, ordered-target-inventory, and OCCT evidence;</li>
+<li>ordered transaction sequence numbers;</li>
+<li>ordered create, rename, replace-members, and erase commands;</li>
+<li>authored group ids, expected revisions, and names; and</li>
+<li>validated body/face source locators and evidence digests.</li>
+</ul>
+<p>The ordered transaction union also carries metadata-probe attach, replace, and
+canonical erase commands, including their authored ids, revisions, target
+locators, keys, and values.</p>
+<p>The final 32 bytes are SHA-256 over the preceding payload. The public
+checkpoint additionally reports SHA-256 over the complete artifact. Decode
+rejects an invalid digest, unsupported version, malformed lengths or enums,
+out-of-order sequence, configured byte/transaction/member limits, and trailing
+payload.</p>
+<p>Double evidence uses the classic C++ locale and authored-id validation is
+explicitly ASCII. Thus a process locale change cannot alter checkpoint bytes
+or turn non-ASCII bytes into valid namespace characters.</p>
+<p>The format is an experimental Geometer attachment, not a final annotation
+contract. TypeSpec Slice B describes the operation and attachment relationship;
+the binary journal stays owned by the native behavior and is not hand-edited by
+web consumers.</p>
+<h2 id="atomicity-and-accounting">Atomicity And Accounting</h2>
+<p>A candidate journal entry is created, source-locator evidence is validated,
+and its exact projected binary checkpoint size is admitted before session
+mutation begins. A source cannot open when even its empty checkpoint exceeds
+<code>max_edit_journal_bytes</code>. The entry is appended before snapshot rebuild so the
+same per-string, aggregate-string, session-resident, and store-resident limits
+cover both group state and journal history. Any failed rebuild, remap,
+publication, allocation, or OCCT exception removes the candidate journal entry
+and restores the prior session state.</p>
+<p>The session reports <code>edit_journal_revision</code> and aggregate accounted string
+bytes. Those fields are included in render and GLB seals. Transaction count,
+encoded bytes, and a conservative replay-work meter bound restore cost;
+restore also accepts cooperative cancellation during decode, preflight,
+command/member reconstruction, transaction validation, locator construction,
+snapshot rebuild, and result publication. The work meter charges every
+transaction for repeated topology work, cumulative journal commands and
+members, and a monotonic upper bound on retained authored group/probe state
+before any replay mutation begins. Erased or replaced records remain charged.
+The topology charge uses the measured source-transfer work plus the complete
+B-rep digest traversal count, including compounds, solids, shells, wires,
+edges, vertices, and the additional per-face/per-edge membership walks; it is
+not inferred from face count alone.
+This deliberately conservative bound contains the current repeated-snapshot
+replay implementation until a future batched replay engine replaces it.</p>
+<h2 id="evidence">Evidence</h2>
+<p><code>geometer_step_topology_logical_groups_test</code> proves that:</p>
+<ul>
+<li>create and rename transactions advance the journal revision;</li>
+<li>a deterministic checkpoint replays to the same authored groups and group
+revisions with fresh runtime handles;</li>
+<li>replay produces the same canonical checkpoint bytes;</li>
+<li>the normalized B-rep digest is unchanged;</li>
+<li>tampered bytes and a different STEP source fail without publishing a
+session; and</li>
+<li>a validly checksummed but mismatched ordered inventory fails closed;</li>
+<li>exact empty and one-transaction byte boundaries remain checkpointable while
+one-byte overflow is rejected before mutation;</li>
+<li>large replay histories obey the explicit work budget and cancellation; and</li>
+<li>a deterministic replay-apply entry barrier proves cancellation after
+replay preflight stops without publishing a restored session; and</li>
+<li>journal exhaustion rejects the next transaction without changing the live
+generation or publishing partial output.</li>
+</ul>
+<h2 id="deferred">Deferred</h2>
+<ul>
+<li>browser runtime exposure and changed-source recovery routing;</li>
+<li>XBF/XML autosave as an alternative checkpoint;</li>
+<li>cross-version and geometry-changing candidate extraction;</li>
+<li>applying partial member recovery or repair workflows; and</li>
+<li>AP242 projection.</li>
+</ul>
+
+</main>
+</body>
+</html>

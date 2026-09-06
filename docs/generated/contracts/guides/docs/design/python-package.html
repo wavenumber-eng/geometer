@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>Python Package Interface — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/python-package.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="python-package-interface">Python Package Interface</h1></header>
+<h2 id="python-interface">Python Interface</h2>
+<p>The source checkout and PyPI wheel include a thin Python package named
+<code>geometer</code>; the PyPI distribution name is <code>wn-geometer</code>. The package drives the
+native CLI and keeps the file-oriented convenience API byte/path oriented.</p>
+<p>The persistent <code>GeometerClient</code> also exposes generated-value operations. Since
+2026.9.6 these include <a href="mesh-illustration-native.html">colored STEP tessellation and native mesh illustration</a>
+with a complete Python STEP-to-SVG example. Those new methods require a matching
+2026.9.6 or later compatible executable; the 2026.9.4 wheel does not provide them.</p>
+<p>The public one-shot helpers <code>geometer.model_tessellation(step_bytes, ...)</code> and
+<code>geometer.mesh_illustration(input, hlr_projection=..., ...)</code> reuse that same
+client with automatic process cleanup. Both accept <code>executable=</code> for an explicit
+override and <code>timeout=</code> for the local operation deadline; startup/shutdown have
+the client's separate bounds. Prefer one <code>with geometer.GeometerClient() as client:</code> block for a STEP/tessellation/HLR/illustration sequence or repeated work.
+The optional HLR argument is already computed visible polyline geometry, not an
+instruction to compute HLR or re-occlude arbitrary 2D lines.</p>
+<pre><code class="language-python">from pathlib import Path
+
+import geometer
+
+version = geometer.version()
+model_bounds = geometer.model_bounds(&quot;part.step&quot;, format=&quot;step&quot;)
+projection = geometer.project_step_hlr(
+    &quot;part.step&quot;,
+    views=[geometer.ProjectionView.top()],
+    options=geometer.HlrOptions.assembly_outline(),
+)
+outline_only = geometer.project_step_hlr(
+    &quot;part.step&quot;,
+    views=[geometer.ProjectionView.top()],
+    options=geometer.HlrOptions(
+        outline_algorithm=&quot;mesh-shadow&quot;,
+        output_outline=True,
+        output_detail=False,
+        output_bbox=False,
+    ),
+)
+fast_outline = geometer.project_step_hlr(
+    &quot;part.step&quot;,
+    views=[geometer.ProjectionView.top()],
+    options=geometer.HlrOptions.fast_assembly_outline(),
+)
+fast_detail = geometer.project_step_hlr(
+    &quot;part.step&quot;,
+    views=[geometer.ProjectionView.top()],
+    options=geometer.HlrOptions(
+        projection_algorithm=&quot;fast&quot;,
+        fast={&quot;crease_angle_rad&quot;: 0.4363323129985824},
+        output_outline=False,
+        output_detail=True,
+        output_bbox=False,
+    ),
+)
+generic_projection = geometer.project_model_hlr(
+    &quot;part.step&quot;,
+    format=&quot;step&quot;,
+    views=[geometer.ProjectionView.top()],
+)
+json_text = geometer.hlr_projection_json(&quot;part.step&quot;)
+generic_json_text = geometer.model_hlr_projection_json(&quot;part.step&quot;, format=&quot;step&quot;)
+glb_bytes = geometer.model_to_glb(&quot;part.step&quot;, format=&quot;step&quot;)
+planar_step_request = {
+    &quot;schema&quot;: &quot;geometry.planar_step.request.a0&quot;,
+    &quot;units&quot;: &quot;mm&quot;,
+    &quot;bodies&quot;: [
+        {
+            &quot;id&quot;: &quot;copper&quot;,
+            &quot;thickness_mm&quot;: 0.035,
+            &quot;regions&quot;: [
+                {
+                    &quot;outer&quot;: {
+                        &quot;points&quot;: [[0, 0], [10, 0], [10, 5], [0, 5]],
+                        &quot;segments&quot;: [{&quot;kind&quot;: &quot;line&quot;}] * 4,
+                    }
+                }
+            ],
+        }
+    ],
+}
+planar_step_bytes = geometer.planar_step(planar_step_request)
+geometer.write_planar_step(planar_step_request, &quot;layer.step&quot;)
+
+planar_rings = geometer.planar_batch_solve(&quot;planar-batch-request.bin&quot;)
+first_region = planar_rings.regions()[0]
+outer_ring_mm = first_region.outer
+hole_rings_mm = first_region.holes
+
+runner = geometer.GeometerBatchRunner(max_workers=8, chunk_size=5)
+runner_version = runner.version()
+batch = runner.run(
+    [
+        {
+            &quot;id&quot;: &quot;part-top&quot;,
+            &quot;operation&quot;: &quot;step_hlr_projection_json&quot;,
+            &quot;step_path&quot;: &quot;part.step&quot;,
+            &quot;output_path&quot;: &quot;part.top.projection.json&quot;,
+        }
+    ],
+    options={&quot;curve_mode&quot;: &quot;polyline&quot;},
+)
+</code></pre>
+<p>The Python package intentionally uses the executable backend only for now.
+Existing file-oriented helpers use the JSON batch CLI, while <code>GeometerClient</code>
+holds one <code>geometer serve --stdio</code> process for typed model/mesh HLR and
+analytic packed requests.
+Both paths discover the Geometer executable in this order:</p>
+<ul>
+<li><code>GEOMETER_EXE</code>;</li>
+<li>the package directory;</li>
+<li><code>geometer/native/&lt;platform&gt;</code> inside the installed package or source checkout;</li>
+<li><code>geometer/native</code> inside the installed package or source checkout;</li>
+<li>source checkout <code>dist/native/&lt;platform&gt;</code>;</li>
+<li><code>PATH</code>.</li>
+</ul>
+<h2 id="generated-contract-boundary">Generated contract boundary</h2>
+<p>The package contains generated dependency-free dataclasses, enums, and strict
+JSON codecs under <code>geometer._generated.contracts</code>. They are the structural
+authority. Most generated declarations remain an internal compatibility
+boundary; the selected analytic request/result construction types are
+re-exported from <code>geometer</code> for the typed packed client. The generator reads
+the normalized TypeSpec catalog and is part of the ordinary freshness gate.</p>
+<p><code>model_bounds</code> is the first operation integrated through this boundary. The
+public compatibility adapter continues to accept <code>model_format</code>,
+<code>modelTransform</code>, uppercase <code>STEP</code>, nested 4-by-4 transforms, and ignored
+mapping members, then normalizes them to the closed generated request. The
+generated codec validates the canonical request before the executable call and
+validates its result before the existing public <code>ModelBoundsResult</code> convenience
+wrapper is constructed. Public names, signatures, return attributes,
+executable discovery, and all other CLI-backed operations remain unchanged.</p>
+<p>The persistent client exposes governed HLR without temporary files:</p>
+<pre><code class="language-python">import geometer
+
+options = geometer.HlrProjectionOptionsA0(
+    projection_algorithm=geometer.HlrProjectionAlgorithm.FAST,
+    outline_algorithm=geometer.HlrOutlineAlgorithm.FAST_MESH_SHADOW,
+    fast=geometer.FastHlrOptionsA0(crease_angle_rad=0.4363323129985824),
+    output_detail=True,
+)
+with geometer.GeometerClient() as client:
+    step_result = client.model_hlr_projection(Path(&quot;part.step&quot;).read_bytes(), options)
+    mesh_result = client.mesh_hlr_projection(
+        geometer.IndexedTriangleMeshA0(
+            positions=(0.0, 0.0, 0.0, 10.0, 0.0, 0.0, 0.0, 10.0, 0.0),
+            indices=(0, 1, 2),
+            source_faces=(1,),
+        )
+    )
+</code></pre>
+<p>The analytic planar Boolean candidate is integrated through the same
+executable-backed lane:</p>
+<blockquote>
+<p>This method is experimental and not production-ready. It may fail closed on
+valid inputs and is not the dependable path for whole-board or whole-layer
+copper union. Prefer the Clipper2-backed planar APIs when polygonized output
+is suitable.</p>
+</blockquote>
+<pre><code class="language-python">import geometer
+
+request = geometer.AnalyticPlanarBooleanBatchRequestA0(jobs=(), relationship_queries=())
+with geometer.GeometerClient() as client:
+    result = client.analytic_planar_boolean_batch(request, timeout=10)
+</code></pre>
+<p>Consumers that need a governed artifact rather than an immediate solve may
+call <code>encode_analytic_planar_boolean_batch_request_a0_packet(request)</code>. The
+matching <code>decode_analytic_planar_boolean_batch_result_a0_packet(packet)</code>
+strictly validates and projects a packed result. These are the same codec
+functions used by <code>GeometerClient</code>; they do not create a second JSON or binary
+authority.</p>
+<p><code>GeometerClient</code> performs the A0 handshake, validates the generated operation
+catalog and negotiated limits, and sends raw named attachments over binary
+frames. <code>_analytic_packet_a0.py</code> is the strict little-endian codec for the
+logical analytic DTOs; no JSON geometry is placed on the hot path. It enforces
+the canonical packet graph and the batch-wide 1,048,576 logical
+source-reference expansion limit before materializing result DTOs. Protocol,
+process, timeout, and typed operation failures have distinct public exception
+classes. The client is synchronous and serialized, uses queue-only
+cancellation after a local timeout, drains terminal responses before reuse,
+and treats malformed negotiated responses as connection-fatal.</p>
+<p>The runtime uses only the Python standard library. This adds no wheel runtime
+dependency and supports the package's existing Python 3.10 floor. Generated
+source is included by normal setuptools package discovery. Clean-wheel tests
+prove public analytic DTO/client imports, empty and nontrivial packed analytic
+IPC calls against the bundled executable, and a live public model-bounds round
+trip.</p>
+<p>Published wheels are platform wheels because they bundle the native executable.
+Linux wheels must be repaired/tagged with <code>auditwheel</code> before PyPI upload; the
+wheel contents install under <code>platlib</code>, not <code>purelib</code>, so auditwheel can inspect
+the bundled ELF executable.</p>
+<p>Published wheels also install a <code>geometer</code> console script. The script is a thin
+Python launcher that resolves the packaged native executable and forwards
+arguments to it, so <code>python -m pip install wn-geometer</code> makes the native CLI
+available inside the active environment without editing a user's global <code>PATH</code>.</p>
+<p>The planar STEP Python API is the supported package interface for Python
+callers. It is executable-backed internally, like the HLR and GLB helpers, but
+downstream packages should depend on <code>geometer.planar_step(...)</code> or
+<code>geometer.write_planar_step(...)</code> rather than invoking <code>geometer.exe</code> directly.</p>
+<p>For source-model operations, prefer the generic model names:</p>
+<ul>
+<li><code>model_bounds(...)</code></li>
+<li><code>model_bounds_json(...)</code></li>
+<li><code>model_to_glb(...)</code></li>
+<li><code>project_model_hlr(...)</code></li>
+<li><code>model_hlr_projection_json(...)</code></li>
+</ul>
+<p>The only supported source model format is currently <code>format=&quot;step&quot;</code>.
+Compatibility wrappers remain available:</p>
+<ul>
+<li><code>step_to_glb(...)</code></li>
+<li><code>project_step_hlr(...)</code></li>
+<li><code>hlr_projection_json(...)</code></li>
+</ul>
+<p>The file-oriented executable backend writes temporary STEP/request/output
+files and calls:</p>
+<pre><code class="language-powershell">geometer run request.json response.json
+</code></pre>
+<p>and returns the requested JSON text or GLB bytes to the Python caller. The
+analytic client instead uses the persistent binary <code>serve --stdio</code> protocol;
+it does not write geometry packets to temporary files.</p>
+<p><code>GEOMETER_BACKEND=exe</code> and <code>GEOMETER_BACKEND=cli</code> are accepted explicit names.
+Other backend names are rejected by the public Python API.</p>
+<p>The native CLI now has an initial JSON batch interface:</p>
+<pre><code class="language-powershell">geometer run request.json response.json
+geometer init-request request.json --step U1.step --operation step_hlr_projection_json --output U1.projection.json
+</code></pre>
+<p><code>request.json</code> contains a <code>geometer.batch.request.a0</code> jobs array so one process
+can project or convert multiple STEP files before exiting. An optional top-level
+<code>options</code> object supplies defaults for every job; each job's own <code>options</code>
+object is parsed afterwards and overrides those defaults.
+<code>version</code> and <code>abi</code> fields in a request are metadata written by <code>init-request</code>;
+<code>run</code> only requires the <code>jobs</code> array.</p>
+
+</main>
+</body>
+</html>

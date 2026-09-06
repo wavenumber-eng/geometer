@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
   <title>geometry.step_topology.render.result.a0 — Geometer</title>
   <link rel="stylesheet" href="../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e" data-page-kind="contract" data-contract-identity="geometry.step_topology.render.result.a0" data-promotion-status="experimental_candidate">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="contract" data-contract-identity="geometry.step_topology.render.result.a0" data-promotion-status="experimental_candidate">
 <main>
 <header>
   <p class="page-type">Contract root</p>
@@ -23,13 +23,14 @@
 <tr><th>Schema</th><td><code>urn:wavenumber:schema:geometer:geometry.step_topology.render.result:a0</code></td></tr>
 <tr><th>Declaration</th><td><code>Wavenumber.Geometer.Contracts.StepTopologyA0.StepTopologyRenderResultA0</code></td></tr>
 <tr><th>Lifecycle</th><td><span class="status">experimental_candidate</span></td></tr>
+<tr><th>Maturity</th><td>experimental_not_production_ready</td></tr>
 <tr><th>Current authority</th><td><code>typespec_candidate</code></td></tr>
 </tbody></table></section>
 <section class="model-section"><h2>Declarations <span class="tag">6</span></h2><details open id="declaration-wavenumber-geometer-contracts-steptopologya0-steptopologyrenderresulta0"><summary><h2><code>StepTopologyRenderResultA0</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>schema</code></td><td>required</td><td><code>&quot;geometry.step_topology.render.result.a0&quot;</code></td><td>—</td><td>none</td><td></td></tr>
-<tr><td><code>session</code></td><td>required</td><td><code>SessionReference</code></td><td>—</td><td>none</td><td></td></tr>
-<tr><td><code>artifact</code></td><td>required</td><td><code>RenderArtifactDescriptor</code></td><td>—</td><td>none</td><td></td></tr>
-<tr><td><code>glb</code></td><td>required</td><td><code>GlbAttachmentDescriptor</code></td><td>—</td><td>none</td><td></td></tr>
-<tr><td><code>compact_binding_table</code></td><td>optional</td><td><code>TopologyBindingTableAttachmentDescriptor</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<tr><td><code>session</code></td><td>required</td><td><code><a href="#declaration-wavenumber-geometer-contracts-steptopologya0-sessionreference">SessionReference</a></code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>artifact</code></td><td>required</td><td><code><a href="#declaration-wavenumber-geometer-contracts-steptopologya0-renderartifactdescriptor">RenderArtifactDescriptor</a></code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>glb</code></td><td>required</td><td><code><a href="#declaration-wavenumber-geometer-contracts-steptopologya0-glbattachmentdescriptor">GlbAttachmentDescriptor</a></code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>compact_binding_table</code></td><td>optional</td><td><code><a href="#declaration-wavenumber-geometer-contracts-steptopologya0-topologybindingtableattachmentdescriptor">TopologyBindingTableAttachmentDescriptor</a></code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
 <details open id="declaration-wavenumber-geometer-contracts-steptopologya0-glbattachmentdescriptor"><summary><h2><code>GlbAttachmentDescriptor</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>name</code></td><td>required</td><td><code>&quot;glb&quot;</code></td><td>—</td><td>none</td><td></td></tr>
 <tr><td><code>media_type</code></td><td>required</td><td><code>&quot;model/gltf-binary&quot;</code></td><td>—</td><td>none</td><td></td></tr>
 <tr><td><code>format</code></td><td>required</td><td><code>&quot;glb-2.0&quot;</code></td><td>—</td><td>none</td><td></td></tr>
@@ -42,7 +43,7 @@
 <tr><td><code>binding_layout</code></td><td>required</td><td><code>&quot;node-primitive-a0&quot;</code></td><td>—</td><td>none</td><td></td></tr>
 <tr><td><code>geometry_length_unit</code></td><td>required</td><td><code>&quot;meter&quot;</code></td><td>—</td><td>none</td><td></td></tr>
 <tr><td><code>source_length_unit</code></td><td>required</td><td><code>&quot;millimeter&quot;</code></td><td>—</td><td>none</td><td></td></tr>
-<tr><td><code>counts</code></td><td>required</td><td><code>RenderCounts</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<tr><td><code>counts</code></td><td>required</td><td><code><a href="#declaration-wavenumber-geometer-contracts-steptopologya0-rendercounts">RenderCounts</a></code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
 <details open id="declaration-wavenumber-geometer-contracts-steptopologya0-rendercounts"><summary><h2><code>RenderCounts</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>meshes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=10000</code></td><td></td></tr>
 <tr><td><code>instances</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=100000</code></td><td></td></tr>
 <tr><td><code>primitives</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=1000000</code></td><td></td></tr>

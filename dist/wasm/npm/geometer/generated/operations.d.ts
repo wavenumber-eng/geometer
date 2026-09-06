@@ -1,4 +1,4 @@
-export declare const NORMALIZED_CONTRACT_CATALOG_SHA256: "197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e";
+export declare const NORMALIZED_CONTRACT_CATALOG_SHA256: "078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d";
 export declare const operationCatalog: {
     readonly "geometry.analytic_planar_boolean_batch.a0": {
         readonly identity: "geometry.analytic_planar_boolean_batch.a0";
@@ -47,6 +47,27 @@ export declare const operationCatalog: {
         readonly outputAttachments: readonly [];
         readonly documentation: "Project a synthesized indexed triangle mesh through the Fast HLR backend.";
     };
+    readonly "geometry.mesh_illustration.a0": {
+        readonly identity: "geometry.mesh_illustration.a0";
+        readonly requestContract: "geometry.mesh_illustration.request.a0";
+        readonly resultContract: "geometry.mesh_illustration.result.a0";
+        readonly runtimeAvailable: true;
+        readonly nativeRuntimeAvailable: false;
+        readonly runtimeDispatch: "logical_dto";
+        readonly inputAttachments: readonly [{
+            readonly name: "hlr_projection";
+            readonly required: false;
+            readonly media_types: readonly ["application/vnd.wavenumber.geometer.hlr-projection+json"];
+            readonly max_bytes: 67108864;
+        }, {
+            readonly name: "mesh_collection";
+            readonly required: true;
+            readonly media_types: readonly ["application/vnd.wavenumber.geometer.mesh-collection+json"];
+            readonly max_bytes: 268435456;
+        }];
+        readonly outputAttachments: readonly [];
+        readonly documentation: "Render colored meshes to the existing deterministic A0 SVG result without JavaScript.";
+    };
     readonly "geometry.model_bounds.a0": {
         readonly identity: "geometry.model_bounds.a0";
         readonly requestContract: "geometry.model_bounds.options.a0";
@@ -78,6 +99,27 @@ export declare const operationCatalog: {
         }];
         readonly outputAttachments: readonly [];
         readonly documentation: "Project STEP model bytes through the selected polygonal, exact, or Fast HLR backend.";
+    };
+    readonly "geometry.model_tessellation.a0": {
+        readonly identity: "geometry.model_tessellation.a0";
+        readonly requestContract: "geometry.model_tessellation.request.a0";
+        readonly resultContract: "geometry.model_tessellation.result.a0";
+        readonly runtimeAvailable: true;
+        readonly nativeRuntimeAvailable: false;
+        readonly runtimeDispatch: "logical_dto";
+        readonly inputAttachments: readonly [{
+            readonly name: "model";
+            readonly required: true;
+            readonly media_types: readonly ["application/step", "model/step"];
+            readonly max_bytes: 268435456;
+        }];
+        readonly outputAttachments: readonly [{
+            readonly name: "mesh_collection";
+            readonly required: true;
+            readonly media_types: readonly ["application/vnd.wavenumber.geometer.mesh-collection+json"];
+            readonly max_bytes: 268435456;
+        }];
+        readonly documentation: "Tessellate STEP bytes to bounded colored meshes for native GPU and illustration consumers.";
     };
     readonly "geometry.step_topology.analyze_recovery.a0": {
         readonly identity: "geometry.step_topology.analyze_recovery.a0";

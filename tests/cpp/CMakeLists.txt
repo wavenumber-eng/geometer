@@ -1,3 +1,6 @@
+add_executable(geometer_preview_depth_buffer_test preview_depth_buffer_test.cpp)
+add_test(NAME geometer_preview_depth_buffer_test COMMAND geometer_preview_depth_buffer_test)
+
 add_executable(geometer_planar_contours_test
     planar_contours_test.cpp
     ${CMAKE_SOURCE_DIR}/src/cpp/lib/planar_contours.cpp
@@ -620,6 +623,28 @@ configure_geometer_fixture_test(geometer_model_bounds_test
 
 add_test(NAME geometer_model_bounds_test COMMAND geometer_model_bounds_test)
 
+add_executable(geometer_model_tessellation_test model_tessellation_test.cpp)
+target_link_libraries(geometer_model_tessellation_test PRIVATE geometer_lib)
+configure_geometer_fixture_test(geometer_model_tessellation_test
+    tests/fixtures/step/embedded_models/SOT-23.STEP)
+add_test(NAME geometer_model_tessellation_test COMMAND geometer_model_tessellation_test)
+
+add_executable(geometer_mesh_illustration_test mesh_illustration_test.cpp)
+target_link_libraries(geometer_mesh_illustration_test PRIVATE geometer_lib)
+add_test(NAME geometer_mesh_illustration_test COMMAND geometer_mesh_illustration_test)
+if(NOT EMSCRIPTEN)
+    find_program(GEOMETER_NODE_EXECUTABLE node)
+    if(GEOMETER_NODE_EXECUTABLE)
+        add_test(NAME geometer_mesh_illustration_parity
+            COMMAND ${CMAKE_COMMAND} -E env "GEOMETER_PARITY_PYTHON=${Python3_EXECUTABLE}"
+                ${GEOMETER_NODE_EXECUTABLE}
+                ${CMAKE_SOURCE_DIR}/tests/typescript/native_illustration_parity.mjs
+                $<TARGET_FILE:geometer_mesh_illustration_test>)
+        set_tests_properties(geometer_mesh_illustration_parity PROPERTIES
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} TIMEOUT 90)
+    endif()
+endif()
+
 add_executable(geometer_operation_contract_test
     operation_contract_topology_semantics.cpp
     operation_contract_test.cpp
@@ -841,6 +866,7 @@ if(EMSCRIPTEN)
         geometer_planar_solve_test
         geometer_planar_step_test
         geometer_model_bounds_test
+        geometer_mesh_illustration_test
         geometer_operation_contract_test
         geometer_projection_options_json_test
         geometer_projection_model_transform_test

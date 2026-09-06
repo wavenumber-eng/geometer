@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>WASM Interfaces — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/wasm.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="wasm-interfaces">WASM Interfaces</h1></header>
+<p><code>scripts/build_wasm.py</code> builds three WASM targets into <code>dist/</code>.</p>
+<p>Full Browser/Web Worker target:</p>
+<ul>
+<li><code>dist/wasm/browser/geometer.js</code></li>
+<li><code>dist/wasm/browser/geometer.wasm</code></li>
+</ul>
+<p>This is the official application integration target. It is modularized with
+the factory name <code>createGeometerModule</code> and includes the OCCT-backed STEP/HLR/GLB
+APIs plus the planar byte APIs.</p>
+<p>Node CLI parity/test target:</p>
+<ul>
+<li><code>dist/wasm/node-test/geometer-node-test.js</code></li>
+<li><code>dist/wasm/node-test/geometer-node-test.wasm</code></li>
+</ul>
+<p>This target uses Node filesystem access for command-line parity and diagnostics.
+Do not use it for browser integration.</p>
+<p>Planar-only Browser/Web Worker target:</p>
+<ul>
+<li><code>dist/wasm/planar-browser/geometer-planar-browser.js</code></li>
+<li><code>dist/wasm/planar-browser/geometer-planar-browser.wasm</code></li>
+</ul>
+<p>The full browser target exports:</p>
+<ul>
+<li><code>_malloc</code></li>
+<li><code>_free</code></li>
+<li><code>_geometer_version_string</code></li>
+<li><code>_geometer_version_major</code></li>
+<li><code>_geometer_version_minor</code></li>
+<li><code>_geometer_version_patch</code></li>
+<li><code>_geometer_abi_version</code></li>
+<li><code>_geometer_step_hlr_projection_json</code></li>
+<li><code>_geometer_step_hlr_projection_json_bytes</code></li>
+<li><code>_geometer_step_to_glb</code></li>
+<li><code>_geometer_step_to_glb_bytes</code></li>
+<li><code>_geometer_planar_batch_solve</code></li>
+<li><code>_geometer_planar_batch_solve_bytes</code></li>
+<li><code>_geometer_planar_batch_solve_json</code></li>
+<li><code>_geometer_planar_batch_solve_json_bytes</code></li>
+<li><code>_geometer_planar_triangulate</code></li>
+<li><code>_geometer_planar_triangulate_bytes</code></li>
+<li><code>_geometer_clipper2_boolean</code></li>
+<li><code>_geometer_clipper2_boolean_bytes</code></li>
+<li><code>_geometer_clipper2_inflate_open</code></li>
+<li><code>_geometer_clipper2_inflate_open_bytes</code></li>
+<li><code>_geometer_operation_catalog_json</code></li>
+<li><code>_geometer_operation_execute</code></li>
+<li><code>_geometer_operation_result_json_data</code></li>
+<li><code>_geometer_operation_result_json_size</code></li>
+<li><code>_geometer_operation_result_attachment_count</code></li>
+<li><code>_geometer_operation_result_attachment_name</code></li>
+<li><code>_geometer_operation_result_attachment_media_type</code></li>
+<li><code>_geometer_operation_result_attachment_data</code></li>
+<li><code>_geometer_operation_result_free</code></li>
+<li><code>_geometer_free_string</code></li>
+<li><code>_geometer_free_bytes</code></li>
+</ul>
+<p>It also exports these Emscripten runtime helpers:</p>
+<ul>
+<li><code>ccall</code></li>
+<li><code>cwrap</code></li>
+<li><code>UTF8ToString</code></li>
+<li><code>stringToUTF8</code></li>
+<li><code>lengthBytesUTF8</code></li>
+<li><code>getValue</code></li>
+</ul>
+<p>The planar-only browser target is modularized with the factory name
+<code>createGeometerPlanarModule</code>. It exports only the version/free functions plus:</p>
+<ul>
+<li><code>_malloc</code></li>
+<li><code>_free</code></li>
+<li><code>_geometer_planar_batch_solve</code></li>
+<li><code>_geometer_planar_batch_solve_bytes</code></li>
+<li><code>_geometer_planar_batch_solve_json</code></li>
+<li><code>_geometer_planar_batch_solve_json_bytes</code></li>
+<li><code>_geometer_planar_triangulate</code></li>
+<li><code>_geometer_planar_triangulate_bytes</code></li>
+<li><code>_geometer_clipper2_boolean</code></li>
+<li><code>_geometer_clipper2_boolean_bytes</code></li>
+<li><code>_geometer_clipper2_inflate_open</code></li>
+<li><code>_geometer_clipper2_inflate_open_bytes</code></li>
+</ul>
+<p>Use this target for browser workers that only need packed planar geometry
+operations and should not pay the full OCCT/STEP WASM size, startup, and
+worker-memory cost. The full browser target also exports these planar APIs, so
+the planar-only target is an optimization, not a separate semantic API.
+The generic operation ABI is intentionally exported only by the full browser
+target because the pilot <code>model_bounds</code> operation requires OCCT STEP support.
+Existing full-browser and planar-only symbols are unchanged.</p>
+<h2 id="generated-typescript-client">Generated TypeScript client</h2>
+<p>Promoted operations use the ESM package under <code>dist/wasm/npm/geometer/</code>. Normal
+consumers should use <code>@wavenumber/geometer/wasm</code>; it negotiates the generated
+operation catalog and owns allocation, copying, descriptor layout, pointer-out
+handling, decoding, and freeing. Direct calls to the generic C ABI remain a
+focused transport-test and advanced-integration surface.</p>
+<pre><code class="language-ts">import { createGeometerWasmClient } from &quot;@wavenumber/geometer/wasm&quot;;
+
+const client = await createGeometerWasmClient(createGeometerModule, {
+  wasmBinary: await fetch(&quot;/dist/wasm/browser/geometer.wasm&quot;).then((value) =&gt;
+    value.arrayBuffer(),
+  ),
+});
+const result = await client.modelBounds({ model: stepBytes });
+console.log(result.bounds.size);
+</code></pre>
+<p>Window applications should keep synchronous OCCT work off the UI event loop:</p>
+<pre><code class="language-ts">import { createGeometerWorkerClient } from &quot;@wavenumber/geometer/worker&quot;;
+
+const worker = new Worker(&quot;./geometer-worker.js&quot;);
+const client = await createGeometerWorkerClient(worker, {
+  wasmBinary: await fetch(&quot;/dist/wasm/browser/geometer.wasm&quot;).then((value) =&gt;
+    value.arrayBuffer(),
+  ),
+});
+const result = await client.modelBounds({ model: stepBytes });
+</code></pre>
+<p>The Worker entry loads the classic <code>geometer.js</code> factory and installs
+<code>startGeometerWorkerHost</code> from <code>@wavenumber/geometer/worker-host</code>. See the
+TypeScript client design for transfer, serialization, and lifecycle rules.</p>
+<p>See <a href="typescript-client.html">TypeScript contracts and browser WASM client</a> for
+the package, codec, capability, and compatibility rules. The runnable pilot is
+<code>examples/wasm/model_bounds_demo.html</code>.</p>
+<p>Legacy low-level browser-worker shape for operations not yet promoted:</p>
+<pre><code class="language-js">importScripts(&quot;/dist/wasm/browser/geometer.js&quot;);
+
+const module = await createGeometerModule({
+  locateFile: (path) =&gt; path.endsWith(&quot;.wasm&quot;) ? `/dist/wasm/browser/${path}` : path,
+});
+
+// Allocate STEP bytes and options JSON, then call:
+module.ccall(
+  &quot;geometer_step_hlr_projection_json_bytes&quot;,
+  &quot;number&quot;,
+  [&quot;number&quot;, &quot;number&quot;, &quot;number&quot;, &quot;number&quot;, &quot;number&quot;],
+  [stepPtr, stepSize, optionsPtr, valueOutPtr, errorOutPtr],
+);
+
+module.ccall(
+  &quot;geometer_step_to_glb_bytes&quot;,
+  &quot;number&quot;,
+  [&quot;number&quot;, &quot;number&quot;, &quot;number&quot;, &quot;number&quot;, &quot;number&quot;, &quot;number&quot;],
+  [stepPtr, stepSize, optionsPtr, valueOutPtr, valueSizeOutPtr, errorOutPtr],
+);
+</code></pre>
+<p>The legacy HLR browser-worker example lives at
+<code>examples/wasm/hlr_projection_worker.js</code> until HLR is promoted. The generated
+model-bounds Worker entry is <code>examples/wasm/model_bounds_worker.ts</code>.</p>
+
+</main>
+</body>
+</html>

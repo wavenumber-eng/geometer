@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>Current Interface And Contract Authority — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/contracts/current-interface-inventory.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="current-interface-and-contract-authority">Current Interface And Contract Authority</h1></header>
+<p>Updated for release target <code>v2026-09-06</code>. This inventory
+describes interfaces, not a promotion decision. The
+<a href="../../../../../contracts/promotion-manifest.toml">promotion manifest</a> governs lifecycle evidence;
+the <a href="../../../coverage.html">generated coverage matrix</a> joins
+every inventoried operation and contract with the normalized TypeSpec catalog.
+The <a href="../../../../../research/history/interface-inventory-2026-08-12.md">2026-08-12 snapshot</a>
+is historical and must not be used for runtime discovery.</p>
+<h2 id="authority-layers">Authority Layers</h2>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Authority and generation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Generated logical roots and operation metadata</td>
+<td>Authored <code>src/tsp/geometer/main.tsp</code> and its imports; normalized catalog drives JSON Schema, C++, TypeScript, Rust, Python and HTML. Promotion remains per-contract.</td>
+</tr>
+<tr>
+<td>Solver behavior and semantic validity</td>
+<td>Focused C++ implementations; browser illustration behavior lives in TypeScript. DTO generation does not generate algorithms.</td>
+</tr>
+<tr>
+<td>IPC control JSON</td>
+<td>TypeSpec <code>ipc-a0.tsp</code>; framing is separately specified GMIPCA01, not a generated binary codec.</td>
+</tr>
+<tr>
+<td>Legacy file CLI and JSON batch</td>
+<td>Handwritten parsing/adapters in <code>src/cpp/cli/</code>; preserve aliases, defaults, patch presence, diagnostics and permissive compatibility behavior.</td>
+</tr>
+<tr>
+<td>C ABI and WASM exports</td>
+<td><code>src/cpp/lib/geometer/c_api.h</code> and <code>src/cpp/lib/CMakeLists.txt</code>; export inventory/checks live in the promotion manifest and its tests.</td>
+</tr>
+<tr>
+<td>Python public API</td>
+<td><code>python/geometer/__init__.py</code>, convenience wrappers and executable transport. Generated internals do not replace every public dictionary API.</td>
+</tr>
+<tr>
+<td>Mesh illustration</td>
+<td>Generated options/results; browser TypeScript renderer and native C++ renderer exposed through executable IPC and Rust/Python clients since 2026.9.6.</td>
+</tr>
+<tr>
+<td>Native value helpers</td>
+<td>Focused public headers and <a href="../design/step-geometry.html">STEP</a>/<a href="../design/planar-geometry.html">planar</a> references; aliases, helpers and ownership/version functions are not counted as separate wire operations.</td>
+</tr>
+</tbody>
+</table>
+<p>The catalog contains 18 generated operation declarations: six with the portable
+runtime flag (model bounds, model HLR, mesh HLR, experimental analytic,
+tessellation and illustration), nine additional native-only experimental
+topology operations, and three structural-only
+topology operations. Effective native availability is portable OR additional
+native-only availability. Always discover the actual executable's operations
+through its welcome catalog; see the <a href="../design/executable-ipc.html">IPC guide</a>.
+The new tessellation/illustration APIs are qualified through native clients;
+catalog flags alone do not establish browser build/test coverage.</p>
+<p>Model bounds is promoted. HLR structural contracts are pilots. Analytic and
+topology remain experimental/non-production regardless of callable transports
+or frozen bytes. Public package support and demo-application support are
+different decisions.</p>
+<h2 id="operations-awaiting-generated-contractsadapters">Operations Awaiting Generated Contracts/Adapters</h2>
+<table>
+<thead>
+<tr>
+<th>Inventoried operation</th>
+<th>Handwritten source</th>
+<th>Existing boundary</th>
+<th>Migration</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>geometry.model_to_glb.a0</code></td>
+<td><code>step_to_glb_options_json.cpp</code>, <code>step_to_glb.cpp</code></td>
+<td>C++, file CLI/Python, legacy STEP C ABI/WASM</td>
+<td>Wave 1</td>
+</tr>
+<tr>
+<td><code>geometry.planar_step.a0</code></td>
+<td><code>planar_step.cpp</code></td>
+<td>C++, file CLI/Python</td>
+<td>Wave 1</td>
+</tr>
+<tr>
+<td><code>geometry.planar_batch_solve.a0</code></td>
+<td><code>planar_solve.cpp</code></td>
+<td>C++, C ABI/WASM, file CLI/Python</td>
+<td>Wave 2</td>
+</tr>
+<tr>
+<td><code>geometry.planar_triangulate.a0</code></td>
+<td><code>planar_triangulate.cpp</code></td>
+<td>C++, packed C ABI/WASM</td>
+<td>Wave 2</td>
+</tr>
+<tr>
+<td><code>geometry.clipper2_boolean.a0</code></td>
+<td><code>clipper2_bytes.cpp</code></td>
+<td>C++, packed C ABI/WASM</td>
+<td>Wave 2</td>
+</tr>
+<tr>
+<td><code>geometry.clipper2_inflate_open.a0</code></td>
+<td><code>clipper2_bytes.cpp</code></td>
+<td>C++, packed C ABI/WASM</td>
+<td>Wave 2</td>
+</tr>
+</tbody>
+</table>
+<p>These are inventory identities, not names accepted by generic IPC today.
+The legacy <code>geometer.batch.request.a0</code> / response and
+<code>geometry.projection.b0</code> compatibility boundary are wave 3. The
+<a href="typespec-coverage-assessment.html">roadmap</a> requires field-level compatibility,
+cross-language vectors and runtime adapter evidence before authority switches.
+The <a href="public-entrypoints.html">public entry-point reconciliation</a> maps direct
+helpers, client exports and aliases to these families or explicit support/
+research boundaries. This is an inventory, not completion of their migration.</p>
+<h2 id="packet-authority">Packet Authority</h2>
+<table>
+<thead>
+<tr>
+<th>Packet</th>
+<th>Magic / version</th>
+<th>Layout/codec ownership</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IPC framing</td>
+<td>GMIPCA01 / A0 generation 0</td>
+<td><a href="../design/executable-ipc-a0.html">Wire reference</a>; handwritten framing in each client/server</td>
+</tr>
+<tr>
+<td>Indexed mesh</td>
+<td>GMIMSH01 / 1</td>
+<td><a href="../design/binary-formats.html#indexed-triangle-mesh-a0">Binary reference</a>; handwritten C++/TS/Rust/Python</td>
+</tr>
+<tr>
+<td>Analytic request/result</td>
+<td>GMABRQ01 / GMABRS01, A0</td>
+<td><a href="../design/analytic-planar-boolean-packet-a0.html">Analytic packet specification</a>; generated logical DTOs, handwritten packed codecs</td>
+</tr>
+<tr>
+<td>Planar batch</td>
+<td>GMPBRQ01 / GMPBRS01, 2</td>
+<td><code>planar_solve.cpp</code>; <a href="../design/binary-formats.html">binary reference</a></td>
+</tr>
+<tr>
+<td>Triangulation</td>
+<td>GMTRRQ01 / GMTRRS01, 1</td>
+<td><code>planar_triangulate.cpp</code>; <a href="../design/binary-formats.html">binary reference</a></td>
+</tr>
+<tr>
+<td>Clipper2 Boolean</td>
+<td>GMC2BQ01 / GMC2BS01, 1</td>
+<td><code>clipper2_bytes.cpp</code>; <a href="../design/binary-formats.html">binary reference</a></td>
+</tr>
+<tr>
+<td>Clipper2 open inflate</td>
+<td>GMC2IQ01 / GMC2IS01, 1</td>
+<td><code>clipper2_bytes.cpp</code>; <a href="../design/binary-formats.html">binary reference</a></td>
+</tr>
+</tbody>
+</table>
+<p>Native topology also transports STEP, GLB and experimental checkpoint/compact
+tables. Their formats and failure boundaries remain in the
+<a href="../design/step-topology-contract-a0.html">Slice A</a>,
+<a href="../design/step-topology-contract-slice-b.html">Slice B</a>,
+<a href="../design/step-topology-contract-slice-c.html">Slice C</a> and
+<a href="../design/step-topology-edit-journal.html">edit-journal</a> references. Generated
+attachment descriptors do not imply generated internals of these payloads.</p>
+<h2 id="compatibility-and-toolchain">Compatibility And Toolchain</h2>
+<p>Keep file-oriented APIs and legacy STEP aliases intact during migration.
+<a href="../../../../../contracts/compatibility/viz-2026.6.10.toml">Named consumer snapshots</a> record frozen
+compatibility requirements, not a claim about today's downstream installation.
+<a href="typespec-toolchain.html">TypeSpec authoring</a> documents the single catalog and
+<a href="generated-contract-reference.html">HTML generation</a> documents its presentation.</p>
+<p><code>analytic-candidate.tsp</code> imports <code>main.tsp</code>, which already includes analytic
+declarations. Retain that entry point for now: <code>check:analytic-candidate</code>
+uses it as a focused candidate/vector gate. Import overlap alone is not evidence
+that removing the validation boundary is safe.</p>
+
+</main>
+</body>
+</html>

@@ -33,8 +33,13 @@ into the analytic demo. Its README records the clean-room provenance boundary.
 
 ## Live Analytic Polygon Pour
 
+**Status: experimental demonstration.** It demonstrates the retained analytic
+API and is not evidence of production readiness. The solver may fail closed on
+valid inputs and should not be used as the dependable whole-board or
+whole-layer copper-union path.
+
 `analytic_polygon_pour_demo.html` is the first high-level TypeScript client for
-the production-dispatched filtered solver behind the frozen A0 candidate. It
+the experimental filtered solver behind the frozen A0 candidate. It
 continuously solves a board-like copper region with circular clearances and a
 draggable full-height keepout through a dedicated Worker. The canvas renders
 the solver's canonical line and circular-arc fragments; JavaScript performs no
@@ -341,7 +346,7 @@ The reusable `scripts/package_single_html_site.py` tool supplies the CSP,
 single-runtime-file manifest, deterministic staging, and Cloudflare headers for
 this and future self-contained demos.
 
-See [Browser demo packaging and UI](../../docs/design/browser-demos.md) for the
+See [Browser demo packaging and UI](../../docs/developer/browser-demos.md) for the
 durable source/build/test layout and the checklist for adding another hosted
 demo. Building these artifacts never publishes them.
 

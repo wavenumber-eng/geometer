@@ -203,7 +203,11 @@ impl GeometerClient {
         client_name: &str,
         client_version: &str,
     ) -> Result<Self, GeometerClientError> {
-        let mut child = Command::new(executable.as_ref())
+        let mut command = Command::new(executable.as_ref());
+        // Executable-backed desktop consumers must not create a console window.
+        #[cfg(windows)]
+        command.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+        let mut child = command
             .args(["serve", "--stdio"])
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
@@ -296,6 +300,11 @@ impl GeometerClient {
         Self::spawn(path, client_name, client_version).await
     }
 
+    /// Resolve the same local executable used by `discover_and_spawn` without launching it.
+    pub fn find_executable() -> Option<std::path::PathBuf> {
+        discover_executable()
+    }
+
     pub fn welcome(&self) -> &IpcWelcomeA0 {
         &self.welcome
     }
@@ -322,16 +331,10 @@ impl GeometerClient {
                 ))
             })?;
         let request = match declaration.runtime_dispatch {
-            IpcRuntimeDispatchA0::LogicalDto
-                if declaration.request_contract == "geometry.hlr_projection.options.a0" =>
-            {
-                IpcRequestValueA0::HlrProjection(contracts::decode_hlr_projection_options_a0_json(
-                    request_json,
-                )?)
-            }
-            IpcRuntimeDispatchA0::LogicalDto => IpcRequestValueA0::LogicalDto(
-                contracts::decode_model_bounds_options_a0_json(request_json)?,
-            ),
+            IpcRuntimeDispatchA0::LogicalDto => crate::generated::dispatch::decode_logical_request(
+                &declaration.request_contract,
+                request_json,
+            )?,
             IpcRuntimeDispatchA0::PackedAttachment => {
                 IpcRequestValueA0::PackedAttachment(contracts::decode_json::<
                     PackedAttachmentProjectionA0,

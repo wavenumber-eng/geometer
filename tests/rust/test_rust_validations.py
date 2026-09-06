@@ -37,7 +37,7 @@ def test_rust_format_lint_and_live_conformance() -> None:
     run("wn-dev-std", "audit", str(MANIFEST.parent), "--scope", "language")
 
 
-def test_clean_external_consumer_runs_analytic_ipc(tmp_path: Path) -> None:
+def test_clean_external_consumer_runs_analytic_and_illustration_ipc(tmp_path: Path) -> None:
     crate = MANIFEST.parent
     package_dir = tmp_path / "package"
     package_dir.mkdir()
@@ -67,7 +67,7 @@ def test_clean_external_consumer_runs_analytic_ipc(tmp_path: Path) -> None:
         "use geometer_client::GeometerClient;\n"
         "#[tokio::main]\n"
         "async fn main() { "
-        "let executable = std::env::args_os().nth(1).expect(\"missing geometer executable\"); "
+        'let executable = std::env::args_os().nth(1).expect("missing geometer executable"); '
         "let value = ModelBoundsOptionsA0 { format: None, model_transform: None }; "
         "let _ = geometer_client::contracts::encode_model_bounds_options_a0_json(&value).unwrap(); "
         "let id = JobId::new(1).unwrap(); let point = PointNm { x: i64::MIN, y: i64::MAX }; "
@@ -81,25 +81,54 @@ def test_clean_external_consumer_runs_analytic_ipc(tmp_path: Path) -> None:
         "stages: vec![contracts::AnalyticPlanarBooleanStage { stage_id: contracts::StageId::new(1).unwrap(), "
         "operation: contracts::StageOperation::UnionStage, "
         "operands: vec![contracts::AnalyticPlanarOperand::Disk(contracts::DiskOperand { "
-        "operand_id: contracts::OperandId::new(1).unwrap(), kind: \"disk\".to_owned(), "
+        'operand_id: contracts::OperandId::new(1).unwrap(), kind: "disk".to_owned(), '
         "feature_id: contracts::FeatureId::new(1).unwrap(), "
         "center: contracts::PointNm { x: 0, y: 0 }, radius_nm: 1_000_000 })] }] }], "
         "relationship_queries: vec![] }; "
-        "let client = GeometerClient::spawn(executable, \"packaged-crate-consumer\", \"a0\").await.unwrap(); "
+        'let client = GeometerClient::spawn(executable, "packaged-crate-consumer", "a0").await.unwrap(); '
         "let empty_result = client.analytic_planar_boolean_batch(&empty).await.unwrap(); "
         "assert!(empty_result.job_results.is_empty()); "
         "let result = client.analytic_planar_boolean_batch(&request).await.unwrap(); "
         "let AnalyticPlanarBooleanJobResult::Success(job) = &result.job_results[0] else { "
-        "panic!(\"packaged client returned a job-local failure\"); }; "
+        'panic!("packaged client returned a job-local failure"); }; '
         "assert!(!job.result_regions.is_empty()); assert_eq!(job.digest_sha256.len(), 64); "
         "client.close().await.unwrap(); }\n",
         encoding="utf-8",
     )
     run("cargo", "generate-lockfile", cwd=consumer)
     run("cargo", "run", "--locked", "--", str(_native_executable()), cwd=consumer)
+    # Compile the complete public STEP/HLR/illustration example against the
+    # extracted crate, not a workspace path dependency or handwritten adapter.
+    binary_dir = consumer / "src" / "bin"
+    binary_dir.mkdir()
+    (binary_dir / "mesh_illustration.rs").write_text(
+        (crate / "examples" / "mesh_illustration.rs").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    svg = tmp_path / "packaged-illustration.svg"
+    run(
+        "cargo",
+        "run",
+        "--locked",
+        "--bin",
+        "mesh_illustration",
+        "--",
+        str(_native_executable()),
+        str(ROOT / "tests/fixtures/step/embedded_models/SOT-23.STEP"),
+        str(svg),
+        cwd=consumer,
+    )
+    import xml.etree.ElementTree as ET
+
+    assert ET.parse(svg).getroot().tag == "{http://www.w3.org/2000/svg}svg"
+    assert svg.stat().st_size > 1000
 
 
 def _native_executable() -> Path:
+    if override := os.environ.get("GEOMETER_EXECUTABLE"):
+        executable = Path(override).resolve()
+        assert executable.is_file(), f"missing packaged-consumer executable: {executable}"
+        return executable
     if sys.platform == "win32":
         platform_name, executable_name = "windows-x64", "geometer.exe"
     elif sys.platform == "darwin":

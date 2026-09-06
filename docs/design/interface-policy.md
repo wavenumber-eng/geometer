@@ -45,8 +45,8 @@ That includes the current public headers:
 Defined in `src/cpp/lib/geometer/version.h`.
 
 Geometer uses date-based release versions per ADR 006. The current package and
-runtime version is `2026.9.4`, corresponding to release tag `v2026-09-04`.
-The current C ABI generation is `20260904`. Consumers should check both the
+runtime version is `2026.9.6`, corresponding to release tag `v2026-09-06`.
+The current C ABI generation is `20260906`. Consumers should check both the
 project version and ABI generation at runtime.
 
 ```cpp

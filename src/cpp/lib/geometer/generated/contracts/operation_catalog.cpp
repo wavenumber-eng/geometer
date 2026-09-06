@@ -30,6 +30,13 @@ const char* operation_catalog_json()
         "\"geometry.hlr_projection.result.a0\",\"input_attachments\":[{\"name\":\"mesh\","
         "\"required\":true,\"media_types\":[\"application/"
         "vnd.wavenumber.geometer.indexed-triangle-mesh\"],\"max_bytes\":268435456}],\"output_"
+        "attachments\":[],\"runtime_dispatch\":\"logical_dto\"},{\"identity\":\"geometry.mesh_"
+        "illustration.a0\",\"request_contract\":\"geometry.mesh_illustration.request.a0\",\"result_"
+        "contract\":\"geometry.mesh_illustration.result.a0\",\"input_attachments\":[{\"name\":"
+        "\"hlr_projection\",\"required\":false,\"media_types\":[\"application/"
+        "vnd.wavenumber.geometer.hlr-projection+json\"],\"max_bytes\":67108864},{\"name\":\"mesh_"
+        "collection\",\"required\":true,\"media_types\":[\"application/"
+        "vnd.wavenumber.geometer.mesh-collection+json\"],\"max_bytes\":268435456}],\"output_"
         "attachments\":[],\"runtime_dispatch\":\"logical_dto\"},{\"identity\":\"geometry.model_"
         "bounds.a0\",\"request_contract\":\"geometry.model_bounds.options.a0\",\"result_contract\":"
         "\"geometry.model_bounds.a0\",\"input_attachments\":[{\"name\":\"model\",\"required\":true,"
@@ -40,15 +47,22 @@ const char* operation_catalog_json()
         "result.a0\",\"input_attachments\":[{\"name\":\"model\",\"required\":true,\"media_types\":["
         "\"application/step\",\"model/"
         "step\"],\"max_bytes\":268435456}],\"output_attachments\":[],\"runtime_dispatch\":"
-        "\"logical_dto\"}],\"attachment_descriptor\":{\"wasm32\":{\"size\":36,\"offsets\":{"
-        "\"struct_size\":0,\"flags\":4,\"name\":8,\"name_size\":12,\"media_type\":16,\"media_type_"
-        "size\":20,\"data\":24,\"data_size\":28,\"reserved0\":32}},\"pointer64\":{\"size\":56,"
-        "\"offsets\":{\"struct_size\":0,\"flags\":4,\"name\":8,\"name_size\":16,\"media_type\":24,"
-        "\"media_type_size\":32,\"data\":40,\"data_size\":48,\"reserved0\":52}}},\"limits\":{"
-        "\"operation_id_bytes\":128,\"request_json_bytes\":8388608,\"response_json_bytes\":8388608,"
-        "\"attachment_count\":16,\"attachment_name_bytes\":128,\"attachment_media_type_bytes\":128,"
-        "\"attachment_bytes\":268435456,\"aggregate_attachment_bytes_native\":536870912,"
-        "\"aggregate_attachment_bytes_wasm\":268435456}}";
+        "\"logical_dto\"},{\"identity\":\"geometry.model_tessellation.a0\",\"request_contract\":"
+        "\"geometry.model_tessellation.request.a0\",\"result_contract\":\"geometry.model_"
+        "tessellation.result.a0\",\"input_attachments\":[{\"name\":\"model\",\"required\":true,"
+        "\"media_types\":[\"application/step\",\"model/"
+        "step\"],\"max_bytes\":268435456}],\"output_attachments\":[{\"name\":\"mesh_collection\","
+        "\"required\":true,\"media_types\":[\"application/"
+        "vnd.wavenumber.geometer.mesh-collection+json\"],\"max_bytes\":268435456}],\"runtime_"
+        "dispatch\":\"logical_dto\"}],\"attachment_descriptor\":{\"wasm32\":{\"size\":36,"
+        "\"offsets\":{\"struct_size\":0,\"flags\":4,\"name\":8,\"name_size\":12,\"media_type\":16,"
+        "\"media_type_size\":20,\"data\":24,\"data_size\":28,\"reserved0\":32}},\"pointer64\":{"
+        "\"size\":56,\"offsets\":{\"struct_size\":0,\"flags\":4,\"name\":8,\"name_size\":16,"
+        "\"media_type\":24,\"media_type_size\":32,\"data\":40,\"data_size\":48,\"reserved0\":52}}},"
+        "\"limits\":{\"operation_id_bytes\":128,\"request_json_bytes\":8388608,\"response_json_"
+        "bytes\":8388608,\"attachment_count\":16,\"attachment_name_bytes\":128,\"attachment_media_"
+        "type_bytes\":128,\"attachment_bytes\":268435456,\"aggregate_attachment_bytes_native\":"
+        "536870912,\"aggregate_attachment_bytes_wasm\":268435456}}";
     return catalog.c_str();
 }
 
@@ -75,6 +89,13 @@ const char* native_operation_catalog_json()
         "\"geometry.hlr_projection.result.a0\",\"input_attachments\":[{\"name\":\"mesh\","
         "\"required\":true,\"media_types\":[\"application/"
         "vnd.wavenumber.geometer.indexed-triangle-mesh\"],\"max_bytes\":268435456}],\"output_"
+        "attachments\":[],\"runtime_dispatch\":\"logical_dto\"},{\"identity\":\"geometry.mesh_"
+        "illustration.a0\",\"request_contract\":\"geometry.mesh_illustration.request.a0\",\"result_"
+        "contract\":\"geometry.mesh_illustration.result.a0\",\"input_attachments\":[{\"name\":"
+        "\"hlr_projection\",\"required\":false,\"media_types\":[\"application/"
+        "vnd.wavenumber.geometer.hlr-projection+json\"],\"max_bytes\":67108864},{\"name\":\"mesh_"
+        "collection\",\"required\":true,\"media_types\":[\"application/"
+        "vnd.wavenumber.geometer.mesh-collection+json\"],\"max_bytes\":268435456}],\"output_"
         "attachments\":[],\"runtime_dispatch\":\"logical_dto\"},{\"identity\":\"geometry.model_"
         "bounds.a0\",\"request_contract\":\"geometry.model_bounds.options.a0\",\"result_contract\":"
         "\"geometry.model_bounds.a0\",\"input_attachments\":[{\"name\":\"model\",\"required\":true,"
@@ -85,9 +106,16 @@ const char* native_operation_catalog_json()
         "result.a0\",\"input_attachments\":[{\"name\":\"model\",\"required\":true,\"media_types\":["
         "\"application/step\",\"model/"
         "step\"],\"max_bytes\":268435456}],\"output_attachments\":[],\"runtime_dispatch\":"
-        "\"logical_dto\"},{\"identity\":\"geometry.step_topology.apply_logical_groups.a0\","
-        "\"request_contract\":\"geometry.step_topology.apply_logical_groups.request.a0\",\"result_"
-        "contract\":\"geometry.step_topology.apply_logical_groups.result.a0\",\"input_"
+        "\"logical_dto\"},{\"identity\":\"geometry.model_tessellation.a0\",\"request_contract\":"
+        "\"geometry.model_tessellation.request.a0\",\"result_contract\":\"geometry.model_"
+        "tessellation.result.a0\",\"input_attachments\":[{\"name\":\"model\",\"required\":true,"
+        "\"media_types\":[\"application/step\",\"model/"
+        "step\"],\"max_bytes\":268435456}],\"output_attachments\":[{\"name\":\"mesh_collection\","
+        "\"required\":true,\"media_types\":[\"application/"
+        "vnd.wavenumber.geometer.mesh-collection+json\"],\"max_bytes\":268435456}],\"runtime_"
+        "dispatch\":\"logical_dto\"},{\"identity\":\"geometry.step_topology.apply_logical_groups."
+        "a0\",\"request_contract\":\"geometry.step_topology.apply_logical_groups.request.a0\","
+        "\"result_contract\":\"geometry.step_topology.apply_logical_groups.result.a0\",\"input_"
         "attachments\":[],\"output_attachments\":[],\"runtime_dispatch\":\"logical_dto\"},{"
         "\"identity\":\"geometry.step_topology.apply_metadata_probes.a0\",\"request_contract\":"
         "\"geometry.step_topology.apply_metadata_probes.request.a0\",\"result_contract\":"
@@ -145,7 +173,7 @@ const char* native_operation_catalog_json()
 
 const char* normalized_contract_catalog_sha256()
 {
-    return "197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e";
+    return "078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d";
 }
 
 bool operation_output_attachment_declared(const std::string& operation_id,
@@ -155,6 +183,9 @@ bool operation_output_attachment_declared(const std::string& operation_id,
     if (operation_id == "geometry.analytic_planar_boolean_batch.a0" &&
         attachment_name == "analytic_planar_boolean_result" &&
         media_type == "application/vnd.wavenumber.geometer.analytic-planar-boolean-result")
+        return true;
+    if (operation_id == "geometry.model_tessellation.a0" && attachment_name == "mesh_collection" &&
+        media_type == "application/vnd.wavenumber.geometer.mesh-collection+json")
         return true;
     if (operation_id == "geometry.step_topology.checkpoint_edit_journal.a0" &&
         attachment_name == "edit_journal" &&
@@ -188,6 +219,12 @@ bool operation_input_attachment_declared(const std::string& operation_id,
     if (operation_id == "geometry.mesh_hlr_projection.a0" && attachment_name == "mesh" &&
         media_type == "application/vnd.wavenumber.geometer.indexed-triangle-mesh")
         return true;
+    if (operation_id == "geometry.mesh_illustration.a0" && attachment_name == "hlr_projection" &&
+        media_type == "application/vnd.wavenumber.geometer.hlr-projection+json")
+        return true;
+    if (operation_id == "geometry.mesh_illustration.a0" && attachment_name == "mesh_collection" &&
+        media_type == "application/vnd.wavenumber.geometer.mesh-collection+json")
+        return true;
     if (operation_id == "geometry.model_bounds.a0" && attachment_name == "model" &&
         media_type == "application/step")
         return true;
@@ -198,6 +235,12 @@ bool operation_input_attachment_declared(const std::string& operation_id,
         media_type == "application/step")
         return true;
     if (operation_id == "geometry.model_hlr_projection.a0" && attachment_name == "model" &&
+        media_type == "model/step")
+        return true;
+    if (operation_id == "geometry.model_tessellation.a0" && attachment_name == "model" &&
+        media_type == "application/step")
+        return true;
+    if (operation_id == "geometry.model_tessellation.a0" && attachment_name == "model" &&
         media_type == "model/step")
         return true;
     if (operation_id == "geometry.step_topology.open.a0" && attachment_name == "step" &&
@@ -230,9 +273,15 @@ std::size_t operation_input_attachment_max_bytes(const std::string& operation_id
         return 268435456U;
     if (operation_id == "geometry.mesh_hlr_projection.a0" && attachment_name == "mesh")
         return 268435456U;
+    if (operation_id == "geometry.mesh_illustration.a0" && attachment_name == "hlr_projection")
+        return 67108864U;
+    if (operation_id == "geometry.mesh_illustration.a0" && attachment_name == "mesh_collection")
+        return 268435456U;
     if (operation_id == "geometry.model_bounds.a0" && attachment_name == "model")
         return 268435456U;
     if (operation_id == "geometry.model_hlr_projection.a0" && attachment_name == "model")
+        return 268435456U;
+    if (operation_id == "geometry.model_tessellation.a0" && attachment_name == "model")
         return 268435456U;
     if (operation_id == "geometry.step_topology.open.a0" && attachment_name == "step")
         return 268435456U;
@@ -253,9 +302,15 @@ const char* operation_input_attachment_primary_media_type(const std::string& ope
         return "application/vnd.wavenumber.geometer.analytic-planar-boolean-request";
     if (operation_id == "geometry.mesh_hlr_projection.a0" && attachment_name == "mesh")
         return "application/vnd.wavenumber.geometer.indexed-triangle-mesh";
+    if (operation_id == "geometry.mesh_illustration.a0" && attachment_name == "hlr_projection")
+        return "application/vnd.wavenumber.geometer.hlr-projection+json";
+    if (operation_id == "geometry.mesh_illustration.a0" && attachment_name == "mesh_collection")
+        return "application/vnd.wavenumber.geometer.mesh-collection+json";
     if (operation_id == "geometry.model_bounds.a0" && attachment_name == "model")
         return "application/step";
     if (operation_id == "geometry.model_hlr_projection.a0" && attachment_name == "model")
+        return "application/step";
+    if (operation_id == "geometry.model_tessellation.a0" && attachment_name == "model")
         return "application/step";
     if (operation_id == "geometry.step_topology.open.a0" && attachment_name == "step")
         return "application/step";
@@ -273,6 +328,8 @@ std::size_t operation_output_attachment_max_bytes(const std::string& operation_i
 {
     if (operation_id == "geometry.analytic_planar_boolean_batch.a0" &&
         attachment_name == "analytic_planar_boolean_result")
+        return 268435456U;
+    if (operation_id == "geometry.model_tessellation.a0" && attachment_name == "mesh_collection")
         return 268435456U;
     if (operation_id == "geometry.step_topology.checkpoint_edit_journal.a0" &&
         attachment_name == "edit_journal")
@@ -295,6 +352,8 @@ const char* operation_output_attachment_primary_media_type(const std::string& op
     if (operation_id == "geometry.analytic_planar_boolean_batch.a0" &&
         attachment_name == "analytic_planar_boolean_result")
         return "application/vnd.wavenumber.geometer.analytic-planar-boolean-result";
+    if (operation_id == "geometry.model_tessellation.a0" && attachment_name == "mesh_collection")
+        return "application/vnd.wavenumber.geometer.mesh-collection+json";
     if (operation_id == "geometry.step_topology.checkpoint_edit_journal.a0" &&
         attachment_name == "edit_journal")
         return "application/vnd.wavenumber.geometer.step-topology-edit-journal";
@@ -316,10 +375,14 @@ const char* operation_request_contract(const std::string& operation_id)
         return "geometry.analytic_planar_boolean_batch.request.a0";
     if (operation_id == "geometry.mesh_hlr_projection.a0")
         return "geometry.hlr_projection.options.a0";
+    if (operation_id == "geometry.mesh_illustration.a0")
+        return "geometry.mesh_illustration.request.a0";
     if (operation_id == "geometry.model_bounds.a0")
         return "geometry.model_bounds.options.a0";
     if (operation_id == "geometry.model_hlr_projection.a0")
         return "geometry.hlr_projection.options.a0";
+    if (operation_id == "geometry.model_tessellation.a0")
+        return "geometry.model_tessellation.request.a0";
     if (operation_id == "geometry.step_topology.apply_logical_groups.a0")
         return "geometry.step_topology.apply_logical_groups.request.a0";
     if (operation_id == "geometry.step_topology.apply_metadata_probes.a0")
@@ -363,10 +426,14 @@ const char* operation_result_contract(const std::string& operation_id)
         return "geometry.analytic_planar_boolean_batch.result.a0";
     if (operation_id == "geometry.mesh_hlr_projection.a0")
         return "geometry.hlr_projection.result.a0";
+    if (operation_id == "geometry.mesh_illustration.a0")
+        return "geometry.mesh_illustration.result.a0";
     if (operation_id == "geometry.model_bounds.a0")
         return "geometry.model_bounds.a0";
     if (operation_id == "geometry.model_hlr_projection.a0")
         return "geometry.hlr_projection.result.a0";
+    if (operation_id == "geometry.model_tessellation.a0")
+        return "geometry.model_tessellation.result.a0";
     if (operation_id == "geometry.step_topology.apply_logical_groups.a0")
         return "geometry.step_topology.apply_logical_groups.result.a0";
     if (operation_id == "geometry.step_topology.apply_metadata_probes.a0")
@@ -409,10 +476,14 @@ bool operation_logical_result_matches(const std::string& operation_id,
 {
     if (operation_id == "geometry.mesh_hlr_projection.a0")
         return std::holds_alternative<contracts::HlrProjectionResultA0>(result);
+    if (operation_id == "geometry.mesh_illustration.a0")
+        return std::holds_alternative<contracts::MeshIllustrationResultA0>(result);
     if (operation_id == "geometry.model_bounds.a0")
         return std::holds_alternative<contracts::ModelBoundsResultA0>(result);
     if (operation_id == "geometry.model_hlr_projection.a0")
         return std::holds_alternative<contracts::HlrProjectionResultA0>(result);
+    if (operation_id == "geometry.model_tessellation.a0")
+        return std::holds_alternative<contracts::ModelTessellationResultA0>(result);
     if (operation_id == "geometry.step_topology.apply_logical_groups.a0")
         return std::holds_alternative<contracts::StepTopologyApplyLogicalGroupsResultA0>(result);
     if (operation_id == "geometry.step_topology.apply_metadata_probes.a0")
@@ -443,10 +514,14 @@ bool operation_request_value_matches(const std::string& operation_id,
         return std::holds_alternative<contracts::PackedAttachmentProjectionA0>(request);
     if (operation_id == "geometry.mesh_hlr_projection.a0")
         return std::holds_alternative<contracts::HlrProjectionOptionsA0>(request);
+    if (operation_id == "geometry.mesh_illustration.a0")
+        return std::holds_alternative<contracts::MeshIllustrationRequestA0>(request);
     if (operation_id == "geometry.model_bounds.a0")
         return std::holds_alternative<contracts::ModelBoundsOptionsA0>(request);
     if (operation_id == "geometry.model_hlr_projection.a0")
         return std::holds_alternative<contracts::HlrProjectionOptionsA0>(request);
+    if (operation_id == "geometry.model_tessellation.a0")
+        return std::holds_alternative<contracts::ModelTessellationRequestA0>(request);
     if (operation_id == "geometry.step_topology.analyze_recovery.a0")
         return std::holds_alternative<contracts::StepTopologyAnalyzeRecoveryRequestA0>(request);
     if (operation_id == "geometry.step_topology.apply_hierarchy.a0")
@@ -484,10 +559,14 @@ bool operation_result_value_matches(const std::string& operation_id,
         return std::holds_alternative<contracts::PackedAttachmentProjectionA0>(result);
     if (operation_id == "geometry.mesh_hlr_projection.a0")
         return std::holds_alternative<contracts::HlrProjectionResultA0>(result);
+    if (operation_id == "geometry.mesh_illustration.a0")
+        return std::holds_alternative<contracts::MeshIllustrationResultA0>(result);
     if (operation_id == "geometry.model_bounds.a0")
         return std::holds_alternative<contracts::ModelBoundsResultA0>(result);
     if (operation_id == "geometry.model_hlr_projection.a0")
         return std::holds_alternative<contracts::HlrProjectionResultA0>(result);
+    if (operation_id == "geometry.model_tessellation.a0")
+        return std::holds_alternative<contracts::ModelTessellationResultA0>(result);
     if (operation_id == "geometry.step_topology.analyze_recovery.a0")
         return std::holds_alternative<contracts::StepTopologyAnalyzeRecoveryResultA0>(result);
     if (operation_id == "geometry.step_topology.apply_hierarchy.a0")
@@ -523,10 +602,14 @@ std::size_t operation_required_output_attachment_count(const std::string& operat
         return 1U;
     if (operation_id == "geometry.mesh_hlr_projection.a0")
         return 0U;
+    if (operation_id == "geometry.mesh_illustration.a0")
+        return 0U;
     if (operation_id == "geometry.model_bounds.a0")
         return 0U;
     if (operation_id == "geometry.model_hlr_projection.a0")
         return 0U;
+    if (operation_id == "geometry.model_tessellation.a0")
+        return 1U;
     if (operation_id == "geometry.step_topology.apply_logical_groups.a0")
         return 0U;
     if (operation_id == "geometry.step_topology.apply_metadata_probes.a0")
@@ -553,6 +636,8 @@ const char* operation_required_output_attachment_name(const std::string& operati
 {
     if (operation_id == "geometry.analytic_planar_boolean_batch.a0" && index == 0U)
         return "analytic_planar_boolean_result";
+    if (operation_id == "geometry.model_tessellation.a0" && index == 0U)
+        return "mesh_collection";
     if (operation_id == "geometry.step_topology.checkpoint_edit_journal.a0" && index == 0U)
         return "edit_journal";
     if (operation_id == "geometry.step_topology.render.a0" && index == 0U)

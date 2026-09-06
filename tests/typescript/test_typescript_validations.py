@@ -14,7 +14,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 NODE = shutil.which("node")
 REQUIRE_NATIVE_TEST_SERVERS = os.environ.get("GEOMETER_REQUIRE_NATIVE_TEST_SERVERS") == "1"
-NATIVE_PROCESS_SCRIPTS = frozenset({"node_process_a0_validation.mjs"})
+NATIVE_PROCESS_SCRIPTS = frozenset({"node_process_a0_validation.mjs", "native_illustration_parity.mjs"})
 
 
 def _native_platform_directory(system: str, machine: str) -> str | None:
@@ -41,6 +41,7 @@ def _native_platform_directory(system: str, machine: str) -> str | None:
         "analytic_cpp_vector_validation.mjs",
         "contract_codec_validation.mjs",
         "demo_tooling_validation.mjs",
+        "documentation_reference_validation.mjs",
         "emitter_validation.mjs",
         "hlr_static_site_validation.mjs",
         "illustration_static_site_validation.mjs",
@@ -49,6 +50,7 @@ def _native_platform_directory(system: str, machine: str) -> str | None:
         "node_process_a0_validation.mjs",
         "package_consumer_validation.mjs",
         "mesh_illustration_validation.mjs",
+        "native_illustration_parity.mjs",
         "pcb_polygon_pour_artifact_validation.mjs",
         "pcb_polygon_pour_model_validation.mjs",
         "shared_demo_theme_validation.mjs",

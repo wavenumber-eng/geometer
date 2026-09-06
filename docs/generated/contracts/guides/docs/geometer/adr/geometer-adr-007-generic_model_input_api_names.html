@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>ADR 007: Generic Model Input API Names — Geometer</title>
+  <link rel="stylesheet" href="../../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/geometer/adr/geometer-adr-007-generic_model_input_api_names.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="adr-007-generic-model-input-api-names">ADR 007: Generic Model Input API Names</h1></header>
+<h2 id="status">Status</h2>
+<p>Accepted</p>
+<h2 id="context">Context</h2>
+<p>Geometer's first source-model operations were STEP-specific. Public names such
+as <code>step_to_glb</code>, <code>project_step_hlr</code>, <code>step-to-glb</code>, and
+<code>step_hlr_projection_json</code> accurately described the original implementation,
+because STEP was the only supported source format.</p>
+<p>The next API slice adds model bounds and may later add projected model outlines.
+Those operations are conceptually source-model operations, not STEP-only
+concepts. Geometer still supports only STEP as the source model format today,
+but the public naming should not force every future format through
+STEP-specific names.</p>
+<p>The planar STEP API is different. It generates STEP from 2D region topology and
+does not import a source model file. It should not be renamed as part of this
+model-input cleanup.</p>
+<h2 id="decision">Decision</h2>
+<p>New source-model APIs use generic <code>model</code> naming and accept an explicit
+<code>format</code> option. The only supported format value in the first implementation is
+<code>&quot;step&quot;</code>.</p>
+<p>Preferred Python names:</p>
+<ul>
+<li><code>model_to_glb(..., format=&quot;step&quot;)</code></li>
+<li><code>project_model_hlr(..., format=&quot;step&quot;)</code></li>
+<li><code>model_hlr_projection_json(..., format=&quot;step&quot;)</code></li>
+<li><code>model_bounds(..., format=&quot;step&quot;)</code></li>
+<li>future <code>model_projection_outline(..., format=&quot;step&quot;)</code></li>
+</ul>
+<p>Preferred CLI names:</p>
+<ul>
+<li><code>model-to-glb ... --format step</code></li>
+<li><code>model-project-hlr ... --format step</code></li>
+<li><code>model-project-svg ... --format step</code></li>
+<li><code>model-bounds ... --format step</code></li>
+<li>future <code>model-project-outline ... --format step</code></li>
+</ul>
+<p>Preferred batch operation names:</p>
+<ul>
+<li><code>model_to_glb</code></li>
+<li><code>model_hlr_projection_json</code></li>
+<li><code>model_hlr_projection_svg</code></li>
+<li><code>model_bounds_json</code></li>
+<li>future <code>model_projection_outline_json</code></li>
+</ul>
+<p>Preferred C++ and C ABI names should follow the same source-model distinction.
+For example, the bounds API should be <code>model_bounds_from_bytes(...)</code> and the C
+ABI should add symbols such as <code>geometer_model_bounds_json_bytes(...)</code>.</p>
+<p>Existing STEP-specific names remain compatibility wrappers. They must preserve
+current behavior, argument order, return types, output schemas, and command-line
+behavior.</p>
+<p>The old API is not deprecated in the same release that introduces the generic
+names. Deprecation begins after one additional release cycle:</p>
+<ol>
+<li>Release N: add generic <code>model_*</code> APIs and keep old STEP-specific names as
+supported compatibility wrappers.</li>
+<li>Release N+1: mark old STEP-specific names deprecated in docs and release
+notes. Python wrappers may emit <code>DeprecationWarning</code>; CLI aliases remain
+quiet by default and only advertise deprecation in help/docs.</li>
+<li>Removal is not authorized by this ADR. Removing compatibility wrappers needs
+a separate compatibility decision.</li>
+</ol>
+<p>Planar STEP names stay stable:</p>
+<ul>
+<li>Python: <code>planar_step(...)</code> and <code>write_planar_step(...)</code></li>
+<li>CLI: <code>planar-step</code></li>
+<li>Batch operation: <code>planar_step</code></li>
+<li>C++: <code>planar_step_from_json(...)</code> and
+<code>planar_step_from_json_bytes(...)</code></li>
+<li>JSON schema: <code>geometry.planar_step.request.a0</code></li>
+</ul>
+<h2 id="consequences">Consequences</h2>
+<p>The generic names make future support for other source model formats possible
+without another public rename.</p>
+<p>The explicit <code>format=&quot;step&quot;</code> boundary prevents accidental implied support for
+GLB, STL, OBJ, or other formats before those paths exist.</p>
+<p>Existing callers get at least one full release cycle before deprecation starts,
+and removals require a later decision.</p>
+<p>The model-input APIs and planar STEP generator remain intentionally separate.
+This keeps <code>planar_step</code> descriptive for its actual input and avoids churn in
+recent planar-region-to-STEP integrations.</p>
+
+</main>
+</body>
+</html>

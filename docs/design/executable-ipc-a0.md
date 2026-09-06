@@ -2,7 +2,8 @@
 
 ## Status and command
 
-This is the proposed first executable-pipe contract reviewed under ADR-011.
+This is the implemented executable-pipe contract governed by ADR-011.
+Application authors should start with the [IPC consumer guide](executable-ipc.md).
 The server command is:
 
 ```powershell

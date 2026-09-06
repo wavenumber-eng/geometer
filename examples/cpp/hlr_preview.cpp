@@ -1,4 +1,5 @@
 #include "geometer.h"
+#include "preview_depth_buffer.h"
 
 #include "imgui.h"
 #include "imgui_impl_opengl3.h"
@@ -188,8 +189,12 @@ struct AppState
     bool has_projection = false;
     ProjectionMode mode = ProjectionMode::Detail;
     bool show_bbox = false;
+    geometer::ProjectionAlgorithm projection_algorithm = geometer::ProjectionAlgorithm::Fast;
     geometer::ProjectionOutlineAlgorithm outline_algorithm =
-        geometer::ProjectionOutlineAlgorithm::MeshShadow;
+        geometer::ProjectionOutlineAlgorithm::FastMeshShadow;
+    GLuint preview_texture = 0;
+    bool preview_texture_dirty = true;
+    std::array<double, 15> preview_key = {};
     Camera camera;
     Lighting lighting;
     std::string status = "Ready";
@@ -880,35 +885,60 @@ void draw_3d_preview(AppState* app)
     const Vec3 up = app->camera.up;
     const Vec3 right = normalize(cross(up, direction), {1.0, 0.0, 0.0});
 
-    const double scale = std::max(
-        1.0e-6, fit_preview_scale(app->preview, center, right, up, canvas_size) * app->camera.zoom);
-
-    struct DrawTriangle
+    const double resolution = std::min(1.0, 2048.0 / std::max(canvas_size.x, canvas_size.y));
+    const int width = std::max(1, static_cast<int>(std::ceil(canvas_size.x * resolution)));
+    const int height = std::max(1, static_cast<int>(std::ceil(canvas_size.y * resolution)));
+    const auto& light = app->lighting;
+    const std::array<double, 15> key = {direction.x,
+                                        direction.y,
+                                        direction.z,
+                                        up.x,
+                                        up.y,
+                                        up.z,
+                                        app->camera.zoom,
+                                        light.key_azimuth_deg,
+                                        light.key_elevation_deg,
+                                        light.key_intensity,
+                                        light.fill_intensity,
+                                        light.ambient,
+                                        light.contrast,
+                                        static_cast<double>(width),
+                                        static_cast<double>(height)};
+    if (app->preview_texture_dirty || app->preview_key != key)
     {
-        std::array<ImVec2, 3> points;
-        double depth = 0.0;
-        ImU32 color = IM_COL32_WHITE;
-    };
-    std::vector<DrawTriangle> draw_triangles;
-    draw_triangles.reserve(app->preview.triangles.size());
-    for (const Triangle& triangle : app->preview.triangles)
-    {
-        const std::vector<std::pair<double, ImVec2>> points = projected_triangle_points(
-            triangle, center, right, up, direction, scale, origin, canvas_size);
-        DrawTriangle item;
-        item.points = {points[0].second, points[1].second, points[2].second};
-        item.depth = (points[0].first + points[1].first + points[2].first) / 3.0;
-        item.color = shaded_color(triangle, app->camera, app->lighting);
-        draw_triangles.push_back(item);
+        const ImVec2 raster_size = {static_cast<float>(width), static_cast<float>(height)};
+        const double scale =
+            std::max(1.0e-6, fit_preview_scale(app->preview, center, right, up, raster_size) *
+                                 app->camera.zoom);
+        geometer_preview::DepthBuffer buffer(width, height);
+        for (const Triangle& triangle : app->preview.triangles)
+        {
+            const auto points = projected_triangle_points(triangle, center, right, up, direction,
+                                                          scale, {0, 0}, raster_size);
+            std::array<geometer_preview::ScreenVertex, 3> vertices;
+            for (std::size_t i = 0; i < 3; ++i)
+                vertices[i] = {points[i].second.x, points[i].second.y, points[i].first};
+            // The preview is opaque, matching STEP solid visibility semantics.
+            buffer.triangle(vertices, shaded_color(triangle, app->camera, light) | IM_COL32_A_MASK);
+        }
+        GLint previous_texture = 0;
+        glGetIntegerv(GL_TEXTURE_BINDING_2D, &previous_texture);
+        if (app->preview_texture == 0)
+            glGenTextures(1, &app->preview_texture);
+        glBindTexture(GL_TEXTURE_2D, app->preview_texture);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                     buffer.pixels().data());
+        glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(previous_texture));
+        app->preview_key = key;
+        app->preview_texture_dirty = false;
     }
-    std::sort(draw_triangles.begin(), draw_triangles.end(),
-              [](const DrawTriangle& a, const DrawTriangle& b) { return a.depth < b.depth; });
     draw_list->PushClipRect(origin, {origin.x + canvas_size.x, origin.y + canvas_size.y}, true);
-    for (const DrawTriangle& triangle : draw_triangles)
-    {
-        draw_list->AddTriangleFilled(triangle.points[0], triangle.points[1], triangle.points[2],
-                                     triangle.color);
-    }
+    draw_list->AddImage(static_cast<ImTextureID>(app->preview_texture), origin,
+                        {origin.x + canvas_size.x, origin.y + canvas_size.y});
     draw_list->PopClipRect();
 }
 
@@ -1174,6 +1204,8 @@ std::string outline_algorithm_name(geometer::ProjectionOutlineAlgorithm algorith
 {
     switch (algorithm)
     {
+    case geometer::ProjectionOutlineAlgorithm::FastMeshShadow:
+        return "fast-mesh-shadow";
     case geometer::ProjectionOutlineAlgorithm::MeshShadow:
         return "mesh-shadow";
     case geometer::ProjectionOutlineAlgorithm::HlrClosedEdges:
@@ -1190,7 +1222,7 @@ void project_hlr(AppState* app)
     }
     geometer::HlrProjectionOptions options;
     options.curve_mode = geometer::ProjectionCurveMode::Polyline;
-    options.projection_algorithm = geometer::ProjectionAlgorithm::Poly;
+    options.projection_algorithm = app->projection_algorithm;
     options.outline_algorithm = app->outline_algorithm;
     options.views = {{"camera",
                       {app->camera.direction.x, app->camera.direction.y, app->camera.direction.z},
@@ -1225,6 +1257,7 @@ void load_step(AppState* app)
     app->status = "Loading " + path.filename().string();
     app->has_projection = false;
     app->preview = {};
+    app->preview_texture_dirty = true;
     app->step_bytes = read_file_bytes(path);
 
     std::vector<unsigned char> glb_bytes;
@@ -1354,15 +1387,36 @@ void draw_controls(AppState* app)
     ImGui::SameLine();
     ImGui::Checkbox("BBox", &app->show_bbox);
     ImGui::SameLine();
-    const char* outline_algorithms[] = {"mesh-shadow", "hlr-close"};
+    const char* detail_algorithms[] = {"fast", "poly", "exact"};
+    int detail_algorithm_index =
+        app->projection_algorithm == geometer::ProjectionAlgorithm::Fast
+            ? 0
+            : (app->projection_algorithm == geometer::ProjectionAlgorithm::Poly ? 1 : 2);
+    ImGui::SetNextItemWidth(85.0f);
+    if (ImGui::Combo("Detail alg", &detail_algorithm_index, detail_algorithms, 3))
+    {
+        app->projection_algorithm =
+            detail_algorithm_index == 0
+                ? geometer::ProjectionAlgorithm::Fast
+                : (detail_algorithm_index == 1 ? geometer::ProjectionAlgorithm::Poly
+                                               : geometer::ProjectionAlgorithm::Exact);
+        app->projection_dirty = true;
+        app->last_camera_change_ms = SDL_GetTicks();
+    }
+    ImGui::SameLine();
+    const char* outline_algorithms[] = {"fast-mesh-shadow", "mesh-shadow", "hlr-close"};
     int outline_algorithm_index =
-        app->outline_algorithm == geometer::ProjectionOutlineAlgorithm::MeshShadow ? 0 : 1;
-    ImGui::SetNextItemWidth(132.0f);
-    if (ImGui::Combo("Outline alg", &outline_algorithm_index, outline_algorithms, 2))
+        app->outline_algorithm == geometer::ProjectionOutlineAlgorithm::FastMeshShadow
+            ? 0
+            : (app->outline_algorithm == geometer::ProjectionOutlineAlgorithm::MeshShadow ? 1 : 2);
+    ImGui::SetNextItemWidth(165.0f);
+    if (ImGui::Combo("Outline alg", &outline_algorithm_index, outline_algorithms, 3))
     {
         app->outline_algorithm = outline_algorithm_index == 0
-                                     ? geometer::ProjectionOutlineAlgorithm::MeshShadow
-                                     : geometer::ProjectionOutlineAlgorithm::HlrClosedEdges;
+                                     ? geometer::ProjectionOutlineAlgorithm::FastMeshShadow
+                                     : (outline_algorithm_index == 1
+                                            ? geometer::ProjectionOutlineAlgorithm::MeshShadow
+                                            : geometer::ProjectionOutlineAlgorithm::HlrClosedEdges);
         app->projection_dirty = true;
         app->last_camera_change_ms = SDL_GetTicks();
     }
@@ -1567,6 +1621,8 @@ int main(int argc, char** argv)
         SDL_GL_SwapWindow(window);
     }
 
+    if (app.preview_texture != 0)
+        glDeleteTextures(1, &app.preview_texture);
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();

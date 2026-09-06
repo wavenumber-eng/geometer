@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>Browser Demo Packaging And UI — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/developer/browser-demos.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="browser-demo-packaging-and-ui">Browser Demo Packaging And UI</h1></header>
+<p>This document defines the maintained source, build, review, and static-hosting
+shape for Geometer browser demos. ADR 014 governs the distribution decision;
+REQ-009 defines the supported release surface.</p>
+<h2 id="directory-model">Directory Model</h2>
+<table>
+<thead>
+<tr>
+<th>Purpose</th>
+<th>Location</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Maintained HTML, JavaScript/TypeScript, Worker, and demo CSS</td>
+<td><code>examples/wasm/</code></td>
+</tr>
+<tr>
+<td>Generic dependency-free demo UI/interaction modules</td>
+<td><code>examples/wasm/demo-tooling/</code></td>
+</tr>
+<tr>
+<td>Full browser Geometer runtime</td>
+<td><code>dist/wasm/browser/</code></td>
+</tr>
+<tr>
+<td>Compiled TypeScript examples/tooling</td>
+<td><code>dist/wasm/demos/</code></td>
+</tr>
+<tr>
+<td>Self-contained HTML artifacts</td>
+<td><code>dist/wasm/demos/&lt;demo&gt;_demo.html</code></td>
+</tr>
+<tr>
+<td>Deploy-unchanged hosted directories</td>
+<td><code>dist/wasm/demos/&lt;demo&gt;/</code></td>
+</tr>
+<tr>
+<td>Static closure validation</td>
+<td><code>tests/typescript/</code></td>
+</tr>
+<tr>
+<td>Real-browser workflow validation</td>
+<td><code>tests/wasm/</code></td>
+</tr>
+<tr>
+<td>Generic packager unit tests</td>
+<td><code>tests/python/</code></td>
+</tr>
+</tbody>
+</table>
+<p>Demo code is a consumer of Geometer. Product-specific UI behavior must not move
+into <code>src/cpp/lib/</code>, the C ABI, or generated contracts merely to support a page.</p>
+<p>Promoted operations use their governed operation identities and production
+package APIs. The HLR and Illustration Lab Workers invoke
+<code>geometry.model_hlr_projection.a0</code> through the generic C ABI adapter; the
+illustration application imports the production illustration modules. The
+remaining focused STEP-to-GLB call is a compatibility conversion
+surface, not illustration or HLR policy.</p>
+<p>The HLR and Illustration Labs use the same Fast HLR resource defaults as stable
+API consumers. They do not carry demo-only limit overrides.</p>
+<h2 id="build-layers">Build Layers</h2>
+<p>A single-HTML hosted demo has two explicit build layers.</p>
+<ol>
+<li>A demo-specific builder creates a literal standalone HTML file. It owns the
+application bundle and embeds all required Workers, WASM, models, images,
+fonts, third-party notices, and styles.</li>
+<li><code>scripts/package_single_html_site.py</code> verifies that file and stages the
+hosted directory atomically.</li>
+</ol>
+<p>The generic packager does not know the application's assets or JavaScript
+framework. It provides:</p>
+<ul>
+<li>rejection of external <code>src</code>, <code>href</code>, <code>poster</code>, and <code>data</code> references;</li>
+<li>rejection of remaining ESM/import-map runtime dependencies;</li>
+<li>CSP hashes for executable inline scripts;</li>
+<li><code>worker-src blob:</code> and the minimum data/blob policies used by standalone
+browser/WASM pages;</li>
+<li>Cloudflare-compatible <code>_headers</code>;</li>
+<li>deterministic <code>wn.geometer.single_html_site.a0</code> closure metadata; and</li>
+<li>atomic replacement of the destination directory.</li>
+</ul>
+<p><code>asset-manifest.json</code> is verification metadata and is not fetched by the page.
+Its <code>files</code> closure contains <code>_headers</code> and <code>index.html</code>; the manifest excludes
+itself to avoid a recursive digest. <code>runtime_files</code> must be exactly
+<code>[&quot;index.html&quot;]</code>.</p>
+<h2 id="hlr-lab">HLR Lab</h2>
+<p>Build the current HLR artifact and hosted directory after the browser WASM
+artifacts are available:</p>
+<pre><code class="language-powershell">python scripts\build_hlr_site.py
+</code></pre>
+<p>Outputs:</p>
+<pre><code class="language-text">dist/wasm/demos/hlr_demo.html
+dist/wasm/demos/hlr/index.html
+dist/wasm/demos/hlr/_headers
+dist/wasm/demos/hlr/asset-manifest.json
+</code></pre>
+<p>Review it locally:</p>
+<pre><code class="language-powershell">python -m http.server 8123 --bind 127.0.0.1 --directory dist\wasm\demos\hlr
+</code></pre>
+<p>Then open <code>http://127.0.0.1:8123/</code>. Building and reviewing do not publish the
+directory.</p>
+<p>The HLR Lab embeds:</p>
+<ul>
+<li>the full OCCT-backed Geometer browser WASM and factory;</li>
+<li>a blob-backed Worker for STEP-to-GLB and HLR work;</li>
+<li>Three.js, TrackballControls, GLTFLoader, and the exact Three.js license;</li>
+<li>local STEP/GLB example fixtures and Wavenumber presentation assets; and</li>
+<li>all application and reusable-panel JavaScript/CSS.</li>
+</ul>
+<p>Its maintainable shell and application module are
+<code>examples/wasm/embedded_model_viewer.html</code> and
+<code>examples/wasm/embedded_model_viewer.js</code>. The standalone builder inlines the
+module after replacing its development-only imports and asset references.</p>
+<p>Local <code>.step</code> and <code>.stp</code> files stay in the browser. The Worker converts their
+bytes to the 3D preview and projection data; no upload endpoint exists.</p>
+<h2 id="reusable-panel-system">Reusable Panel System</h2>
+<p><code>examples/wasm/demo-tooling/panels.ts</code> exports a typed <code>PanelManager</code> with:</p>
+<ul>
+<li>left, right, and bottom activity rails;</li>
+<li>hidden, collapsed, and open panel states;</li>
+<li>resizable side and bottom docks;</li>
+<li>deterministic content inset CSS variables;</li>
+<li>a small <code>mount</code>/<code>onStateChange</code>/<code>destroy</code> panel lifecycle; and</li>
+<li>no application state-manager or third-party runtime dependency.</li>
+</ul>
+<p><code>panels.css</code> supplies the generic presentation. Consumers may override the
+<code>--gdm-panel-*</code> variables. Empty rails remain hidden so they do not obscure or
+reserve viewport pixels.</p>
+<p>Panels should contain secondary controls. Primary workflow actions and compact
+view presets may stay in the page toolbar. Settings that affect geometry should
+recompute automatically; typed numeric inputs should be debounced. Pure display
+changes should redraw cached geometry instead of rerunning WASM.</p>
+<h2 id="step-illustration-lab">STEP Illustration Lab</h2>
+<p>The generic mesh-illustration engine is a production TypeScript package module
+at <code>@wavenumber/geometer/mesh-illustration</code>. Its serialized input, style, and
+SVG result start at A0. <code>illustrateMesh</code> is the one-shot entry point;
+<code>createIllustrator</code> prepares once, supports repeated SVG or Canvas rendering,
+and has explicit disposal. The Illustration Lab in
+<code>examples/wasm/illustration_demo.*</code> consumes that package implementation and
+retains only STEP/glTF adaptation, controls, and review presentation.</p>
+<p>The production implementation has these boundaries:</p>
+<ul>
+<li>the core projector consumes generic mesh buffers, transforms, materials, and
+normals rather than STEP objects;</li>
+<li>the current STEP adapter converts browser-local bytes through the existing
+compatibility STEP-to-GLB symbol and calls the governed
+<code>geometry.model_hlr_projection.a0</code> operation for its hierarchical
+<code>fast-mesh-shadow</code> Outline and Fast Detail layers;</li>
+<li>SVG and Canvas2D consume one prepared projected scene and a separate style,
+so lighting or palette changes do not redo mesh preparation;</li>
+<li>the shared renderer offers unlit, flat, unquantized Lambert diffuse, banded (2-32),
+and toon surface shading;</li>
+<li>STEP-backed demo inputs can be remeshed through Draft, Balanced, Fine, Extra
+fine, or custom linear/angular deflection settings, with separately grouped
+HLR relative chord/angular tolerances and no demo-imposed triangle-count cap;</li>
+<li>remeshing the active STEP model preserves its orthographic camera pose,
+target, zoom, and framing scale;</li>
+<li>filled triangles use spatially culled overlap tests and depth-plane ordering
+rather than a global average-depth painter sort, and cache that geometry-only
+order across style-only SVG/Canvas redraws;</li>
+<li>an optional conservative fusion pass contracts opaque, depth-connected
+triangles with identical rendered fill into even-odd polygon regions after
+visibility ordering; mobility intervals allow fusion across unrelated paint
+commands without crossing an overlapping different-style surface, while
+projected folds, overlaps, non-manifold edges, and invalid boundaries retain
+their original triangles;</li>
+<li>when enabled with fusion, coplanar-material layering groups opaque,
+same-plane partitions connected by complete mesh edges, underpaints their
+union with the largest-area style, and overpaints the remaining fused styles;
+the group is accepted only when all members share a safe paint-order interval,
+otherwise the normal surface commands remain authoritative;</li>
+<li>SVG output uses shared palette/line classes, a configurable normalized integer
+coordinate grid, compact polygon paths, and chained compound HLR paths; Canvas
+consumes the same cached render-command preparation;</li>
+<li>the Three.js pane and glTF adapter are demo concerns, not dependencies of the
+generic illustration algorithm; and</li>
+<li>STEP-backed surfaces can composite that HLR outline in both SVG and Canvas;
+generic mesh-only sources remain surface-only unless an adapter supplies a
+compatible linework layer; and</li>
+<li>a separate HLR Detail checkbox composites fast visible boundary, crease, and
+silhouette segments beneath the independently computed fast mesh-shadow
+outline.</li>
+</ul>
+<p>Build its hosted review directory with:</p>
+<pre><code class="language-powershell">python scripts\build_illustration_site.py
+</code></pre>
+<p>The output is <code>dist/wasm/demos/illustration/</code>; its only runtime file is
+<code>index.html</code>. The single-file form is
+<code>dist/wasm/demos/illustration_demo.html</code>. Neither builder publishes artifacts.</p>
+<h2 id="adding-a-single-html-demo">Adding A Single-HTML Demo</h2>
+<ol>
+<li>Add the maintained page/application source under <code>examples/wasm/</code>.</li>
+<li>Put generic behavior in <code>demo-tooling</code>; keep domain-specific controls with
+the demo.</li>
+<li>Add the TypeScript entry/output to <code>examples/wasm/tsconfig.json</code> and
+<code>scripts/build-typescript-examples.mjs</code> when applicable.</li>
+<li>Add <code>scripts/build_self_contained_&lt;demo&gt;.py</code>. Use the shared helpers in
+<code>scripts/standalone_html.py</code>, embed required third-party licenses, and call
+<code>assert_self_contained</code> before writing the artifact.</li>
+<li>Add <code>scripts/build_&lt;demo&gt;_site.py</code> as the thin wrapper around the standalone
+builder and <code>package_single_html_site</code>.</li>
+<li>Add a static validation script under <code>tests/typescript/</code>, a real-browser test
+under <code>tests/wasm/</code>, and the corresponding Rack stratum entries.</li>
+<li>Add the builder and validation paths to <code>.github/workflows/wasm.yml</code>.</li>
+<li>Build locally, inspect desktop and narrow screenshots, and obtain explicit
+publication approval before copying the output directory to a host.</li>
+</ol>
+<h2 id="validation">Validation</h2>
+<p>Focused HLR/demo-platform checks are:</p>
+<pre><code class="language-powershell">python scripts\build_hlr_site.py
+python scripts\build_illustration_site.py
+node tests\typescript\hlr_static_site_validation.mjs
+node tests\typescript\illustration_static_site_validation.mjs
+uv run pytest tests\python\test_package_single_html_site.py -q
+uv run pytest tests\wasm\test_hlr_static_site.py -q
+uv run pytest tests\wasm\test_illustration_static_site.py -q
+npm run check:typescript
+</code></pre>
+<p>The Chrome test covers startup, panel lifecycle and resizing, selectable model
+axes, model changes that preserve a named view, Trackball camera projection,
+geometry auto-reprojection/reset, 3D material/light/shading controls, local STEP
+conversion, independent projection appearances, and SVG export. It also rejects
+uncaught exceptions and unexpected network requests.</p>
+<h2 id="publication-boundary">Publication Boundary</h2>
+<p>The repository intentionally has no automatic upload in these builders or
+tests. A future publishing workflow must name the exact hosted directory,
+preserve the checked closure, and require explicit authorization. DNS, Cloudflare
+project selection, aliases, and cache invalidation are deployment concerns and
+must not be inferred from a successful local build.</p>
+
+</main>
+</body>
+</html>

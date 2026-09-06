@@ -22,8 +22,12 @@ from .models import (
     MeshIllustrationInputA0,
     MeshIllustrationResultA0,
     MeshIllustrationStyleA0,
+    MeshIllustrationRequestA0,
     ModelBoundsOptionsA0,
     ModelBoundsResultA0,
+    MeshCollectionA0,
+    ModelTessellationRequestA0,
+    ModelTessellationResultA0,
     OperationOutcomeA0,
     StepTopologyAnalyzeRecoveryRequestA0,
     StepTopologyAnalyzeRecoveryResultA0,
@@ -2131,6 +2135,14 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
         "variants": [
             {
                 "kind": "reference",
+                "target": "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0",
+            },
+            {
+                "kind": "reference",
+                "target": "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationRequestA0",
+            },
+            {
+                "kind": "reference",
                 "target": "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsOptionsA0",
             },
             {
@@ -2993,6 +3005,57 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
             },
         },
     },
+    "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0": {
+        "kind": "object",
+        "properties": {
+            "schema": {
+                "type": {
+                    "kind": "literal",
+                    "value_type": "string",
+                    "value": "geometry.mesh_illustration.request.a0",
+                },
+                "optional": False,
+                "constraints": {},
+                "field": "schema",
+            },
+            "view": {
+                "type": {
+                    "kind": "reference",
+                    "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationView",
+                },
+                "optional": False,
+                "constraints": {},
+                "field": "view",
+            },
+            "prepare": {
+                "type": {
+                    "kind": "reference",
+                    "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationPrepareOptions",
+                },
+                "optional": True,
+                "constraints": {},
+                "field": "prepare",
+            },
+            "style": {
+                "type": {
+                    "kind": "reference",
+                    "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationStyleA0",
+                },
+                "optional": True,
+                "constraints": {},
+                "field": "style",
+            },
+            "svg": {
+                "type": {
+                    "kind": "reference",
+                    "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationSvgOptions",
+                },
+                "optional": True,
+                "constraints": {},
+                "field": "svg",
+            },
+        },
+    },
     "Wavenumber.Geometer.Contracts.ModelBoundsA0.Matrix4x4": {
         "kind": "array",
         "element": {
@@ -3185,6 +3248,233 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
             "max_items": 3,
         },
     },
+    "Wavenumber.Geometer.Contracts.ModelTessellationA0.MeshCollectionA0": {
+        "kind": "object",
+        "properties": {
+            "schema": {
+                "type": {
+                    "kind": "literal",
+                    "value_type": "string",
+                    "value": "geometry.mesh_collection.a0",
+                },
+                "optional": False,
+                "constraints": {},
+                "field": "schema",
+            },
+            "length_unit": {
+                "type": {
+                    "kind": "literal",
+                    "value_type": "string",
+                    "value": "millimeter",
+                },
+                "optional": False,
+                "constraints": {},
+                "field": "length_unit",
+            },
+            "meshes": {
+                "type": {
+                    "kind": "array",
+                    "element": {
+                        "kind": "reference",
+                        "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationMesh",
+                    },
+                },
+                "optional": False,
+                "constraints": {
+                    "min_items": 1,
+                    "max_items": 65536,
+                },
+                "field": "meshes",
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.ModelTessellationA0.MeshCollectionAttachment": {
+        "kind": "object",
+        "properties": {
+            "attachment": {
+                "type": {
+                    "kind": "literal",
+                    "value_type": "string",
+                    "value": "mesh_collection",
+                },
+                "optional": False,
+                "constraints": {},
+                "field": "attachment",
+            },
+            "schema": {
+                "type": {
+                    "kind": "literal",
+                    "value_type": "string",
+                    "value": "geometry.mesh_collection.a0",
+                },
+                "optional": False,
+                "constraints": {},
+                "field": "schema",
+            },
+            "byte_length": {
+                "type": {
+                    "kind": "primitive",
+                    "name": "uint32",
+                },
+                "optional": False,
+                "constraints": {
+                    "min_value": 1,
+                    "max_value": 268435456,
+                },
+                "field": "byte_length",
+            },
+            "sha256": {
+                "type": {
+                    "kind": "primitive",
+                    "name": "string",
+                },
+                "optional": False,
+                "constraints": {
+                    "min_length": 64,
+                    "max_length": 64,
+                },
+                "field": "sha256",
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelRootPlacement": {
+        "kind": "enum",
+        "values": ["strip", "preserve"],
+    },
+    "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationRequestA0": {
+        "kind": "object",
+        "properties": {
+            "schema": {
+                "type": {
+                    "kind": "literal",
+                    "value_type": "string",
+                    "value": "geometry.model_tessellation.request.a0",
+                },
+                "optional": False,
+                "constraints": {},
+                "field": "schema",
+            },
+            "linear_deflection_mm": {
+                "type": {
+                    "kind": "primitive",
+                    "name": "float64",
+                },
+                "optional": True,
+                "constraints": {
+                    "min_value": 0.000001,
+                    "max_value": 1000,
+                },
+                "field": "linear_deflection_mm",
+            },
+            "angular_deflection_rad": {
+                "type": {
+                    "kind": "primitive",
+                    "name": "float64",
+                },
+                "optional": True,
+                "constraints": {
+                    "min_value": 0.000001,
+                    "max_value": 3.141592653589793,
+                },
+                "field": "angular_deflection_rad",
+            },
+            "root_placement": {
+                "type": {
+                    "kind": "reference",
+                    "target": "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelRootPlacement",
+                },
+                "optional": True,
+                "constraints": {},
+                "field": "root_placement",
+            },
+            "max_triangles": {
+                "type": {
+                    "kind": "primitive",
+                    "name": "uint32",
+                },
+                "optional": True,
+                "constraints": {
+                    "min_value": 1,
+                    "max_value": 2000000,
+                },
+                "field": "max_triangles",
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationResultA0": {
+        "kind": "object",
+        "properties": {
+            "schema": {
+                "type": {
+                    "kind": "literal",
+                    "value_type": "string",
+                    "value": "geometry.model_tessellation.result.a0",
+                },
+                "optional": False,
+                "constraints": {},
+                "field": "schema",
+            },
+            "mesh_collection": {
+                "type": {
+                    "kind": "reference",
+                    "target": "Wavenumber.Geometer.Contracts.ModelTessellationA0.MeshCollectionAttachment",
+                },
+                "optional": False,
+                "constraints": {},
+                "field": "mesh_collection",
+            },
+            "source_sha256": {
+                "type": {
+                    "kind": "primitive",
+                    "name": "string",
+                },
+                "optional": False,
+                "constraints": {
+                    "min_length": 64,
+                    "max_length": 64,
+                },
+                "field": "source_sha256",
+            },
+            "meshes": {
+                "type": {
+                    "kind": "primitive",
+                    "name": "uint32",
+                },
+                "optional": False,
+                "constraints": {
+                    "min_value": 1,
+                    "max_value": 65536,
+                },
+                "field": "meshes",
+            },
+            "triangles": {
+                "type": {
+                    "kind": "primitive",
+                    "name": "uint32",
+                },
+                "optional": False,
+                "constraints": {
+                    "min_value": 1,
+                    "max_value": 2000000,
+                },
+                "field": "triangles",
+            },
+            "warnings": {
+                "type": {
+                    "kind": "array",
+                    "element": {
+                        "kind": "primitive",
+                        "name": "string",
+                    },
+                },
+                "optional": False,
+                "constraints": {
+                    "max_items": 256,
+                },
+                "field": "warnings",
+            },
+        },
+    },
     "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationFailureA0": {
         "kind": "object",
         "properties": {
@@ -3242,6 +3532,14 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
     "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationResultValueA0": {
         "kind": "union",
         "variants": [
+            {
+                "kind": "reference",
+                "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationResultA0",
+            },
+            {
+                "kind": "reference",
+                "target": "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationResultA0",
+            },
             {
                 "kind": "reference",
                 "target": "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsResultA0",
@@ -9079,6 +9377,29 @@ def encode_mesh_illustration_style_a0_json(value: MeshIllustrationStyleA0) -> by
     )
 
 
+def decode_mesh_illustration_request_a0_json(data: str | bytes | bytearray | memoryview) -> MeshIllustrationRequestA0:
+    return cast(
+        MeshIllustrationRequestA0,
+        decode_contract_json(
+            data,
+            "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0",
+            DECLARATIONS,
+            MODEL_TYPES,
+            ENUM_TYPES,
+        ),
+    )
+
+
+def encode_mesh_illustration_request_a0_json(value: MeshIllustrationRequestA0) -> bytes:
+    return encode_contract_json(
+        value,
+        "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0",
+        DECLARATIONS,
+        MODEL_TYPES,
+        ENUM_TYPES,
+    )
+
+
 def decode_model_bounds_options_a0_json(data: str | bytes | bytearray | memoryview) -> ModelBoundsOptionsA0:
     return cast(
         ModelBoundsOptionsA0,
@@ -9114,6 +9435,75 @@ def decode_model_bounds_result_a0_json(data: str | bytes | bytearray | memoryvie
 def encode_model_bounds_result_a0_json(value: ModelBoundsResultA0) -> bytes:
     return encode_contract_json(
         value, "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsResultA0", DECLARATIONS, MODEL_TYPES, ENUM_TYPES
+    )
+
+
+def decode_mesh_collection_a0_json(data: str | bytes | bytearray | memoryview) -> MeshCollectionA0:
+    return cast(
+        MeshCollectionA0,
+        decode_contract_json(
+            data,
+            "Wavenumber.Geometer.Contracts.ModelTessellationA0.MeshCollectionA0",
+            DECLARATIONS,
+            MODEL_TYPES,
+            ENUM_TYPES,
+        ),
+    )
+
+
+def encode_mesh_collection_a0_json(value: MeshCollectionA0) -> bytes:
+    return encode_contract_json(
+        value,
+        "Wavenumber.Geometer.Contracts.ModelTessellationA0.MeshCollectionA0",
+        DECLARATIONS,
+        MODEL_TYPES,
+        ENUM_TYPES,
+    )
+
+
+def decode_model_tessellation_request_a0_json(data: str | bytes | bytearray | memoryview) -> ModelTessellationRequestA0:
+    return cast(
+        ModelTessellationRequestA0,
+        decode_contract_json(
+            data,
+            "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationRequestA0",
+            DECLARATIONS,
+            MODEL_TYPES,
+            ENUM_TYPES,
+        ),
+    )
+
+
+def encode_model_tessellation_request_a0_json(value: ModelTessellationRequestA0) -> bytes:
+    return encode_contract_json(
+        value,
+        "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationRequestA0",
+        DECLARATIONS,
+        MODEL_TYPES,
+        ENUM_TYPES,
+    )
+
+
+def decode_model_tessellation_result_a0_json(data: str | bytes | bytearray | memoryview) -> ModelTessellationResultA0:
+    return cast(
+        ModelTessellationResultA0,
+        decode_contract_json(
+            data,
+            "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationResultA0",
+            DECLARATIONS,
+            MODEL_TYPES,
+            ENUM_TYPES,
+        ),
+    )
+
+
+def encode_model_tessellation_result_a0_json(value: ModelTessellationResultA0) -> bytes:
+    return encode_contract_json(
+        value,
+        "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationResultA0",
+        DECLARATIONS,
+        MODEL_TYPES,
+        ENUM_TYPES,
     )
 
 
@@ -9752,8 +10142,12 @@ ROOT_DECODERS: dict[str, Callable[[str | bytes | bytearray | memoryview], Any]] 
     "geometry.mesh_illustration.input.a0": decode_mesh_illustration_input_a0_json,
     "geometry.mesh_illustration.result.a0": decode_mesh_illustration_result_a0_json,
     "geometry.mesh_illustration.style.a0": decode_mesh_illustration_style_a0_json,
+    "geometry.mesh_illustration.request.a0": decode_mesh_illustration_request_a0_json,
     "geometry.model_bounds.options.a0": decode_model_bounds_options_a0_json,
     "geometry.model_bounds.a0": decode_model_bounds_result_a0_json,
+    "geometry.mesh_collection.a0": decode_mesh_collection_a0_json,
+    "geometry.model_tessellation.request.a0": decode_model_tessellation_request_a0_json,
+    "geometry.model_tessellation.result.a0": decode_model_tessellation_result_a0_json,
     "geometer.operation.outcome.a0": decode_operation_outcome_a0_json,
     "geometry.step_topology.analyze_recovery.request.a0": decode_step_topology_analyze_recovery_request_a0_json,
     "geometry.step_topology.analyze_recovery.result.a0": decode_step_topology_analyze_recovery_result_a0_json,

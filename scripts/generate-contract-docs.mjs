@@ -5,6 +5,8 @@ import { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { maturityOf, renderCoverage } from "./contract-docs-coverage.mjs";
+import { generateGuides } from "./contract-docs-guides.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const catalogPath = join(
@@ -35,8 +37,8 @@ try {
   const manifest = parsePromotionManifest(await readFile(manifestPath, "utf8"));
   const catalogDigest = sha256(catalogBytes);
   await verifyDocumentationAssets(manifest.documentationAssets);
-  await generateSite(catalog, manifest, catalogDigest);
-  await verifyGeneratedSite(catalog, catalogDigest);
+  const guidePaths = await generateSite(catalog, manifest, catalogDigest);
+  await verifyGeneratedSite(catalog, catalogDigest, guidePaths);
 
   if (checkOnly) {
     const differences = await compareDirectories(stagingPath, generatedPath);
@@ -56,6 +58,10 @@ try {
 }
 
 async function generateSite(catalog, manifest, catalogDigest) {
+  const guides = await generateGuides(repositoryRoot, generatedPath);
+  for (const guide of guides) {
+    await writeGenerated(guide.path, htmlDocument({ ...guide, digest: catalogDigest }));
+  }
   const contractById = new Map(manifest.contracts.map((contract) => [contract.id, contract]));
   const operationById = new Map(
     [...manifest.operations, ...manifest.candidateOperations].map((operation) => [
@@ -102,6 +108,16 @@ async function generateSite(catalog, manifest, catalogDigest) {
     renderIndex(catalog, contractById, operationById, contractPages, operationPages, catalogDigest),
   );
   await writeGenerated(
+    "coverage.html",
+    htmlDocument({
+      title: "Geometer Operation Coverage",
+      depth: 0,
+      digest: catalogDigest,
+      bodyAttributes: 'data-page-kind="coverage"',
+      content: renderCoverage(catalog, manifest, escapeHtml),
+    }),
+  );
+  await writeGenerated(
     "site-manifest.a0.json",
     `${JSON.stringify(
       {
@@ -112,11 +128,14 @@ async function generateSite(catalog, manifest, catalogDigest) {
         catalog_sha256: catalogDigest,
         contracts: contractPages,
         operations: operationPages,
+        coverage: "coverage.html",
+        guides: guides.map((guide) => guide.path),
       },
       null,
       2,
     )}\n`,
   );
+  return guides.map((guide) => guide.path);
 }
 
 function renderIndex(catalog, contracts, operations, contractPages, operationPages, digest) {
@@ -126,14 +145,14 @@ function renderIndex(catalog, contracts, operations, contractPages, operationPag
       return `<article class="panel">
   <h3><a href="${escapeAttribute(contractPages[root.contract_identity])}"><code>${escapeHtml(root.contract_identity)}</code></a></h3>
   <p>${escapeHtml(declarationDoc(catalog, root.name))}</p>
-  <p><span class="tag">${escapeHtml(root.declaration_kind)}</span> <span class="status">${escapeHtml(lifecycle.status)}</span></p>
+  <p><span class="tag">${escapeHtml(root.declaration_kind)}</span> <span class="status">${escapeHtml(lifecycle.status)}</span></p><p>${escapeHtml(maturityOf(lifecycle))}</p>
 </article>`;
     })
     .join("\n");
   const operationRows = catalog.operations
     .map((operation) => {
       const lifecycle = operations.get(operation.identity);
-      return `<tr><td><a href="${escapeAttribute(operationPages[operation.identity])}"><code>${escapeHtml(operation.identity)}</code></a></td><td>${escapeHtml(operation.request_contract)}</td><td>${escapeHtml(operation.result_contract)}</td><td>${escapeHtml(lifecycle.status)}</td></tr>`;
+      return `<tr><td><a href="${escapeAttribute(operationPages[operation.identity])}"><code>${escapeHtml(operation.identity)}</code></a></td><td>${escapeHtml(operation.request_contract)}</td><td>${escapeHtml(operation.result_contract)}</td><td>${escapeHtml(lifecycle.status)}; ${escapeHtml(maturityOf(lifecycle))}</td></tr>`;
     })
     .join("\n");
   return htmlDocument({
@@ -147,7 +166,10 @@ function renderIndex(catalog, contracts, operations, contractPages, operationPag
   <p class="lede">Typed operation structures for native, browser/WASM, executable IPC, and generated clients.</p>
 </header>
 <nav class="nav" aria-label="Reference navigation">
-  <a href="../../design/typespec-toolchain.md">TypeSpec toolchain</a>
+  <a href="guides.html">Documentation in HTML</a>
+  <a href="coverage.html">All operations and migration gaps</a>
+  <a href="../../developer/demo-status.md">Demo verification</a>
+  <a href="../../contracts/typespec-toolchain.md">TypeSpec toolchain</a>
   <a href="../../design/contract-semantics.md">Contract semantics</a>
   <a href="../../design/generic-operation-c-abi.md">Generic C ABI</a>
   <a href="../../design/typescript-client.md">TypeScript client</a>
@@ -176,7 +198,7 @@ function renderContractPage(root, lifecycle, declarations, digest) {
     ? '<aside class="callout"><strong>Presence-preserving patch.</strong> Absent fields do not materialize defaults and do not replace inherited values.</aside>'
     : "";
   const compatibilityLink = root.contract_identity.startsWith("geometry.model_bounds")
-    ? '<a href="../../../design/model-bounds-contract-compatibility.md">Compatibility analysis</a>'
+    ? '<a href="../../../research/history/model-bounds-contract-compatibility.md">Compatibility analysis</a>'
     : '<a href="../../../design/contract-semantics.md">Compatibility policy</a>';
   return htmlDocument({
     title: `${root.contract_identity} — Geometer`,
@@ -196,6 +218,7 @@ ${patchNote}
 <tr><th>Schema</th><td><code>${escapeHtml(root.schema_id)}</code></td></tr>
 <tr><th>Declaration</th><td><code>${escapeHtml(root.name)}</code></td></tr>
 <tr><th>Lifecycle</th><td><span class="status">${escapeHtml(lifecycle.status)}</span></td></tr>
+<tr><th>Maturity</th><td>${escapeHtml(maturityOf(lifecycle))}</td></tr>
 <tr><th>Current authority</th><td><code>${escapeHtml(lifecycle.current_authority)}</code></td></tr>
 </tbody></table></section>
 <section class="model-section"><h2>Declarations <span class="tag">${declarations.length}</span></h2>${declarationSections}</section>`,
@@ -259,14 +282,15 @@ function renderOperationPage(operation, lifecycle, contractPages, digest) {
     content: `<header><p class="page-type">Operation</p><h1><code>${escapeHtml(operation.identity)}</code></h1><p class="lede">${escapeHtml(operation.doc)}</p></header>
 <nav class="nav" aria-label="Operation navigation"><a href="../index.html">All contracts</a><a href="../${escapeAttribute(contractPages[operation.request_contract])}">Request contract</a><a href="../${escapeAttribute(contractPages[operation.result_contract])}">Result contract</a><a href="../../../design/generic-operation-c-abi.md">Generic C ABI</a><a href="../../../design/typescript-client.md">TypeScript client</a><a href="../../../design/executable-ipc-a0.md">Executable IPC A0</a></nav>
 ${availabilityCallout}
-<section><h2>Registry</h2><table><tbody><tr><th>Operation identity</th><td><code>${escapeHtml(operation.identity)}</code></td></tr><tr><th>Lifecycle</th><td><span class="status">${escapeHtml(lifecycle.status)}</span></td></tr><tr><th>Portable runtime</th><td><code>${operation.runtime_available ? "true" : "false"}</code></td></tr><tr><th>Native executable runtime</th><td><code>${operation.native_runtime_available ? "true" : "false"}</code></td></tr><tr><th>Request</th><td><code>${escapeHtml(operation.request_contract)}</code></td></tr><tr><th>Result</th><td><code>${escapeHtml(operation.result_contract)}</code></td></tr></tbody></table></section>
+<aside class="callout"><strong>Maturity:</strong> ${escapeHtml(maturityOf(lifecycle))}. Structural promotion does not establish production readiness.</aside>
+<section><h2>Registry</h2><table><tbody><tr><th>Operation identity</th><td><code>${escapeHtml(operation.identity)}</code></td></tr><tr><th>Lifecycle</th><td><span class="status">${escapeHtml(lifecycle.status)}</span></td></tr><tr><th>Portable runtime</th><td><code>${operation.runtime_available ? "true" : "false"}</code></td></tr><tr><th>Native executable runtime</th><td><code>${operation.runtime_available || operation.native_runtime_available ? "true" : "false"}</code></td></tr><tr><th>Request</th><td><code>${escapeHtml(operation.request_contract)}</code></td></tr><tr><th>Result</th><td><code>${escapeHtml(operation.result_contract)}</code></td></tr></tbody></table></section>
 <section><h2>Attachments <span class="tag">${operation.input_attachments.length + operation.output_attachments.length}</span></h2><table><thead><tr><th>Direction</th><th>Name</th><th>Presence</th><th>Media types</th><th>Maximum bytes</th></tr></thead><tbody>${attachmentRows}</tbody></table></section>
 ${transportSection}${exampleSection}`,
   });
 }
 
 function htmlDocument({ title, depth, digest, bodyAttributes, content }) {
-  const stylesheet = depth === 0 ? "../../design/styles.css" : "../../../design/styles.css";
+  const stylesheet = `${"../".repeat(depth + 2)}design/styles.css`;
   return `<!doctype html>
 <html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
 <head>
@@ -316,7 +340,8 @@ function reachableDeclarations(rootName, declarationByName) {
 
 function renderType(type) {
   if (!type) return "none";
-  if (type.kind === "reference") return escapeHtml(shortName(type.target));
+  if (type.kind === "reference")
+    return `<a href="#declaration-${slug(type.target)}">${escapeHtml(shortName(type.target))}</a>`;
   if (type.kind === "primitive") return escapeHtml(type.name);
   if (type.kind === "literal") return escapeHtml(JSON.stringify(type.value));
   if (type.kind === "array") return `${renderType(type.element)}[]`;
@@ -358,10 +383,12 @@ async function verifyDocumentationAssets(assets) {
   }
 }
 
-async function verifyGeneratedSite(catalog, digest) {
+async function verifyGeneratedSite(catalog, digest, guidePaths) {
   const files = await listFiles(stagingPath);
   const expected = [
     "index.html",
+    "coverage.html",
+    ...guidePaths,
     "site-manifest.a0.json",
     ...catalog.roots.map((root) => `contracts/${slug(root.contract_identity)}.html`),
     ...catalog.operations.map((operation) => `operations/${slug(operation.identity)}.html`),
@@ -381,18 +408,28 @@ async function verifyGeneratedSite(catalog, digest) {
     ]) {
       if (!html.includes(marker)) throw new Error(`${path}: missing ${marker}.`);
     }
-    if (/\b(?:href|src)=["'](?:https?:|\/\/|file:)/iu.test(html)) {
+    const authoredGuide = path.startsWith("guides/");
+    if (
+      /\bsrc=["'](?:https?:|\/\/|file:)/iu.test(html) ||
+      (!authoredGuide && /\bhref=["'](?:https?:|\/\/|file:)/iu.test(html))
+    ) {
       throw new Error(`${path}: generated HTML must not require external or absolute resources.`);
     }
     const references = [...html.matchAll(/\b(?:href|src)="([^"]+)"/gu)].map((match) => match[1]);
     for (const reference of references) {
-      const [target] = reference.split("#", 1);
-      if (!target) continue;
-      const resolved = resolve(dirname(absolute), target);
+      if (authoredGuide && /^(?:https?:|mailto:)/iu.test(reference)) continue;
+      const [target, fragment] = reference.split("#");
+      const resolved = target ? resolve(dirname(absolute), target) : absolute;
       if (!existsSync(resolved)) throw new Error(`${path}: broken relative link ${reference}.`);
       const relativeTarget = relative(stagingPath, resolved).split(sep).join("/");
       if (!relativeTarget.startsWith("..") && relativeTarget.endsWith(".html")) {
         linkedInternalPages.add(relativeTarget);
+        if (fragment) {
+          const targetHtml = await readFile(resolved, "utf8");
+          if (!targetHtml.includes(`id="${escapeAttribute(decodeURIComponent(fragment))}"`)) {
+            throw new Error(`${path}: broken generated anchor ${reference}.`);
+          }
+        }
       }
     }
   }
@@ -477,6 +514,7 @@ function parsePromotionManifest(text) {
     operations: [],
     candidateOperations: [],
     documentationAssets: [],
+    binaryFormats: [],
   };
   let target = null;
   for (const rawLine of text.split(/\r?\n/u)) {
@@ -500,6 +538,11 @@ function parsePromotionManifest(text) {
     if (line === "[[documentation.assets]]") {
       target = {};
       manifest.documentationAssets.push(target);
+      continue;
+    }
+    if (line === "[[binary_formats]]") {
+      target = {};
+      manifest.binaryFormats.push(target);
       continue;
     }
     if (line.startsWith("[") && line.endsWith("]")) {

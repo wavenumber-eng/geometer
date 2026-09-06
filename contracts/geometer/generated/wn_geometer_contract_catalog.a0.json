@@ -129,6 +129,13 @@
       "option_patch": true
     },
     {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0",
+      "contract_identity": "geometry.mesh_illustration.request.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.mesh_illustration.request:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsOptionsA0",
       "contract_identity": "geometry.model_bounds.options.a0",
       "schema_id": "urn:wavenumber:schema:geometer:geometry.model_bounds.options:a0",
@@ -139,6 +146,27 @@
       "name": "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsResultA0",
       "contract_identity": "geometry.model_bounds.a0",
       "schema_id": "urn:wavenumber:schema:geometer:geometry.model_bounds:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.ModelTessellationA0.MeshCollectionA0",
+      "contract_identity": "geometry.mesh_collection.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.mesh_collection:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationRequestA0",
+      "contract_identity": "geometry.model_tessellation.request.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.model_tessellation.request:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationResultA0",
+      "contract_identity": "geometry.model_tessellation.result.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.model_tessellation.result:a0",
       "declaration_kind": "model",
       "option_patch": false
     },
@@ -5958,6 +5986,24 @@
       "constraints": {},
       "variants": [
         {
+          "name": "mesh_illustration",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "model_tessellation",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationRequestA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
           "name": "logical_dto",
           "type": {
             "kind": "reference",
@@ -7169,6 +7215,74 @@
       ]
     },
     {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0",
+      "kind": "model",
+      "doc": "Native one-shot illustration settings. Meshes arrive in the required\nmesh_collection attachment governed by geometry.mesh_collection.a0.\nReuses existing illustration A0 options and result; does not compute HLR.\nOptional hlr_projection attachment is geometry.hlr_projection.result.a0:\nexactly one matching view, millimeters, polyline outline/detail only.\nSupply visibility-filtered HLR from the same model, placement and transform\nas the meshes. The renderer mirrors and composes detail then outline over\nsurfaces according to show_hlr_detail/show_hlr_outline; it does not infer\nvisibility from arbitrary supplied segments. Maximum 1,000,000 segments.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.mesh_illustration.request.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "view",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationView"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "prepare",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationPrepareOptions"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "style",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationStyleA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "svg",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationSvgOptions"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.ModelBoundsA0.Matrix4x4",
       "kind": "model",
       "doc": "Row-major affine 4x4 matrix. Semantic validation requires final row [0,0,0,1].",
@@ -7451,6 +7565,316 @@
       "properties": []
     },
     {
+      "name": "Wavenumber.Geometer.Contracts.ModelTessellationA0.MeshCollectionA0",
+      "kind": "model",
+      "doc": "Shared colored indexed meshes. Coordinates and matrix translations are millimeters.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.mesh_collection.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "length_unit",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "millimeter"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "meshes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationMesh"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 1,
+            "max_items": 65536
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.ModelTessellationA0.MeshCollectionAttachment",
+      "kind": "model",
+      "doc": "UTF-8 JSON attachment governed by geometry.mesh_collection.a0, not an opaque mesh format.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "attachment",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "mesh_collection"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.mesh_collection.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "byte_length",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1,
+            "max_value": 268435456
+          }
+        },
+        {
+          "name": "sha256",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 64,
+            "max_length": 64
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelRootPlacement",
+      "kind": "enum",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "members": [
+        {
+          "name": "strip",
+          "value": "strip",
+          "doc": "Match the existing STEP-to-GLB path: remove free-root placements only."
+        },
+        {
+          "name": "preserve",
+          "value": "preserve",
+          "doc": "Retain every source root and component placement."
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationRequestA0",
+      "kind": "model",
+      "doc": "Stateless STEP tessellation; component placement is retained in either root mode.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.model_tessellation.request.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "linear_deflection_mm",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "float64"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 0.000001,
+            "max_value": 1000
+          },
+          "default": 0.1
+        },
+        {
+          "name": "angular_deflection_rad",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "float64"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 0.000001,
+            "max_value": 3.141592653589793
+          },
+          "default": 0.5
+        },
+        {
+          "name": "root_placement",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelRootPlacement"
+          },
+          "annotations": {},
+          "constraints": {},
+          "default": "strip"
+        },
+        {
+          "name": "max_triangles",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1,
+            "max_value": 2000000
+          },
+          "default": 750000
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationResultA0",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.model_tessellation.result.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "mesh_collection",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelTessellationA0.MeshCollectionAttachment"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "source_sha256",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 64,
+            "max_length": 64
+          }
+        },
+        {
+          "name": "meshes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1,
+            "max_value": 65536
+          }
+        },
+        {
+          "name": "triangles",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1,
+            "max_value": 2000000
+          }
+        },
+        {
+          "name": "warnings",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "primitive",
+              "name": "string"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 256
+          }
+        }
+      ]
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationFailureA0",
       "kind": "model",
       "doc": "A rejected or failed operation with governed diagnostics.",
@@ -7540,6 +7964,24 @@
       "constraints": {},
       "composition": "one_of",
       "variants": [
+        {
+          "name": "mesh_illustration",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationResultA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "model_tessellation",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationResultA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
         {
           "name": "model_bounds",
           "type": {
@@ -15264,6 +15706,35 @@
       "doc": "Project a synthesized indexed triangle mesh through the Fast HLR backend."
     },
     {
+      "name": "Wavenumber.Geometer.Contracts.Operations.meshIllustration",
+      "identity": "geometry.mesh_illustration.a0",
+      "request_contract": "geometry.mesh_illustration.request.a0",
+      "result_contract": "geometry.mesh_illustration.result.a0",
+      "input_attachments": [
+        {
+          "name": "hlr_projection",
+          "required": false,
+          "media_types": [
+            "application/vnd.wavenumber.geometer.hlr-projection+json"
+          ],
+          "max_bytes": 67108864
+        },
+        {
+          "name": "mesh_collection",
+          "required": true,
+          "media_types": [
+            "application/vnd.wavenumber.geometer.mesh-collection+json"
+          ],
+          "max_bytes": 268435456
+        }
+      ],
+      "output_attachments": [],
+      "runtime_available": true,
+      "native_runtime_available": false,
+      "runtime_dispatch": "logical_dto",
+      "doc": "Render colored meshes to the existing deterministic A0 SVG result without JavaScript."
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.Operations.modelBounds",
       "identity": "geometry.model_bounds.a0",
       "request_contract": "geometry.model_bounds.options.a0",
@@ -15306,6 +15777,37 @@
       "native_runtime_available": false,
       "runtime_dispatch": "logical_dto",
       "doc": "Project STEP model bytes through the selected polygonal, exact, or Fast HLR backend."
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.Operations.modelTessellation",
+      "identity": "geometry.model_tessellation.a0",
+      "request_contract": "geometry.model_tessellation.request.a0",
+      "result_contract": "geometry.model_tessellation.result.a0",
+      "input_attachments": [
+        {
+          "name": "model",
+          "required": true,
+          "media_types": [
+            "application/step",
+            "model/step"
+          ],
+          "max_bytes": 268435456
+        }
+      ],
+      "output_attachments": [
+        {
+          "name": "mesh_collection",
+          "required": true,
+          "media_types": [
+            "application/vnd.wavenumber.geometer.mesh-collection+json"
+          ],
+          "max_bytes": 268435456
+        }
+      ],
+      "runtime_available": true,
+      "native_runtime_available": false,
+      "runtime_dispatch": "logical_dto",
+      "doc": "Tessellate STEP bytes to bounded colored meshes for native GPU and illustration consumers."
     },
     {
       "name": "Wavenumber.Geometer.Contracts.Operations.stepTopologyAnalyzeRecovery",

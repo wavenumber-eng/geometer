@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>ADR 008: Projection Modes And Outline Policy — Geometer</title>
+  <link rel="stylesheet" href="../../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/geometer/adr/geometer-adr-008-projection_modes_and_outline_policy.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="adr-008-projection-modes-and-outline-policy">ADR 008: Projection Modes And Outline Policy</h1></header>
+<h2 id="status">Status</h2>
+<p>Accepted.</p>
+<h2 id="context">Context</h2>
+<p>Assembly projection consumers need a clear distinction between:</p>
+<ul>
+<li><code>outline</code>: an assembly silhouette intended to overlay on pads and show part
+presence without interior drafting line art.</li>
+<li><code>detail</code>: configured HLR detail edges for connectors, mechanical features,
+and inspection views.</li>
+<li><code>bbox</code>: the projected 3D shape bounding box for occasional coarse placement
+and diagnostics.</li>
+</ul>
+<p>The older public name <code>simple</code> caused confusion with application-level
+assembly projection profiles and with HLR profile/edge-category terminology.</p>
+<h2 id="decision">Decision</h2>
+<p>The 2026-06-09 release removes the public <code>simple</code> mode and ships projection
+schema <code>geometry.projection.b0</code> with <code>modes.outline</code>, <code>modes.detail</code>, and
+<code>modes.bbox</code>.</p>
+<p><code>outline</code> may be computed by mesh shadow or by closed HLR edges. Mesh shadow is
+the preferred default for assembly projection. <code>detail</code> remains configurable
+through HLR edge-category options. <code>bbox</code> is cheap projected bounds geometry and
+does not replace exact model bounds APIs.</p>
+<h2 id="consequences">Consequences</h2>
+<p>Downstream callers must upgrade from <code>simple</code> to <code>outline</code>. Documentation and
+examples must avoid using <code>profile</code> for the projection mode because that word is
+reserved for application-level assembly projection policy.</p>
+
+</main>
+</body>
+</html>

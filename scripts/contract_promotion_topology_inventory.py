@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -67,6 +68,55 @@ def _assert_candidate_contracts(contracts: list[dict[str, Any]], operations: lis
     }
 
 
+def _assert_catalog_lineage(path: Path, historical_hash: str) -> None:
+    """Preserve historical evidence across reviewed additive native visualization contracts."""
+    if _sha256(path) == historical_hash:
+        return
+    catalog = json.loads(path.read_text(encoding="utf-8"))
+    prefix = "Wavenumber.Geometer.Contracts.ModelTessellationA0."
+    illustration_prefix = "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0."
+    prefixes = (prefix, illustration_prefix)
+    catalog["declarations"] = [item for item in catalog["declarations"] if not item["name"].startswith(prefixes)]
+    catalog["roots"] = [item for item in catalog["roots"] if not item["name"].startswith(prefixes)]
+    catalog["operations"] = [
+        item
+        for item in catalog["operations"]
+        if item["identity"] not in {"geometry.model_tessellation.a0", "geometry.mesh_illustration.a0"}
+    ]
+    additions = {
+        "Wavenumber.Geometer.Contracts.IpcA0.IpcRequestValueA0": [
+            ("model_tessellation", prefix + "ModelTessellationRequestA0"),
+            ("mesh_illustration", illustration_prefix + "MeshIllustrationRequestA0"),
+        ],
+        "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationResultValueA0": [
+            ("model_tessellation", prefix + "ModelTessellationResultA0"),
+            ("mesh_illustration", "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationResultA0"),
+        ],
+    }
+    for union, variants in additions.items():
+        declaration = next(item for item in catalog["declarations"] if item["name"] == union)
+        for name, target in variants:
+            expected = {"name": name, "type": {"kind": "reference", "target": target}, "doc": "", "annotations": {}}
+            assert [item for item in declaration["variants"] if item["name"] == name] == [expected]
+            declaration["variants"].remove(expected)
+    # Exact reconstruction proves every preexisting root, operation and field is
+    # unchanged. Do not replace the old evidence hash with the current catalog.
+    # Use the catalog generator's ECMAScript number serialization, not Python's
+    # different exponent/float formatting. Node is already a contract test tool.
+    restored = subprocess.run(
+        [
+            "node",
+            "--input-type=module",
+            "-e",
+            "import fs from 'node:fs'; process.stdout.write(JSON.stringify(JSON.parse(fs.readFileSync(0,'utf8')),null,2)+'\\n');",
+        ],
+        input=json.dumps(catalog, ensure_ascii=False).encode("utf-8"),
+        capture_output=True,
+        check=True,
+    ).stdout
+    assert hashlib.sha256(restored).hexdigest() == historical_hash
+
+
 def _assert_slice_a(manifest: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     slice_a = manifest["experimental_evidence"]["step_topology_slice_a"]
     assert slice_a == {
@@ -117,7 +167,7 @@ def _assert_slice_a(manifest: dict[str, Any]) -> tuple[list[dict[str, Any]], dic
         "behavioral_authority": "focused_cpp_step_topology_session",
         "legacy_gltf_enrichment_reused": False,
     }
-    assert _sha256(ROOT / manifest["toolchain"]["catalog"]) == slice_a["catalog_sha256"]
+    _assert_catalog_lineage(ROOT / manifest["toolchain"]["catalog"], slice_a["catalog_sha256"])
     assert _sha256(ROOT / "tests/contracts/vectors/manifest.json") == slice_a["vector_manifest_sha256"]
     vector_manifest = json.loads((ROOT / "tests/contracts/vectors/manifest.json").read_text())
     topology_vectors = [item for item in vector_manifest["vectors"] if "step-topology" in item["id"]]
@@ -291,6 +341,8 @@ def _assert_runtime_lockstep(
     cpp_operation_catalog = (ROOT / "src/cpp/lib/geometer/generated/contracts/operation_catalog.cpp").read_text(
         encoding="utf-8"
     )
+    # clang-format may split a single JSON identity across adjacent C++ literals.
+    cpp_operation_catalog = re.sub(r'"\s*\n\s*"', "", cpp_operation_catalog)
     portable_catalog_source = cpp_operation_catalog.split("const char* native_operation_catalog_json", 1)[0]
     native_catalog_source = cpp_operation_catalog.split("const char* native_operation_catalog_json", 1)[1].split(
         "const char* normalized_contract_catalog_sha256", 1

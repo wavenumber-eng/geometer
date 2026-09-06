@@ -4,6 +4,37 @@ All notable changes to geometer are documented here.
 
 ## [Unreleased]
 
+## [2026.9.6] - 2026-09-06
+
+### Added
+
+- Governed colored STEP tessellation and native mesh illustration operations,
+  exposed through direct C++, executable IPC, the typed Rust client, persistent
+  Python and Python one-shot helpers. Native rendering needs no JS or WASM.
+- Deterministic SVG with optional visible-HLR composition, independent outline
+  and detail controls, and surface fusion enabled by default. Existing A0
+  illustration contracts are reused through TypeSpec-generated bindings.
+- Optional source-only Rust/egui/wgpu API Lab demonstrating STEP, native
+  illustration, Fast HLR, view controls, progress and SVG export.
+
+### Changed
+
+- Native C++ and Python demos expose Fast detail/shadow options; the C++ demo
+  preview uses depth testing to address triangle-order artifacts.
+- Rust logical IPC dispatch follows the generated operation catalog. Existing
+  browser illustration APIs and file-oriented CLI behavior are retained.
+
+### Documentation
+
+- Classified the retained analytic planar Boolean solver as experimental and
+  not production-ready. Clipper2-backed planar operations are the recommended
+  path for visualization, especially whole-board or whole-layer copper unions.
+- Refreshed the README, maintained interface/IPC guides and demo inventory;
+  separated research history from current design documentation. Extended the
+  generated HTML reference using the shared ALX presentation and documented
+  remaining TypeSpec operation and packed-codec migration work.
+
+
 ## [2026.9.4] - 2026-09-04
 
 ### Added

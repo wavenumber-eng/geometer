@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>Native STEP Topology Inspection Research — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/step-topology-native-inspection.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="native-step-topology-inspection-research">Native STEP Topology Inspection Research</h1></header>
+<p>Status: experimental native value API; not a promoted wire contract</p>
+<p>Date: 2026-08-22</p>
+<h2 id="outcome">Outcome</h2>
+<p>Geometer now has a contained native C++ STEP/XCAF document-session layer in
+<code>geometer/step_topology_session.h</code>. It reads exact STEP bytes from an in-memory
+stream, retains the <code>STEPCAFControl_Reader</code> work session and XCAF document, and
+returns normalized research records for:</p>
+<ul>
+<li>unique product/assembly definitions;</li>
+<li>explicit free-root occurrences carrying source root placement separately from
+definition-local geometry;</li>
+<li>fully expanded component occurrence paths with accumulated transforms;</li>
+<li>independent bodies, shells, and faces owned by simple definitions;</li>
+<li>applicable XCAF names, colors, layers, material assignments, validation
+properties, and <code>TDataStd_NamedData</code> summaries; and</li>
+<li>opt-in, model-local STEP transfer-map evidence.</li>
+</ul>
+<p>The C++ value structures remain behavioral research evidence rather than a
+schema promise. The generated experimental surface now routes native executable
+open, paged inspect, render, hit-resolution, close, logical-group/probe
+mutation, journal checkpoint, and exact-source journal restore operations.
+Those operations remain absent from the portable C ABI and browser/WASM runtime.</p>
+<h2 id="identity-and-resolution">Identity And Resolution</h2>
+<p>Each open document receives a 256-bit operating-system CSPRNG secret, an opaque <code>gts_...</code>
+session token, and generation 1. Every definition, occurrence, body, shell, and
+face receives a separate opaque <code>gtt_...</code> token derived from the session secret,
+generation, target kind, and a monotonic counter. The token does not encode an
+XCAF label, STEP entity number, or traversal index.</p>
+<p>Resolution checks the owning live session registry and current generation.
+Forged, stale-generation, cross-session, closed-session, expired, evicted, and
+pre-process-replacement handles fail closed. <code>refresh()</code> is the current
+generation boundary: it rebuilds the normalized snapshot atomically, advances
+the generation, and invalidates all prior target tokens. Later apply/render
+operations must use the same registry rather than parsing tokens.</p>
+<p>Definitions and occurrences are intentionally distinct. Each free shape gets
+an explicit root occurrence, including an identity root, so a STEP source-root
+placement is never silently baked into definition-local body/face properties.
+The definition graph is visited once with its root location stripped, while
+component occurrence paths recursively expand every use of a repeated
+subassembly and reference their root/parent occurrence. Body/shell/face tokens
+remain definition-local; a render selection will later pair them with an
+occurrence context.</p>
+<h2 id="lifecycle">Lifecycle</h2>
+<table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Current behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Open</td>
+<td>Validate source/limits, hash exact submitted bytes, import from an in-memory stream, build one bounded snapshot, then publish the session atomically</td>
+</tr>
+<tr>
+<td>Inspect</td>
+<td>The value API can return a full snapshot copy. Native IPC pages the immutable retained snapshot without copying it wholesale; source-entity evidence is opt-in and diagnostic carriers are explicitly unsupported on the wire</td>
+</tr>
+<tr>
+<td>Refresh</td>
+<td>Atomically rebuild at generation + 1; old target handles become invalid only after success. A failed or cancelled refresh clears its output and preserves the prior generation and handles</td>
+</tr>
+<tr>
+<td>Close</td>
+<td>Destroy the source bytes, OCCT reader/work session, XCAF document, snapshot, and handle registry</td>
+</tr>
+<tr>
+<td>Expiry</td>
+<td><code>StepTopologySessionStore</code> removes sessions at the configured inactivity timeout</td>
+</tr>
+<tr>
+<td>Eviction</td>
+<td>The store removes least-recently-used sessions before exceeding session-count or estimated-resident-byte limits and reports their session tokens</td>
+</tr>
+<tr>
+<td>Worker replacement</td>
+<td>In-process <code>clear_for_process_replacement()</code> supports orderly replacement; a deadline/cancel kill destroys the whole worker. The supervisor starts a new process generation, so every old session and target token remains invalid</td>
+</tr>
+<tr>
+<td>Restart/restore</td>
+<td>Native IPC can reopen the exact original STEP bytes plus a bounded edit journal under explicit source, B-rep, inventory, OCCT-version, and transaction-count preconditions. It always issues a new session identity. No GLB can restore authoring state; changed-source recovery and general XBF/XML restore remain later runtime work</td>
+</tr>
+<tr>
+<td>Render</td>
+<td>Native IPC emits a bounded GLB while retaining one memory-accounted authoritative render artifact per live session; a new render supersedes the prior artifact</td>
+</tr>
+<tr>
+<td>Mutation/checkpoint</td>
+<td>Native IPC routes atomic logical-group and metadata-probe transactions and emits a source-bound edit-journal attachment. Successful mutations advance the generation and remint every topology handle</td>
+</tr>
+<tr>
+<td>Hierarchy/save/export</td>
+<td>Generated experimental shapes exist, but native process routing remains unavailable. Future implementations must preserve the same session, attachment, and atomic-publication boundaries</td>
+</tr>
+</tbody>
+</table>
+<p>The value API is serialized-worker infrastructure, not a thread-safe shared
+document service. It performs no filesystem writes during import. The internal
+Python <code>TopologyWorkerSupervisor</code> research layer supplies the missing hard
+boundary without publishing a premature topology wire contract. Each worker
+generation runs in a private temporary directory (mode 0700 on POSIX; protected by the current
+user’s inherited temporary-directory ACL on Windows); Windows assigns it
+to a kill-on-close Job Object with process/job memory ceilings, while Linux uses
+a small exec launcher to set <code>RLIMIT_AS</code> before replacing itself with the worker
+in a new process session. Deadline or explicit cancellation kills
+the entire contained generation, waits for exit, removes its private directory,
+and requires a new process/session generation. Geometer-owned resident
+accounting remains useful for admission and LRU decisions, but the OS boundary
+contains OCCT allocation that those counters cannot measure.</p>
+<p>The experimental supervisor rejects macOS because a low hard <code>RLIMIT_AS</code> cannot
+be installed after the Python/dyld launcher image is mapped. A native bootstrap
+or equivalent hard boundary is required before enabling it there; this is
+tracked by <a href="https://github.com/wavenumber-eng/geometer/issues/25">issue #25</a>.
+The native topology value APIs and render operations remain cross-platform.</p>
+<p>The containment test server opens the generated AP242 fixture through the real
+native session API before deliberately hanging. Tests prove deadline kill of a
+worker and its descendant, explicit cancellation, cleanup after an injected
+supervisor communication failure, private-directory cleanup, a replacement
+process with a different session token, and rejection of an allocation above
+the OS ceiling. The native API also passes a thread-safe cancellation token into
+OCCT's transfer progress range and polls it during Geometer-owned topology
+indexing; worker termination remains the hard fallback for non-cooperative code.
+The start-gate handshake prevents worker code from beginning before Windows Job
+Object assignment completes. A later TypeSpec operation/process adapter may
+reuse this behavior; this test protocol is not a public or durable contract.</p>
+<h2 id="limits-and-accounting">Limits And Accounting</h2>
+<p><code>StepTopologyLimits</code> rejects oversized source bytes before import and bounds
+definitions, component labels, expanded occurrence paths, bodies, shells,
+faces, handles, transfer-index shapes, transfer entity/subshape work items,
+individual strings, aggregate strings, active sessions, and estimated resident
+bytes. Transfer indexing charges every scanned model entity and every visited
+result subshape, including repeats, and fails the inspection atomically at its
+own limits; it never silently truncates and then reports a false negative.</p>
+<p>The session information reports aggregate accounted string bytes. That total
+includes normalized inspection strings plus live logical-group authored ids
+and names. The snapshot's normalized B-rep evidence digest excludes
+tessellation and is intended for change detection and recovery evidence only;
+it is not a persistent target identifier.
+Resident-byte arithmetic saturates on overflow and
+conservatively accounts vector and string capacity, nested collections, retained
+source bytes, normalized records, and handle-map nodes/buckets. It is an
+admission/accounting estimate, not a measurement of all OCCT/XCAF heap
+allocations; hard process memory containment remains required.</p>
+<p>Native GLB rendering adds a separate aggregate transient ceiling. After the
+candidate render artifact is charged, the encoder progressively accounts its
+BIN, JSON stacks, layout metadata, old-plus-new source reallocation peaks, and
+destination GLB while enforcing the independent final-wire ceiling. Source
+allocations are admitted through a shared budget allocator before system
+allocation; the once-reserved destination is preflighted against all live
+source storage. The store derives that transient ceiling from currently
+available resident allowance without releasing the prior retained artifact, so
+failure is atomic.</p>
+<p>Native IPC exposes a precomputed, bounded record count and pages no more than
+1,024 combined target/membership-edge records at a time. Its continuation
+cursor can resume within a high-degree membership list, so a body or shell
+cannot force an oversized response. The optional compact topology-table
+attachment remains deferred.</p>
+<h2 id="step-transfer-map-evidence">STEP Transfer-Map Evidence</h2>
+<p>The inspector tries three increasingly weak, explicitly named routes:</p>
+<ol>
+<li><code>XSControl_TransferReader::EntityFromShapeResult(shape, 3)</code>;</li>
+<li>an exact reverse index of every recorded <code>ShapeResult(entity)</code>; and</li>
+<li>an entity whose recorded result contains the target as a subshape.</li>
+</ol>
+<p>For a successful mapping it records only the model-local entity number, dynamic
+entity type, mapping method, and whether <code>ShapeResult(entity)</code> returns the exact
+target shape. These values are evidence and repair hints, never identity.</p>
+<p>On the generated nested AP242 fixture, OCCT 8.0.1 currently returns no mapping
+for any normalized definition, body, shell, or face through these public
+transfer hooks. Across the full AP203/AP214/AP242 fixture corpus, however, the
+same paths produce both positive and negative results (109 targets mapped in the
+current measurement). Tests preserve both cases and require positive evidence
+to include a model-local entity number, dynamic type, and mapping method. Direct
+AP242 entity-graph inspection and OCCT's internal <code>FindEntities</code> pattern
+therefore remain required before source STEP provenance can be promised.</p>
+<h2 id="brepgraph-probe">BRepGraph Probe</h2>
+<p>The isolated <code>geometer_step_topology_brep_graph_test</code> proves that the pinned
+OCCT build can:</p>
+<ul>
+<li>populate a graph from a meshed box and reconstruct valid B-rep geometry;</li>
+<li>expose the expected solid/shell/face topology and persistent face mesh;</li>
+<li>round-trip a graph UID and invalidate it after a graph-generation reset;</li>
+<li>register a topology-supplement layer; and</li>
+<li>create two placed occurrences sharing one product definition.</li>
+</ul>
+<p>This establishes availability, not adoption. XCAF remains the session/product
+source of truth until BRepGraph-to-XCAF correspondence, metadata persistence,
+and exact benefits are measured. BRepGraph does not block the inspection API.</p>
+<h2 id="validation">Validation</h2>
+<p>The native tests cover explicit source-root placement, nested repeated
+occurrences, composed rotation and translation, flat multi-solid definitions,
+exact body/shell/face membership counts and separately paged relationship edges, material definition and assignment
+round-trip, metadata summaries,
+opt-in diagnostics and source evidence, exact source hashing, all target kinds,
+OS-random session-token uniqueness, forged and cross-session handles,
+generation refresh, cancelled-open rejection, failed-refresh rollback, close,
+cardinality and transfer-index limits,
+session/store-byte admission, access-sensitive LRU eviction, inactivity expiry,
+process-replacement invalidation, exact-journal replay, replay-precondition
+failure before store eviction, fresh restored identity, and the isolated
+BRepGraph capability probe. The TypeScript integration additionally performs a
+real Three.js raycast, mutation/checkpoint, process replacement, exact restore,
+and post-restore group/probe edits.</p>
+<p>Process-containment validation is separate because it needs the native test
+worker executable:</p>
+<pre><code class="language-powershell">cmake --build build --config Release --target `
+  geometer_step_topology_worker_test_server
+uv run pytest tests/python/test_topology_worker_supervisor.py -q
+</code></pre>
+<pre><code class="language-powershell">cmake --build build --config Release --target `
+  geometer_step_topology_session_test geometer_step_topology_brep_graph_test
+ctest --test-dir build -C Release -R geometer_step_topology --output-on-failure
+</code></pre>
+
+</main>
+</body>
+</html>

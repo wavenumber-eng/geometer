@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>Illustration Lab / native Rust comparison — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/developer/native-illustration-lab-parity.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="illustration-lab--native-rust-comparison">Illustration Lab / native Rust comparison</h1></header>
+<p>Analysis of the feature-branch implementations, 2026-09-05. This compares the
+browser <strong>Lab workflow</strong>, not just the underlying renderer. Native renderer
+parity alone does not establish application parity.</p>
+<h2 id="why-rear-lines-appeared-in-front">Why rear lines appeared in front</h2>
+<p>The <a href="../../../../../../examples/wasm/illustration_demo.ts">browser Lab</a> <code>currentStyle()</code>
+explicitly sets <code>showOutlines: false</code> and <code>showCreases: false</code>. It separately
+calls <code>loadHlrLinework()</code>, then attaches <code>outlineSegments</code> and <code>detailSegments</code>
+to its prepared illustration scene. The
+<a href="../../../../../../examples/wasm/illustration_step_worker.js">STEP worker</a> requests Fast
+HLR detail and fast mesh-shadow outline, with hidden lines disabled.</p>
+<p>The <a href="../../../../../../src/ts/geometer/mesh-illustration.ts">TypeScript renderer</a>
+<code>renderCommands()</code> places all surface commands first, then raw mesh strokes,
+then supplied HLR lines. Its comment explicitly calls the generic mesh-derived
+linework experimental and says the Lab hides it. <code>edgeKind()</code> classifies
+silhouettes/creases from adjacent-face orientation and normals; it does not
+test each edge against every foreground surface. Sorting strokes by depth
+among themselves does not hide them behind surfaces already painted.</p>
+<p>The <a href="../../../../../../src/cpp/lib/mesh_illustration.cpp">native core</a> retains that policy;
+the <a href="../../../../../../src/cpp/lib/mesh_illustration_svg.cpp">native SVG writer</a> writes
+surfaces before line paths. The first Rust demo enabled <code>show_outlines</code> and
+<code>show_creases</code>, while its HLR output lived in separate tabs. That enabled the
+very overlays the browser Lab deliberately avoids. It is not wgpu drawing
+on top of the illustration: Rust displays the SVG returned by Geometer.</p>
+<p>The native demo now uses the Lab's raw-line defaults (both off) and composes
+visibility-filtered HLR through the native illustration operation. Diagnostic
+raw toggles remain available with an explicit occlusion warning. The governed
+optional <code>hlr_projection</code> attachment reuses <code>HlrProjectionResultA0</code>, with one
+matching millimeter/polyline view; no private Rust SVG overlay is involved.
+See the <a href="../design/mesh-illustration-native.html">native API boundary</a> for matching
+model/frame requirements and limits.</p>
+<p>Like the browser, native composition draws supplied HLR detail then outline
+after fills because those segments are already visibility filtered. It does
+not re-occlude arbitrary 2D segments or enable hidden HLR edges. <code>show_hlr_*</code>
+select supplied lines and affect the original exported SVG. The demo requests
+only enabled HLR layers; with both off it skips HLR completely. Its separate
+HLR tabs expose the computed geometry, rather than substituting for composition.</p>
+<h2 id="settings-and-native-mapping">Settings and native mapping</h2>
+<p>The <a href="../../../../../../examples/rust/native_viewer/src/settings.rs">Rust settings module</a>
+uses existing TypeSpec-generated values. The additive optional IPC attachment
+is declared in TypeSpec and projected into every generated operation catalog.</p>
+<table>
+<thead>
+<tr>
+<th>Lab setting</th>
+<th>Native control / generated mapping</th>
+<th>Current boundary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Shading; bands; ambient; key; rim</td>
+<td><code>MeshIllustrationStyleA0.shading</code>, <code>bands</code>, <code>ambient</code>, <code>key_intensity</code>, <code>rim_amount</code></td>
+<td>Implemented; Lab defaults Toon / 3 / 0.28 / 0.9 / 0.12, fixed Lab light direction <code>[0.35, 0.8, 0.48]</code>.</td>
+</tr>
+<tr>
+<td>Source colors; fallback</td>
+<td><code>source_colors</code>, <code>fallback_color</code></td>
+<td>Implemented; default fallback <code>#71a6a0</code>.</td>
+</tr>
+<tr>
+<td>Surface fusion; coplanar markings; back faces</td>
+<td><code>fuse_surfaces</code>, <code>layer_coplanar_materials</code>, <code>double_sided</code></td>
+<td>Implemented; defaults true / true / false.</td>
+</tr>
+<tr>
+<td>Line color; line width</td>
+<td><code>outline_color</code>, <code>outline_width</code>; linked <code>crease_color</code>, <code>crease_width</code></td>
+<td>Implemented; default <code>#17252c</code>, width 0.006 of span; detail width = 0.55 × outline width, as in Lab. Applies to composed SVG, native raw diagnostics and separate HLR previews.</td>
+</tr>
+<tr>
+<td>Background; transparent background</td>
+<td><code>background</code>, <code>transparent_background</code></td>
+<td>Implemented for SVG and HLR display; 3D diagnostic preview remains separately styled and opaque.</td>
+</tr>
+<tr>
+<td>Fast crease</td>
+<td><code>HlrProjectionOptionsA0.fast.crease_angle_rad</code></td>
+<td>Implemented; 1–80° UI converted to radians, default 25°. This is the Lab's crease slider.</td>
+</tr>
+<tr>
+<td>Hide coplanar joins; seam angle; seam depth</td>
+<td><code>fast.suppress_coplanar_seams</code>, <code>coplanar_seam_angle_rad</code>, <code>coplanar_seam_depth_tolerance</code></td>
+<td>Implemented; experimental seam filtering, default false / 1° / 0.001 mm. Disabled in UI when detail is not Fast.</td>
+</tr>
+<tr>
+<td>HLR outline/detail toggles</td>
+<td><code>show_hlr_outline</code>, <code>show_hlr_detail</code>; corresponding HLR <code>output_*</code> flags</td>
+<td>Select lines in the illustration and exported SVG; disabled layers are not computed. Both off skips HLR and disables its JSON export.</td>
+</tr>
+<tr>
+<td>HLR Lab named views / Top and Front axes</td>
+<td>Generated direction/up/mirror values from signed model-axis presets</td>
+<td>Six face views and four ISO views match the web helper. Default Top +Y / Front +Z; parallel axes excluded. GPU, composed SVG and HLR tabs share reflection; HLR display caps/joins are round.</td>
+</tr>
+<tr>
+<td>STEP chord / angle</td>
+<td><code>ModelTessellationRequestA0.linear_deflection_mm</code>, <code>angular_deflection_rad</code></td>
+<td>Implemented on load or explicit Retessellate; uses the original STEP snapshot, retains camera, and labels unapplied changes.</td>
+</tr>
+<tr>
+<td>HLR relative chord / angle</td>
+<td><code>mesh_deflection_mode = bbox-relative</code>, <code>mesh_deflection_coefficient</code>, <code>mesh_angular_deflection</code></td>
+<td>Implemented, auto recompute; default coefficient 0.004 and 0.5 rad. The first Rust demo used absolute 0.1 mm instead.</td>
+</tr>
+<tr>
+<td>Draft / Balanced / Fine / Extra-fine</td>
+<td>Same four surface/HLR parameter tuples as Lab</td>
+<td>Implemented; custom edits remain possible. Native triangle/output/resource limits still apply; the browser Lab's uncapped triangle policy is not adopted.</td>
+</tr>
+<tr>
+<td>Mesh crease angle</td>
+<td><code>MeshIllustrationStyleA0.crease_angle_degrees</code></td>
+<td>Diagnostic control, <strong>not</strong> Fast HLR crease. Lab fixes it at 42° while disabling raw mesh creases.</td>
+</tr>
+<tr>
+<td>Experimental AO enable / strength / radius / samples / bands</td>
+<td>No native A0 mapping</td>
+<td>Browser-only extension, explicitly unavailable. Requires separate native implementation and governed contracts; no fake controls or silent fallback.</td>
+</tr>
+</tbody>
+</table>
+<p>This is not a claim of complete UI parity. Browser Canvas output, its model
+picker/GLB workflow remain distinct from the native
+STEP/wgpu demo. Compare the same mesh and explicit transformed direction/up
+values, not similarly named camera buttons or different default views. The
+browser converts GLB/Three model data and transforms; native colored meshes
+are obtained directly through the governed STEP tessellation operation.</p>
+<h2 id="focused-evidence-and-next-work">Focused evidence and next work</h2>
+<p>The optional RUST_002 native-settings check uses the same SOT-23 generated input
+through TypeScript and native illustration and compares the entire A0 result.
+Raw mesh lines off produces zero outline/crease commands with nonempty surfaces;
+turning them on produces line commands and a different SVG. The same test
+verifies finer STEP settings increase triangle count, Fast crease 1° versus
+80° changes returned detail geometry, and disabling both HLR layers returns
+empty linework. Node is a test oracle only, never a GUI runtime dependency.</p>
+<p>The Rust client composition test now compares the complete native A0 result
+byte-for-byte with TypeScript <code>createIllustrator</code> for three SOT-23 views,
+reflection and every outline/detail toggle combination (24 cases), with native
+deterministic repeats. C++ checks equivalent scaled/skewed bases, invalid bases,
+nonfinite linework and disabled-layer resource caps; Python checks typed
+composition and malformed optional attachments. Native GUI smoke displays the
+composed result. Node remains a test oracle, never a runtime dependency.</p>
+<p>The result pane is white and fixed across status changes, with the SVG fitted
+and centered in both axes and a direct Save SVG action. Surface coalescing is
+the shared <code>fuse_surfaces</code> Geometer renderer option in TS and C++; automatic
+SVG style deduplication is distinct from coplanar material layering.</p>
+<p>Experimental AO, Mac runtime qualification and exhaustive human UI acceptance
+remain separate work. This is feature-branch evidence, not a public release.</p>
+
+</main>
+</body>
+</html>

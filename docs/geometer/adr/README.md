@@ -19,3 +19,4 @@ and should not be treated as docs of record after a change ships.
 - [ADR 014: Self-Contained Browser Demo Distribution](geometer-adr-014-self_contained_browser_demo_distribution.md)
 - [ADR 015: Native Static Libraries Are Build Outputs](geometer-adr-015-native_static_libraries_are_build_outputs.md)
 - [ADR 016: Fast HLR And Illustration Boundaries](geometer-adr-016-fast_hlr_and_illustration_boundaries.md)
+- [ADR 017: Retain Analytic Planar Boolean As Experimental](geometer-adr-017-retain_analytic_planar_boolean_as_experimental.md)

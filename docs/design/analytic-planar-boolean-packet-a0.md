@@ -2,13 +2,19 @@
 
 ## Status
 
-Pre-release packet generation A0 under active MATZ integration. This
+**Frozen experimental packet; not a production-readiness claim.** The solver
+behind this packet may fail closed on valid inputs and is not recommended for
+whole-board or whole-layer copper union. API availability and stable A0 bytes
+do not change the experimental maturity established by
+[ADR-017](../geometer/adr/geometer-adr-017-retain_analytic_planar_boolean_as_experimental.md).
+
+This packet generation was created under the former MATZ integration. This
 separately governed binary projection carries the logical models in
 [Analytic Planar Boolean A0 Design](analytic-planar-boolean-a0.md). Existing
 line and integer-center arc rows and their raw-byte goldens remain stable. The
 owner has authorized adding the endpoint/radius arc interpretation before the
-first MATZ visualization release; future incompatible changes after that
-release require a new packet generation and magic.
+planned MATZ visualization release; future incompatible changes require a new
+packet generation and magic.
 
 An implementation-review erratum dated 2026-08-14 resolves the only
 pre-golden layout contradiction: table offsets are eight-byte aligned, while

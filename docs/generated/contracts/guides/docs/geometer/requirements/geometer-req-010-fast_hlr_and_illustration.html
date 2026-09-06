@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>REQ-010: Fast HLR And Illustration Interfaces — Geometer</title>
+  <link rel="stylesheet" href="../../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/geometer/requirements/geometer-req-010-fast_hlr_and_illustration.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="req-010-fast-hlr-and-illustration-interfaces">REQ-010: Fast HLR And Illustration Interfaces</h1></header>
+<h2 id="summary">Summary</h2>
+<p>Geometer provides an additive Fast vector-HLR backend, a bounded indexed-mesh
+source, and production TypeScript mesh illustration without changing existing
+exact or polygonal behavior.</p>
+<h2 id="requirements">Requirements</h2>
+<ol>
+<li>Keep <code>poly</code> as the model/STEP default projection algorithm, use <code>fast</code> as
+the indexed-mesh default, and retain all documented exact/poly options,
+aliases, output layers, CLI calls, Python calls, and focused C ABI
+compatibility functions.</li>
+<li>Publish <code>geometry.model_hlr_projection.a0</code> and
+<code>geometry.mesh_hlr_projection.a0</code> through the generic C ABI, executable IPC,
+full browser WASM, Python, TypeScript, and Rust support lanes.</li>
+<li>Use one presence-preserving <code>geometry.hlr_projection.options.a0</code> family and
+one <code>geometry.hlr_projection.result.a0</code> family for both operations.</li>
+<li>Keep Fast-only candidate selection, tolerances, seam suppression, and
+resource limits nested under <code>fast</code>; do not reinterpret OCCT-specific edge
+flags.</li>
+<li>Accept a bounded, validated indexed-triangle-mesh A0 packet so synthesized
+geometry can use Fast HLR without STEP or application-specific policy.</li>
+<li>Provide direct C++ one-shot and prepare-once APIs. Repeated-view consumers
+must be able to reuse prepared mesh incidence rather than repeat it per view.</li>
+<li>Keep <code>detail</code>, <code>outline</code>, and <code>bbox</code> independently selectable and keep
+<code>fast-mesh-shadow</code> additive to the existing outline algorithms.</li>
+<li>Publish TypeScript mesh-illustration input, style, and result identities at
+A0 plus one-shot and reusable render APIs for SVG and Canvas.</li>
+<li>Keep browser raster HLR outside the production A0 surface. The evaluated GPU
+prototype was removed and creates no supported package or contract.</li>
+<li>Provide a convenience composition for Fast vector linework plus
+illustration without making consumers reimplement preparation, ordering,
+fusion, colorization, rendering, caching, or disposal.</li>
+<li>Keep HLR and Illustration Labs as package consumers. Demo code may own UI,
+camera, upload/download, and presentation behavior, but not the production
+geometry or illustration algorithms.</li>
+<li>Replay canonical HLR vectors through C++, TypeScript, Rust, and Python;
+validate native/WASM equivalence; preserve downstream compatibility
+snapshots; and keep the native/WASM benchmark reproducible.</li>
+<li>Keep PCB, documentation-generator, visualizer, and other application style
+policy outside the generic Geometer implementation.</li>
+</ol>
+
+</main>
+</body>
+</html>

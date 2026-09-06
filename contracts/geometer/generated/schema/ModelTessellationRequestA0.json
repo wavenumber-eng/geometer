@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.model_tessellation.request:a0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.model_tessellation.request.a0"
+    },
+    "linear_deflection_mm": {
+      "type": "number",
+      "default": 0.1,
+      "minimum": 0.000001,
+      "maximum": 1000
+    },
+    "angular_deflection_rad": {
+      "type": "number",
+      "default": 0.5,
+      "minimum": 0.000001,
+      "maximum": 3.141592653589793
+    },
+    "root_placement": {
+      "$ref": "#/$defs/ModelRootPlacement",
+      "default": "strip"
+    },
+    "max_triangles": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2000000,
+      "default": 750000
+    }
+  },
+  "required": [
+    "schema"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Stateless STEP tessellation; component placement is retained in either root mode.",
+  "$defs": {
+    "ModelRootPlacement": {
+      "type": "string",
+      "enum": [
+        "strip",
+        "preserve"
+      ]
+    }
+  }
+}

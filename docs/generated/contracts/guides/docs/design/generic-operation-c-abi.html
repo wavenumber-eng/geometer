@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>Generic Operation C ABI — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/generic-operation-c-abi.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="generic-operation-c-abi">Generic Operation C ABI</h1></header>
+<h2 id="status-and-scope">Status and scope</h2>
+<p>This is the proposed additive generic C ABI reviewed under ADR-011. It serves
+native callers and the full browser/Web Worker WASM build. It does not remove
+or change existing per-operation symbols.</p>
+<p>The first implementation is <code>geometry.model_bounds.a0</code>. A successful browser
+pilot accepts model bytes as the named <code>model</code> attachment and returns
+<code>geometry.model_bounds.a0</code> JSON through this ABI.</p>
+<h2 id="declarations">Declarations</h2>
+<p>The reviewed header shape is:</p>
+<pre><code class="language-c">#include &lt;stdint.h&gt;
+
+typedef struct GeometerAttachmentView {
+    uint32_t struct_size;
+    uint32_t flags;
+    const char* name;
+    uint32_t name_size;
+    const char* media_type;
+    uint32_t media_type_size;
+    const unsigned char* data;
+    uint32_t data_size;
+    uint32_t reserved0;
+} GeometerAttachmentView;
+
+typedef struct GeometerOperationResult GeometerOperationResult;
+
+enum {
+    GEOMETER_OPERATION_ABI_OK = 0,
+    GEOMETER_OPERATION_ABI_INVALID_ARGUMENT = 1001,
+    GEOMETER_OPERATION_ABI_LIMIT_EXCEEDED = 1002,
+    GEOMETER_OPERATION_ABI_NO_MEMORY = 1003,
+    GEOMETER_OPERATION_ABI_INTERNAL = 1004
+};
+
+int geometer_operation_catalog_json(char** value, char** error);
+
+int geometer_operation_execute(
+    const char* operation_id,
+    uint32_t operation_id_size,
+    const unsigned char* request_json,
+    uint32_t request_json_size,
+    const GeometerAttachmentView* attachments,
+    uint32_t attachment_count,
+    GeometerOperationResult** result,
+    char** error
+);
+
+const unsigned char* geometer_operation_result_json_data(
+    const GeometerOperationResult* result
+);
+uint32_t geometer_operation_result_json_size(
+    const GeometerOperationResult* result
+);
+uint32_t geometer_operation_result_attachment_count(
+    const GeometerOperationResult* result
+);
+const char* geometer_operation_result_attachment_name(
+    const GeometerOperationResult* result,
+    uint32_t index,
+    uint32_t* name_size
+);
+const char* geometer_operation_result_attachment_media_type(
+    const GeometerOperationResult* result,
+    uint32_t index,
+    uint32_t* media_type_size
+);
+const unsigned char* geometer_operation_result_attachment_data(
+    const GeometerOperationResult* result,
+    uint32_t index,
+    uint32_t* data_size
+);
+void geometer_operation_result_free(GeometerOperationResult* result);
+</code></pre>
+<p>The final C declaration adds the existing symbol visibility macro and
+compile-time <code>sizeof</code>/offset assertions. It must not change the reviewed field
+order or semantics without returning ADR-011 to review.</p>
+<h2 id="input-layout-and-validation">Input layout and validation</h2>
+<p>All sizes are byte counts. The generic ABI uses <code>uint32_t</code> rather than <code>size_t</code>
+so the same descriptor fields are unambiguous in native and wasm32 builds.
+Pointers retain the target platform's normal pointer width. Supported builds
+must satisfy these asserted layouts:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th style="text-align:right">wasm32 offset</th>
+<th style="text-align:right">64-bit offset</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>struct_size</code></td>
+<td style="text-align:right">0</td>
+<td style="text-align:right">0</td>
+</tr>
+<tr>
+<td><code>flags</code></td>
+<td style="text-align:right">4</td>
+<td style="text-align:right">4</td>
+</tr>
+<tr>
+<td><code>name</code></td>
+<td style="text-align:right">8</td>
+<td style="text-align:right">8</td>
+</tr>
+<tr>
+<td><code>name_size</code></td>
+<td style="text-align:right">12</td>
+<td style="text-align:right">16</td>
+</tr>
+<tr>
+<td><code>media_type</code></td>
+<td style="text-align:right">16</td>
+<td style="text-align:right">24</td>
+</tr>
+<tr>
+<td><code>media_type_size</code></td>
+<td style="text-align:right">20</td>
+<td style="text-align:right">32</td>
+</tr>
+<tr>
+<td><code>data</code></td>
+<td style="text-align:right">24</td>
+<td style="text-align:right">40</td>
+</tr>
+<tr>
+<td><code>data_size</code></td>
+<td style="text-align:right">28</td>
+<td style="text-align:right">48</td>
+</tr>
+<tr>
+<td><code>reserved0</code></td>
+<td style="text-align:right">32</td>
+<td style="text-align:right">52</td>
+</tr>
+<tr>
+<td>total <code>sizeof(GeometerAttachmentView)</code></td>
+<td style="text-align:right">36</td>
+<td style="text-align:right">56</td>
+</tr>
+</tbody>
+</table>
+<p>A build whose compiler ABI does not produce the applicable layout fails at
+compile time. The catalog reports pointer width, total size, and every field
+offset so a generated adapter verifies its view before its first call.</p>
+<p><code>struct_size</code> must equal the descriptor size compiled for the target. This
+rejects callers using a different descriptor layout. It does not authorize a
+caller to append fields. <code>flags</code> and <code>reserved0</code> must be zero. Names and media
+types are length-delimited UTF-8 and need not be NUL terminated. Catalog
+operation identities and attachment names are nonempty ASCII tokens without
+embedded NUL; media types are nonempty catalog-declared ASCII values.
+Attachment bytes may contain any value.</p>
+<p>The call validates, before operation execution:</p>
+<ul>
+<li>non-null required output holders and non-aliasing output-holder addresses;</li>
+<li>pointer/size consistency for every view;</li>
+<li>exact descriptor size, zero flags, and zero reserved fields;</li>
+<li>UTF-8 operation, attachment name, and media type values;</li>
+<li>catalog operation identity;</li>
+<li>unique attachment names;</li>
+<li>attachment count, individual size, and aggregate size limits;</li>
+<li>required and allowed attachment names/media types from the catalog; and</li>
+<li>strict generated request JSON.</li>
+</ul>
+<p>The caller supplies valid readable input ranges and writable output holders;
+the ABI can validate lengths and null consistency but cannot prove arbitrary
+foreign pointers are accessible. All input pointers are borrowed only for the
+duration of the synchronous call. The result never adopts or retains them.</p>
+<p>The request JSON is the generated operation-specific request DTO, not a second
+transport envelope. Operation identity is passed separately and is not
+duplicated in that JSON. On a local invocation that was structurally valid, the
+result JSON is the generated generic operation outcome: it contains the
+operation identity, <code>ok</code>, an operation-specific result value when successful,
+and governed diagnostics when unsuccessful. This outcome shape is shared with
+IPC responses. IPC requests add their own generated frame JSON around the same
+operation-specific request DTO because IPC has no separate function argument.</p>
+<h2 id="result-and-ownership">Result and ownership</h2>
+<p><code>geometer_operation_execute</code> is synchronous. <code>result</code> is required; <code>error</code> is
+optional. The function initializes <code>*result</code> to null and, when <code>error</code> is
+non-null, initializes <code>*error</code> to null before validation that can fail. Its
+output states are:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:right">Return</th>
+<th><code>*result</code></th>
+<th><code>*error</code> when supplied</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right"><code>0</code></td>
+<td>non-null</td>
+<td>null</td>
+<td>A typed operation outcome was produced.</td>
+</tr>
+<tr>
+<td style="text-align:right">nonzero</td>
+<td>null</td>
+<td>null or owned NUL-terminated string</td>
+<td>Local ABI invocation failed.</td>
+</tr>
+</tbody>
+</table>
+<p>On return code <code>0</code>, the result owns one nonempty generated response JSON buffer
+plus zero or more named output attachments. The accessor pointers are borrowed
+and remain valid until <code>geometer_operation_result_free</code>.</p>
+<p>The caller must free the handle exactly once. It must not free accessor pointers
+individually. <code>geometer_operation_result_free(NULL)</code> is a no-op. The name,
+media-type, and data accessors require their size output pointer; they set it to
+zero before other validation. They return null for a null handle, null size
+pointer, or out-of-range index and never transfer ownership. A declared
+zero-length attachment may validly return null data with size zero; attachment
+names and media types are never empty. The JSON data accessor returns null only
+for a null handle. JSON size and attachment count return zero for a null handle.</p>
+<p>Contract rejection and geometry-operation failure are normal typed operation
+outcomes when a response handle can be constructed; they use generated response
+diagnostics and still return <code>0</code> from the local C call. A nonzero C return means
+the ABI invocation itself could not produce a response, for example invalid
+pointers, descriptor corruption, or allocation failure. In that case <code>result</code>
+is null and <code>error</code>, when supplied, is an owned string released by the existing
+<code>geometer_free_string</code>.</p>
+<p>Local return classification is exact:</p>
+<table>
+<thead>
+<tr>
+<th>Return</th>
+<th>Conditions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GEOMETER_OPERATION_ABI_INVALID_ARGUMENT</code></td>
+<td>Missing/aliasing output holder, pointer/size inconsistency, wrong <code>struct_size</code>, nonzero flags/reserved fields, or malformed operation-identity bytes.</td>
+</tr>
+<tr>
+<td><code>GEOMETER_OPERATION_ABI_LIMIT_EXCEEDED</code></td>
+<td>A raw count/length/sum exceeds the C ABI hard maximum or overflows before a typed request can be constructed.</td>
+</tr>
+<tr>
+<td><code>GEOMETER_OPERATION_ABI_NO_MEMORY</code></td>
+<td>Required response, diagnostic, or error storage cannot be allocated.</td>
+</tr>
+<tr>
+<td><code>GEOMETER_OPERATION_ABI_INTERNAL</code></td>
+<td>An unexpected implementation failure escaped normal operation diagnostics.</td>
+</tr>
+</tbody>
+</table>
+<p>A well-formed but unknown operation identity, invalid request JSON, duplicate or
+undeclared attachment name, media-type mismatch, or operation-specific limit
+failure produces a typed outcome and local return <code>0</code>. This boundary keeps
+foreign-memory and descriptor failures separate from governed contract and
+operation diagnostics.</p>
+<p>The named <code>GEOMETER_OPERATION_ABI_*</code> constants are stable only as local ABI
+outcomes. Generated clients may classify them as invocation, limit, memory, or
+internal transport failures. They are not geometry-operation diagnostics and
+must not appear as wire diagnostic codes.</p>
+<p><code>geometer_operation_catalog_json</code> requires <code>value</code> and accepts optional
+<code>error</code>; their holder addresses must not alias. When <code>value</code> is non-null, it is
+initialized to null, and when <code>error</code> is non-null, it is initialized to null,
+before later validation. On success it returns an owned, NUL-terminated UTF-8
+catalog/capability document through <code>value</code>; the caller uses
+<code>geometer_free_string</code>. It includes release version, date-based C ABI
+generation, supported operation identities, attachment declarations,
+descriptor layout metadata, and enforced limits.</p>
+<p>No C++ exception may cross any C ABI boundary. Every entry point catches all
+exceptions and maps them to a local ABI failure with outputs in the states
+above. Error-string allocation failure is allowed to leave <code>*error</code> null.</p>
+<h2 id="c-abi-versioning">C ABI versioning</h2>
+<p>These names follow the existing unadorned C ABI style. Compatibility is
+governed by ADR-006's date-based C ABI generation and reported by
+<code>geometer_abi_version()</code>. Schema-style <code>a0</code> suffixes are reserved for contract
+identities and executable IPC A0; they are not a second C ABI version scheme.</p>
+<p>The opaque result type, additive accessors, currently reserved fields, and
+catalog metadata allow some compatible evolution without changing these
+function signatures. <code>struct_size</code> detects layout mismatch; because this
+generation requires an exact size, it is not a trailing-struct-extension
+mechanism. A future descriptor layout or other incompatible C ABI requires a
+new ABI decision, a date-generation change, and explicitly new entry-point
+names rather than pre-emptively suffixing every current symbol.</p>
+<h2 id="hard-limits">Hard limits</h2>
+<p>Implementations may advertise smaller runtime limits, but never larger values
+for this C ABI generation:</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th style="text-align:right">A0 maximum</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Operation identity</td>
+<td style="text-align:right">128 bytes</td>
+</tr>
+<tr>
+<td>Request or response JSON</td>
+<td style="text-align:right">8 MiB</td>
+</tr>
+<tr>
+<td>Attachment count</td>
+<td style="text-align:right">16</td>
+</tr>
+<tr>
+<td>Attachment name</td>
+<td style="text-align:right">128 bytes</td>
+</tr>
+<tr>
+<td>Media type</td>
+<td style="text-align:right">128 bytes</td>
+</tr>
+<tr>
+<td>Individual attachment</td>
+<td style="text-align:right">256 MiB</td>
+</tr>
+<tr>
+<td>Aggregate input or output attachments</td>
+<td style="text-align:right">512 MiB native, 256 MiB wasm32</td>
+</tr>
+</tbody>
+</table>
+<p>Lengths and sums are validated with overflow-safe arithmetic before copying or
+allocating. Zero-length data may use a null pointer; nonzero data may not.</p>
+<h2 id="threading">Threading</h2>
+<p>The ABI adds no concurrent-execution or reentrancy guarantee. Callers and
+generated adapters must serialize catalog and execute calls. Result access and
+freeing must not race with another access or free of the same handle. A caller
+must not infer that OCCT operations can overlap merely because separate result
+handles exist. A later concurrency guarantee requires a reviewed ABI policy.</p>
+<h2 id="emscripten-requirements">Emscripten requirements</h2>
+<p>The full browser target exports every declaration above plus existing
+allocation/free functions. The generated TypeScript adapter owns descriptor
+layout, allocation, copying, accessor calls, output copying, and cleanup in a
+<code>try/finally</code> path. User-facing demos and clients do not marshal these pointers
+directly.</p>
+<p>The normalized operation catalog generates or mechanically verifies the header
+declarations and Emscripten export list. Build validation fails when they drift.</p>
+
+</main>
+</body>
+</html>

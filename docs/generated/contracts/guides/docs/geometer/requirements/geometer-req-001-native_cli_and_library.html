@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>REQ-001: Native CLI And Library — Geometer</title>
+  <link rel="stylesheet" href="../../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/geometer/requirements/geometer-req-001-native_cli_and_library.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="req-001-native-cli-and-library">REQ-001: Native CLI And Library</h1></header>
+<h2 id="summary">Summary</h2>
+<p>Geometer provides a native C++17 library and a command-line executable for
+generic CAD geometry operations built on OCCT.</p>
+<h2 id="requirements">Requirements</h2>
+<ol>
+<li>Build on Windows, Linux/WSL2, and macOS with CMake, Ninja, Python 3, and a
+C++17 toolchain.</li>
+<li>Restore or build OCCT as local generated dependency state under <code>.deps/</code>, not
+as committed source.</li>
+<li>Keep application policy out of core geometry APIs. Geometer must not embed
+Altium, KiCad, PCB placement, viewer styling, or downstream cache policy.</li>
+<li>Copy native runtime artifacts only under <code>dist/native/&lt;platform&gt;/</code>.</li>
+<li>Do not produce or require root-level <code>dist/geometer(.exe)</code> artifacts.</li>
+<li>Return exit code <code>0</code> on CLI success and nonzero on failure with a useful
+diagnostic.</li>
+<li>Report release version and C ABI generation from native, C ABI, WASM, and
+Python surfaces.</li>
+<li>Treat remote OCCT binary archives as optional generated dependency cache
+inputs. Validate them before use and retain source builds as the fallback.</li>
+<li>Keep native <code>.lib</code> and <code>.a</code> artifacts in generated CMake build/cache state;
+do not commit them or include them in runtime release archives. A future
+native SDK requires a separately governed package with headers, exported
+build-system targets, ABI metadata, licenses, and dependency closure.</li>
+</ol>
+
+</main>
+</body>
+</html>

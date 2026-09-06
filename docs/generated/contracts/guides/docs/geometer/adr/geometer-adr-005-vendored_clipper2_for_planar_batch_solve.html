@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>ADR 005: Vendored Clipper2 For Planar Batch Solve — Geometer</title>
+  <link rel="stylesheet" href="../../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/geometer/adr/geometer-adr-005-vendored_clipper2_for_planar_batch_solve.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="adr-005-vendored-clipper2-for-planar-batch-solve">ADR 005: Vendored Clipper2 For Planar Batch Solve</h1></header>
+<h2 id="status">Status</h2>
+<p>Accepted</p>
+<h2 id="context">Context</h2>
+<p>Browser PCB and CAD viewers need a generic way to solve many planar filled
+geometry jobs without round-tripping each small boolean operation through a
+JavaScript adapter. The first high-value case is filled copper-like geometry:
+closed rings, open strokes that need round/miter offsets, subtract rings, and a
+final clipping region. The operation itself is not PCB-specific, so it belongs
+in Geometer as a generic planar batch solve.</p>
+<p>Geometer already vendors small source dependencies when that materially improves
+fresh-clone build reliability. RapidJSON follows this policy for OCCT GLB export.</p>
+<h2 id="decision">Decision</h2>
+<p>Geometer vendors Clipper2 2.0.1 under <code>third_party/clipper2/</code> and uses it for
+the v0.3 planar batch solve API.</p>
+<p>The vendored copy includes only:</p>
+<ul>
+<li><code>CPP/Clipper2Lib/include</code></li>
+<li><code>CPP/Clipper2Lib/src</code></li>
+<li>upstream <code>LICENSE</code></li>
+<li><code>README.geometer.md</code></li>
+</ul>
+<p>The public Geometer API remains generic. It accepts rings, stroke groups,
+subtract rings, final clip rings, and per-job flags. It does not expose
+downstream concepts such as boards, nets, pads, components, or visualizer
+policy.</p>
+<h2 id="consequences">Consequences</h2>
+<p>Fresh Geometer clones can build the planar solve API without another git clone
+or package manager step.</p>
+<p>The browser C ABI can process a packed batch of planar jobs in one WASM call,
+which gives downstream apps a path to remove repeated JavaScript-to-WASM
+marshalling around offset/boolean/extract phases.</p>
+<p>Geometer must preserve the upstream BSL-1.0 license notice in source
+distributions.</p>
+
+</main>
+</body>
+</html>

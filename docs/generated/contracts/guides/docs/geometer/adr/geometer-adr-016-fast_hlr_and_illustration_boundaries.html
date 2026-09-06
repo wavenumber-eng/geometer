@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>ADR 016: Fast HLR And Illustration Boundaries — Geometer</title>
+  <link rel="stylesheet" href="../../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/geometer/adr/geometer-adr-016-fast_hlr_and_illustration_boundaries.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="adr-016-fast-hlr-and-illustration-boundaries">ADR 016: Fast HLR And Illustration Boundaries</h1></header>
+<h2 id="status">Status</h2>
+<p>Accepted.</p>
+<h2 id="context">Context</h2>
+<p>Geometer already exposes OCCT exact and polygonal hidden-line projection for
+STEP models. Documentation generators need a lower-latency vector alternative,
+while browser visualization also benefits from styled mesh illustration and a
+depth-buffer raster view. Those products share source geometry but do not have
+the same output or portability contract.</p>
+<p>Synthesized assemblies, including extruded analytic PCB layers, may already be
+tessellated and should not need a STEP round trip merely to use Fast HLR. At the
+same time, OCCT remains the appropriate boundary for STEP import and
+tessellation, and existing exact/poly callers must not silently change
+algorithms or option meanings.</p>
+<h2 id="decision">Decision</h2>
+<p>Geometer publishes two separate products:</p>
+<ol>
+<li>Fast vector HLR is generic C++ geometry. It accepts prepared triangle data,
+provides prepare-once and one-shot value APIs, and returns renderer-neutral
+projected segments through <code>geometry.hlr_projection.result.a0</code>.</li>
+<li>Mesh illustration is a TypeScript browser/Node package. It owns preparation,
+visibility ordering, safe fusion, styling, colorization, SVG/Canvas
+rendering, caching, and disposal. Its serialized contracts begin at A0.
+The evaluated browser raster-HLR prototype is not published as a production
+module or contract. A future raster renderer would remain a presentation
+product rather than a vector-projection backend and requires its own decision.</li>
+</ol>
+<p>The governed portable operations are:</p>
+<ul>
+<li><code>geometry.model_hlr_projection.a0</code>, with a STEP/model attachment; and</li>
+<li><code>geometry.mesh_hlr_projection.a0</code>, with an indexed-triangle-mesh A0 packet.</li>
+</ul>
+<p>Both use <code>geometry.hlr_projection.options.a0</code>. <code>projection_algorithm</code> adds
+<code>fast</code>; model/STEP projection retains the <code>poly</code> default, while indexed-mesh
+projection defaults to <code>fast</code>. <code>outline_algorithm</code> adds <code>fast-mesh-shadow</code> as
+the indexed-mesh default without changing the model defaults or existing
+<code>hlr-close</code> and <code>mesh-shadow</code> selections. Fast-only controls are nested under
+<code>fast</code>; they do not reinterpret OCCT edge-category options.</p>
+<p>The TypeScript package may offer a convenience composition that combines Fast
+linework and illustration, but the underlying HLR and illustration contracts
+remain independently callable. Application-specific PCB, documentation, and
+visualizer styling stays outside Geometer.</p>
+<p>Existing STEP-specific C ABI, Python, CLI, JSON, and WASM entry points remain
+compatibility surfaces under ADR 007. Promotion evidence and release signoff
+remain governed by ADR 010 and are not implied merely by accepting this
+architectural boundary.</p>
+<h2 id="consequences">Consequences</h2>
+<p>Consumers with synthesized geometry can encode one bounded indexed mesh and
+use Fast HLR without constructing STEP. STEP consumers continue to use OCCT
+for import and tessellation before the triangle visibility engine runs.</p>
+<p>Documentation engines can use deterministic vector linework, and illustration
+consumers do not need to copy algorithms from a demo. The separation permits
+the illustration renderer to evolve without changing the portable HLR result.</p>
+<p>Perspective vector guarantees, multithreaded WASM visibility, stable serialized
+prepared models, native illustration rendering, and changing the default HLR
+backend require later decisions.</p>
+
+</main>
+</body>
+</html>

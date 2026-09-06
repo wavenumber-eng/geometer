@@ -169,6 +169,50 @@ async fn persistent_client_runs_typed_mesh_hlr_projection() {
 }
 
 #[tokio::test]
+async fn persistent_client_dispatches_generated_topology_contracts() {
+    let root = repository_root();
+    let client = GeometerClient::spawn(native_executable(&root), "generated-dispatch-test", "a0")
+        .await
+        .unwrap();
+    let step = std::fs::read(root.join("tests/fixtures/step/embedded_models/SOT-23.STEP")).unwrap();
+    let opened = client
+        .execute(
+            "geometry.step_topology.open.a0",
+            br#"{"schema":"geometry.step_topology.open.request.a0"}"#,
+            vec![ipc::Attachment {
+                name: "step".to_owned(),
+                media_type: "application/step".to_owned(),
+                data: step,
+            }],
+        )
+        .await
+        .unwrap();
+    let contracts::OperationOutcomeA0::Success(success) = opened.outcome else {
+        panic!("topology open failed");
+    };
+    let contracts::OperationResultValueA0::StepTopologyOpen(open) = success.result else {
+        panic!("wrong topology open result");
+    };
+    let request = contracts::encode_json(&contracts::StepTopologyCloseRequestA0 {
+        schema: "geometry.step_topology.close.request.a0".to_owned(),
+        session: open.session,
+    })
+    .unwrap();
+    let closed = client
+        .execute("geometry.step_topology.close.a0", &request, Vec::new())
+        .await
+        .unwrap();
+    let contracts::OperationOutcomeA0::Success(success) = closed.outcome else {
+        panic!("topology close failed");
+    };
+    assert!(matches!(
+        success.result,
+        contracts::OperationResultValueA0::StepTopologyClose(_)
+    ));
+    client.close().await.unwrap();
+}
+
+#[tokio::test]
 async fn persistent_client_runs_typed_analytic_batch_twice() {
     let root = repository_root();
     let executable = native_executable(&root);
@@ -665,6 +709,9 @@ fn analytic_request_attachment(data: Vec<u8>) -> ipc::Attachment {
 }
 
 fn native_executable(root: &Path) -> PathBuf {
+    if let Some(path) = std::env::var_os("GEOMETER_EXECUTABLE") {
+        return PathBuf::from(path);
+    }
     let platform = if cfg!(windows) {
         "windows-x64"
     } else if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
@@ -833,4 +880,111 @@ fn repository_root() -> PathBuf {
         .join("../../..")
         .canonicalize()
         .unwrap()
+}
+
+#[tokio::test]
+async fn typed_tessellation_preserves_colors_and_rejects_limits_without_poisoning() {
+    let root = repository_root();
+    let client = GeometerClient::spawn(native_executable(&root), "tessellation-test", "a0")
+        .await
+        .unwrap();
+    let model =
+        std::fs::read(root.join("tests/fixtures/step/embedded_models/SOT-23.STEP")).unwrap();
+    let request = geometer_client::ModelTessellationRequest::step(model);
+    let first = client.model_tessellation(request.clone()).await.unwrap();
+    let second = client.model_tessellation(request.clone()).await.unwrap();
+    assert_eq!(first.mesh_collection, second.mesh_collection);
+    assert_eq!(first.metadata, second.metadata);
+    assert_eq!(first.mesh_collection.length_unit, "millimeter");
+    assert!(first.metadata.triangles > 0);
+    let color = &first.mesh_collection.meshes[0].materials[0].color;
+    assert!(
+        first
+            .mesh_collection
+            .meshes
+            .iter()
+            .any(|mesh| mesh.materials[0].color != *color)
+    );
+    let mut limited = request.clone();
+    limited.options.max_triangles = Some(1);
+    assert!(matches!(
+        client.model_tessellation(limited).await,
+        Err(GeometerClientError::Operation { .. })
+    ));
+    assert!(matches!(
+        client
+            .model_tessellation(geometer_client::ModelTessellationRequest::step(
+                b"bad STEP".to_vec()
+            ))
+            .await,
+        Err(GeometerClientError::Operation { .. })
+    ));
+    assert!(client.model_tessellation(request).await.is_ok());
+    client.close().await.unwrap();
+}
+
+#[tokio::test]
+async fn typed_step_illustration_uses_generated_values_and_recovers_from_limits() {
+    use geometer_client::contracts::{
+        MeshIllustrationInputA0, MeshIllustrationPrepareOptions, MeshIllustrationView,
+    };
+    let root = repository_root();
+    let client = GeometerClient::spawn(native_executable(&root), "illustration-test", "a0")
+        .await
+        .unwrap();
+    let model =
+        std::fs::read(root.join("tests/fixtures/step/embedded_models/SOT-23.STEP")).unwrap();
+    let tessellated = client
+        .model_tessellation(geometer_client::ModelTessellationRequest::step(model))
+        .await
+        .unwrap();
+    let input = MeshIllustrationInputA0 {
+        schema: "geometry.mesh_illustration.input.a0".to_owned(),
+        meshes: tessellated.mesh_collection.meshes,
+        view: MeshIllustrationView {
+            direction: [0.4, 0.7, 1.0],
+            up: [0.0, 1.0, 0.0],
+            mirror_x: None,
+        },
+        prepare: None,
+        style: None,
+        svg: None,
+    };
+    let result = client.mesh_illustration(input.clone()).await.unwrap();
+    assert!(result.stats.triangles > 0 && result.stats.surface_draws > 0);
+    assert!(result.svg.contains("<svg") && result.svg.contains("</svg>"));
+    assert_eq!(
+        result,
+        client.mesh_illustration(input.clone()).await.unwrap()
+    );
+    // Node is a conformance-test tool only, never a native runtime dependency.
+    let mut reference = std::process::Command::new("node")
+        .current_dir(&root)
+        .arg("tests/typescript/native_illustration_reference.mjs")
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .spawn()
+        .unwrap();
+    std::io::Write::write_all(
+        &mut reference.stdin.take().unwrap(),
+        &geometer_client::contracts::encode_json(&input).unwrap(),
+    )
+    .unwrap();
+    let expected = reference.wait_with_output().unwrap();
+    assert!(expected.status.success());
+    let expected =
+        geometer_client::contracts::decode_mesh_illustration_result_a0_json(&expected.stdout)
+            .unwrap();
+    assert_eq!(result, expected);
+    let mut limited = input.clone();
+    limited.prepare = Some(MeshIllustrationPrepareOptions {
+        max_triangles: Some(1),
+        weld_tolerance: None,
+    });
+    assert!(matches!(
+        client.mesh_illustration(limited).await,
+        Err(GeometerClientError::Operation { .. })
+    ));
+    assert_eq!(result, client.mesh_illustration(input).await.unwrap());
+    client.close().await.unwrap();
 }

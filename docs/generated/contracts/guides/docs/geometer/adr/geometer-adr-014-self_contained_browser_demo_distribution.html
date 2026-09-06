@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>ADR-014: Self-Contained Browser Demo Distribution — Geometer</title>
+  <link rel="stylesheet" href="../../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/geometer/adr/geometer-adr-014-self_contained_browser_demo_distribution.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="adr-014-self-contained-browser-demo-distribution">ADR-014: Self-Contained Browser Demo Distribution</h1></header>
+<h2 id="status">Status</h2>
+<p>Accepted.</p>
+<h2 id="context">Context</h2>
+<p>Geometer browser demos serve two purposes: they exercise the real browser/WASM
+integration and they provide small public tools that can be reviewed before
+being placed on the Wavenumber site. A demo assembled from CDN scripts, separate
+WASM files, models, Workers, and styles is easy to run from a repository checkout
+but harder to review, cache, move between static hosts, and preserve as one
+versioned artifact.</p>
+<p>Future demos also need shared UI behavior without importing application policy
+from Viz or growing one monolithic demo script.</p>
+<h2 id="decision">Decision</h2>
+<p>Geometer supports self-contained browser demos with these boundaries:</p>
+<ol>
+<li>Maintained source stays under <code>examples/wasm/</code>. Generic interaction and UI
+primitives stay in strict TypeScript under <code>examples/wasm/demo-tooling/</code>.</li>
+<li>A demo-specific builder may bundle JavaScript, Worker source, WASM, fonts,
+licenses, images, and fixtures into one self-contained HTML artifact under
+<code>dist/wasm/demos/</code>.</li>
+<li><code>scripts/package_single_html_site.py</code> turns such an artifact into a
+deploy-unchanged static directory. <code>index.html</code> is its only runtime file;
+<code>_headers</code> and <code>asset-manifest.json</code> are host and verification metadata.</li>
+<li>The packager rejects external runtime references and module/import-map
+dependencies. It injects a CSP, Cloudflare-compatible response headers, and
+deterministic SHA-256 closure metadata.</li>
+<li>Build and packaging scripts only create local artifacts. Publication is a
+separate, explicitly authorized step after human review.</li>
+<li>A hosted demo must have static closure validation and a real-browser gate.
+The browser gate must exercise the primary workflow, reject unexpected
+external requests and uncaught exceptions, and cover responsive layout where
+appropriate.</li>
+<li>Demo UI policy remains outside the Geometer C++ library and public geometry
+contracts. Reusable panels and controls are browser-example tooling, not a
+new core geometry API.</li>
+</ol>
+<p>The HLR Lab is the first single-runtime-file hosted demo. It embeds Three.js,
+its license, Geometer browser WASM, the projection Worker, local example models,
+and all presentation assets. Local STEP uploads remain inside the browser.</p>
+<h2 id="consequences">Consequences</h2>
+<ul>
+<li>A reviewed demo directory can be copied to Cloudflare Pages or another static
+host without URL rewriting or dependency installation.</li>
+<li>The single HTML can be large because WASM and fixtures are embedded. This is
+an intentional portability tradeoff; metadata records its exact bytes.</li>
+<li>External CDNs and runtime package resolution are unavailable by design.</li>
+<li>CSP changes, new runtime assets, and new browser permissions require explicit
+packaging and test updates.</li>
+<li>Future demos can reuse the panel system and site packager while retaining
+their own domain-specific controls and Worker protocol.</li>
+</ul>
+
+</main>
+</body>
+</html>

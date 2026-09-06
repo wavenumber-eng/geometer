@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>TypeSpec Coverage And ALX HTML Generation Assessment — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/contracts/typespec-coverage-assessment.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="typespec-coverage-and-alx-html-generation-assessment">TypeSpec Coverage And ALX HTML Generation Assessment</h1></header>
+<p>Assessment date: 2026-09-05. Geometer baseline: <code>v2026-09-04</code> plus ADR-017.
+ALX reference: the local <code>appz/data_models</code> checkout at appz revision
+<code>27a6c567d69c3a61f367774aed5dcab6fc09164a</code>. The inspected ALX generator and
+shared stylesheet have no local changes. This is the migration roadmap and HTML-generation design record. Runtime
+contract migrations remain follow-on implementation, not documentation edits.</p>
+<h2 id="findings-from-alx">Findings From ALX</h2>
+<p>ALX has multiple HTML generation paths, with different source authorities:</p>
+<table>
+<thead>
+<tr>
+<th>Reference source in <code>appz/data_models</code></th>
+<th>Output and useful pattern</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>scripts/generate-alx-contract-docs.mjs</code></td>
+<td><code>docs/generated/alx_contracts/</code>: normalized TypeSpec catalog joined with promotion waves; root fields, reachable declarations, source/schema links, deterministic inventory and <code>--check</code>.</td>
+</tr>
+<tr>
+<td><code>scripts/generate_model_reference_docs.py</code></td>
+<td><code>docs/generated/models/alx/</code>: discovered model references, composition and reference relationships, documentation, examples and optional runtime roundtrip evidence.</td>
+</tr>
+<tr>
+<td><code>scripts/generate_model_ops_reference_docs.py</code></td>
+<td><code>docs/generated/model_ops/</code>: registry-derived operation documentation and coverage.</td>
+</tr>
+<tr>
+<td><code>scripts/generate_contract_spec_docs.py</code></td>
+<td>Contract specification pages derived from schemas and linked authored design intent.</td>
+</tr>
+<tr>
+<td><code>scripts/generate_domain_current_state_docs.py</code> and <code>scripts/generate_docs_indexes.py</code></td>
+<td>Model/contract inventories, domain navigation, and documentation indexes.</td>
+</tr>
+<tr>
+<td><code>docs/core/design/styles.css</code></td>
+<td>Shared Wavenumber colors, dark headers, tables, panels, navigation, watermark, and responsive layout used by the broader ALX documentation.</td>
+</tr>
+</tbody>
+</table>
+<p>The TypeSpec-specific ALX generator currently embeds a small system-font style
+block. The broader ALX model and design pages link the shared stylesheet. Use
+the broader documentation's shared presentation as the visual target, while
+adopting catalog discovery and deterministic checks from the TypeSpec generator.</p>
+<p>ALX's Python model introspection is useful as a design reference, but Geometer
+should discover its structural fields and type relationships from its own
+normalized TypeSpec catalog. Re-inspecting generated Python DTOs would create
+an unnecessary dependency on one language projection. Keep Geometer generation
+self-contained; record the upstream revision and vendor reusable assets with
+their provenance rather than reading sibling files during builds.</p>
+<h2 id="what-geometer-already-generates">What Geometer Already Generates</h2>
+<p><code>scripts/generate-contract-docs.mjs</code> already generates
+<code>docs/generated/contracts/</code> from the normalized TypeSpec catalog and
+<code>docs/contracts/promotion-manifest.toml</code>. It includes root and operation pages,
+fields, attachment declarations, source/schema navigation, local assets,
+catalog digests, and deterministic freshness checks. <code>npm run generate:docs</code>
+and <code>npm run check:docs</code> are existing entry points.</p>
+<p>Extend this generator instead of replacing it. The documentation cleanup has
+corrected these two originally observed gaps:</p>
+<ul>
+<li>Operation HTML previously showed <code>native_runtime_available</code> directly as native executable
+availability. That flag denotes additional native-only exposure: portable
+operations also work natively. Derive the effective value from portable OR
+native-only availability and check it against the executable catalog.</li>
+<li>The generator previously read lifecycle <code>status</code> without displaying the analytic
+<code>maturity</code> added by ADR-017. Render maturity separately from structural
+promotion and runtime availability on operation, contract, and index pages.</li>
+</ul>
+<h2 id="target-meaning-of-typespec-generated-operations">Target Meaning Of TypeSpec-Generated Operations</h2>
+<p>For each public operation, TypeSpec should own request/result structure,
+identity, attachment declarations, constraints, and supported projection
+metadata. The normalized catalog should drive DTOs, structural codecs,
+operation metadata, client wrappers where mechanical, and HTML reference pages.
+Geometer's C++ implementations continue to own geometry algorithms and semantic
+validation such as topology validity. Runtime wiring needs an implementation
+adapter; adding a TypeSpec declaration alone does not expose a solver via IPC.</p>
+<p>Count operation coverage and payload coverage separately. A generated envelope
+around an opaque packet is operation coverage but leaves that packet's internal
+layout and codec handwritten. Model all public operations, including retained
+compatibility entry points, without treating every CLI alias as a new semantic
+operation. Illustration now reuses its generated contracts across the browser
+TypeScript renderer and the native C++/IPC implementation in 2026.9.6. Colored
+STEP tessellation is also governed and callable through Rust and Python. These
+additions do not complete the legacy-operation or packed-codec migration waves.</p>
+<h2 id="proposed-migration-waves">Proposed Migration Waves</h2>
+<p>The <a href="public-entrypoints.html">public entry-point reconciliation</a> maps current
+user-facing families, aliases, native helper boundaries and client exports.
+The source-review lock detects new/changed public sources requiring reassessment.
+Migration remains follow-on work even where documentation reconciliation is done.</p>
+<p>These waves specify follow-on implementation work. The cleanup plan delivers
+the detailed roadmap and generated coverage reporting, not every migration.</p>
+<table>
+<thead>
+<tr>
+<th>Wave</th>
+<th>Work</th>
+<th>Evidence required before declaring completion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0: Reconcile existing generated surfaces</td>
+<td>Inventory direct C++, C ABI/WASM exports, CLI commands/jobs, IPC catalogs, Python/TS/Rust methods, and browser illustration; map aliases. Reconcile model bounds, HLR, analytic, IPC and topology lifecycle records with actual runtime exposure.</td>
+<td>Every entry maps to one semantic operation, contract, or explicitly internal API; actual runtime catalogs and documentation agree. Experimental status is retained.</td>
+</tr>
+<tr>
+<td>1: Conversion and planar synthesis</td>
+<td>Add model-to-GLB options/result attachment and planar-STEP request/result attachment contracts; wire generated structural validation and existing kernels to generic operation/IPC adapters.</td>
+<td>Existing file CLI/Python callers retain defaults, diagnostics, and outputs; generated clients execute representative requests through IPC.</td>
+</tr>
+<tr>
+<td>2: Production polygon operations</td>
+<td>Add logical request/result roots and attachment projections for Clipper2 Boolean, Clipper2 open inflate, planar batch solve, and planar triangulation. Preserve existing byte entry points and add generic IPC adapters where absent.</td>
+<td>Codec goldens, invalid-input checks, existing native/WASM parity and one public IPC/client replay per operation; no geometry algorithm replacement.</td>
+</tr>
+<tr>
+<td>3: Legacy batch and projection boundaries</td>
+<td>Model <code>geometer.batch.request.a0</code>/response and remaining handwritten projection/options contracts. Map canonical commands and legacy aliases to shared generated roots and explicit compatibility adapters.</td>
+<td>Presence, defaults, unknown-field policy, aliases, errors and output shape remain compatible; stricter generated validation cannot silently break accepted legacy inputs.</td>
+</tr>
+<tr>
+<td>4: Packed codec generation</td>
+<td>Pilot a catalog extension for binary scalar widths, endianness, header constants, offsets, alignment, counts, tables and constraints on the indexed-mesh packet. Assess planar, Clipper2 and analytic packet families after the pilot.</td>
+<td>Generated codecs preserve exact existing wire bytes and reject malformed packets across the affected languages; memory/work behavior remains appropriate for large inputs.</td>
+</tr>
+</tbody>
+</table>
+<p>Wave 4 is the largest uncertainty. TypeSpec currently describes logical
+structure; it does not itself generate Geometer's binary codecs. A custom
+decorator/emitter extension could place layout metadata in the normalized
+catalog and produce both layout tables and codecs. Define one authoritative
+layout source. Avoid a second handwritten schema that can disagree with
+TypeSpec. Prototype the simplest packet before committing to analytic tables,
+canonical ordering, provenance validation, and standalone digest rules.</p>
+<p>For analytic packets, semantic validation may remain handwritten even if byte
+readers/writers are generated. Report that distinction precisely. Do not claim
+all packets are generated based on header-only generation. Preserve framing
+<code>GMIPCA01</code>, packet magics, versions, numeric values and alignment unless a
+separate versioned change is deliberately required.</p>
+<p>Each wave needs a field-level compatibility comparison before switching
+structural authority, then generated-source freshness, focused cross-language
+vectors, runtime adapter checks, and a recorded manifest transition. Native or
+WASM adapter changes will require proportionate builds during implementation;
+assessment and HTML generation do not require rebuilding geometry.</p>
+<h2 id="html-that-can-be-generated">HTML That Can Be Generated</h2>
+<table>
+<thead>
+<tr>
+<th>Page family</th>
+<th>Authoritative input</th>
+<th>Proposed output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Operation/transport coverage</td>
+<td>TypeSpec catalog plus governed inventory, alias mappings, runtime and maturity records</td>
+<td>One searchable or filterable index of every operation, including unmigrated entries and explicit IPC gaps. Start with accessible static tables.</td>
+</tr>
+<tr>
+<td>Contract/model reference</td>
+<td>Catalog declarations, docstrings, constraints, defaults and schema identities</td>
+<td>Extend existing contract pages with linked nested declarations and source links.</td>
+</tr>
+<tr>
+<td>Type and attachment relationships</td>
+<td>Catalog references and named attachments</td>
+<td>Operation-to-request/result/attachment tables and model composition links. Semantic references require explicit annotations; field names alone are insufficient evidence.</td>
+</tr>
+<tr>
+<td>Packet reference</td>
+<td>Governed machine-readable layout definitions where available</td>
+<td>Magic/version, scalar values, offsets, table layouts, limits and codec links. Keep authored specifications linked until layout coverage is complete.</td>
+</tr>
+<tr>
+<td>Examples</td>
+<td>Registered conformance vectors and example manifests</td>
+<td>Valid request/result examples with asserted comparison policy; distinguish JSON from packed binary. Never invent a successful solver result from a schema.</td>
+</tr>
+<tr>
+<td>Demo catalog</td>
+<td>Maintained demo inventory and recorded verification evidence</td>
+<td>Source/build/output links, maturity, supported hosts, last verification and disposition. File presence is not runtime success.</td>
+</tr>
+<tr>
+<td>Navigation and authored pages</td>
+<td>Documentation inventory, front matter and authored Markdown</td>
+<td>HTML landing pages, guide/ADR/requirement rendering and backlinks using one template. Markdown remains the editable source.</td>
+</tr>
+</tbody>
+</table>
+<p>Engineering rationale, solver limitations, migration judgments and historical
+research conclusions remain authored. Their HTML presentation can be generated
+without attempting to infer those conclusions from code.</p>
+<h2 id="shared-stylesheet-adoption">Shared Stylesheet Adoption</h2>
+<p>Geometer already vendors an adapted ALX stylesheet at <code>docs/design/styles.css</code>.
+The current ALX source SHA-256 is
+<code>b0452e403db12c3fca581866b0953dbca45d751bcc83c137f0da16674859d151</code>,
+matching Geometer's recorded upstream snapshot. Before this cleanup, the
+differences were:</p>
+<ul>
+<li>ALX teal <code>#006c67</code> / <code>#e5f3f0</code> versus Geometer orange
+<code>#b45309</code> / <code>#fff1e6</code> accents;</li>
+<li>Berkeley Mono versus Geometer's vendored OFL Cousine; and</li>
+<li>Geometer's extra narrow-screen wrapping for generated identifiers.</li>
+</ul>
+<p>This cleanup adopts the ALX teal palette and common layout/component rules
+across generated Geometer documentation. Retain the public-distribution Cousine font
+choice and identifier wrapping documented in <code>generated-contract-reference.md</code>.
+Use one local stylesheet and shared page template; keep any small necessary
+reference-specific rules explicit. This scope covers documentation styling;
+interactive demo themes have their own audit and need not change with it.</p>
+<p>Update asset provenance and hashes when the stylesheet changes. Validate the
+result at desktop and narrow widths with long operation identities, tables,
+code blocks, navigation and the watermark. Keep all assets local so a fresh
+Geometer checkout can generate and view the pages independently of appz.</p>
+<h2 id="implementation-acceptance">Implementation Acceptance</h2>
+<p>The extended cleanup is complete when the roadmap maps every public operation,
+generated coverage exposes remaining migration gaps, the HTML generator shows
+correct runtime/maturity information, and the generated site uses the agreed
+ALX presentation. Freshness checks must detect added/removed operations,
+unresolved references and stale outputs. Only rebuild the documentation for
+documentation changes; use existing vectors and assets for focused checks.</p>
+<p>Record each authority transition in the promotion manifest with its evidence.
+Do not mark a migration wave complete based solely on generated documentation.</p>
+
+</main>
+</body>
+</html>

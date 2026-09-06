@@ -11,9 +11,14 @@ Emscripten JavaScript and WASM artifacts.
 
 The package identity is `@wavenumber/geometer`, its module format is ESM, and
 the repository-built package artifact is `dist/wasm/npm/geometer/`. Package version
-`2026.9.4` is current and includes the Fast vector HLR, mesh-illustration, and
+`2026.9.6` is current and includes the Fast vector HLR, mesh-illustration, and
 resolution-bounded analytic planar Boolean surfaces. Publication remains a release action; a local
 artifact is not evidence that an npm release has occurred.
+
+The analytic surface is experimental and not production-ready. It may fail
+closed on valid inputs and is not the dependable path for whole-board or
+whole-layer copper union. Prefer the Clipper2-backed planar APIs when
+polygonized output is suitable.
 
 ## Generated contracts and codecs
 
@@ -73,7 +78,7 @@ layers. The direct WASM, dedicated Worker, and persistent IPC clients expose
 the same typed method names.
 
 `analyticPlanarBooleanBatch()` accepts the generated logical request, encodes
-its packed request attachment, executes the production C++ solver, strictly
+its packed request attachment, executes the experimental C++ solver, strictly
 decodes the packed result, and returns generated logical jobs, line/arc
 fragments, rings, regions, lineage, operand outcomes, relationships, and
 standalone job digests. The same typed method is available on the Worker

@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>ADR-009: OCCT Binary Dependency Cache In R2 — Geometer</title>
+  <link rel="stylesheet" href="../../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/geometer/adr/geometer-adr-009-occt_binary_dependency_cache.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="adr-009-occt-binary-dependency-cache-in-r2">ADR-009: OCCT Binary Dependency Cache In R2</h1></header>
+<h2 id="status">Status</h2>
+<p>Accepted.</p>
+<h2 id="context">Context</h2>
+<p>Geometer builds OCCT as generated dependency state under <code>.deps/</code> because OCCT
+does not work correctly as an in-tree CMake subdirectory. A cold OCCT build is
+expensive on every supported target, especially in GitHub Actions where each
+platform runner can spend roughly tens of minutes compiling OCCT before
+Geometer itself is validated.</p>
+<p>GitHub Actions cache helps when a matching cache entry is available, but cache
+entries are branch-scoped, key-sensitive, and not durable dependency artifacts.
+We need a more predictable second-tier cache for CI and developer machines.</p>
+<h2 id="decision">Decision</h2>
+<p>Geometer may restore OCCT install trees from immutable binary archives stored in
+the Wavenumber Cloudflare R2 dependency cache and served through
+<code>https://artifacts.wavenumber.net</code>. The archives are treated as generated
+dependency state, not as source and not as committed repository artifacts.</p>
+<p>The R2 bucket is a Wavenumber-wide dependency cache. The public artifact
+hostname is the default read path for normal CI and developer machines. OCCT is
+the first Geometer dependency using it, but object layout must allow multiple
+projects, dependencies, versions, target kinds, and platforms.</p>
+<p>The cache consumer path is:</p>
+<ol>
+<li>Reuse an existing local <code>.deps/</code> install tree.</li>
+<li>Restore GitHub Actions cache when running in CI.</li>
+<li>Download a verified public OCCT binary archive from <code>artifacts.wavenumber.net</code>.</li>
+<li>Optionally try a signed R2 fallback when credentials are configured.</li>
+<li>Build OCCT from source as the fallback unless binary-only mode is requested.</li>
+</ol>
+<p>The producer path is a separate trusted workflow:</p>
+<ul>
+<li><code>.github/workflows/occt-deps.yml</code></li>
+<li>manual <code>workflow_dispatch</code></li>
+<li>target runner builds or restores OCCT for its platform</li>
+<li>packages <code>occt-install</code></li>
+<li>writes <code>manifest.json</code> and <code>occt-install.zip.sha256</code></li>
+<li>uploads immutable objects to R2</li>
+</ul>
+<p>Normal CI and release workflows consume the public cache but do not receive R2
+credentials and do not publish dependency artifacts.</p>
+<p>Developer machines do not need R2 credentials for normal cache restore.
+Upload-capable credentials are reserved for trusted producer workflows.</p>
+<h2 id="cache-layout">Cache Layout</h2>
+<p>New dependency cache objects use:</p>
+<pre><code class="language-text">deps/v1/&lt;project&gt;/&lt;dependency&gt;/&lt;dependency-version&gt;/&lt;target-kind&gt;/&lt;platform-tag&gt;/&lt;cache-key&gt;/
+  manifest.json
+  &lt;archive-name&gt;.zip
+  &lt;archive-name&gt;.zip.sha256
+</code></pre>
+<p>For Geometer OCCT 8:</p>
+<pre><code class="language-text">deps/v1/geometer/occt/V8_0_1/native/windows-x64/&lt;cache-key&gt;/
+deps/v1/geometer/occt/V8_0_1/native/linux-x64/&lt;cache-key&gt;/
+deps/v1/geometer/occt/V8_0_1/native/linux-arm64/&lt;cache-key&gt;/
+deps/v1/geometer/occt/V8_0_1/native/macos-arm64/&lt;cache-key&gt;/
+deps/v1/geometer/occt/V8_0_1/wasm/wasm-emscripten/&lt;cache-key&gt;/
+</code></pre>
+<p>The legacy OCCT prefix <code>geometer/occt/&lt;target-kind&gt;/&lt;platform-tag&gt;/&lt;cache-key&gt;/</code>
+may be checked for compatibility with existing OCCT 7.8.1 cache objects.</p>
+<h2 id="cache-identity">Cache Identity</h2>
+<p>Each archive key includes:</p>
+<ul>
+<li>native or WASM target kind</li>
+<li>platform tag</li>
+<li>OCCT tag</li>
+<li>build configuration</li>
+<li>OCCT library type</li>
+<li>native compiler ABI when relevant</li>
+<li>macOS deployment target when relevant</li>
+<li>Emscripten version for WASM</li>
+<li>a recipe hash derived from the build scripts and vendored RapidJSON inputs</li>
+</ul>
+<p>Changing the OCCT recipe produces a new object key rather than replacing an
+existing dependency silently. A generated local profile marker carries the
+same identity, so an existing install is not reused after its configuration,
+toolchain ABI, or recipe changes.</p>
+<p>An independently reviewed older archive may bridge intentional recipe-key
+churn only when its alias names the exact destination recipe hash and archive
+SHA-256. The alias is not considered for any later recipe, even when the OCCT
+tag, platform, and configuration still match.</p>
+<h2 id="configuration">Configuration</h2>
+<p>Local and CI consumers use these public-read environment variables:</p>
+<ul>
+<li><code>GEOMETER_OCCT_CACHE_PUBLIC_BASE_URL</code>, default
+<code>https://artifacts.wavenumber.net</code></li>
+<li><code>GEOMETER_OCCT_PUBLIC_CACHE=off</code> or <code>GEOMETER_OCCT_CACHE_PUBLIC=off</code> to
+disable public cache reads</li>
+<li><code>GEOMETER_OCCT_CACHE_PREFIX</code>, default <code>deps/v1/geometer/occt</code></li>
+</ul>
+<p>Signed R2 fallback and producer uploads use these environment variables:</p>
+<ul>
+<li><code>R2_BUCKET</code> or <code>GEOMETER_OCCT_CACHE_BUCKET</code></li>
+<li><code>R2_ENDPOINT_URL</code> or <code>GEOMETER_OCCT_CACHE_ENDPOINT_URL</code></li>
+<li><code>R2_ACCESS_KEY_ID</code> or <code>GEOMETER_OCCT_CACHE_ACCESS_KEY_ID</code></li>
+<li><code>R2_SECRET_ACCESS_KEY</code> or <code>GEOMETER_OCCT_CACHE_SECRET_ACCESS_KEY</code></li>
+<li><code>AWS_DEFAULT_REGION</code> or <code>GEOMETER_OCCT_CACHE_REGION</code>, default <code>auto</code></li>
+</ul>
+<p>The R2 endpoint should be the account-level S3 API endpoint. It should not
+include the bucket name in the URL path.</p>
+<p>Cache mode is controlled with <code>GEOMETER_OCCT_BINARY</code>:</p>
+<ul>
+<li><code>auto</code>: try public cache, then signed R2 when configured, then source</li>
+<li><code>off</code>: ignore binary caches and build from source</li>
+<li><code>only</code>: require a binary cache hit</li>
+</ul>
+<h2 id="consequences">Consequences</h2>
+<ul>
+<li>Fresh CI and developer setup can avoid repeated OCCT source builds.</li>
+<li>R2 upload credentials are limited to the dependency producer workflow.</li>
+<li>Consumers still validate archive manifests and SHA-256 checksums before use.</li>
+<li>Source builds remain available for new platforms, cache misses, and debugging.</li>
+<li>Binary archives must be rebuilt when toolchain, OCCT, deployment target, or
+recipe inputs change.</li>
+</ul>
+
+</main>
+</body>
+</html>

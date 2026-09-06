@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>STEP Topology Multidimensional Recovery — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/step-topology-recovery.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="step-topology-multidimensional-recovery">STEP Topology Multidimensional Recovery</h1></header>
+<p>Status: experimental native policy model; not yet an importer or wire contract</p>
+<p>Date: 2026-08-23</p>
+<h2 id="result">Result</h2>
+<p><code>analyze_step_topology_recovery</code> is a bounded C++ value API that evaluates
+already-collected carrier and geometry evidence without exposing OCCT objects.
+It proves the recovery decision model before TypeSpec Slice C or an Appz
+Annotation Lab contract adopts it.</p>
+<p>The result keeps these dimensions independent:</p>
+<ul>
+<li>resolution state: resolved, ambiguous, unresolved, or unsupported;</li>
+<li>resolution method: authored id with a verified topology link, validated
+carrier locator, unique geometry/adjacency fingerprint, or none;</li>
+<li>topology comparison: unchanged, relocated, split, merged, otherwise changed,
+not compared, or unavailable;</li>
+<li>confidence: high, medium, low, or none;</li>
+<li>evidence: candidate and match counts, compared fields, explicit tolerances,
+carrier records, and rejected alternatives; and</li>
+<li>group completeness: fully recovered, partially recovered, unrecovered, or
+unsupported, with separate member-state counts and one result per input
+member.</li>
+</ul>
+<p>This separation matters. A face with a durable authored id and a verified
+topology link may resolve with high confidence while its geometry is reported
+as changed. Conversely, a geometrically identical face with no durable carrier
+resolves only by the lower-confidence fingerprint method. Two symmetric
+geometry matches remain ambiguous; input order is never a tie-breaker.</p>
+<p><code>compared_fields</code> covers both the winning resolution tier and the independent
+topology comparison. Thus an authored-id resolution that reports changed
+geometry still lists the area/volume, centroid, bounds, surface/topology kind,
+frame, occurrence, and adjacency fields used for that comparison. Split/merge
+reports list lineage evidence; unavailable comparisons list fingerprint
+availability.</p>
+<h2 id="evidence-precedence">Evidence Precedence</h2>
+<p>For one body or face member, the analyzer evaluates candidates in this order:</p>
+<ol>
+<li>matching nonempty authored target id plus a verified topology link;</li>
+<li>matching nonempty carrier locator whose validation flag is true; and</li>
+<li>a unique complete geometry/adjacency fingerprint match.</li>
+</ol>
+<p>Once a tier has candidates, lower tiers cannot override it. Multiple matches
+at the winning tier produce <code>ambiguous</code>, no resolved handle, no confidence, and
+<code>not_compared</code> topology. No match produces <code>unresolved</code>. The native value API
+uses <code>unsupported</code> for definition, occurrence, and shell inputs. The current
+TypeSpec recovery request admits only body and face members, so no governed
+analyzer vector claims that its <code>unsupported</code> enum value is currently
+reachable; future carrier extraction may use it only after separate evidence.</p>
+<p>A verified topology-link or carrier-locator flag requires a nonempty carrier
+evidence record. A lineage assertion can report split or merged only when the
+candidate also has such a verified topology link or validated carrier locator.
+Geometry alone does not infer lineage.</p>
+<p>The current native result resolves one target handle per source member. A
+<code>split</code> comparison therefore says that the selected durable successor carries
+verified split lineage; it is not yet a complete bounded successor-set model.
+TypeSpec Slice C must decide whether to add an explicit complete descendant set
+before representing one-to-many repair actions.</p>
+<h2 id="fingerprint-context">Fingerprint Context</h2>
+<p>An available fingerprint must record:</p>
+<ul>
+<li>normalized millimeter units;</li>
+<li>a named coordinate frame and occurrence context;</li>
+<li>body topology kind or face surface kind;</li>
+<li>area for faces or volume for bodies;</li>
+<li>centroid and bounds;</li>
+<li>a lowercase SHA-256 adjacency signature; and</li>
+<li>finite values and ordered bounds.</li>
+</ul>
+<p>Geometry selection compares all of those fields, including occurrence context,
+under explicit positive absolute length, area, and volume tolerances. Topology
+comparison reuses the local-geometry comparison without occurrence context so
+an otherwise identical target in a different occurrence can be reported as
+<code>relocated</code>.</p>
+<p>The adjacency digest is evidence supplied by an upstream OCCT extractor. This
+slice does not yet define its canonical graph encoding; TypeSpec Slice C must
+not freeze that encoding until the fixture and version matrices establish it.</p>
+<h2 id="provenance-and-limits">Provenance And Limits</h2>
+<p>Every report copies required source/candidate artifact digests, exact source
+and candidate OCCT versions, drivers, writer-setting records, command
+provenance, and caller-measured wall time. Unknown external writer settings
+must be stated explicitly rather than omitted.</p>
+<p>The analyzer rejects malformed or non-finite evidence, duplicate member ids,
+duplicate candidate handles within a member, unverified lineage assertions,
+invalid digests, nonpositive tolerances, oversized strings, excessive aggregate
+string bytes, excessive members, and excessive candidates. Failure clears the
+output before returning.</p>
+<h2 id="evidence">Evidence</h2>
+<p><code>geometer_step_topology_recovery_test</code> proves:</p>
+<ul>
+<li>a verified authored face id resolves even when its geometry changed, while
+the change remains visible in the topology-comparison dimension;</li>
+<li>a validated carrier locator outranks a geometry-only candidate and can
+independently report relocation;</li>
+<li>a body geometry candidate is selected by volume rather than the face-area
+branch, with its topology comparison and evidence fields asserted;</li>
+<li>two symmetric geometry candidates fail closed as ambiguous;</li>
+<li>one recovered and one missing member produce an explicitly partial group;</li>
+<li>split, merged, and unsupported outcomes remain distinct, while a foreign
+lineage record selected only by geometry cannot assert split/merge;</li>
+<li>duplicate member ids and candidate-budget exhaustion fail without partial
+publication; and</li>
+<li>20,000 identical geometry candidates produce ambiguity through a linear
+membership pass rather than quadratic rejection scanning.</li>
+</ul>
+<h2 id="boundary-and-next-work">Boundary And Next Work</h2>
+<p>This API does not read STEP, XBF/XML, GLB extras, or edit-journal bytes. It does
+not discover AP242 carriers, calculate adjacency fingerprints, alter session
+state, or apply repairs. Those producers must supply evidence without treating
+STEP entity numbers, XCAF label paths, traversal indexes, GLB ids, or runtime
+handles as durable identity.</p>
+<p>The next recovery work joins this policy model to measured unchanged reload,
+XBF/XML, AP242, and GLB-regeneration candidate extraction. TypeSpec Slice C
+will be registered only after those result shapes and compatibility matrices
+stabilize. Appz remains a later consumer; the legacy Appz glTF enrichment model
+was not reused.</p>
+
+</main>
+</body>
+</html>

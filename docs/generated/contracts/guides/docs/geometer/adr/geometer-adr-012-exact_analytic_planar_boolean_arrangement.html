@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>ADR-012: Exact Arrangement For Analytic Planar Booleans — Geometer</title>
+  <link rel="stylesheet" href="../../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/geometer/adr/geometer-adr-012-exact_analytic_planar_boolean_arrangement.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="adr-012-exact-arrangement-for-analytic-planar-booleans">ADR-012: Exact Arrangement For Analytic Planar Booleans</h1></header>
+<h2 id="status">Status</h2>
+<p>Superseded for production implementation by
+<a href="geometer-adr-013-filtered_resolution_bounded_planar_boolean.html">ADR-013</a> on 2026-08-15.
+This ADR remains the historical record of the exact-first feasibility work.</p>
+<p>Independent technical review approved the analytic design at head
+<code>b86a065c5926c35f1eee23a9ba1cef890689c7d7</code>, covering normative remediation
+revision <code>529c768e559b4c88874264748d4186e775c8a4dd</code>. Focused review later accepted
+the isolated TypeSpec and packed-projection reconciliation at
+<code>f4b6a9b87bf16f57ef29dae22150b16f2a742b64</code>. Exact-backend feasibility and
+OCCT qualification were the gates under this decision. ADR-013 replaces those
+production-architecture requirements while retaining the exact implementation
+as a non-primary conformance oracle and optional bounded fallback.</p>
+<h2 id="context">Context</h2>
+<p><code>geometry.analytic_planar_boolean_batch.a0</code> must preserve line and circular-arc
+topology, produce identical canonical results natively and under Emscripten,
+normalize once to the integer-nanometer grid, and retain stage-aware material
+lineage. OCCT demonstrates useful analytic Boolean feasibility, but its
+binary64 tolerance decisions cannot prove that candidate topology is complete
+or make exact half-grid and coincidence decisions. Clipper2 is robust for
+sampled integer polygons but cannot be the authority for analytic arc output.</p>
+<h2 id="decision">Decision</h2>
+<p>Geometer owns an authoritative exact line/circle half-edge arrangement for
+this operation. It enumerates every boundary occurrence and every curve pair
+not proven disjoint, constructs and classifies all arrangement faces, applies
+the ordered regularized set operations, and carries material lineage through
+those exact cells.</p>
+<p>Real-algebraic scalars use a primitive square-free integer defining polynomial,
+a unique dyadic isolating interval, and a signed-subresultant Thom encoding.
+Exact arithmetic and comparisons use resultant, polynomial-GCD,
+square-free-factorization, signed-subresultant, and root-isolation algorithms
+over <code>boost::multiprecision::cpp_int</code>. Equality and identically-zero decisions
+are exact; interval refinement is acceleration, not the equality oracle.</p>
+<p>Every algebraic degree, coefficient size, arrangement count, provenance count,
+predicate-work count, and memory allocation is charged against the governed A0
+limits. Exceeding a limit fails the isolated job before an approximate decision
+is used.</p>
+<p>OCCT remains an independently audited candidate-topology engine. It may supply
+adjacency and traversal hints, but cannot suppress an exact pair, vertex,
+half-edge, face, or classification. Every stage requires a bidirectional map
+between OCCT candidate boundaries and exact material boundaries; mismatch
+fails closed. Clipper2 remains a sampled differential oracle only.</p>
+<p>The portable exact backend and every decision algorithm must pass a focused
+native/Emscripten feasibility target before production solver implementation.
+Separately, exact tags <code>V8_0_0</code> and <code>V8_0_1</code> are qualified side-by-side; no
+upstream-master OCCT pin is permitted.</p>
+<h2 id="consequences">Consequences</h2>
+<ul>
+<li>Canonical geometry, topology, normalization, and diagnostics no longer
+depend on OCCT tolerance or traversal behavior.</li>
+<li>The solver is substantially more work than wrapping OCCT Boolean output and
+requires explicit combinatorial and arithmetic resource limits.</li>
+<li>Native and WASM share one C++17 exact implementation and fail identically at
+governed limits.</li>
+<li>OCCT upgrades can improve candidate behavior or performance without silently
+changing the authoritative mathematical result.</li>
+<li>Production work stops if the exact backend cannot satisfy the native/WASM
+feasibility, performance, or mutation-test gates.</li>
+</ul>
+
+</main>
+</body>
+</html>

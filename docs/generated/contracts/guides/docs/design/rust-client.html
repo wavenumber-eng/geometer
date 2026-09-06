@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>Rust Contracts And Executable IPC Client — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/rust-client.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="rust-contracts-and-executable-ipc-client">Rust Contracts And Executable IPC Client</h1></header>
+<h2 id="current-status">Current status</h2>
+<p><code>src/rust/geometer-client</code> is the Tokio-based <code>geometer-client</code> crate. Its
+operation DTOs and strict Serde codecs are generated from the normalized
+TypeSpec catalog. The live client spawns one persistent native
+<code>geometer(.exe) serve --stdio</code> process and executes model bounds, model/mesh
+HLR, and analytic planar Boolean through their governed attachments.</p>
+<p>Since 2026.9.6, the client additionally provides typed <code>model_tessellation</code> and
+<code>mesh_illustration</code> methods using generated A0 values. Optional
+<code>mesh_illustration_with_hlr(input, hlr)</code> returns the native composed SVG with
+visibility-filtered outline/detail; consumers do not arrange SVG layers. The complete
+<a href="mesh-illustration-native.html">native STEP-to-SVG example</a> needs no JS/WASM runtime
+or handwritten subprocess protocol. These additions require a matching catalog
+and a compatible 2026.9.6 or later executable.</p>
+<p>The analytic operation is experimental and not production-ready. It may fail
+closed on valid inputs and is not the dependable path for whole-board or
+whole-layer copper union. Prefer the Clipper2-backed planar APIs when
+polygonized output is suitable.</p>
+<p>The executable implementation preserves every file-oriented CLI command. Its
+stdin and stdout are switched to binary mode on Windows; stdout is reserved for
+complete A0 frames and stderr is captured separately by the client.</p>
+<p>The TypeSpec source owns the strict hello, welcome, request, reason,
+cancelled, cancel-rejected, protocol-error, shutdown-ack, and embedded
+operation-catalog shapes. Generated C++ and Rust codecs are used by both ends
+of the live connection, including the production request envelope. Model and
+mesh HLR are implemented typed surfaces. Release promotion remains separately
+gated on independent review, demo acceptance, hosted Windows, Linux x64, Linux
+ARM64, and macOS ARM64 evidence.</p>
+<p>The crate carries a local <code>wn-dev-std</code> 2026.8.12 Rust profile. Its stable
+toolchain components, denied Rust/Clippy lints, declared Cargo signoff commands,
+and strict Tree-sitter hygiene policy are enforced from the repository Rust
+Rack stratum.</p>
+<h2 id="generated-contracts">Generated contracts</h2>
+<p><code>scripts/generate-rust-contracts.mjs</code> reads the same normalized catalog as the
+C++ and TypeScript generators and writes
+<code>src/rust/geometer-client/src/generated</code>. Generated operation and IPC structs use
+<code>deny_unknown_fields</code>; direct deserialization rejects duplicate keys and
+trailing data; validation rejects non-finite/range-invalid numbers and contract
+literals. Optional fields use a presence-aware deserializer so an absent value
+maps to <code>None</code> while explicit JSON <code>null</code> is rejected.</p>
+<p>All governed contract vectors replay through this projection. Generation is
+part of <code>npm run generate:contracts</code> and freshness is part of
+<code>npm run check:contracts</code>.</p>
+<p>The generated operation catalog is also the Rust client's negotiation
+authority. Packed request/result roots are deliberately excluded from generated
+JSON codecs: their logical DTOs remain generated, while
+<code>analytic_packet_a0</code> owns the strict little-endian wire codec. The public
+encoder accepts <code>AnalyticPlanarBooleanBatchRequestA0</code>; the public decoder
+returns <code>AnalyticPlanarBooleanBatchResultA0</code> and computes each job's SHA-256
+over its exact rebased standalone packet closure.</p>
+<p>Logical request decoding and request/result identity matching are generated in
+<code>generated/dispatch.rs</code> from the TypeSpec IPC unions and catalog roots. The
+generic client selects the exact negotiated request contract before decoding;
+it does not guess from union order (bounds and HLR can both accept <code>{}</code>). This
+also allows generic <code>execute</code> calls for advertised native topology operations.
+Their experimental lifecycle is unchanged; generated support is not production
+promotion. New logical operations must join the authored TypeSpec unions and
+catalog, then regenerate all bindings, rather than add handwritten Rust
+dispatch cases. Attachment and runtime-availability checks still use the
+negotiated operation declaration; packed packet dispatch stays separate.</p>
+<p>The <code>model_tessellation()</code> facade returns colored millimeter
+meshes through a generated attachment contract. See
+<a href="model-tessellation-a0.html">model tessellation A0</a> for defaults, limits and current
+release-qualification status. It requires a matching executable; it is
+not present in the released 2026.9.4 binary.</p>
+<h2 id="client-lifecycle">Client lifecycle</h2>
+<p><code>GeometerClient::find_executable()</code> resolves the same local path as
+<code>discover_and_spawn()</code> without launching it, so desktop consumers can show or
+override the selected executable. Windows spawn uses <code>CREATE_NO_WINDOW</code> while
+retaining piped stdin/stdout/stderr. These process-support helpers are not new
+TypeSpec geometry operations. The optional
+<a href="../../../../../../examples/rust/native_viewer/README.md">Rust/wgpu demo</a> demonstrates the
+typed native APIs without adding GUI dependencies to this crate.</p>
+<p><code>GeometerClient::spawn()</code> starts an explicit executable path, sends <code>hello</code>,
+and requires a <code>welcome</code> selecting <code>a0</code>, the exact normalized-catalog digest,
+all required capabilities, and effective limits no larger than the A0 maxima.
+<code>discover_and_spawn()</code> additionally checks <code>GEOMETER_EXECUTABLE</code>, an executable
+sibling, and the source checkout's grouped native distribution path.</p>
+<p>Calls receive monotonically increasing nonzero <code>u64</code> request identifiers. One
+reader task routes responses exclusively by identifier and verifies that the
+generated outcome operation matches the pending operation. Unknown,
+completed, malformed, or wrong-direction frames fail the connection and every
+pending call.</p>
+<p><code>GeometerClient::analytic_planar_boolean_batch()</code> derives attachment names,
+media types, schema identities, and packet format from the negotiated generated
+catalog. Generic request and response validation rejects missing, duplicate,
+undeclared, oversized, or media-incompatible attachments and projection
+metadata drift. Fatal response ID/kind/JSON/attachment violations poison the
+connection and resolve every pending call. Negotiated response frame limits are
+checked before payload allocation.</p>
+<p><code>GeometerClient::model_hlr_projection()</code> accepts STEP bytes and canonical HLR
+options. <code>mesh_hlr_projection()</code> accepts an indexed-mesh A0 packet;
+<code>MeshHlrProjectionRequest::from_mesh()</code> encodes a structured mesh. The model
+operation retains the <code>poly</code> default, while omitted mesh selectors choose the
+only applicable Fast detail and Fast mesh-shadow paths.</p>
+<p><code>OperationCall::cancel()</code> requests queue-only cancellation. <code>wait_timeout()</code> is
+a local timeout: it sends a cancellation request and reports whether the server
+removed queued work; it never claims an active OCCT operation stopped. The
+client continues draining any active terminal response. <code>close()</code> performs the
+30-second graceful protocol shutdown, while <code>terminate()</code> is the explicit
+forced-child escalation. Captured stderr is available through <code>stderr_text()</code>.</p>
+<h2 id="wire-projection">Wire projection</h2>
+<p>The frame layout and limits are exactly those in
+<a href="executable-ipc-a0.html">Executable IPC A0</a>. The client uses these strict JSON
+objects inside frames:</p>
+<table>
+<thead>
+<tr>
+<th>Frame</th>
+<th>JSON projection</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hello</code></td>
+<td><code>client_name</code>, <code>client_version</code>, <code>protocols</code>, optional <code>capabilities</code></td>
+</tr>
+<tr>
+<td><code>welcome</code></td>
+<td>release/C ABI/IPC identities, catalog digest and operation catalog, effective limits, capabilities</td>
+</tr>
+<tr>
+<td><code>request</code></td>
+<td><code>operation</code> and the operation-specific <code>request</code> object</td>
+</tr>
+<tr>
+<td><code>response</code></td>
+<td>generated <code>OperationOutcomeA0</code></td>
+</tr>
+<tr>
+<td><code>cancel</code>, <code>shutdown</code></td>
+<td>optional <code>reason</code></td>
+</tr>
+<tr>
+<td><code>cancelled</code></td>
+<td><code>status: &quot;cancelled&quot;</code></td>
+</tr>
+<tr>
+<td><code>cancel_rejected</code>, <code>protocol_error</code></td>
+<td>status plus a transport diagnostic</td>
+</tr>
+<tr>
+<td><code>shutdown_ack</code></td>
+<td>the three fields governed by the A0 design</td>
+</tr>
+</tbody>
+</table>
+<p>Raw attachments follow the JSON section with their governed name, media type,
+and data lengths. They are never base64 encoded.</p>
+<h2 id="verification">Verification</h2>
+<p>The Rust Rack stratum checks formatting, Clippy with warnings denied, all
+contract vectors, exact shutdown bytes in both C++ and Rust, binary attachment
+round trips, fixed-header rejection before payload allocation, strict malformed
+request recovery, unknown and queued cancellation, local timeout behavior,
+duplicate-attachment correlation, wrong-direction fatal handling,
+close/request race resolution, repeated real STEP work through one child,
+repeated nonempty typed analytic work through one child, native-produced packet
+corpus parity, mutation rejection, normative standalone job digests, graceful
+shutdown, and empty plus nontrivial friendly analytic IPC calls from a clean
+packaged-crate consumer against the platform executable in
+<code>dist/native/&lt;platform&gt;/</code>.
+The failure-path matrix additionally covers incompatible negotiation,
+oversized fixed headers before payload reads, broken stdout, explicit forced
+termination with pending requests, the server shutdown deadline, and an
+independently unexpected child exit. The forced-termination case closed a
+reader/terminator race that could otherwise leave a pending call unresolved.
+The deadline and unexpected-exit cases use non-distributed native test servers
+with deterministic timing/failure injection; the production server retains its
+governed 30-second deadline. Native and release CI run these live Rust tests on
+every supported native platform after building that platform's executable.</p>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>Planar Geometry Interfaces — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/planar-geometry.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="planar-geometry-interfaces">Planar Geometry Interfaces</h1></header>
+<h2 id="planar-contours">Planar Contours</h2>
+<p>Defined in <code>src/cpp/lib/geometer/planar_contours.h</code>.</p>
+<pre><code class="language-cpp">struct PlanarContourPoint {
+    double x = 0.0;
+    double y = 0.0;
+};
+
+struct PlanarContourSegment {
+    PlanarContourPoint start;
+    PlanarContourPoint end;
+};
+
+struct PlanarContourRing {
+    std::vector&lt;PlanarContourPoint&gt; points;
+    bool hole = false;
+    int nesting_depth = 0;
+    double signed_area = 0.0;
+};
+
+struct PlanarContourOptions {
+    int round_digits = 3;
+    bool union_polygons = true;
+    double area_epsilon = 1.0e-9;
+};
+
+struct PlanarContourResult {
+    std::vector&lt;PlanarContourRing&gt; rings;
+    std::vector&lt;PlanarContourSegment&gt; segments;
+};
+
+int build_planar_contours(
+    const std::vector&lt;PlanarContourSegment&gt;&amp; segments,
+    const PlanarContourOptions&amp; options,
+    PlanarContourResult* result,
+    Status* status = nullptr
+);
+</code></pre>
+<p>This helper turns planar line segments into closed rings and output contour
+segments. The HLR implementation uses it to generate simplified projection
+geometry.</p>
+<h2 id="planar-batch-solve">Planar Batch Solve</h2>
+<p>Defined in <code>src/cpp/lib/geometer/planar_solve.h</code>.</p>
+<p>The planar batch solve API performs generic 2D filled-geometry work:</p>
+<ol>
+<li>starts with closed subject rings;</li>
+<li>offsets open stroke paths into filled regions;</li>
+<li>unions the subject and stroked fills;</li>
+<li>subtracts local and optional common rings;</li>
+<li>optionally clips each job to final clip rings;</li>
+<li>returns outline/hole regions suitable for meshing or rendering.</li>
+</ol>
+<p>It intentionally has no PCB, EDA, visualizer, or file-format policy.</p>
+<pre><code class="language-cpp">struct PlanarSolvePoint {
+    double x = 0.0;
+    double y = 0.0;
+};
+
+using PlanarSolvePath = std::vector&lt;PlanarSolvePoint&gt;;
+using PlanarSolveRing = PlanarSolvePath;
+
+struct PlanarSolveRegion {
+    PlanarSolveRing outline;
+    std::vector&lt;PlanarSolveRing&gt; holes;
+};
+
+enum class PlanarSolveJoinType { Miter, Round, Bevel, Square };
+enum class PlanarSolveEndType { Round, Square, Butt, Joined };
+
+struct PlanarSolveStrokeGroup {
+    double radius_mm = 0.0;
+    double miter_limit = 2.0;
+    double arc_tolerance_mm = 0.0;
+    PlanarSolveJoinType join_type = PlanarSolveJoinType::Miter;
+    PlanarSolveEndType end_type = PlanarSolveEndType::Round;
+    std::vector&lt;PlanarSolvePath&gt; paths;
+};
+
+struct PlanarSolveJob {
+    std::vector&lt;PlanarSolveRing&gt; subject_rings;
+    std::vector&lt;PlanarSolveRing&gt; subtract_rings;
+    std::vector&lt;PlanarSolveStrokeGroup&gt; stroke_groups;
+    bool subtract_common_rings = true;
+    bool filter_common_subtract_by_bounds = true;
+    bool clip_to_final_rings = true;
+    double common_subtract_filter_margin_mm = 0.0;
+};
+
+struct PlanarBatchSolveOptions {
+    int decimal_precision = 6;
+    double cleanup_radius_mm = 0.0;
+    double cleanup_miter_limit = 2.0;
+    double cleanup_arc_tolerance_mm = 0.0;
+};
+
+struct PlanarSolveJobResult {
+    std::vector&lt;PlanarSolveRegion&gt; regions;
+    double area_mm2 = 0.0;
+    std::uint32_t source_subject_ring_count = 0;
+    std::uint32_t raw_subject_ring_count = 0;
+    std::uint32_t stroke_path_count = 0;
+    std::uint32_t stroke_region_count = 0;
+    std::uint32_t local_subtract_ring_count = 0;
+    std::uint32_t common_subtract_ring_count = 0;
+};
+
+struct PlanarBatchSolveInput {
+    PlanarBatchSolveOptions options;
+    std::vector&lt;PlanarSolveRing&gt; common_subtract_rings;
+    std::vector&lt;PlanarSolveRing&gt; final_clip_rings;
+    std::vector&lt;PlanarSolveJob&gt; jobs;
+};
+
+struct PlanarBatchSolveResult {
+    std::vector&lt;PlanarSolveJobResult&gt; jobs;
+};
+
+int solve_planar_batch(
+    const PlanarBatchSolveInput&amp; input,
+    PlanarBatchSolveResult* result,
+    Status* status = nullptr
+);
+
+int solve_planar_batch_from_bytes(
+    const unsigned char* request_data,
+    std::size_t request_size,
+    std::vector&lt;unsigned char&gt;* response_bytes,
+    Status* status = nullptr
+);
+
+int write_planar_batch_solve_json(
+    const PlanarBatchSolveResult&amp; result,
+    std::string* json,
+    Status* status = nullptr
+);
+
+int solve_planar_batch_json_from_bytes(
+    const unsigned char* request_data,
+    std::size_t request_size,
+    std::string* response_json,
+    Status* status = nullptr
+);
+</code></pre>
+<p>Closed rings should be supplied without a duplicate closing point. Output
+outlines are oriented positive and holes are oriented negative. Inputs that
+contain duplicate closing points are tolerated and cleaned.</p>
+<p>The CLI exposes the JSON ring form with
+<code>planar-batch-solve request.bin rings.json --format json</code> or
+<code>--return-rings true</code>. Python exposes the same fused regions as
+<code>geometer.planar_batch_solve(...)</code>, returning jobs with <code>regions[].outer</code> and
+<code>regions[].holes</code> in millimeters.</p>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,226 @@
+{
+  "baseline": "v2026-09-04",
+  "audit_date": "2026-09-05",
+  "documents": [
+    {
+      "original": "docs/design/analytic-planar-boolean-a0.md",
+      "destination": "docs/design/analytic-planar-boolean-a0.md",
+      "reason": "Retain logical/failure/normalization/client semantics; historical architecture and qualification moved to docs/research/analytic/analytic-planar-boolean-history.md with section anchors preserved."
+    },
+    {
+      "original": "docs/design/analytic-planar-boolean-packet-a0.md",
+      "destination": "docs/design/analytic-planar-boolean-packet-a0.md",
+      "reason": "Retain interface specification or navigation."
+    },
+    {
+      "original": "docs/design/binary-formats.md",
+      "destination": "docs/design/binary-formats.md",
+      "reason": "Retain interface specification or navigation."
+    },
+    {
+      "original": "docs/design/browser-demos.md",
+      "destination": "docs/developer/browser-demos.md",
+      "reason": "Move authoring or maintenance procedure to its authority directory."
+    },
+    {
+      "original": "docs/design/c-abi.md",
+      "destination": "docs/design/c-abi.md",
+      "reason": "Retain interface specification or navigation."
+    },
+    {
+      "original": "docs/design/cli.md",
+      "destination": "docs/design/cli.md",
+      "reason": "Retain interface specification or navigation."
+    },
+    {
+      "original": "docs/design/contract-semantics.md",
+      "destination": "docs/design/contract-semantics.md",
+      "reason": "Retain interface specification or navigation."
+    },
+    {
+      "original": "docs/design/dependency-cache.md",
+      "destination": "docs/developer/dependency-cache.md",
+      "reason": "Move authoring or maintenance procedure to its authority directory."
+    },
+    {
+      "original": "docs/design/distribution.md",
+      "destination": "docs/design/distribution.md",
+      "reason": "Retain interface specification or navigation."
+    },
+    {
+      "original": "docs/design/exact-real-algebraic-a0.md",
+      "destination": "docs/research/analytic/exact-real-algebraic-a0.md",
+      "reason": "Preserve historical or experimental evidence outside the interface index."
+    },
+    {
+      "original": "docs/design/executable-ipc-a0.md",
+      "destination": "docs/design/executable-ipc-a0.md",
+      "reason": "Retain interface specification or navigation."
+    },
+    {
+      "original": "docs/design/executable-ipc.md",
+      "destination": "docs/design/executable-ipc.md",
+      "reason": "Retain interface specification or navigation."
+    },
+    {
+      "original": "docs/design/generated-contract-reference.md",
+      "destination": "docs/contracts/generated-contract-reference.md",
+      "reason": "Move authoring or maintenance procedure to its authority directory."
+    },
+    {
+      "original": "docs/design/generic-operation-c-abi.md",
+      "destination": "docs/design/generic-operation-c-abi.md",
+      "reason": "Retain interface specification or navigation."
+    },
+    {
+      "original": "docs/design/geom-a0-contract-alignment.md",
+      "destination": "docs/research/history/geom-a0-contract-alignment.md",
+      "reason": "Preserve historical or experimental evidence outside the interface index."
+    },
+    {
+      "original": "docs/design/hlr-projection-a0.md",
+      "destination": "docs/design/hlr-projection-a0.md",
+      "reason": "Retain interface specification or navigation."
+    },
+    {
+      "original": "docs/design/interface-policy.md",
+      "destination": "docs/design/interface-policy.md",
+      "reason": "Retain interface specification or navigation."
+    },
+    {
+      "original": "docs/design/json-formats.md",
+      "destination": "docs/design/json-formats.md",
+      "reason": "Retain interface specification or navigation."
+    },
+    {
+      "original": "docs/design/model-bounds-contract-compatibility.md",
+      "destination": "docs/research/history/model-bounds-contract-compatibility.md",
+      "reason": "Preserve historical or experimental evidence outside the interface index."
+    },
+    {
+      "original": "docs/design/planar-geometry.md",
+      "destination": "docs/design/planar-geometry.md",
+      "reason": "Retain interface specification or navigation."
+    },
+    {
+      "original": "docs/design/python-package.md",
+      "destination": "docs/design/python-package.md",
+      "reason": "Retain interface specification or navigation."
+    },
+    {
+      "original": "docs/design/README.md",
+      "destination": "docs/design/README.md",
+      "reason": "Retain interface specification or navigation."
+    },
+    {
+      "original": "docs/design/rust-client.md",
+      "destination": "docs/design/rust-client.md",
+      "reason": "Retain interface specification or navigation."
+    },
+    {
+      "original": "docs/design/step-geometry.md",
+      "destination": "docs/design/step-geometry.md",
+      "reason": "Retain interface specification or navigation."
+    },
+    {
+      "original": "docs/design/step-topology-annotation-research.md",
+      "destination": "docs/research/step-topology/step-topology-annotation-research.md",
+      "reason": "Preserve historical or experimental evidence outside the interface index."
+    },
+    {
+      "original": "docs/design/step-topology-ap242-persistence.md",
+      "destination": "docs/research/step-topology/step-topology-ap242-persistence.md",
+      "reason": "Preserve historical or experimental evidence outside the interface index."
+    },
+    {
+      "original": "docs/design/step-topology-appz-annotation-lab-handoff.md",
+      "destination": "docs/research/step-topology/step-topology-appz-annotation-lab-handoff.md",
+      "reason": "Preserve historical or experimental evidence outside the interface index."
+    },
+    {
+      "original": "docs/design/step-topology-contract-a0.md",
+      "destination": "docs/design/step-topology-contract-a0.md",
+      "reason": "Retain current experimental value/packet semantics; not a production-support claim."
+    },
+    {
+      "original": "docs/design/step-topology-contract-slice-b.md",
+      "destination": "docs/design/step-topology-contract-slice-b.md",
+      "reason": "Retain current experimental value/packet semantics; not a production-support claim."
+    },
+    {
+      "original": "docs/design/step-topology-contract-slice-c.md",
+      "destination": "docs/design/step-topology-contract-slice-c.md",
+      "reason": "Retain current experimental value/packet semantics; not a production-support claim."
+    },
+    {
+      "original": "docs/design/step-topology-edit-journal.md",
+      "destination": "docs/design/step-topology-edit-journal.md",
+      "reason": "Retain current experimental value/packet semantics; not a production-support claim."
+    },
+    {
+      "original": "docs/design/step-topology-fixture-baseline.md",
+      "destination": "docs/research/step-topology/step-topology-fixture-baseline.md",
+      "reason": "Preserve historical or experimental evidence outside the interface index."
+    },
+    {
+      "original": "docs/design/step-topology-glb-binding.md",
+      "destination": "docs/design/step-topology-glb-binding.md",
+      "reason": "Retain current experimental value/packet semantics; not a production-support claim."
+    },
+    {
+      "original": "docs/design/step-topology-hierarchy.md",
+      "destination": "docs/design/step-topology-hierarchy.md",
+      "reason": "Retain current experimental value/packet semantics; not a production-support claim."
+    },
+    {
+      "original": "docs/design/step-topology-logical-groups.md",
+      "destination": "docs/design/step-topology-logical-groups.md",
+      "reason": "Retain current experimental value/packet semantics; not a production-support claim."
+    },
+    {
+      "original": "docs/design/step-topology-metadata-probes.md",
+      "destination": "docs/design/step-topology-metadata-probes.md",
+      "reason": "Retain current experimental value/packet semantics; not a production-support claim."
+    },
+    {
+      "original": "docs/design/step-topology-native-inspection.md",
+      "destination": "docs/design/step-topology-native-inspection.md",
+      "reason": "Retain current experimental value/packet semantics; not a production-support claim."
+    },
+    {
+      "original": "docs/design/step-topology-recovery.md",
+      "destination": "docs/design/step-topology-recovery.md",
+      "reason": "Retain current experimental value/packet semantics; not a production-support claim."
+    },
+    {
+      "original": "docs/design/step-topology-render-binding.md",
+      "destination": "docs/design/step-topology-render-binding.md",
+      "reason": "Retain current experimental value/packet semantics; not a production-support claim."
+    },
+    {
+      "original": "docs/design/step-topology-xcaf-persistence.md",
+      "destination": "docs/research/step-topology/step-topology-xcaf-persistence.md",
+      "reason": "Preserve historical or experimental evidence outside the interface index."
+    },
+    {
+      "original": "docs/design/transport-design-review.md",
+      "destination": "docs/research/history/transport-design-review.md",
+      "reason": "Preserve historical or experimental evidence outside the interface index."
+    },
+    {
+      "original": "docs/design/typescript-client.md",
+      "destination": "docs/design/typescript-client.md",
+      "reason": "Retain interface specification or navigation."
+    },
+    {
+      "original": "docs/design/typespec-toolchain.md",
+      "destination": "docs/contracts/typespec-toolchain.md",
+      "reason": "Move authoring or maintenance procedure to its authority directory."
+    },
+    {
+      "original": "docs/design/wasm.md",
+      "destination": "docs/design/wasm.md",
+      "reason": "Retain interface specification or navigation."
+    }
+  ]
+}

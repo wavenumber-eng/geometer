@@ -9,13 +9,17 @@ Geometer is a focused C++17 geometry library and CLI built on OpenCASCADE
 Technology (OCCT). Its job is to provide generic CAD/kernel geometry operations
 for browser, native CLI, and Python tooling.
 
-Current and planned library surfaces include:
+Current library surfaces include:
 
 - STEP to GLB conversion.
 - STEP hidden-line projection geometry.
 - Planar contour extraction for simplified projected outlines.
-- Planar batch boolean/offset solving for filled 2D geometry.
-- Future STEP mesh/tessellation APIs for browser rendering.
+- Production Clipper2-backed planar batch boolean/offset solving for filled 2D
+  geometry.
+- Experimental analytic line/arc planar Boolean solving; retained for research
+  and diagnostics, not production use.
+- Colored STEP tessellation and native mesh illustration with optional visible
+  HLR composition, exposed through direct C++, IPC, Rust and Python.
 
 The core library must stay generic. Do not put board placement rules, Altium
 specific names, visualizer policy, or downstream application semantics into
@@ -23,6 +27,12 @@ specific names, visualizer policy, or downstream application semantics into
 
 For the current callable C++, C ABI, Python, WASM, CLI, JSON, and binary
 formats, start at [../design/README.md](../design/README.md).
+
+For authored/generated documentation ownership and focused freshness checks,
+see [documentation maintenance](documentation.md). The [demo audit](demo-status.md)
+records current runtime evidence and remaining verification gaps.
+The [native illustration API readiness handoff](native-api-readiness.md)
+separates implemented surfaces and package evidence from remaining release gates.
 
 ## Repository Layout
 
@@ -129,7 +139,7 @@ rejects stale, missing, unexpected, unlinked, or externally dependent generated
 files, verifies vendored documentation assets, and replays the governed raw
 contract vectors under `tests/contracts/vectors/`. Use `npm run generate:docs`
 or `npm run check:docs` for a focused documentation-only pass. See
-[../design/typespec-toolchain.md](../design/typespec-toolchain.md) for authority,
+[../design/typespec-toolchain.md](../contracts/typespec-toolchain.md) for authority,
 supported constructs, identities, and output paths.
 
 ## Workspace Copy Setup
@@ -338,7 +348,9 @@ temporary environment, verifies that Python resolves the bundled executable from
 inside the installed package, imports the public analytic DTO/client surface,
 executes empty and nontrivial analytic IPC calls against that bundled
 executable, verifies the generated `geometer` console script, and runs the
-headless package example:
+headless package example. It also exercises installed public tessellation,
+illustration, Fast-HLR composition, deterministic SVG, default surface fusion,
+limit recovery and one-shot Python helpers outside the source checkout:
 
 ```powershell
 uv run python scripts\validate_python_package.py
@@ -375,7 +387,7 @@ Before uploading, verify both the filename and the bundled executable:
 
 ```bash
 otool -l dist/native/macos-arm64/geometer | rg -A5 'LC_BUILD_VERSION|LC_VERSION_MIN_MACOSX'
-python -m twine check out/wheelhouse/macos-arm64/wn_geometer-2026.9.4-py3-none-macosx_11_0_arm64.whl
+python -m twine check out/wheelhouse/macos-arm64/wn_geometer-2026.9.6-py3-none-macosx_11_0_arm64.whl
 ```
 
 The Mach-O `minos` value must not be newer than the wheel platform tag. Do not
@@ -403,25 +415,50 @@ uvx --from auditwheel --with patchelf auditwheel show out/wheelhouse/linux-x64/w
 `auditwheel show` should not report a newer glibc floor than the wheel filename
 tag.
 
+### Public release workflow
+
+The normal publication path is [Publish](../../.github/workflows/release.yml),
+triggered by publishing a GitHub release. Prepare the UTC date version, release
+notes, generated contracts/docs and a release PR first. Require the
+[CI](../../.github/workflows/ci.yml) four-platform native/client/installed-wheel
+matrix, L99 and standards checks, plus [WASM](../../.github/workflows/wasm.yml)
+browser and cross-transport checks before tagging. Inspect native artifact
+attestations for clean source and verified OCCT provenance, then refresh
+committed `dist/` outputs from those qualified builds. Do not publish a local
+development wheel or change attestation fields to make it qualify.
+
+After the reviewed release PR merges, tag its exact revision and publish the
+GitHub release using the dated notes. Publish rebuilds and tests Windows x64,
+Linux x64, Linux ARM64 and macOS ARM64 wheels plus WASM, uploads GitHub assets
+and checksums, and publishes wheels through PyPI trusted publishing. Verify
+workflow completion, release assets and PyPI version/platform files. Then
+install from PyPI in WSL2 and run the headless package example (REQ-006),
+including the installed native illustration workflow. Native Rust GUI binaries
+remain outside release packaging pending a separate decision.
+
+The commands below are optional manual upload procedures, not a bypass of the
+same qualification gates. Include every supported platform, including Linux
+ARM64, when performing a complete manual release.
+
 PyPI upload commands:
 
 ```powershell
 # Preflight metadata.
-python -m twine check out\wheelhouse\windows-x64\wn_geometer-2026.9.4-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.4-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.4-py3-none-macosx_11_0_arm64.whl
+python -m twine check out\wheelhouse\windows-x64\wn_geometer-2026.9.6-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.6-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.6-py3-none-macosx_11_0_arm64.whl
 
 # Optional dry-run project on TestPyPI.
-python -m twine upload --repository testpypi out\wheelhouse\windows-x64\wn_geometer-2026.9.4-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.4-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.4-py3-none-macosx_11_0_arm64.whl
+python -m twine upload --repository testpypi out\wheelhouse\windows-x64\wn_geometer-2026.9.6-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.6-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.6-py3-none-macosx_11_0_arm64.whl
 
 # Public PyPI release.
-python -m twine upload --repository pypi out\wheelhouse\windows-x64\wn_geometer-2026.9.4-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.4-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.4-py3-none-macosx_11_0_arm64.whl
+python -m twine upload --repository pypi out\wheelhouse\windows-x64\wn_geometer-2026.9.6-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.6-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.6-py3-none-macosx_11_0_arm64.whl
 ```
 
 For token-based upload, set `TWINE_USERNAME=__token__` and put the PyPI or
 TestPyPI API token in `TWINE_PASSWORD`, or use an equivalent `.pypirc`/keyring
 setup. Do not write upload tokens into the repository.
 
-The current release target is `wn-geometer==2026.9.4`; callers install
-`wn-geometer==2026.9.4` and import `geometer`.
+The current release target is `wn-geometer==2026.9.6`; callers install
+`wn-geometer==2026.9.6` and import `geometer`.
 
 For local token setup, copy `.env.example` to `.env`, fill the token values,
 and keep `.env` out of version control.
@@ -466,10 +503,17 @@ The public Python package uses the executable backend only. Keep ctypes/native
 loading experiments out of the normal wheel and application path unless a future
 ADR explicitly reopens that backend.
 
-## Analytic Production Qualification
+## Experimental Analytic Qualification
+
+This tooling characterizes the retained experimental analytic solver. Passing
+the governed fixtures or historical production-oriented gates does not make the
+operation production-ready. In particular, do not use it as the dependable
+whole-board or whole-layer copper-union path; use Clipper2-backed planar
+operations when polygonized output is suitable. See
+[ADR-017](../geometer/adr/geometer-adr-017-retain_analytic_planar_boolean_as_experimental.md).
 
 Use an existing Release executable to replay the governed analytic request
-through production IPC without rebuilding OCCT:
+through the same release IPC transport without rebuilding OCCT:
 
 ```powershell
 uv run python scripts\qualify_analytic_planar_boolean.py --power-mode balanced
@@ -590,13 +634,13 @@ The full browser target also exports `geometer_version_string` and
 `geometer_abi_version`. Downstream browser consumers should check those before
 depending on a specific ABI. Earlier pre-date ABI integers tracked planar batch,
 diagnostic, and triangulation additions; current releases use the ADR 006
-date-based ABI generation, for example `20260904`.
+date-based ABI generation, for example `20260906`.
 
 ## Versioning
 
 Geometer follows [ADR 006](../geometer/adr/geometer-adr-006-date_based_versioning_policy.md).
-The current release identity is `v2026-09-04`; the CMake/PyPI package version
-is `2026.9.4`; the C ABI generation is `20260904`.
+The current release identity is `v2026-09-06`; the CMake/PyPI package version
+is `2026.9.6`; the C ABI generation is `20260906`.
 
 The root `CMakeLists.txt` declares `GEOMETER_RELEASE_DATE`,
 `GEOMETER_RELEASE_VERSION`, and `GEOMETER_ABI_VERSION`. The root
@@ -640,7 +684,7 @@ python -m http.server 8123 --bind 127.0.0.1 --directory dist\wasm\demos\hlr
 Open `http://127.0.0.1:8123/`. The page runtime is only `index.html`; the
 adjacent `_headers` and `asset-manifest.json` files are deployment and closure
 metadata. This command builds and serves locally—it does not publish. See
-[Browser demo packaging and UI](../design/browser-demos.md) before adding or
+[Browser demo packaging and UI](browser-demos.md) before adding or
 hosting another demo.
 
 The generated TypeScript model-bounds example uses the packaged high-level
@@ -726,9 +770,11 @@ uv run pytest tests\python\test_topology_worker_supervisor.py -q
 ```
 
 The helper worker protocol is test-only. Do not build application code against
-it. Slice A's persistent-topology operation models are now generated from
-TypeSpec, but are explicitly marked unavailable until a governed process
-adapter implements them. See
+it. Persistent-topology operation models are generated from TypeSpec. Nine
+experimental operations have native executable IPC adapters; hierarchy,
+recovery analysis, and save remain structural-only. None are browser/WASM
+operations or production-ready topology APIs. Check the advertised catalog
+before calling them. See
 [STEP topology contract Slice A](../design/step-topology-contract-a0.md).
 
 The experimental direct topology-to-triangle binding proof has a separate
@@ -798,7 +844,7 @@ same-version, old-write/new-read, new-write/old-read, and missing-reader-driver
 behavior for XBF and XML. Its artifacts and provenance report remain generated
 under `.deps/xcaf-matrix/automated/`; do not commit them. The durable measured
 result and its narrow scope are recorded in
-`docs/design/step-topology-xcaf-persistence.md`.
+`docs/research/step-topology/step-topology-xcaf-persistence.md`.
 
 Specification traceability is recorded as relative locators in the design
 docs. `GEOMETER_AP242_SPEC_ROOT` is only a manual reviewer convention; no test

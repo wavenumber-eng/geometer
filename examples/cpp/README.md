@@ -11,6 +11,16 @@ string and C ABI generation at the top of the window. The app requests a
 high-pixel-density SDL window and scales Dear ImGui's font/style from
 `SDL_GetWindowDisplayScale()` at startup.
 
+`Detail alg` selects `fast` (default), `poly`, or `exact`. `Outline alg` selects
+`fast-mesh-shadow` (default), `mesh-shadow`, or `hlr-close`. Both recompute HLR;
+`Mode` independently selects which result layers are displayed.
+
+The left preview treats STEP solids as opaque and uses a small orthographic
+software depth buffer, uploaded as an OpenGL texture. Per-pixel depth prevents
+the incorrect occlusion possible with average-depth triangle sorting. The
+texture is cached until the model, camera, lighting or viewport changes, and
+its longest dimension is capped at 2048 pixels. It is not a transparency renderer.
+
 Build from the repository root:
 
 ```sh

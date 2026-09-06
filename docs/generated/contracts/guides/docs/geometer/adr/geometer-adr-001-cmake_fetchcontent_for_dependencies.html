@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>ADR-001: OCCT built as standalone project, auto-triggered by CMake — Geometer</title>
+  <link rel="stylesheet" href="../../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/geometer/adr/geometer-adr-001-cmake_fetchcontent_for_dependencies.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="adr-001-occt-built-as-standalone-project-auto-triggered-by-cmake">ADR-001: OCCT built as standalone project, auto-triggered by CMake</h1></header>
+<h2 id="status">Status</h2>
+<p>Accepted (revised)</p>
+<h2 id="context">Context</h2>
+<p>Geometer depends on OCCT, a large C++ library with its own CMake build. We need
+a dependency strategy that works across PC, Mac, Linux, and Emscripten.</p>
+<p>Options considered:</p>
+<ul>
+<li>Git submodules: rejected because they add developer friction.</li>
+<li>Zephyr West manifest: rejected because it is the wrong tool for this C++
+project.</li>
+<li>vcpkg / Conan: rejected because they add an external package manager
+dependency.</li>
+<li>CMake FetchContent: attempted first, does not work. OCCT's CMakeLists.txt
+references <code>CMAKE_SOURCE_DIR</code> internally for its own cmake modules, which
+resolves to Geometer's root when OCCT is added as a subdirectory. This causes
+immediate configure failure.</li>
+<li>Standalone generated dependency state with <code>find_package</code>: adopted.</li>
+</ul>
+<h2 id="decision">Decision</h2>
+<p>OCCT is restored or built as standalone generated dependency state via
+<code>scripts/build_occt.py</code>, which installs to
+<code>.deps/native/&lt;platform&gt;/occt-install/</code>. Geometer's CMakeLists.txt uses
+<code>find_package(OpenCASCADE)</code> to locate the installed artifacts.</p>
+<p>If OCCT is not found at configure time, CMake automatically invokes
+<code>build_occt.py</code>. That script may restore a verified binary dependency archive
+from the public artifact cache before falling back to cloning, configuring,
+building, and installing OCCT from source. This makes the first
+<code>cmake --preset default</code> self-bootstrapping with no separate manual step
+required.</p>
+<p>ADR 009 defines the binary dependency cache policy.</p>
+<p>The OCCT build uses vendored RapidJSON from <code>third_party/rapidjson</code> for
+glTF/GLB export support.</p>
+<p>The script can also be run manually for clean rebuilds or alternate
+configurations.</p>
+<h2 id="dependency-sources">Dependency Sources</h2>
+<ul>
+<li><strong>OCCT</strong> (V8_0_1): restored from a verified binary cache when available, or
+cloned shallow from GitHub and built as static libraries.</li>
+<li><strong>RapidJSON</strong> (v1.1.0, header-only): vendored under
+<code>third_party/rapidjson</code>, required by OCCT's <code>RWGltf_CafWriter</code> for glTF/GLB
+export.</li>
+</ul>
+<h2 id="occt-build-options">OCCT Build Options</h2>
+<p>The script disables modules and features not needed by Geometer:</p>
+<ul>
+<li><code>BUILD_MODULE_Draw=OFF</code></li>
+<li><code>BUILD_MODULE_Visualization=OFF</code> (TKService/TKV3d are still built because
+TKXCAF depends on them)</li>
+<li><code>BUILD_MODULE_ApplicationFramework=OFF</code></li>
+<li><code>USE_FREETYPE=OFF</code>, <code>USE_TBB=OFF</code>, <code>USE_FREEIMAGE=OFF</code>, <code>USE_OPENVR=OFF</code></li>
+<li><code>USE_RAPIDJSON=ON</code></li>
+</ul>
+<h2 id="rationale">Rationale</h2>
+<ul>
+<li>Single command build: <code>cmake --preset default &amp;&amp; cmake --build build --config Release</code>.</li>
+<li>OCCT version is pinned in one place (<code>scripts/dependency_versions.py</code>).</li>
+<li>RapidJSON is local and checked in, avoiding a second generated dependency
+checkout.</li>
+<li><code>.deps/</code> is gitignored and survives build directory wipes.</li>
+<li>Native OCCT build/install state is platform-specific, so Windows, Linux/WSL,
+and macOS builds can coexist in one checkout without overwriting each other.</li>
+<li>The same approach extends to Emscripten.</li>
+<li>No extra package manager tools are required.</li>
+</ul>
+<h2 id="consequences">Consequences</h2>
+<ul>
+<li>First uncached configure can take tens of minutes because OCCT must build.
+Cache hits and subsequent configures are fast.</li>
+<li>OCCT source clone is about 80 MB when shallow.</li>
+<li><code>.deps/</code> holds large generated build artifacts.</li>
+<li>Updating OCCT requires changing the tag in <code>scripts/dependency_versions.py</code>
+and rebuilding.</li>
+<li>Updating RapidJSON requires an intentional vendored source refresh under
+<code>third_party/rapidjson</code>.</li>
+</ul>
+
+</main>
+</body>
+</html>

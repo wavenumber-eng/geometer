@@ -276,7 +276,7 @@ def test_manifest_sources_and_identities_are_complete() -> None:
     toolchain = manifest["toolchain"]
     assert toolchain == {
         "status": "implemented",
-        "design": "docs/design/typespec-toolchain.md",
+        "design": "docs/contracts/typespec-toolchain.md",
         "runtime_dependency": False,
         "node_major": 24,
         "package_manager": "npm@11.16.0",
@@ -464,8 +464,10 @@ def _assert_contract_and_operation_inventory(manifest: dict[str, Any]) -> None:
     operation_ids = [item["id"] for item in operations]
     _unique(operation_ids, "operation id")
     assert {item["id"] for item in operations if item["status"] == "pilot_candidate"} == {
+        "geometry.mesh_illustration.a0",
         "geometry.model_hlr_projection.a0",
         "geometry.mesh_hlr_projection.a0",
+        "geometry.model_tessellation.a0",
     }
     assert {item["id"] for item in operations if item["status"] == "promoted"} == {"geometry.model_bounds.a0"}
     assert_step_topology_inventory(manifest, contracts, operations)
@@ -584,8 +586,8 @@ def _assert_candidate_projection_surfaces(manifest: dict[str, Any]) -> None:
     assert "decode_AnalyticPlanarBoolean" not in cpp_contract_json
     assert "write_AnalyticPlanarBoolean" not in cpp_contract_json
     assert "using OperationResultValueA0 =" in cpp_contract_header
-    assert "ModelBoundsResultA0, HlrProjectionResultA0, PackedAttachmentProjectionA0" in cpp_contract_header
-    assert "PackedAttachmentProjectionA0,\n                 StepTopologyOpenResultA0" in cpp_contract_header
+    assert "ModelBoundsResultA0, HlrProjectionResultA0, PackedAttachmentProjectionA0" in " ".join(cpp_contract_header.split())
+    assert "PackedAttachmentProjectionA0, StepTopologyOpenResultA0" in " ".join(cpp_contract_header.split())
     assert "StepTopologyAnalyzeRecoveryResultA0>;" in cpp_contract_header
     assert "holds_alternative<contracts::AnalyticPlanarBoolean" not in cpp_operation_catalog
     rust_contracts = (ROOT / "src/rust/geometer-client/src/generated/contracts.rs").read_text(encoding="utf-8")
@@ -698,8 +700,10 @@ def _assert_matz_case_2_handoff(manifest: dict[str, Any]) -> None:
         "independent_review_identity",
     ]
     design = (ROOT / candidate["design"]).read_text(encoding="utf-8")
+    assert "../research/analytic/analytic-planar-boolean-history.md" in design
+    design = (ROOT / "docs/research/analytic/analytic-planar-boolean-history.md").read_text(encoding="utf-8")
     assert "historical angle-form case-2 feasibility oracle" in design
-    assert "[machine-actionable handoff](../contracts/matz-case-2-handoff-a0.json)" in design
+    assert "[machine-actionable handoff](../../contracts/matz-case-2-handoff-a0.json)" in design
     assert "historical fragment list must not be copied forward" in design
     assert "The case-2 success oracle" not in design
 
@@ -1013,7 +1017,7 @@ def test_exact_algebraic_backend_is_governed_and_non_primary() -> None:
     backend = _manifest()["analytic_exact_backend"]
     assert backend == {
         "status": "implemented_non_primary_oracle",
-        "design": "docs/design/exact-real-algebraic-a0.md",
+        "design": "docs/research/analytic/exact-real-algebraic-a0.md",
         "design_sha256": "71139fbe41e98fd1c4bab70916fb4fc3f9e720f948d2629815a61bba1433fb8e",
         "conformance_identity": "geometry.exact_real_algebraic.feasibility.a0",
         "magic": "GEXPA001",

@@ -8,6 +8,19 @@ TypeSpec catalog. The live client spawns one persistent native
 `geometer(.exe) serve --stdio` process and executes model bounds, model/mesh
 HLR, and analytic planar Boolean through their governed attachments.
 
+Since 2026.9.6, the client additionally provides typed `model_tessellation` and
+`mesh_illustration` methods using generated A0 values. Optional
+`mesh_illustration_with_hlr(input, hlr)` returns the native composed SVG with
+visibility-filtered outline/detail; consumers do not arrange SVG layers. The complete
+[native STEP-to-SVG example](mesh-illustration-native.md) needs no JS/WASM runtime
+or handwritten subprocess protocol. These additions require a matching catalog
+and a compatible 2026.9.6 or later executable.
+
+The analytic operation is experimental and not production-ready. It may fail
+closed on valid inputs and is not the dependable path for whole-board or
+whole-layer copper union. Prefer the Clipper2-backed planar APIs when
+polygonized output is suitable.
+
 The executable implementation preserves every file-oriented CLI command. Its
 stdin and stdout are switched to binary mode on Windows; stdout is reserved for
 complete A0 frames and stderr is captured separately by the client.
@@ -47,7 +60,32 @@ encoder accepts `AnalyticPlanarBooleanBatchRequestA0`; the public decoder
 returns `AnalyticPlanarBooleanBatchResultA0` and computes each job's SHA-256
 over its exact rebased standalone packet closure.
 
+Logical request decoding and request/result identity matching are generated in
+`generated/dispatch.rs` from the TypeSpec IPC unions and catalog roots. The
+generic client selects the exact negotiated request contract before decoding;
+it does not guess from union order (bounds and HLR can both accept `{}`). This
+also allows generic `execute` calls for advertised native topology operations.
+Their experimental lifecycle is unchanged; generated support is not production
+promotion. New logical operations must join the authored TypeSpec unions and
+catalog, then regenerate all bindings, rather than add handwritten Rust
+dispatch cases. Attachment and runtime-availability checks still use the
+negotiated operation declaration; packed packet dispatch stays separate.
+
+The `model_tessellation()` facade returns colored millimeter
+meshes through a generated attachment contract. See
+[model tessellation A0](model-tessellation-a0.md) for defaults, limits and current
+release-qualification status. It requires a matching executable; it is
+not present in the released 2026.9.4 binary.
+
 ## Client lifecycle
+
+`GeometerClient::find_executable()` resolves the same local path as
+`discover_and_spawn()` without launching it, so desktop consumers can show or
+override the selected executable. Windows spawn uses `CREATE_NO_WINDOW` while
+retaining piped stdin/stdout/stderr. These process-support helpers are not new
+TypeSpec geometry operations. The optional
+[Rust/wgpu demo](../../examples/rust/native_viewer/README.md) demonstrates the
+typed native APIs without adding GUI dependencies to this crate.
 
 `GeometerClient::spawn()` starts an explicit executable path, sends `hello`,
 and requires a `welcome` selecting `a0`, the exact normalized-catalog digest,

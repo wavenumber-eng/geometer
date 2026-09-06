@@ -1,0 +1,606 @@
+{
+  "schema": "wn.geometer.public_surface_documentation_review.a0",
+  "reference": "docs/contracts/public-entrypoints.md",
+  "files": [
+    {
+      "path": "python/geometer/__init__.py",
+      "sha256": "42b3f31822b658c8dc06abc1139bdd6e928e7c28a6873963be71e7423bad1f5c"
+    },
+    {
+      "path": "python/geometer/_analytic_packet_a0.py",
+      "sha256": "d255f8e07959481ae5924fed59bee7b72c86847f5684ca5401d910e6a1882f83"
+    },
+    {
+      "path": "python/geometer/_api.py",
+      "sha256": "9eec173a7e80c144959e95e5eee2fcbd0bb055bc34fe3642f5995bb143fe7b08"
+    },
+    {
+      "path": "python/geometer/_batch.py",
+      "sha256": "9531add0c24c0a1c08157f92768a99943361f38c38b990199f5f9034dd1ba5e6"
+    },
+    {
+      "path": "python/geometer/_cli.py",
+      "sha256": "0a310f501fc102def61af56a0cac04395ba985f9f4a60c985cfea25bc5c54fed"
+    },
+    {
+      "path": "python/geometer/_console.py",
+      "sha256": "9c1b1092172a0a9a9e4e78aacb04c844925cb646e31bea566eb324e33cab678f"
+    },
+    {
+      "path": "python/geometer/_contract_runtime.py",
+      "sha256": "a9e9b3e4192111d4e81491aff952ccd099a97053895d2f9f73c60a2a24ed60e3"
+    },
+    {
+      "path": "python/geometer/_errors.py",
+      "sha256": "4e79bc006953b3193c0dae6d39c809542598c399e8d7cc37d5545a4b46356576"
+    },
+    {
+      "path": "python/geometer/_illustration.py",
+      "sha256": "5ef6412dd17d30c36dc8192487a0a1a2836ba4dac391a16b5c20b18758859d36"
+    },
+    {
+      "path": "python/geometer/_indexed_mesh_packet_a0.py",
+      "sha256": "4183c1b53dc8eafbbebb118295155cf135e5b428c584aa9e145acdc9d13dc7a9"
+    },
+    {
+      "path": "python/geometer/_ipc_a0.py",
+      "sha256": "a464eb53cb58b4a78d94a2c7a59d38328664938a9b2795bd1aed8459b43fba25"
+    },
+    {
+      "path": "python/geometer/_ipc_client.py",
+      "sha256": "7227872da41712d9d034cc43976f8d36e6629fbf3bdf2877b4dcbf241807832e"
+    },
+    {
+      "path": "python/geometer/_native_helpers.py",
+      "sha256": "5990a63bc1bef8d8f86aa5e45601da693be0c2dd9cfc213cdf92f97f27b5e5bd"
+    },
+    {
+      "path": "python/geometer/_paths.py",
+      "sha256": "6b569596b99728553d76847ed884997b8241fb7d0c7589a7e63c0f369a9a326a"
+    },
+    {
+      "path": "python/geometer/_tessellation.py",
+      "sha256": "8d3d9cf945273cc514a36704b3099c787c750c024200db28f8cbe0de9f052f88"
+    },
+    {
+      "path": "python/geometer/_topology_worker_posix_launcher.py",
+      "sha256": "3991ee4163ab23c7cb257e784115469b9b00a0a5918ad1ff5209ea5fb3cec494"
+    },
+    {
+      "path": "python/geometer/_topology_worker_supervisor.py",
+      "sha256": "fe26c2aad02a83363b1ccb613904d4ece2b951570c14d47865a64f8ae6d7d64e"
+    },
+    {
+      "path": "python/geometer/_types.py",
+      "sha256": "9fde094a9c08525e2df5b19e26adc643cda31fd9a15b9f0893183561b522c1a4"
+    },
+    {
+      "path": "src/cpp/cli/CMakeLists.txt",
+      "sha256": "24f8ccf8c30d025ef99b8d4a40a09ffa74f4d2c4b999a1d8ce66f2eb63c0b858"
+    },
+    {
+      "path": "src/cpp/cli/cli_usage.cpp",
+      "sha256": "834a287ffb7e513c7451c9fe549c7c173136b5b100924d22a1b47eddb19e3457"
+    },
+    {
+      "path": "src/cpp/cli/cli_usage.h",
+      "sha256": "4a74b398283ac6add4665161ed9f5e16d3de1856eb08ed90fc19f4ee8f245ee9"
+    },
+    {
+      "path": "src/cpp/cli/main.cpp",
+      "sha256": "da81ccb3a363fb3be7f17ccd441b08714244bd994bc91312621903bc5f0b0d1a"
+    },
+    {
+      "path": "src/cpp/cli/mesh_hlr_command.cpp",
+      "sha256": "5e80c34bfd7413a84985619baac903288c32d4dfad65e23983130e9a8a8f7193"
+    },
+    {
+      "path": "src/cpp/cli/mesh_hlr_command.h",
+      "sha256": "c22a6be5d2fdadf4391168d4a19f7ac31a8cfc56a3a95817b47e3fe1322bbfc9"
+    },
+    {
+      "path": "src/cpp/cli/projection_cli_options.cpp",
+      "sha256": "45c7190fb4c05f41f5e4fcd2c38d3706d8fab2c97a42c7095b4b9be9e6f84559"
+    },
+    {
+      "path": "src/cpp/cli/projection_cli_options.h",
+      "sha256": "69e4a79b2454804e43778ba2bd6a392cd6641bfb201429693f79a2546801cbe9"
+    },
+    {
+      "path": "src/cpp/lib/CMakeLists.txt",
+      "sha256": "78a8d7a45374d9755235f94ce47d8d24b5555ac596122d7c0b8b2c8f44271c36"
+    },
+    {
+      "path": "src/cpp/lib/geometer.h",
+      "sha256": "e36137327dcecdc4553888c440fa3f78918464bcfc3110b3f69227172dbbe4bf"
+    },
+    {
+      "path": "src/cpp/lib/geometer/analytic_curve_broad_phase.h",
+      "sha256": "15ef950946cfb62eeaa88fd38e148d31e3c980cc9cdb909b657b1a0081062d39"
+    },
+    {
+      "path": "src/cpp/lib/geometer/analytic_curve_narrow_phase.h",
+      "sha256": "518924e0eb77dfb698240ba5f6a09e4e336eddffdbf84a6c2aea9dea6e9ed59f"
+    },
+    {
+      "path": "src/cpp/lib/geometer/analytic_filtered_arrangement.h",
+      "sha256": "5b2b7c57dbe2c738c4eaa232b66c9ac4929738be939a1ebc487eb059cd918869"
+    },
+    {
+      "path": "src/cpp/lib/geometer/analytic_filtered_batch.h",
+      "sha256": "3041bf1b7ff8377d81c82e63f3455baee0c5e82bfec42543e3361400a4376838"
+    },
+    {
+      "path": "src/cpp/lib/geometer/analytic_filtered_boolean_selection.h",
+      "sha256": "2d9875e3a2492e5ac55662467f7947706c2d51e4b5bbc036a85c897a9951741f"
+    },
+    {
+      "path": "src/cpp/lib/geometer/analytic_filtered_lineage.h",
+      "sha256": "654fb545d7d7b7a9c35d93b200c4949c559b33335a90a1de093c060da66aabdc"
+    },
+    {
+      "path": "src/cpp/lib/geometer/analytic_filtered_lowering.h",
+      "sha256": "634f06afe970bd8d26adfdb3b612592135b32ea66224f3ef62de9fc5a477e75c"
+    },
+    {
+      "path": "src/cpp/lib/geometer/analytic_filtered_normalization.h",
+      "sha256": "25bc3dd9e3c19ea4f4a69f374af4b2a871caa41f5be4d6b54148956762d4e3e9"
+    },
+    {
+      "path": "src/cpp/lib/geometer/analytic_filtered_outcomes.h",
+      "sha256": "2d12068a4847a0cfb56c2517b05d6e2d6210022b8998be724114a672569fc699"
+    },
+    {
+      "path": "src/cpp/lib/geometer/analytic_filtered_overlay.h",
+      "sha256": "9e7dd5e83ad116c4c0d84f1e67057569f89a81da4618c323e91735100d9493b9"
+    },
+    {
+      "path": "src/cpp/lib/geometer/analytic_filtered_packet.h",
+      "sha256": "4694388783e8ca4ac5653c3c03d184b8a0bb563c9b89eb86ff4f847678bb0d70"
+    },
+    {
+      "path": "src/cpp/lib/geometer/analytic_filtered_regions.h",
+      "sha256": "77b3a686dbf601c57448a70d9eb348db05a8d9b0205d8ad220c480abbe6f8921"
+    },
+    {
+      "path": "src/cpp/lib/geometer/analytic_numeric_filter.h",
+      "sha256": "21492a752c566ff529bf4bba8bb7a424697a7e55e1328adbf9b2b25d65ccd128"
+    },
+    {
+      "path": "src/cpp/lib/geometer/analytic_operand_lowering.h",
+      "sha256": "a862483f5ac75f8e8c8d405f101571834b404679cbf6e20c8ff57088c293d885"
+    },
+    {
+      "path": "src/cpp/lib/geometer/analytic_operand_outcome.h",
+      "sha256": "55a86d2480060c86b3c0aa935aa89468f0ec4d6e6f4d5995a4aae73481d9914d"
+    },
+    {
+      "path": "src/cpp/lib/geometer/analytic_request_packet.h",
+      "sha256": "d0e5d418a27b6a92580fd99d40b5c9713de3948410b0f879db188f467f0d524c"
+    },
+    {
+      "path": "src/cpp/lib/geometer/analytic_result_packet_canonical.h",
+      "sha256": "76393ed40a3faf7888ebb5552722fd0b129486b9e16e5a5d2a7598e4aed7c482"
+    },
+    {
+      "path": "src/cpp/lib/geometer/analytic_result_packet_layout.h",
+      "sha256": "100e6577a8c1131e85805510c04ee197282daba6a30de2a66483d51d19630ed9"
+    },
+    {
+      "path": "src/cpp/lib/geometer/analytic_result_packet_records.h",
+      "sha256": "fc0a59f445d584d99e80d6d119647e786104d96f17487f82c1420de927cb8084"
+    },
+    {
+      "path": "src/cpp/lib/geometer/analytic_result_packet_standalone.h",
+      "sha256": "5dc846eac246d0a9fe309de9737113b3a31440fc4596dcbb2ee05868f0ab6ab3"
+    },
+    {
+      "path": "src/cpp/lib/geometer/analytic_result_packet_topology.h",
+      "sha256": "a5d9fdb3710d519727072d84b725ccec31e9d86f38dcd1067579092a4d864ead"
+    },
+    {
+      "path": "src/cpp/lib/geometer/analytic_solver_limits.h",
+      "sha256": "c9d9e033525d59cdca498d3c5e696a5d67154c5af41476e27b8ac4bfc2c3c1a7"
+    },
+    {
+      "path": "src/cpp/lib/geometer/analytic_source_reference.h",
+      "sha256": "c28f2f18e31b467a11437e0daf9e3944d95b32ad236b5b62b2de456e068a90b6"
+    },
+    {
+      "path": "src/cpp/lib/geometer/c_api.h",
+      "sha256": "a81c7945c9004c67db26f8731a1b61c396460cd37a64f9e6019ab10490625543"
+    },
+    {
+      "path": "src/cpp/lib/geometer/clipper2_bytes.h",
+      "sha256": "437d3f5965af26d987f6d23c0ce1db2610349025fa89ffb031d76f40e73b69f7"
+    },
+    {
+      "path": "src/cpp/lib/geometer/exact_arc_distance.h",
+      "sha256": "9b8c83d41f350fcffa787ab1a7469c325a8e72b620e25c6d8be52dc56f39d3c1"
+    },
+    {
+      "path": "src/cpp/lib/geometer/exact_arrangement.h",
+      "sha256": "538954db00d4c733774cec90c91ff4c2020e2dabd5a5db87e7cde988e2caf27a"
+    },
+    {
+      "path": "src/cpp/lib/geometer/exact_artifact.h",
+      "sha256": "0ba148675904c931feb694399aa741f7731b62682419d3bc97db5b936d86aa1a"
+    },
+    {
+      "path": "src/cpp/lib/geometer/exact_boolean_outcomes.h",
+      "sha256": "02e062ae230bbb4f17fbc9951eb2fa153bdc7789b41de13485b2c98c4c2e091b"
+    },
+    {
+      "path": "src/cpp/lib/geometer/exact_boolean_provenance.h",
+      "sha256": "5280cf6c5963ed79e2eab6834a400310972cbd21556b95b6802d18a6b62f5795"
+    },
+    {
+      "path": "src/cpp/lib/geometer/exact_boolean_regions.h",
+      "sha256": "ed4e0786da1b014d2cc05768b9ade66ae9db83e35121819ce9d32f831202d3b0"
+    },
+    {
+      "path": "src/cpp/lib/geometer/exact_boolean_stages.h",
+      "sha256": "6260da5f6fc9cb90622f067a80a4f48130f7c5e2a860922c8127720df8509f5a"
+    },
+    {
+      "path": "src/cpp/lib/geometer/exact_construction.h",
+      "sha256": "833a040144bf9c605ad3e98134c3a4b20aed694fc1e8bd2a489db48e34fcdf7d"
+    },
+    {
+      "path": "src/cpp/lib/geometer/exact_curve_domain.h",
+      "sha256": "7c5281f3cb01a5f572c5bd358d0398bf7e9ce22265be4be8b3dbd4e00891eefd"
+    },
+    {
+      "path": "src/cpp/lib/geometer/exact_expression.h",
+      "sha256": "9573525664d0b14c0e66f811c7798395495c7fb3e029cde5b0fa3c87fb182f6b"
+    },
+    {
+      "path": "src/cpp/lib/geometer/exact_factorization.h",
+      "sha256": "08cd5b7777e4d9625b77864ab5ef2b0c5e07cb52958196ba1abb299c6849056c"
+    },
+    {
+      "path": "src/cpp/lib/geometer/exact_geometry.h",
+      "sha256": "7469b75c74b8cc70cebfcae92e410845368afd61b6616f93ec4b7bc793661a43"
+    },
+    {
+      "path": "src/cpp/lib/geometer/exact_normalization.h",
+      "sha256": "c901c83a1f6f0ab1f92e614b263093c694bb49ed41c646819e19c979aaa62e96"
+    },
+    {
+      "path": "src/cpp/lib/geometer/exact_polynomial.h",
+      "sha256": "9811d900761127b81781464e314dbe69357d20cec9ff5f382ebf0a25580ede00"
+    },
+    {
+      "path": "src/cpp/lib/geometer/exact_rational.h",
+      "sha256": "26cf2bd2cd5502603950e82c311e4452991dda99fca788d50405bfe13d6503ed"
+    },
+    {
+      "path": "src/cpp/lib/geometer/exact_result_normalization.h",
+      "sha256": "7e343fdc8dc7f63b582cbd6f1387f97e1efc4f4ff307a4d0d4c8d5d52513b17e"
+    },
+    {
+      "path": "src/cpp/lib/geometer/exact_resultant.h",
+      "sha256": "3cc5f8ee28f35920cdfe7c591d18f02db4809b3e27947ee16b5a2387d900cfa4"
+    },
+    {
+      "path": "src/cpp/lib/geometer/exact_source_sets.h",
+      "sha256": "bb161429b818e386481482b3d39644e4cd94d2fc177c872e8c5a9d21549ea43f"
+    },
+    {
+      "path": "src/cpp/lib/geometer/exact_value.h",
+      "sha256": "8837e0828dcc91922b5313ce8304b006b5aebf46bf02102f25d65159a4a83126"
+    },
+    {
+      "path": "src/cpp/lib/geometer/exact_value_codec.h",
+      "sha256": "4f69219470d85f31ab6e6f8f2dba97f87e876379945652dbf00ff94e97fba739"
+    },
+    {
+      "path": "src/cpp/lib/geometer/fast_hlr.h",
+      "sha256": "ae7f97287036ffb27a14bc83ec9200111545914534f7bcfdf4277e8a27b35027"
+    },
+    {
+      "path": "src/cpp/lib/geometer/indexed_mesh_packet.h",
+      "sha256": "dbd937c936fc6121493123bca3a46ac1b5d48ab21469736992f53a89de6ca19e"
+    },
+    {
+      "path": "src/cpp/lib/geometer/ipc_a0_frame.h",
+      "sha256": "58044bc800218fdd30ea619eee60bfd503b42f6defd509dd58d6f8694dd2d2bb"
+    },
+    {
+      "path": "src/cpp/lib/geometer/ipc_a0_server.h",
+      "sha256": "1f26c734b6ecfbf8ca6b3bbcaba76c2f0e2bb7874eb167238bc97abb94927736"
+    },
+    {
+      "path": "src/cpp/lib/geometer/mesh_illustration.h",
+      "sha256": "39fa575d555edcc147e475b9e29cf2b77f32516dac73d7133ecd3ddb64b3937d"
+    },
+    {
+      "path": "src/cpp/lib/geometer/model.h",
+      "sha256": "e2bfd2b0ff2104a5335ff9a393a6c06a5eb6ee16176f7cd77bea89beb6c2c2ce"
+    },
+    {
+      "path": "src/cpp/lib/geometer/model_bounds.h",
+      "sha256": "efb93d330046e17bb7d552b14efcad9a4be7294a8e3e6ff212d4b8e65c8caee3"
+    },
+    {
+      "path": "src/cpp/lib/geometer/model_bounds_options_json.h",
+      "sha256": "4df5a5a5414803d32be57073a4ff5c3f96639b99d9f24d4dbb0e1a911e7d3d46"
+    },
+    {
+      "path": "src/cpp/lib/geometer/model_tessellation.h",
+      "sha256": "c12256ac89f303c0f2221f8eb412707b687b5d73350d7c396928f0e88cb2603c"
+    },
+    {
+      "path": "src/cpp/lib/geometer/operation_registry.h",
+      "sha256": "5f75c439b212717186cbd5c785ca42d35f9187d848a0c814b27a7e71f079b950"
+    },
+    {
+      "path": "src/cpp/lib/geometer/operation_transport.h",
+      "sha256": "405e85158a49373a0f498c8f2f7855970ef03c0a0aa4e0e1b2152114281607b4"
+    },
+    {
+      "path": "src/cpp/lib/geometer/planar_contours.h",
+      "sha256": "e6a11df342a5f67c9df333e690b89f8b13f6824d6f85751c93c48fcae97e598c"
+    },
+    {
+      "path": "src/cpp/lib/geometer/planar_solve.h",
+      "sha256": "b00959e3302baefc6e26e9f5a48f8c19ed8c26fccbe00b17fce45f49f5d4c57a"
+    },
+    {
+      "path": "src/cpp/lib/geometer/planar_step.h",
+      "sha256": "29ba931b682c6be39884883963b3ab70f61966c2817751c9ed193a19362da518"
+    },
+    {
+      "path": "src/cpp/lib/geometer/planar_triangulate.h",
+      "sha256": "8ad124ddae108bede3832465fd0b3aff0044c763e44344e1f1759f073806ab50"
+    },
+    {
+      "path": "src/cpp/lib/geometer/projection.h",
+      "sha256": "c0961aa741679e1122807f7bd5457e52f0fa265f3243e040af4792982a27ef40"
+    },
+    {
+      "path": "src/cpp/lib/geometer/projection_options_json.h",
+      "sha256": "c9662c0e210f9a98eff645ca69bd36d2ef39b4c5c100be216d525bc430226684"
+    },
+    {
+      "path": "src/cpp/lib/geometer/sha256.h",
+      "sha256": "7dfdb8b00d15dc9e50a7d1b57e593301222b14ad5d94d260734f8253cfef902b"
+    },
+    {
+      "path": "src/cpp/lib/geometer/status.h",
+      "sha256": "2c02253e0fd251ed1c52dc9a1a1440a33237c958d33d8ff17b15aaf13ee7b69d"
+    },
+    {
+      "path": "src/cpp/lib/geometer/step_to_glb.h",
+      "sha256": "e352c249a6c4b3c9d56b3c757cff772648878c7bfcdedfcee798d6a9d9bb709d"
+    },
+    {
+      "path": "src/cpp/lib/geometer/step_to_glb_options_json.h",
+      "sha256": "8bc6f0af424914784cfa57a6d43b3c1c5d74ac961c1fbef9dbb7dffc9567a4a7"
+    },
+    {
+      "path": "src/cpp/lib/geometer/step_topology_hierarchy.h",
+      "sha256": "518c49650dfed7194ad49a6eba4a1542d2dcb2bd5c530b1706e8b8a4ec03e8d6"
+    },
+    {
+      "path": "src/cpp/lib/geometer/step_topology_recovery.h",
+      "sha256": "f9942260c7be0c72d21bc51abceb3d8a618ac01e1b3bcae0a2c53b67ea294805"
+    },
+    {
+      "path": "src/cpp/lib/geometer/step_topology_session.h",
+      "sha256": "fb0e84ba9eec2422e654c673375210f767442ecee0eba8ac8809c3c4c2d8ebe5"
+    },
+    {
+      "path": "src/cpp/lib/geometer/version.h",
+      "sha256": "620d3072fb4a519eb99ef435cb913ce8f64c8699cd17851e4add5167b66ecc28"
+    },
+    {
+      "path": "src/cpp/lib/model_bounds_options_json.cpp",
+      "sha256": "515ed229b08979ea8477732490260a8ddaf4eb73e0e4ac585282811eafae280d"
+    },
+    {
+      "path": "src/cpp/lib/native_topology_operation_registry.cpp",
+      "sha256": "fcd7f01555faa42952d7dad1f750ac79c3b977317872685b7933cd88dbbd1f5a"
+    },
+    {
+      "path": "src/cpp/lib/operation_registry.cpp",
+      "sha256": "0dfae523ec428fc7049ed3e83483d108c4820b9c323e92f66a7b2b3d72806d37"
+    },
+    {
+      "path": "src/cpp/lib/projection_options_json.cpp",
+      "sha256": "16543e5ec9dd4b9c269d3ad22eea15d20094d27cdabd6dcb18559977e6f3caff"
+    },
+    {
+      "path": "src/cpp/lib/step_to_glb_options_json.cpp",
+      "sha256": "c345d06be4e292508f0a47894383d16c118f9ab6f4f886fbb4612c1afcd89d06"
+    },
+    {
+      "path": "src/rust/geometer-client/src/analytic_packet_a0/error.rs",
+      "sha256": "b6c683dcd6bfc4c68302920cc26152c8df3c04f43541a4cedede2b3cbc15a874"
+    },
+    {
+      "path": "src/rust/geometer-client/src/analytic_packet_a0/mod.rs",
+      "sha256": "091b1d7f45db65ab824ff4fe3519e3b90765ffdeab2566e47117b59ecbc4105f"
+    },
+    {
+      "path": "src/rust/geometer-client/src/analytic_packet_a0/request.rs",
+      "sha256": "ec6c70fc54050825904736008598aafa0cb27061a3df1d02aeb7db84edfe3235"
+    },
+    {
+      "path": "src/rust/geometer-client/src/analytic_packet_a0/result/encode.rs",
+      "sha256": "672004ec82bfb633f6746af06a8a316107bc71bffa65b9919d5947b5ced4017c"
+    },
+    {
+      "path": "src/rust/geometer-client/src/analytic_packet_a0/result/expansion.rs",
+      "sha256": "8ef31601ec54e941ad0585f9a7fbeacd5c24462765b40ab426df217c4124e8b4"
+    },
+    {
+      "path": "src/rust/geometer-client/src/analytic_packet_a0/result/expansion_tests.rs",
+      "sha256": "cc023931758e998bbed84fd96af8284bce1089d646a5099e131cee070e0697e2"
+    },
+    {
+      "path": "src/rust/geometer-client/src/analytic_packet_a0/result/mod.rs",
+      "sha256": "9f37613ac44f587ff08ddd3ae3d018a9f182b9aaad36ddf5c3a2cd2dc703a4b3"
+    },
+    {
+      "path": "src/rust/geometer-client/src/analytic_packet_a0/result/project.rs",
+      "sha256": "af3c76d988535f70d95b88e7c482543f1c44d188d891349580eabf48d46860d2"
+    },
+    {
+      "path": "src/rust/geometer-client/src/analytic_packet_a0/result/records.rs",
+      "sha256": "206d10e0c256445b8c3cdc2370f5f367c771ce94bf1f9bd7d669ce64d0628188"
+    },
+    {
+      "path": "src/rust/geometer-client/src/analytic_packet_a0/result/standalone.rs",
+      "sha256": "f7f9b7944c72acd84878bf6a547a1a35fd4e154d0ea99684b41adca3e49fff06"
+    },
+    {
+      "path": "src/rust/geometer-client/src/analytic_packet_a0/result/standalone_tests.rs",
+      "sha256": "7df824163b8ed7738ab3d3659456aff738278efea6a3eba93774c427501336d0"
+    },
+    {
+      "path": "src/rust/geometer-client/src/analytic_packet_a0/result/validate.rs",
+      "sha256": "20cad111acfaee8a3c89292b6e6d3bcb1363421a2f35766081e77cd03c4914b0"
+    },
+    {
+      "path": "src/rust/geometer-client/src/analytic_packet_a0/result/validate_tests.rs",
+      "sha256": "df8e48763217dfc2cb9e3d15c92361643543620f337ec42e5dee7c8ff239d800"
+    },
+    {
+      "path": "src/rust/geometer-client/src/analytic_packet_a0/wire.rs",
+      "sha256": "1c91ee6d4c2a281153c293a12e149c744679b1fa929574ace993a8cb5d44d886"
+    },
+    {
+      "path": "src/rust/geometer-client/src/client.rs",
+      "sha256": "6e2de103a2a9e36fe67263799f1e2e828bed728d5a58d699d30ddcb04aa8d082"
+    },
+    {
+      "path": "src/rust/geometer-client/src/client_tests.rs",
+      "sha256": "d83c5c2e8ae0b019f3bfae5021fe686d1cc20bbcece4b103bfda48608d39a559"
+    },
+    {
+      "path": "src/rust/geometer-client/src/hlr.rs",
+      "sha256": "fdf5dcc28d6a98b10e2419e375db0d7fb44c68dcec2a355e98ffea117453d21d"
+    },
+    {
+      "path": "src/rust/geometer-client/src/illustration.rs",
+      "sha256": "7c358a54335df29f229946fd26187a3f5e47f09dfe6641822c38d444f3652e31"
+    },
+    {
+      "path": "src/rust/geometer-client/src/indexed_mesh_packet_a0.rs",
+      "sha256": "402fe51e216ab94a92f94cbf22e8a59d49c8a941fd12a4fa32e5ab2e10790e50"
+    },
+    {
+      "path": "src/rust/geometer-client/src/ipc.rs",
+      "sha256": "8c26116022d5ce1834637886f247ae35d517068a3e722bbf4fea690544082b40"
+    },
+    {
+      "path": "src/rust/geometer-client/src/lib.rs",
+      "sha256": "b2b7dcc500dfb8045d976d42797683054549b5673dc1c43ad14f6bfdfb86ac45"
+    },
+    {
+      "path": "src/rust/geometer-client/src/model_bounds.rs",
+      "sha256": "a08d5dd441d5c83ece29f8ab16a9d8ca9fe04f4a05e4d9d4de12d2c54b5d917c"
+    },
+    {
+      "path": "src/rust/geometer-client/src/operation_validation.rs",
+      "sha256": "a838d7a2fa6484f620249c33bcf11fcc5d75ab1acd3baf7fbfaa403c85029e33"
+    },
+    {
+      "path": "src/rust/geometer-client/src/operation_validation/tests.rs",
+      "sha256": "6fa99429a5e99083ec2502c6b210aebe7949515741cb8f9b7169bb1312022bae"
+    },
+    {
+      "path": "src/rust/geometer-client/src/session_validation.rs",
+      "sha256": "961a4d5d3b53c2a2940e6b794861e77e0daad7927682c8c552545ed393b17255"
+    },
+    {
+      "path": "src/rust/geometer-client/src/tessellation.rs",
+      "sha256": "1799c4d9fef9c24d6578c650de4faaa5f230031ef7fb4f7492d41e10a2c4e719"
+    },
+    {
+      "path": "src/rust/geometer-client/src/tessellation/tests.rs",
+      "sha256": "7de3eb6263a0e0617e67bc5d0603e72483205866ea4e513a8da0d4ae17a0f753"
+    },
+    {
+      "path": "src/ts/geometer/analytic-packet-a0-common.ts",
+      "sha256": "1d93d22cb4a498ad6bb22383a3ef8f7cafc1992d4e10d6aa2c72c23f28f3d12c"
+    },
+    {
+      "path": "src/ts/geometer/analytic-packet-a0-request.ts",
+      "sha256": "7f11dd743f4db332cd13369462be3c1bc8221330cca0fd880b78cbe199547c8b"
+    },
+    {
+      "path": "src/ts/geometer/analytic-packet-a0-result.ts",
+      "sha256": "f1f71080a47ccfdfd6a69656743d6e8dc59740c6fb2396989aa02b96602610b6"
+    },
+    {
+      "path": "src/ts/geometer/analytic-packet-a0-validation.ts",
+      "sha256": "91ebd35b667e2e78db09e9228cef932313a4a4cc8ab3785dc9ae3e3ced39df61"
+    },
+    {
+      "path": "src/ts/geometer/analytic-packet-a0.ts",
+      "sha256": "cd230c4323769673de5402fc9303e489246008edc4d0b0ba6bf4ebfd2f043efa"
+    },
+    {
+      "path": "src/ts/geometer/codec-runtime.ts",
+      "sha256": "2095c947a71ac047583c793c48973415159b507b511e9303f4a40dd1bd501030"
+    },
+    {
+      "path": "src/ts/geometer/illustrated-hlr.ts",
+      "sha256": "018989cf5b9fc8dbaecdf84392e5097fccafdc210d747413057945262eca4405"
+    },
+    {
+      "path": "src/ts/geometer/index.ts",
+      "sha256": "3016f5df88ef25e5b5d57c9e1b99e9018e95f5ce49b0d96dc9923daaecba9672"
+    },
+    {
+      "path": "src/ts/geometer/indexed-mesh-packet-a0.ts",
+      "sha256": "08b84dcc920c9907b4560e48ee8b906a56ccc9a96ca777b4473bc3aa66bce4bc"
+    },
+    {
+      "path": "src/ts/geometer/ipc-a0.ts",
+      "sha256": "b994b8fb326aaad3711f89d0c3953372b662d9be483b8fe19d89b2fabe655834"
+    },
+    {
+      "path": "src/ts/geometer/ipc-client-a0.ts",
+      "sha256": "f6e1e25dc5c8ee7a33d03d1d34bc3f22f7036079f88087051938cd6e8130da3f"
+    },
+    {
+      "path": "src/ts/geometer/mesh-illustration-ao-experimental.ts",
+      "sha256": "d0e8514657ea6fbb3be7bb0eb848277a703fcf95f162f77aeb33d603c2032fd8"
+    },
+    {
+      "path": "src/ts/geometer/mesh-illustration.ts",
+      "sha256": "cf08d689bc770ddb9929a41e40a570da6b67644234aca3b35e9b6776af6304c6"
+    },
+    {
+      "path": "src/ts/geometer/node-process-a0.ts",
+      "sha256": "ceac3bb6b23c3f5b54f97344c320d71850dce0858fe5770101e3208e0ca2c6b3"
+    },
+    {
+      "path": "src/ts/geometer/node-process-termination-a0.ts",
+      "sha256": "27e7a33bdda449f58e78d60e38c80cf8873cee54e9d6ec2d80da793b7284db2e"
+    },
+    {
+      "path": "src/ts/geometer/package.json",
+      "sha256": "0aa9e0175ac105e7b5e1c0fa89855d1500db4c28885bbb74a1cbe6710185acfd"
+    },
+    {
+      "path": "src/ts/geometer/step-topology-validation.ts",
+      "sha256": "5d265936b34b702e84f1f8a9d722558ebb3e46f8cf8c079009d8143563932cbd"
+    },
+    {
+      "path": "src/ts/geometer/wasm.ts",
+      "sha256": "4db7b3017faf7324c7c2ea3897c91dbe392e42109ff00fd22962ca9e5b539750"
+    },
+    {
+      "path": "src/ts/geometer/worker-host.ts",
+      "sha256": "68902e12f5c12f0fc7aae4235e7851a8d46ff3342b2fec13b94c16407655e0bd"
+    },
+    {
+      "path": "src/ts/geometer/worker.ts",
+      "sha256": "76be6fd4ca23e984386d2984f8d3ace29ef55e7fbfbb93989048af3c3f2d843d"
+    }
+  ]
+}

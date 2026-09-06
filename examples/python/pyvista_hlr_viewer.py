@@ -244,6 +244,10 @@ class PyVistaHlrViewer(QMainWindow):
         self.version_label.setStyleSheet("font-weight: 600; color: #243044;")
         self.mode_combo = QComboBox()
         self.mode_combo.addItems(["detail", "outline", "both"])
+        self.detail_algorithm_combo = QComboBox()
+        self.detail_algorithm_combo.addItems(["fast", "poly", "exact"])
+        self.outline_algorithm_combo = QComboBox()
+        self.outline_algorithm_combo.addItems(["fast-mesh-shadow", "mesh-shadow", "hlr-close"])
         self.bounds_check = QCheckBox("Bounds")
         self.bounds_check.setChecked(True)
         self.feature_edges_check = QCheckBox("Feature edges")
@@ -289,6 +293,10 @@ class PyVistaHlrViewer(QMainWindow):
         option_layout.addWidget(QLabel("Mode"))
         self.mode_combo.setMaximumWidth(96)
         option_layout.addWidget(self.mode_combo)
+        option_layout.addWidget(QLabel("Detail alg"))
+        option_layout.addWidget(self.detail_algorithm_combo)
+        option_layout.addWidget(QLabel("Outline alg"))
+        option_layout.addWidget(self.outline_algorithm_combo)
         option_layout.addWidget(self.feature_edges_check)
         option_layout.addWidget(QLabel("File"))
         option_layout.addWidget(self.path_label, 1)
@@ -363,6 +371,8 @@ class PyVistaHlrViewer(QMainWindow):
         self.camera_timer.timeout.connect(self._project_camera_after_idle)
 
         self.mode_combo.currentTextChanged.connect(self.on_mode_changed)
+        self.detail_algorithm_combo.currentTextChanged.connect(lambda _value: self.project_current_view())
+        self.outline_algorithm_combo.currentTextChanged.connect(lambda _value: self.project_current_view())
         self.bounds_check.stateChanged.connect(
             lambda _state: self.projection.set_bounds_visible(self.bounds_check.isChecked())
         )
@@ -496,7 +506,10 @@ class PyVistaHlrViewer(QMainWindow):
             result = geometer.project_step_hlr(
                 self.step_path,
                 views=[view],
-                options=geometer.HlrOptions.assembly_outline(),
+                options=geometer.HlrOptions(
+                    projection_algorithm=self.detail_algorithm_combo.currentText(),
+                    outline_algorithm=self.outline_algorithm_combo.currentText(),
+                ),
             )
             self.current_projection = result
             self.projection.set_projection(result, view.id, self.mode_combo.currentText())

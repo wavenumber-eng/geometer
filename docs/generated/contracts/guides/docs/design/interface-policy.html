@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>Interface Policy And Versioning — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/interface-policy.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="interface-policy-and-versioning">Interface Policy And Versioning</h1></header>
+<h2 id="interface-policy">Interface Policy</h2>
+<p>Geometer interfaces must describe generic geometry operations. Keep downstream
+application concepts such as PCB placement policy, Altium/KiCad names,
+visualizer preferences, or Three.js scene behavior outside this repository.</p>
+<p>New browser-capable APIs should normally have:</p>
+<ul>
+<li>a native C++ value API;</li>
+<li>a flat C ABI entry point for WASM and future non-C++ callers;</li>
+<li>byte-buffer inputs when the browser cannot rely on local files;</li>
+<li>documented ownership rules for returned strings, byte buffers, or mesh
+packets;</li>
+<li>options encoded in a stable JSON object when the option surface is expected
+to grow;</li>
+<li>version and ABI notes when the callable surface changes;</li>
+<li>at least one native test and one WASM/browser validation path.</li>
+</ul>
+<p>For STEP model rendering, prefer a backend-neutral mesh/tessellation packet if
+it can stay compact and practical. Returning GLB bytes is acceptable when it
+keeps the first integration simple, but it should not be the only long-term
+geometry transport considered for browser tools.</p>
+<h2 id="header-entry-point">Header Entry Point</h2>
+<p>Use the umbrella header for native C++ callers:</p>
+<pre><code class="language-cpp">#include &quot;geometer.h&quot;
+</code></pre>
+<p>That includes the current public headers:</p>
+<ul>
+<li><code>geometer/status.h</code></li>
+<li><code>geometer/version.h</code></li>
+<li><code>geometer/step_to_glb.h</code></li>
+<li><code>geometer/projection.h</code></li>
+<li><code>geometer/projection_options_json.h</code></li>
+<li><code>geometer/planar_contours.h</code></li>
+<li><code>geometer/planar_solve.h</code></li>
+<li><code>geometer/planar_step.h</code></li>
+</ul>
+<h2 id="version">Version</h2>
+<p>Defined in <code>src/cpp/lib/geometer/version.h</code>.</p>
+<p>Geometer uses date-based release versions per ADR 006. The current package and
+runtime version is <code>2026.9.6</code>, corresponding to release tag <code>v2026-09-06</code>.
+The current C ABI generation is <code>20260906</code>. Consumers should check both the
+project version and ABI generation at runtime.</p>
+<pre><code class="language-cpp">struct Version {
+    int major = 0;
+    int minor = 0;
+    int patch = 0;
+    int abi = 0;
+    const char* string = &quot;&quot;;
+};
+
+const Version&amp; version();
+const char* version_string();
+int version_major();
+int version_minor();
+int version_patch();
+int abi_version();
+</code></pre>
+<p>C ABI version functions:</p>
+<pre><code class="language-c">const char* geometer_version_string(void);
+int geometer_version_major(void);
+int geometer_version_minor(void);
+int geometer_version_patch(void);
+int geometer_abi_version(void);
+</code></pre>
+<p>WASM consumers can call the same C ABI exports:</p>
+<pre><code class="language-js">const version = module.ccall(&quot;geometer_version_string&quot;, &quot;string&quot;, [], []);
+const abi = module.ccall(&quot;geometer_abi_version&quot;, &quot;number&quot;, [], []);
+</code></pre>
+<p>The returned version string is static storage and must not be freed.</p>
+<h2 id="status">Status</h2>
+<p>Defined in <code>src/cpp/lib/geometer/status.h</code>.</p>
+<pre><code class="language-cpp">struct Status {
+    int code = 0;
+    std::string message;
+    bool ok() const;
+};
+</code></pre>
+<p>Most library functions return <code>0</code> on success. When a <code>Status*</code> parameter is
+available and a failure occurs, <code>code</code> and <code>message</code> describe the error.</p>
+
+</main>
+</body>
+</html>

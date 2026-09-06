@@ -1,6 +1,7 @@
 # Python Examples
 
-Build the native CLI first:
+Use the installed `wn-geometer` package or the committed native release
+artifact. A source rebuild is needed only when changing native code:
 
 ```powershell
 cmake --build ..\..\build --target geometer --config Release
@@ -38,6 +39,11 @@ Left/Right buttons are camera presets. Lighting controls adjust key direction,
 key/fill/head intensity, ambient level, and material contrast. The projection
 regenerates after camera movement settles.
 
+`Detail alg` selects `fast` (default), `poly`, or `exact`; `Outline alg` selects
+`fast-mesh-shadow` (default), `mesh-shadow`, or `hlr-close`. Changing either
+recomputes the projection. `Mode` independently selects detail, outline or both
+for display; the PyVista 3D viewport is unchanged by the HLR algorithm choice.
+
 Or install the demo dependencies into your current environment:
 
 ```powershell
@@ -52,5 +58,5 @@ GLB-preview checks:
 uv run --project examples\python python examples\python\pyvista_hlr_viewer.py --off-screen-validate tests\fixtures\step\embedded_models\SOT-23.STEP --screenshot out\pyvista-preview.png
 ```
 
-Outside a source checkout, install `wn-geometer==2026.6.10` and run the same
+Outside a source checkout, install `wn-geometer` and run the same
 scripts against the installed `geometer` package.

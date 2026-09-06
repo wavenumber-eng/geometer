@@ -200,6 +200,9 @@ fn truncated_frame_failure_remains_protocol_typed_for_pending_calls() {
 }
 
 fn native_executable() -> PathBuf {
+    if let Some(path) = std::env::var_os("GEOMETER_EXECUTABLE") {
+        return PathBuf::from(path);
+    }
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
     let platform = format!(
         "{}-{}",

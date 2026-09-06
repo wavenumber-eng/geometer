@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <title>Documentation Maintenance — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/developer/documentation.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="documentation-maintenance">Documentation Maintenance</h1></header>
+<p>Keep interface semantics in <code>docs/design/</code>, contract ownership and generation
+in <code>docs/contracts/</code>, maintainer procedures here, and measured experiments,
+rejected approaches and historical reviews in <code>docs/research/</code>. Accepted
+decisions and requirements remain in <code>docs/geometer/</code>. Active plans/logs are
+temporary and must be removed after their durable content has been transferred.</p>
+<p>The <a href="../../../../../developer/documentation-map.json">document disposition map</a> records every design
+Markdown file inspected during the 2026-09-05 cleanup, its destination and
+rationale. Retained experimental topology value/packet contracts are not
+production promises. Evidence moves must not strand their sole interface
+definitions. Asset paths under <code>docs/design/assets/</code> stay fixed.</p>
+<h2 id="source-authority">Source Authority</h2>
+<p>Edit authored Markdown for intent; edit TypeSpec for generated structure;
+edit the promotion manifest for lifecycle evidence and maturity. Do not edit
+generated HTML, schemas or language projections. Inventory-only contracts
+remain handwritten until their reviewed migration actually lands.</p>
+<p>Documentation styling uses the shared ALX teal palette and local Wavenumber
+layout. Geometer retains OFL Cousine, not internally licensed Berkeley Mono,
+and long-identifier wrapping. Refresh the vendored stylesheet hash explicitly
+in the promotion manifest. Builds must not read a sibling appz checkout.</p>
+<h2 id="focused-checks">Focused Checks</h2>
+<pre><code class="language-powershell">npm run generate:docs
+npm run check:docs
+uv run pytest tests/python/test_contract_promotion_manifest.py -q
+git diff --check
+</code></pre>
+<p>Run contract freshness when its governed inputs change. No geometry rebuild is
+needed for a documentation-only edit. Browser visual checks must cover desktop
+and narrow layouts; static link checks alone cannot prove readable rendering.</p>
+<p><code>check:docs</code> also enforces the <a href="../contracts/public-entrypoints.html">public-source review boundary</a>.
+If it changes, inspect the public interfaces and then explicitly refresh its
+lock. Generation never silently approves an API/documentation mismatch.</p>
+<p>Example verification is recorded in the <a href="demo-status.html">demo audit</a>; artifact
+presence, test registration and a successful runtime test are different facts.
+Removing a demo needs explicit disposition approval and a complete audit of
+scripts, tests, manifests, packaging and committed outputs.</p>
+<p>The link check also requires audit source links for top-level browser HTML,
+Python <code>.py</code>, C++ <code>.cpp</code>, and Node <code>.ts</code>/<code>.mjs</code> example entrypoints. Browser
+workers and support modules are not separate demos. If a new demo uses a
+different directory or entrypoint convention, extend this registration check.</p>
+
+</main>
+</body>
+</html>

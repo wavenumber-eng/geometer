@@ -53,7 +53,7 @@
     {
       "bytes": 19318500,
       "path": "geometer.wasm",
-      "sha256": "155488af70d53ff1e0afe41beafc7edc3240b8943fd4ba6e52abbb69be5a1f6a"
+      "sha256": "36d85d572e643deee19264fbb3b19e924571a12ff2b3585c8ddef4849b6b097f"
     },
     {
       "bytes": 33342,
@@ -263,7 +263,7 @@
     {
       "bytes": 1437,
       "path": "package/package.json",
-      "sha256": "0aa9e0175ac105e7b5e1c0fa89855d1500db4c28885bbb74a1cbe6710185acfd"
+      "sha256": "c9d8a04eab8b80dc48b9213cf1c5e34c9afc65d74b67979cfc3abbe2ecf61eaf"
     },
     {
       "bytes": 3832,
@@ -312,5 +312,5 @@
     }
   ],
   "schema": "wn.geometer.static_site.a0",
-  "sha256": "a61f01e34a5a7863c446e75bf6ea8f23bb272be189942cad0bcd8ff65f802a17"
+  "sha256": "acb13a8a8f0c8ba0c5516eae2c996fca66ccb072a459c49dfe34cf94dc6486e2"
 }

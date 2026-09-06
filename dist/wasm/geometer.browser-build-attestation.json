@@ -6,7 +6,7 @@
     },
     "dist/wasm/browser/geometer.wasm": {
       "bytes": 19318500,
-      "sha256": "155488af70d53ff1e0afe41beafc7edc3240b8943fd4ba6e52abbb69be5a1f6a"
+      "sha256": "36d85d572e643deee19264fbb3b19e924571a12ff2b3585c8ddef4849b6b097f"
     },
     "dist/wasm/npm/geometer/README.md": {
       "bytes": 6042,
@@ -166,7 +166,7 @@
     },
     "dist/wasm/npm/geometer/package.json": {
       "bytes": 1437,
-      "sha256": "0aa9e0175ac105e7b5e1c0fa89855d1500db4c28885bbb74a1cbe6710185acfd"
+      "sha256": "c9d8a04eab8b80dc48b9213cf1c5e34c9afc65d74b67979cfc3abbe2ecf61eaf"
     },
     "dist/wasm/npm/geometer/step-topology-validation.d.ts": {
       "bytes": 3832,
@@ -206,7 +206,7 @@
     },
     "dist/wasm/planar-browser/geometer-planar-browser.wasm": {
       "bytes": 308969,
-      "sha256": "9a7d7a56a1243d507dfa4f8fb317a5f9375d333c781522d90ab959315e330745"
+      "sha256": "6de0fd6764819930a1f583fc2478df32442cdb352c98fc9f83338c499212de47"
     }
   },
   "build": {
@@ -214,10 +214,10 @@
     "contract_check_status": "passed",
     "source": {
       "authority": "git_head_and_source_worktree_excluding_dist_build_deps_out",
-      "revision": "31abddf52958efa91877e569772a00ef4804277a",
+      "revision": "6c582dbfe623076dc0122f51b4e06b9d144170c1",
       "tree_state": "clean"
     },
-    "source_content_sha256": "820399acc20bb6a70bbd11e02ababcae0399c2f17f83d76fdfe2c5502be9e5ae",
+    "source_content_sha256": "a23110450c0268b293d05b0054cd7e1c04b591f70a5fc8856b6eb04aad221896",
     "toolchain": {
       "emscripten": {
         "executable": ".deps/emsdk/upstream/emscripten/emcc",

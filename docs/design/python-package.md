@@ -7,9 +7,9 @@ The source checkout and PyPI wheel include a thin Python package named
 native CLI and keeps the file-oriented convenience API byte/path oriented.
 
 The persistent `GeometerClient` also exposes generated-value operations. Since
-2026.9.5 these include [colored STEP tessellation and native mesh illustration](mesh-illustration-native.md)
+2026.9.6 these include [colored STEP tessellation and native mesh illustration](mesh-illustration-native.md)
 with a complete Python STEP-to-SVG example. Those new methods require a matching
-2026.9.5 or later compatible executable; the 2026.9.4 wheel does not provide them.
+2026.9.6 or later compatible executable; the 2026.9.4 wheel does not provide them.
 
 The public one-shot helpers `geometer.model_tessellation(step_bytes, ...)` and
 `geometer.mesh_illustration(input, hlr_projection=..., ...)` reuse that same

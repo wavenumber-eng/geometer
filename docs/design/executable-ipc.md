@@ -36,7 +36,7 @@ package consumers use its exported package specifier above.
 
 ## Mesh Attachment Example (Python)
 
-Since 2026.9.5, clients also offer [native mesh illustration](mesh-illustration-native.md):
+Since 2026.9.6, clients also offer [native mesh illustration](mesh-illustration-native.md):
 Rust/Python accept the shared generated illustration input, send a governed
 colored-mesh attachment and receive the existing A0 SVG result. STEP consumers
 first use `model_tessellation`; no JavaScript/WASM runtime is needed.

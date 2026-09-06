@@ -12,13 +12,13 @@
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/mesh-illustration-native.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="native-mesh-illustration">Native mesh illustration</h1></header>
 <h2 id="availability-and-authority">Availability and authority</h2>
-<p>Geometer 2026.9.5 introduces <code>geometer::illustrate_mesh</code> in
+<p>Geometer 2026.9.6 introduces <code>geometer::illustrate_mesh</code> in
 <code>geometer/mesh_illustration.h</code>, linked through <code>geometer_lib</code>. It performs CPU
 vector illustration without a JavaScript engine, browser, GPU or WASM runtime.
 The same renderer is exposed by
 <code>geometry.mesh_illustration.a0</code> through the generic operation ABI and native
 <code>serve --stdio</code> dispatcher, with typed Rust/Python methods. Use matching
-clients and a compatible 2026.9.5 or later executable; 2026.9.4 does not expose it.
+clients and a compatible 2026.9.6 or later executable; 2026.9.4 does not expose it.
 See <a href="../developer/native-api-readiness.html">release qualification</a> for validation evidence.</p>
 <p>Public input, style and result values come from the existing TypeSpec
 <a href="../../../../../../src/tsp/geometer/operations/mesh-illustration-a0.tsp"><code>mesh-illustration-a0.tsp</code></a>.

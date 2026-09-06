@@ -1,6 +1,6 @@
 # Current Interface And Contract Authority
 
-Updated for release target `v2026-09-05`. This inventory
+Updated for release target `v2026-09-06`. This inventory
 describes interfaces, not a promotion decision. The
 [promotion manifest](promotion-manifest.toml) governs lifecycle evidence;
 the [generated coverage matrix](../generated/contracts/coverage.html) joins
@@ -18,7 +18,7 @@ is historical and must not be used for runtime discovery.
 | Legacy file CLI and JSON batch | Handwritten parsing/adapters in `src/cpp/cli/`; preserve aliases, defaults, patch presence, diagnostics and permissive compatibility behavior. |
 | C ABI and WASM exports | `src/cpp/lib/geometer/c_api.h` and `src/cpp/lib/CMakeLists.txt`; export inventory/checks live in the promotion manifest and its tests. |
 | Python public API | `python/geometer/__init__.py`, convenience wrappers and executable transport. Generated internals do not replace every public dictionary API. |
-| Mesh illustration | Generated options/results; browser TypeScript renderer and native C++ renderer exposed through executable IPC and Rust/Python clients since 2026.9.5. |
+| Mesh illustration | Generated options/results; browser TypeScript renderer and native C++ renderer exposed through executable IPC and Rust/Python clients since 2026.9.6. |
 | Native value helpers | Focused public headers and [STEP](../design/step-geometry.md)/[planar](../design/planar-geometry.md) references; aliases, helpers and ownership/version functions are not counted as separate wire operations. |
 
 The catalog contains 18 generated operation declarations: six with the portable

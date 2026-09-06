@@ -17,13 +17,13 @@ operation DTOs and strict Serde codecs are generated from the normalized
 TypeSpec catalog. The live client spawns one persistent native
 <code>geometer(.exe) serve --stdio</code> process and executes model bounds, model/mesh
 HLR, and analytic planar Boolean through their governed attachments.</p>
-<p>Since 2026.9.5, the client additionally provides typed <code>model_tessellation</code> and
+<p>Since 2026.9.6, the client additionally provides typed <code>model_tessellation</code> and
 <code>mesh_illustration</code> methods using generated A0 values. Optional
 <code>mesh_illustration_with_hlr(input, hlr)</code> returns the native composed SVG with
 visibility-filtered outline/detail; consumers do not arrange SVG layers. The complete
 <a href="mesh-illustration-native.html">native STEP-to-SVG example</a> needs no JS/WASM runtime
 or handwritten subprocess protocol. These additions require a matching catalog
-and a compatible 2026.9.5 or later executable.</p>
+and a compatible 2026.9.6 or later executable.</p>
 <p>The analytic operation is experimental and not production-ready. It may fail
 closed on valid inputs and is not the dependable path for whole-board or
 whole-layer copper union. Prefer the Clipper2-backed planar APIs when

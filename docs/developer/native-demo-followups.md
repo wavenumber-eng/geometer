@@ -60,7 +60,7 @@ Return OS/hardware/GPU, source/artifact hashes, commands, logs, screenshots and
 per-check pass/fail/not-run results. Compilation and interactive acceptance are
 separate. Recheck fixes at a newly identified revision with independent review.
 GUI packaging, installers, signing/notarization and automatic kernel bundling
-remain deferred user decisions, not part of Geometer 2026.9.5 publication.
+remain deferred user decisions, not part of Geometer 2026.9.6 publication.
 
 ## Documentation closeout
 

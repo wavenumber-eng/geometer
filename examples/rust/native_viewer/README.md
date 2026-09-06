@@ -21,7 +21,7 @@ cargo build --manifest-path examples/rust/native_viewer/Cargo.toml --locked
 examples/rust/native_viewer/target/debug/geometer-native-viewer.exe --geometer dist/native/windows-x64/geometer.exe --step tests/fixtures/step/embedded_models/SOT-23.STEP
 ```
 
-Use a 2026.9.5 or later compatible executable built with the same catalog as
+Use a 2026.9.6 or later compatible executable built with the same catalog as
 the client. The previous 2026.9.4 release does not provide these additive
 operations. Negotiation rejects mismatches;
 the demo never downloads an executable or silently switches renderers.

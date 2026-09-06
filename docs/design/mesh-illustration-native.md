@@ -2,13 +2,13 @@
 
 ## Availability and authority
 
-Geometer 2026.9.5 introduces `geometer::illustrate_mesh` in
+Geometer 2026.9.6 introduces `geometer::illustrate_mesh` in
 `geometer/mesh_illustration.h`, linked through `geometer_lib`. It performs CPU
 vector illustration without a JavaScript engine, browser, GPU or WASM runtime.
 The same renderer is exposed by
 `geometry.mesh_illustration.a0` through the generic operation ABI and native
 `serve --stdio` dispatcher, with typed Rust/Python methods. Use matching
-clients and a compatible 2026.9.5 or later executable; 2026.9.4 does not expose it.
+clients and a compatible 2026.9.6 or later executable; 2026.9.4 does not expose it.
 See [release qualification](../developer/native-api-readiness.md) for validation evidence.
 
 Public input, style and result values come from the existing TypeSpec

@@ -11,7 +11,7 @@
 <body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/model-tessellation-a0.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="colored-model-tessellation-a0">Colored model tessellation A0</h1></header>
-<p>Introduced in 2026.9.5; see <a href="../developer/native-api-readiness.html">release qualification</a>.
+<p>Introduced in 2026.9.6; see <a href="../developer/native-api-readiness.html">release qualification</a>.
 <code>geometry.model_tessellation.a0</code> is a stateless STEP-to-colored-mesh operation.
 Its TypeSpec definitions live in <code>src/tsp/geometer/operations/model-tessellation-a0.tsp</code>;
 the catalog generates C++, Rust, Python, TypeScript, JSON Schema and HTML.
@@ -67,7 +67,7 @@ with geometer.GeometerClient() as client:
     result = client.model_tessellation(step_bytes)
     meshes = result.mesh_collection.meshes
 </code></pre>
-<p>Use a 2026.9.5 or later compatible executable matching the generated catalog. Source Rust
+<p>Use a 2026.9.6 or later compatible executable matching the generated catalog. Source Rust
 process tests accept <code>GEOMETER_EXECUTABLE</code>; Python uses <code>GEOMETER_EXE</code>. Released
 2026.9.4 executables do not advertise this operation. A generated TypeScript DTO
 does not prove that an older browser WASM binary supports the new operation.</p>

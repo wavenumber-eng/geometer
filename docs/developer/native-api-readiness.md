@@ -1,6 +1,6 @@
 # Native illustration API readiness
 
-Release target `2026.9.5`, assessed 2026-09-05. The user
+Release target `2026.9.6`, assessed 2026-09-05. The user
 accepted the Rust demo as proof of the workflow; further GUI polish is deferred.
 Native illustration is implemented and exercised on Windows, **not yet a
 qualified public release**.
@@ -21,7 +21,7 @@ and attachment declarations. Wrappers do not maintain another protocol.
 
 Use the complete [STEP-to-SVG examples and limits](../design/mesh-illustration-native.md),
 [Python API guide](../design/python-package.md), and [Rust guide](../design/rust-client.md).
-Clients and executable catalogs must match. The release requires 2026.9.5 or
+Clients and executable catalogs must match. The release requires 2026.9.6 or
 later compatible artifacts; released 2026.9.4 lacks these operations.
 
 `fuse_surfaces` defaults to true. Native composition handles SVG layer order;

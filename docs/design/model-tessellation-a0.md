@@ -1,6 +1,6 @@
 # Colored model tessellation A0
 
-Introduced in 2026.9.5; see [release qualification](../developer/native-api-readiness.md).
+Introduced in 2026.9.6; see [release qualification](../developer/native-api-readiness.md).
 `geometry.model_tessellation.a0` is a stateless STEP-to-colored-mesh operation.
 Its TypeSpec definitions live in `src/tsp/geometer/operations/model-tessellation-a0.tsp`;
 the catalog generates C++, Rust, Python, TypeScript, JSON Schema and HTML.
@@ -70,7 +70,7 @@ with geometer.GeometerClient() as client:
     meshes = result.mesh_collection.meshes
 ```
 
-Use a 2026.9.5 or later compatible executable matching the generated catalog. Source Rust
+Use a 2026.9.6 or later compatible executable matching the generated catalog. Source Rust
 process tests accept `GEOMETER_EXECUTABLE`; Python uses `GEOMETER_EXE`. Released
 2026.9.4 executables do not advertise this operation. A generated TypeScript DTO
 does not prove that an older browser WASM binary supports the new operation.

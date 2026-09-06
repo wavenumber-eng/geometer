@@ -8,13 +8,13 @@ TypeSpec catalog. The live client spawns one persistent native
 `geometer(.exe) serve --stdio` process and executes model bounds, model/mesh
 HLR, and analytic planar Boolean through their governed attachments.
 
-Since 2026.9.5, the client additionally provides typed `model_tessellation` and
+Since 2026.9.6, the client additionally provides typed `model_tessellation` and
 `mesh_illustration` methods using generated A0 values. Optional
 `mesh_illustration_with_hlr(input, hlr)` returns the native composed SVG with
 visibility-filtered outline/detail; consumers do not arrange SVG layers. The complete
 [native STEP-to-SVG example](mesh-illustration-native.md) needs no JS/WASM runtime
 or handwritten subprocess protocol. These additions require a matching catalog
-and a compatible 2026.9.5 or later executable.
+and a compatible 2026.9.6 or later executable.
 
 The analytic operation is experimental and not production-ready. It may fail
 closed on valid inputs and is not the dependable path for whole-board or

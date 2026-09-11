@@ -116,9 +116,30 @@ struct Commands
     contracts::MeshIllustrationRenderStats stats;
 };
 
-void append_hlr(const contracts::MeshIllustrationInputA0& input,
-                const contracts::HlrProjectionResultA0& hlr, const Scene& scene, const Style& style,
-                Commands& commands);
+// Borrow the common input fields without copying large meshes between output APIs.
+struct IllustrationInputView
+{
+    const std::vector<contracts::MeshIllustrationMesh>& meshes;
+    const contracts::MeshIllustrationView& view;
+    const std::optional<contracts::MeshIllustrationPrepareOptions>& prepare;
+    const std::optional<contracts::MeshIllustrationStyleA0>& style;
+};
+
+struct PreparedIllustration
+{
+    Scene scene;
+    Style style;
+    Commands commands;
+};
+
+PreparedIllustration prepare_illustration(const contracts::MeshIllustrationInputA0& input,
+                                          const contracts::HlrProjectionResultA0* hlr);
+PreparedIllustration prepare_illustration(const contracts::MeshIllustrationGeometryInputA0& input,
+                                          const contracts::HlrProjectionResultA0* hlr);
+std::string safe_illustration_color(const std::string& text);
+
+void append_hlr(const IllustrationInputView& input, const contracts::HlrProjectionResultA0& hlr,
+                const Scene& scene, const Style& style, Commands& commands);
 
 struct ResourceLimit : std::runtime_error
 {
@@ -164,7 +185,7 @@ double depth_at(const Triangle& triangle, Vec2 point);
 void candidate_pairs(const std::vector<Bounds>& boxes, const Bounds& bounds, unsigned grid_size,
                      unsigned broad_limit, double minimum_cell, WorkBudget& budget,
                      const std::function<void(std::size_t, std::size_t)>& visit);
-Scene prepare_scene(const contracts::MeshIllustrationInputA0& input);
+Scene prepare_scene(const IllustrationInputView& input);
 Style resolve_style(const contracts::MeshIllustrationStyleA0& patch);
 std::string triangle_fill(const Triangle& triangle, const Scene& scene, const Style& style);
 std::vector<TriangleCommand> order_triangles(const std::vector<TriangleCommand>& commands,

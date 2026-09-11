@@ -21,7 +21,7 @@ from ._api import (
     write_planar_step,
 )
 from ._errors import GeometerError
-from ._native_helpers import mesh_illustration, model_tessellation
+from ._native_helpers import mesh_illustration, mesh_illustration_geometry, model_tessellation
 from ._tessellation import ModelTessellation
 from ._analytic_packet_a0 import (
     AnalyticPacketError,
@@ -31,6 +31,10 @@ from ._analytic_packet_a0 import (
 from ._generated.contracts.models import (
     MeshCollectionA0,
     MeshIllustrationInputA0,
+    MeshIllustrationGeometryA0,
+    MeshIllustrationGeometryInputA0,
+    MeshIllustrationGeometryRequestA0,
+    MeshIllustrationGeometryResultA0,
     MeshIllustrationMaterial,
     MeshIllustrationMesh,
     MeshIllustrationPrepareOptions,
@@ -108,6 +112,11 @@ from ._types import (
 
 __all__ = [
     "mesh_illustration",
+    "mesh_illustration_geometry",
+    "MeshIllustrationGeometryA0",
+    "MeshIllustrationGeometryInputA0",
+    "MeshIllustrationGeometryRequestA0",
+    "MeshIllustrationGeometryResultA0",
     "model_tessellation",
     "MeshIllustrationInputA0",
     "MeshIllustrationMaterial",

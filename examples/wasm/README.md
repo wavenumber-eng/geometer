@@ -209,8 +209,10 @@ surface, then the same Three.js-to-generic-mesh adapter handles bundled and
 uploaded models. A glTF/GLB loader or Viz-generated PCB mesh can feed the same
 production package without STEP or OCCT.
 
-Illustration A0 is a package contract rather than a native illustration
-operation. STEP-backed models can enable Geometer's `fast-mesh-shadow` Outline
+The Lab uses the TypeScript illustration package. Native SVG and
+[drawing geometry](../../docs/design/mesh-illustration-geometry.md) operations
+are also available; the Lab continues to use its prepared SVG/Canvas renderer.
+STEP-backed models can enable Geometer's `fast-mesh-shadow` Outline
 layer, which reconstructs CAD-face boundary loops when possible and falls back
 to per-face triangle unions before combining the reduced contours into the clean
 outer body trace, and its fast visible Detail

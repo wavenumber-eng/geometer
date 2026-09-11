@@ -168,3 +168,17 @@ file = "test_mesh_illustration.py"
 name = "Native Mesh Illustration"
 description = "Checks typed STEP-to-illustration, public one-shot parity/process cleanup, optional HLR composition and attachment validation, deterministic SVG, resource limits and recoverable failures."
 test_case_type = "integration"
+
+[[subtests]]
+id = "PY_022"
+file = "test_illustration_geometry.py"
+name = "Illustration Geometry Without SVG"
+description = "Checks native geometry/HLR ordering and parity, output attachment integrity, semantic draw counts, one-shot calls and recoverable errors."
+test_case_type = "integration"
+
+[[subtests]]
+id = "PY_023"
+file = "test_numeric_array_runtime.py"
+name = "Numeric Array Codec Parity"
+description = "Checks specialized numeric arrays against scalar normalization and exact error semantics, including duplicate-field traversal."
+test_case_type = "unit"

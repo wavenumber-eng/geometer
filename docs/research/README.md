@@ -6,6 +6,7 @@ behavior remains in the [interface index](../design/README.md); structural
 authority and runtime exposure are described in [contracts](../contracts/README.md).
 
 - [STEP topology research synthesis](step-topology/step-topology-annotation-research.md)
+- [Illustration performance and drawing geometry qualification](illustration-performance.md)
 - [STEP topology fixture measurements](step-topology/step-topology-fixture-baseline.md)
 - [XCAF persistence experiments](step-topology/step-topology-xcaf-persistence.md)
 - [AP242 persistence experiments](step-topology/step-topology-ap242-persistence.md)

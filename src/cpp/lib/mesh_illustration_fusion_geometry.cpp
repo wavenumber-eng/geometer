@@ -30,12 +30,16 @@ OrderedGroups<std::string, FusionEdge> fusion_edges(const std::vector<TriangleCo
                    integer_text(t.points[index][1] / coordinate_tolerance) + "," +
                    integer_text(t.depths[index] / depth_tolerance);
         };
+        std::array<std::string, 3> keys;
+        for (auto index : indices)
+            keys[index] = key(index);
         for (unsigned i = 0; i < 3; ++i)
         {
             const auto a = indices[i], b = indices[(i + 1) % 3], c = indices[(i + 2) % 3];
-            const auto ak = key(a), bk = key(b);
+            const auto& ak = keys[a];
+            const auto& bk = keys[b];
             const auto ek = ak < bk ? ak + "|" + bk : bk + "|" + ak;
-            result.add(ek, {member, t.points[a], t.points[b], t.points[c], ak, bk, ek});
+            result.add(ek, {member, t.points[a], t.points[b], t.points[c], ak, bk});
         }
     }
     return result;

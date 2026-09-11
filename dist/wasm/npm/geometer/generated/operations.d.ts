@@ -1,4 +1,4 @@
-export declare const NORMALIZED_CONTRACT_CATALOG_SHA256: "16df2f7cb95d89dbe80438390e4be799a1f193bd625a668c759a020b52346a2f";
+export declare const NORMALIZED_CONTRACT_CATALOG_SHA256: "2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56";
 export declare const operationCatalog: {
     readonly "geometry.analytic_planar_boolean_batch.a0": {
         readonly identity: "geometry.analytic_planar_boolean_batch.a0";
@@ -46,6 +46,32 @@ export declare const operationCatalog: {
         }];
         readonly outputAttachments: readonly [];
         readonly documentation: "Project a synthesized indexed triangle mesh through the Fast HLR backend.";
+    };
+    readonly "geometry.mesh_illustration_geometry.a0": {
+        readonly identity: "geometry.mesh_illustration_geometry.a0";
+        readonly requestContract: "geometry.mesh_illustration_geometry.request.a0";
+        readonly resultContract: "geometry.mesh_illustration_geometry.result.a0";
+        readonly runtimeAvailable: true;
+        readonly nativeRuntimeAvailable: false;
+        readonly runtimeDispatch: "logical_dto";
+        readonly inputAttachments: readonly [{
+            readonly name: "hlr_projection";
+            readonly required: false;
+            readonly media_types: readonly ["application/vnd.wavenumber.geometer.hlr-projection+json"];
+            readonly max_bytes: 67108864;
+        }, {
+            readonly name: "mesh_collection";
+            readonly required: true;
+            readonly media_types: readonly ["application/vnd.wavenumber.geometer.mesh-collection+json"];
+            readonly max_bytes: 268435456;
+        }];
+        readonly outputAttachments: readonly [{
+            readonly name: "illustration_geometry";
+            readonly required: true;
+            readonly media_types: readonly ["application/vnd.wavenumber.geometer.illustration-geometry+json"];
+            readonly max_bytes: 268435456;
+        }];
+        readonly documentation: "Return ordered shaded illustration geometry without generating SVG. Does not compute HLR.";
     };
     readonly "geometry.mesh_illustration.a0": {
         readonly identity: "geometry.mesh_illustration.a0";

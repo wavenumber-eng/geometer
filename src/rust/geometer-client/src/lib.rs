@@ -7,6 +7,7 @@ mod client_lifecycle;
 pub mod generated;
 mod hlr;
 mod illustration;
+mod illustration_geometry;
 pub mod indexed_mesh_packet_a0;
 pub mod ipc;
 mod model_bounds;

@@ -78,10 +78,12 @@ def _validate_json_objects(value: Any, path: str) -> None:
             if key in names:
                 _fail("geometer.contract.duplicate_field", _child_path(path, key), "Duplicate object field.")
             names.add(key)
-            _validate_json_objects(item, _child_path(path, key))
+            if isinstance(item, (_JsonObject, list)):
+                _validate_json_objects(item, _child_path(path, key))
     elif isinstance(value, list):
         for index, item in enumerate(value):
-            _validate_json_objects(item, _child_path(path, str(index)))
+            if isinstance(item, (_JsonObject, list)):
+                _validate_json_objects(item, _child_path(path, str(index)))
 
 
 def _decode_value(
@@ -194,6 +196,8 @@ def _decode_array(
     if not isinstance(value, list):
         _fail("geometer.contract.type_mismatch", path, "Expected an array.")
     _check_size(len(value), constraints.get("min_items"), constraints.get("max_items"), path, "array")
+    if element["kind"] == "primitive" and element["name"] in {"float64", "uint32", "uint64"}:
+        return tuple(_numeric_array(value, element["name"], path))
     return tuple(
         _decode_value(item, element, {}, _child_path(path, str(index)), declarations, model_types, enum_types)
         for index, item in enumerate(value)
@@ -328,10 +332,38 @@ def _encode_array(
     if not isinstance(value, (tuple, list)):
         _fail("geometer.contract.type_mismatch", path, "Expected an array.")
     _check_size(len(value), constraints.get("min_items"), constraints.get("max_items"), path, "array")
+    if element["kind"] == "primitive" and element["name"] in {"float64", "uint32", "uint64"}:
+        return _numeric_array(value, element["name"], path)
     return [
         _encode_value(item, element, {}, _child_path(path, str(index)), declarations, model_types, enum_types)
         for index, item in enumerate(value)
     ]
+
+
+def _numeric_array(value: list[Any] | tuple[Any, ...], name: str, path: str) -> list[Any]:
+    # Direct primitive array elements have no per-element constraints. Defer
+    # JSON pointer construction and the general scalar dispatcher to failures.
+    result: list[Any] = []
+    if name == "float64":
+        for index, item in enumerate(value):
+            if type(item) is float or type(item) is int:
+                try:
+                    number = float(item)
+                except OverflowError:
+                    pass
+                else:
+                    if math.isfinite(number):
+                        result.append(number)
+                        continue
+            result.append(_decode_primitive(item, name, {}, _child_path(path, str(index))))
+    else:
+        maximum = 2**32 - 1 if name == "uint32" else 2**64 - 1
+        for index, item in enumerate(value):
+            if type(item) is int and 0 <= item <= maximum:
+                result.append(item)
+            else:
+                result.append(_decode_primitive(item, name, {}, _child_path(path, str(index))))
+    return result
 
 
 def _check_size(size: int, minimum: int | None, maximum: int | None, path: str, label: str) -> None:

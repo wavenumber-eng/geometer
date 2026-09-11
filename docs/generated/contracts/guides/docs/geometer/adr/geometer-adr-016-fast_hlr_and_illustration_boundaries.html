@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="16df2f7cb95d89dbe80438390e4be799a1f193bd625a668c759a020b52346a2f">
+  <meta name="wn-catalog-sha256" content="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56">
   <title>ADR 016: Fast HLR And Illustration Boundaries — Geometer</title>
   <link rel="stylesheet" href="../../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="16df2f7cb95d89dbe80438390e4be799a1f193bd625a668c759a020b52346a2f" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/geometer/adr/geometer-adr-016-fast_hlr_and_illustration_boundaries.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="adr-016-fast-hlr-and-illustration-boundaries">ADR 016: Fast HLR And Illustration Boundaries</h1></header>
 <h2 id="status">Status</h2>
@@ -57,6 +57,16 @@ compatibility surfaces under ADR 007. Promotion evidence and release signoff
 remain governed by ADR 010 and are not implied merely by accepting this
 architectural boundary.</p>
 <h2 id="consequences">Consequences</h2>
+<h3 id="native-illustration-extension-2026-09-11">Native illustration extension (2026-09-11)</h3>
+<p>The original TypeScript-first boundary now also has a C++ illustration renderer
+and an executable SVG operation. The additive
+<code>geometry.mesh_illustration_geometry.a0</code> operation exposes its shared ordered
+drawing data for custom renderers. Geometry output stops before SVG writing;
+direct C++ returns owning values, while IPC carries a governed JSON attachment.
+TypeScript exposes the same drawing contract using its existing prepared scene.
+The <a href="../../design/mesh-illustration-geometry.html">drawing contract</a> records units,
+paint order, holes, opacity, resource limits and target availability. HLR remains
+independently callable, and application placement/provenance remains outside it.</p>
 <p>Consumers with synthesized geometry can encode one bounded indexed mesh and
 use Fast HLR without constructing STEP. STEP consumers continue to use OCCT
 for import and tessellation before the triangle visibility engine runs.</p>
@@ -64,7 +74,7 @@ for import and tessellation before the triangle visibility engine runs.</p>
 consumers do not need to copy algorithms from a demo. The separation permits
 the illustration renderer to evolve without changing the portable HLR result.</p>
 <p>Perspective vector guarantees, multithreaded WASM visibility, stable serialized
-prepared models, native illustration rendering, and changing the default HLR
+prepared models, and changing the default HLR
 backend require later decisions.</p>
 
 </main>

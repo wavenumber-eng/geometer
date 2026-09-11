@@ -1,5 +1,5 @@
 // Generated from wn_geometer_contract_catalog.a0.json. Do not edit.
-export const NORMALIZED_CONTRACT_CATALOG_SHA256 = "197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e";
+export const NORMALIZED_CONTRACT_CATALOG_SHA256 = "2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56";
 export const operationCatalog = {
     "geometry.analytic_planar_boolean_batch.a0": {
         identity: "geometry.analytic_planar_boolean_batch.a0",
@@ -54,6 +54,61 @@ export const operationCatalog = {
         outputAttachments: [],
         documentation: "Project a synthesized indexed triangle mesh through the Fast HLR backend.",
     },
+    "geometry.mesh_illustration_geometry.a0": {
+        identity: "geometry.mesh_illustration_geometry.a0",
+        requestContract: "geometry.mesh_illustration_geometry.request.a0",
+        resultContract: "geometry.mesh_illustration_geometry.result.a0",
+        runtimeAvailable: true,
+        nativeRuntimeAvailable: false,
+        runtimeDispatch: "logical_dto",
+        inputAttachments: [
+            {
+                name: "hlr_projection",
+                required: false,
+                media_types: ["application/vnd.wavenumber.geometer.hlr-projection+json"],
+                max_bytes: 67108864,
+            },
+            {
+                name: "mesh_collection",
+                required: true,
+                media_types: ["application/vnd.wavenumber.geometer.mesh-collection+json"],
+                max_bytes: 268435456,
+            },
+        ],
+        outputAttachments: [
+            {
+                name: "illustration_geometry",
+                required: true,
+                media_types: ["application/vnd.wavenumber.geometer.illustration-geometry+json"],
+                max_bytes: 268435456,
+            },
+        ],
+        documentation: "Return ordered shaded illustration geometry without generating SVG. Does not compute HLR.",
+    },
+    "geometry.mesh_illustration.a0": {
+        identity: "geometry.mesh_illustration.a0",
+        requestContract: "geometry.mesh_illustration.request.a0",
+        resultContract: "geometry.mesh_illustration.result.a0",
+        runtimeAvailable: true,
+        nativeRuntimeAvailable: false,
+        runtimeDispatch: "logical_dto",
+        inputAttachments: [
+            {
+                name: "hlr_projection",
+                required: false,
+                media_types: ["application/vnd.wavenumber.geometer.hlr-projection+json"],
+                max_bytes: 67108864,
+            },
+            {
+                name: "mesh_collection",
+                required: true,
+                media_types: ["application/vnd.wavenumber.geometer.mesh-collection+json"],
+                max_bytes: 268435456,
+            },
+        ],
+        outputAttachments: [],
+        documentation: "Render colored meshes to the existing deterministic A0 SVG result without JavaScript.",
+    },
     "geometry.model_bounds.a0": {
         identity: "geometry.model_bounds.a0",
         requestContract: "geometry.model_bounds.options.a0",
@@ -89,6 +144,31 @@ export const operationCatalog = {
         ],
         outputAttachments: [],
         documentation: "Project STEP model bytes through the selected polygonal, exact, or Fast HLR backend.",
+    },
+    "geometry.model_tessellation.a0": {
+        identity: "geometry.model_tessellation.a0",
+        requestContract: "geometry.model_tessellation.request.a0",
+        resultContract: "geometry.model_tessellation.result.a0",
+        runtimeAvailable: true,
+        nativeRuntimeAvailable: false,
+        runtimeDispatch: "logical_dto",
+        inputAttachments: [
+            {
+                name: "model",
+                required: true,
+                media_types: ["application/step", "model/step"],
+                max_bytes: 268435456,
+            },
+        ],
+        outputAttachments: [
+            {
+                name: "mesh_collection",
+                required: true,
+                media_types: ["application/vnd.wavenumber.geometer.mesh-collection+json"],
+                max_bytes: 268435456,
+            },
+        ],
+        documentation: "Tessellate STEP bytes to bounded colored meshes for native GPU and illustration consumers.",
     },
     "geometry.step_topology.analyze_recovery.a0": {
         identity: "geometry.step_topology.analyze_recovery.a0",

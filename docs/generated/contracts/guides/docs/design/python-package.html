@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="16df2f7cb95d89dbe80438390e4be799a1f193bd625a668c759a020b52346a2f">
+  <meta name="wn-catalog-sha256" content="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56">
   <title>Python Package Interface — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="16df2f7cb95d89dbe80438390e4be799a1f193bd625a668c759a020b52346a2f" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/python-package.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="python-package-interface">Python Package Interface</h1></header>
 <h2 id="python-interface">Python Interface</h2>
@@ -26,6 +26,12 @@ override and <code>timeout=</code> for the local operation deadline; startup/shu
 the client's separate bounds. Prefer one <code>with geometer.GeometerClient() as client:</code> block for a STEP/tessellation/HLR/illustration sequence or repeated work.
 The optional HLR argument is already computed visible polyline geometry, not an
 instruction to compute HLR or re-occlude arbitrary 2D lines.</p>
+<p>Generated JSON codecs retain strict scalar validation for numeric arrays,
+including exact Python types, finite float conversion, unsigned ranges and
+indexed error paths. Their runtime avoids per-number descriptor dispatch and
+path allocation for valid direct numeric arrays. Illustration conveniences
+validate the full input once and reuse its normalized mesh subtree when
+creating the IPC attachment; this does not bypass root or mesh validation.</p>
 <pre><code class="language-python">from pathlib import Path
 
 import geometer

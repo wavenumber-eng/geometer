@@ -35,6 +35,12 @@ the unrelated analytic planar solver has not been promoted.
 
 ## Historical feature-build package evidence
 
+For the 2026-09-11 illustration optimization and additive drawing API, see
+[performance and focused qualification](../research/illustration-performance.md)
+and [the release handoff](illustration-geometry-handoff.md). Version 2026.9.11
+requires its matching generated client/catalog; the release handoff separates
+local qualification from hosted publication. The evidence below is historical.
+
 Windows x64 now passes:
 
 - A real wheel installed in a fresh virtual environment, executing outside the

@@ -442,9 +442,11 @@ void execute_operation(const std::string& operation_id, const unsigned char* req
         execute_model_tessellation(request_json, request_json_size, attachments, execution);
         return;
     }
-    if (operation_id == "geometry.mesh_illustration.a0")
+    if (operation_id == "geometry.mesh_illustration.a0" ||
+        operation_id == "geometry.mesh_illustration_geometry.a0")
     {
-        execute_mesh_illustration(request_json, request_json_size, attachments, execution);
+        execute_mesh_illustration(request_json, request_json_size, attachments, execution,
+                                  operation_id == "geometry.mesh_illustration_geometry.a0");
         return;
     }
     if (operation_id == analytic_operation_detail::kOperationId)

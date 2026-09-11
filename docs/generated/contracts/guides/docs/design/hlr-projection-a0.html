@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="16df2f7cb95d89dbe80438390e4be799a1f193bd625a668c759a020b52346a2f">
+  <meta name="wn-catalog-sha256" content="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56">
   <title>HLR Projection A0 — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="16df2f7cb95d89dbe80438390e4be799a1f193bd625a668c759a020b52346a2f" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/hlr-projection-a0.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="hlr-projection-a0">HLR Projection A0</h1></header>
 <h2 id="boundary">Boundary</h2>
@@ -98,6 +98,14 @@ of assuming a particular executable or WASM build exposes an operation.</p>
 </tbody>
 </table>
 <h2 id="direct-c-fast-api">Direct C++ Fast API</h2>
+<p>Fast preparation uses a lookup-only weld table while retaining input order and
+the minimum matching vertex ID. Per-view triangle search deduplicates grid
+references before sorting candidate IDs, preserving visibility order and
+candidate-pair limit accounting. Mesh-shadow sweep ranks are reused without
+changing inclusive endpoint overlap. Prepared values remain validated on each
+public projection call. These implementation optimizations do not change
+projection tolerances or linework contracts; measurements and memory tradeoffs
+are recorded in <a href="../../../../../research/illustration-performance.md">illustration performance</a>.</p>
 <p><code>geometer/fast_hlr.h</code> is the stable semantic boundary. The simplest call uses
 the indexed-mesh overload:</p>
 <pre><code class="language-cpp">FastHlrIndexedMesh mesh = make_mesh();

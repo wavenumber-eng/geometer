@@ -22,6 +22,26 @@ the repaired angle remains pending.
 
 ## Runtime Evidence And Disposition
 
+Release refresh for 2026.9.11: native Windows and all three WASM targets were
+rebuilt using the cached OCCT dependency. Generated TypeScript/example bundles,
+all five standalone browser demos, all four hosted demo directories, the direct
+C++ preview and Rust Lab were rebuilt. The optional Python example environment
+now locks the matching editable package. Chrome smoke tests passed for the HLR,
+illustration, analytic and PCB pages. Installed-wheel Python, the geometry
+Canvas, Node bounds/topology and PyVista off-screen rendering passed against
+the new runtime. The Rust Lab's format, lint and unit checks passed. These
+automated checks do not replace the previously deferred interactive GUI review.
+
+Illustration follow-up on 2026-09-11: the native integer-format optimization is
+behind the Rust Lab's existing SVG operation; the browser Lab still uses its
+separate TypeScript SVG/Canvas renderer. Both retain the previous appearance.
+The new [Python-to-Canvas example](../../examples/python/illustration_geometry_canvas.py)
+requests native drawing geometry without SVG, writes a self-contained page and
+geometry JSON, and passed native execution plus headless Chrome visual inspection
+on Windows. This additive example does not replace either Lab. See the
+[performance and qualification record](../research/illustration-performance.md)
+for test costs and release limitations.
+
 The optional [Native Rust API Lab](../../examples/rust/native_viewer/README.md)
 is a twelfth entry added on the native API feature branch, not a replacement
 for the 11 retained demos. It uses the maintained Rust executable client and

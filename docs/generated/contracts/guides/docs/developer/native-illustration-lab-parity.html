@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="16df2f7cb95d89dbe80438390e4be799a1f193bd625a668c759a020b52346a2f">
+  <meta name="wn-catalog-sha256" content="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56">
   <title>Illustration Lab / native Rust comparison — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="16df2f7cb95d89dbe80438390e4be799a1f193bd625a668c759a020b52346a2f" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/developer/native-illustration-lab-parity.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="illustration-lab--native-rust-comparison">Illustration Lab / native Rust comparison</h1></header>
 <p>Analysis of the feature-branch implementations, 2026-09-05. This compares the
@@ -139,6 +139,14 @@ values, not similarly named camera buttons or different default views. The
 browser converts GLB/Three model data and transforms; native colored meshes
 are obtained directly through the governed STEP tessellation operation.</p>
 <h2 id="focused-evidence-and-next-work">Focused evidence and next work</h2>
+<p>The 2026-09-11 integer-format optimization preserves the existing native SVG
+result and is inherited by the Rust Lab when using the updated executable.
+The browser Lab remains on TypeScript. Both prepared TypeScript and native
+clients now also expose <a href="../design/mesh-illustration-geometry.html">drawing geometry</a>
+for custom consumers; the <a href="../../../../../../examples/python/illustration_geometry_canvas.py">Python Canvas example</a>
+demonstrates that path without making the Rust Lab compute two output formats
+on each camera update. Native/TypeScript drawing parity preserves ring holes,
+ordered layers, opacity and linework; Canvas and SVG retain their own pixel rules.</p>
 <p>The optional RUST_002 native-settings check uses the same SOT-23 generated input
 through TypeScript and native illustration and compares the entire A0 result.
 Raw mesh lines off produces zero outline/crease commands with nonempty surfaces;

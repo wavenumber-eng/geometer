@@ -21,15 +21,17 @@ is historical and must not be used for runtime discovery.
 | Mesh illustration | Generated options/results; browser TypeScript renderer and native C++ renderer exposed through executable IPC and Rust/Python clients since 2026.9.6. |
 | Native value helpers | Focused public headers and [STEP](../design/step-geometry.md)/[planar](../design/planar-geometry.md) references; aliases, helpers and ownership/version functions are not counted as separate wire operations. |
 
-The catalog contains 18 generated operation declarations: six with the portable
+The catalog contains 19 generated operation declarations: seven with the portable
 runtime flag (model bounds, model HLR, mesh HLR, experimental analytic,
-tessellation and illustration), nine additional native-only experimental
+tessellation, SVG illustration and drawing geometry), nine additional native-only experimental
 topology operations, and three structural-only
 topology operations. Effective native availability is portable OR additional
 native-only availability. Always discover the actual executable's operations
 through its welcome catalog; see the [IPC guide](../design/executable-ipc.md).
-The new tessellation/illustration APIs are qualified through native clients;
-catalog flags alone do not establish browser build/test coverage.
+The illustration drawing extension is qualified through native clients and a
+rebuilt full-WASM generic C ABI fixture replay; catalog flags alone do not
+establish browser build/test coverage. See the
+[qualification record](../research/illustration-performance.md).
 
 Model bounds is promoted. HLR structural contracts are pilots. Analytic and
 topology remain experimental/non-production regardless of callable transports

@@ -31,10 +31,11 @@ struct Preparation
                integer_text(point[2] * scale);
     }
 
-    void edge(const Triangle& triangle, const std::array<Vec3, 3>& world, unsigned start,
+    void edge(const Triangle& triangle, const std::array<std::string, 3>& keys, unsigned start,
               unsigned end)
     {
-        const auto a = point_key(world[start]), b = point_key(world[end]);
+        const auto& a = keys[start];
+        const auto& b = keys[end];
         const auto key = a < b ? a + "|" + b : b + "|" + a;
         const auto found = edge_indices.find(key);
         if (found == edge_indices.end())
@@ -81,8 +82,9 @@ struct Preparation
             warn("Skipped degenerate triangle " + std::to_string(index) + " in " + mesh.id + ".");
             return;
         }
+        const double sign = determinant_sign(matrix);
         for (auto& value : normal)
-            value *= determinant_sign(matrix);
+            value *= sign;
         normal = normalize(normal, "Triangle normal");
         Triangle t;
         t.normal = t.geometric_normal = normal;
@@ -119,14 +121,16 @@ struct Preparation
             channel = clamp(channel);
         t.opacity = clamp(source.opacity.value_or(1));
         scene.triangles.push_back(t);
-        edge(t, world, 0, 1);
-        edge(t, world, 1, 2);
-        edge(t, world, 2, 0);
+        const std::array<std::string, 3> keys{point_key(world[0]), point_key(world[1]),
+                                              point_key(world[2])};
+        edge(t, keys, 0, 1);
+        edge(t, keys, 1, 2);
+        edge(t, keys, 2, 0);
     }
 };
 } // namespace
 
-Scene prepare_scene(const contracts::MeshIllustrationInputA0& input)
+Scene prepare_scene(const IllustrationInputView& input)
 {
     Preparation p;
     p.scene.direction = normalize(vector3(input.view.direction), "View direction");

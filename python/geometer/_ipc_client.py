@@ -37,6 +37,8 @@ from ._generated.contracts.models import (
     HlrProjectionOptionsA0,
     HlrProjectionResultA0,
     MeshIllustrationInputA0,
+    MeshIllustrationGeometryInputA0,
+    MeshIllustrationGeometryA0,
     MeshIllustrationResultA0,
     OperationFailureA0,
     OperationOutcomeA0,
@@ -444,6 +446,22 @@ class _GeometerIpcExecution(_GeometerIpcSession):
         from ._tessellation import model_tessellation
 
         return model_tessellation(cast("GeometerIpcClient", self), model, options, timeout)
+
+    def mesh_illustration_geometry(
+        self,
+        input: MeshIllustrationGeometryInputA0,
+        *,
+        hlr_projection: HlrProjectionResultA0 | None = None,
+        timeout: float | None = None,
+    ) -> MeshIllustrationGeometryA0:
+        """Return ordered millimeter drawing geometry without constructing SVG.
+
+        Uses the governed geometry JSON attachment; array order is paint order.
+        Supplied HLR must be visible-only polylines from the same model and view.
+        """
+        from ._illustration_geometry import mesh_illustration_geometry
+
+        return mesh_illustration_geometry(cast("GeometerIpcClient", self), input, timeout, hlr_projection)
 
     def mesh_illustration(
         self,

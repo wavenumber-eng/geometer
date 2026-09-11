@@ -1,5 +1,15 @@
 # Native mesh illustration
 
+For custom renderers, the additive [illustration geometry API](mesh-illustration-geometry.md)
+returns ordered shaded surfaces and linework without generating SVG.
+
+The Python facade validates the complete input once and serializes its validated
+mesh subtree as the governed collection attachment. Both illustration facades
+share this adaptation; root validation, error order and attachment bytes are
+unchanged. Shared Python codecs specialize direct numeric arrays while retaining
+their scalar type/range rules. The [performance record](../research/illustration-performance.md)
+separates these client savings from native preparation, fusion and linework costs.
+
 ## Availability and authority
 
 Geometer 2026.9.6 introduces `geometer::illustrate_mesh` in

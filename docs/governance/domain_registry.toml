@@ -25,7 +25,7 @@ owned_roots = [
   "uv.lock",
   "wn-dev-std.toml",
 ]
-ignore = ["out/**"]
+ignore = ["out/**", "examples/python/.venv/**"]
 
 [[domains]]
 id = "geometer"

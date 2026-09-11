@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56">
+  <title>Illustration drawing geometry — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/mesh-illustration-geometry.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="illustration-drawing-geometry">Illustration drawing geometry</h1></header>
+<p><code>geometry.mesh_illustration_geometry.a0</code> returns colored, ordered 2D drawing
+geometry for applications that supply their own renderer. It shares native
+preparation, shading, visibility ordering, fusion and optional HLR composition
+with <a href="mesh-illustration-native.html">SVG illustration</a>, stopping before the SVG
+writer. It returns neither original 3D tessellation nor XML/path strings.
+The existing SVG A0 operation and its defaults remain compatible.</p>
+<h2 id="contracts-and-calls">Contracts and calls</h2>
+<p>TypeSpec owns the <a href="../../../../../../src/tsp/geometer/operations/mesh-illustration-geometry-a0.tsp">values</a>
+and <a href="../../../../../../src/tsp/geometer/operations/mesh-illustration-geometry-operation-a0.tsp">operation</a>.
+The generated DTOs, codecs, schemas and catalogs define their structure.</p>
+<table>
+<thead>
+<tr>
+<th>Surface</th>
+<th>Entry point</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>C++ owning value</td>
+<td><code>illustrate_mesh_geometry(input, result, status)</code>; overload accepts matching HLR</td>
+</tr>
+<tr>
+<td>Native IPC / generic C ABI / full WASM</td>
+<td><code>geometry.mesh_illustration_geometry.a0</code></td>
+</tr>
+<tr>
+<td>Python persistent / one-shot</td>
+<td><code>client.mesh_illustration_geometry(input, hlr_projection=...)</code> / <code>geometer.mesh_illustration_geometry(...)</code></td>
+</tr>
+<tr>
+<td>Rust persistent</td>
+<td><code>mesh_illustration_geometry(input)</code> / <code>mesh_illustration_geometry_with_hlr(input, hlr)</code></td>
+</tr>
+<tr>
+<td>TypeScript local renderer</td>
+<td><code>illustrateMeshGeometry(input, linework)</code> / <code>createIllustrator(input).renderGeometry(style)</code></td>
+</tr>
+</tbody>
+</table>
+<p>Direct input <code>geometry.mesh_illustration_geometry.input.a0</code> explicitly requires
+millimeter mesh positions and matrix translations. Convert other units first.
+It has no SVG title/viewport options. The TypeScript prepared API's geometry
+method likewise requires millimeter source meshes. Existing SVG/Canvas
+conventions remain unchanged.</p>
+<p>IPC reuses the <code>mesh_collection</code> JSON input attachment and optional
+<code>hlr_projection</code>. HLR must be visible-only millimeter polylines from the same
+model, placement and normalized view. Neither illustration operation computes
+HLR or determines visibility for arbitrary supplied lines.</p>
+<p>The small IPC result contains statistics, warnings and a descriptor with name,
+schema, byte length and SHA-256. One required <code>illustration_geometry</code> attachment
+contains UTF-8 <code>geometry.mesh_illustration.geometry.a0</code> JSON, media type
+<code>application/vnd.wavenumber.geometer.illustration-geometry+json</code>, maximum 256 MiB.
+This uses existing attachments, outside the 8 MiB inline envelope; platform
+aggregate budgets still apply. Typed Python/Rust helpers validate integrity and
+draw counts, then return the owning geometry DTO. Generic execute returns the
+descriptor and bytes.</p>
+<h2 id="coordinates-and-painting">Coordinates and painting</h2>
+<p>The view's orthographic basis gives <code>dot(world,right), dot(world,up)</code>, with
+horizontal mirroring already applied. Y points upward; origin is world origin.
+The result retains the requested view; do not mirror its points again. Geometry
+retains floating-point precision rather than adopting the SVG integer grid.
+Separate native/JavaScript floating-point evaluation and JSON decoding may differ
+in their last binary digits; geometry output does not round them to force equality.</p>
+<p>Viewport bounds include valid triangles before backface culling, exclude
+supplied HLR and become <code>[-1,-1]..[1,1]</code> when all triangles skip. They are not a
+tight visible-paint bound or clipping mask.</p>
+<p>Draw surfaces in array order, and each surface's layers in array order. A
+layer's rings form one implicitly closed even-odd fill, including holes.
+Preserve underpaint/inlays and triangle/fused/layered kind. Then draw the ordered
+lines: raw diagnostic strokes, HLR detail, HLR outline. Do not re-sort by an
+inferred average Z or source material. Widths are millimeters, with round caps
+and joins. Colors are sanitized CSS strings; color alpha multiplies layer
+opacity. No new CSS-to-RGBA parser is involved.</p>
+<p>Fusion does not retain comprehensive source-body provenance; this result does
+not promise per-component picking IDs. <code>surface_draws</code> counts layers and
+<code>commands</code> counts layers plus line segments, not SVG elements after chaining.
+Warnings retain source order and the existing 256-entry cap.</p>
+<h2 id="presentation-and-limits">Presentation and limits</h2>
+<p>Presentation includes background/transparency, fill/stroke semantics, padding
+and same-fill seam width. Consumers choose their viewport. Existing adapters
+have distinct rules:</p>
+<ul>
+<li>SVG uses 6% padding, a default coordinate span of 1,000,000, Y inversion and
+ECMAScript rounding. Stroke/seam widths have a one-grid-unit minimum. Opacity
+at or above <code>.999</code> is opaque. Contiguous same-style lines are chained.</li>
+<li>Canvas retains layer opacity, uses a <code>.6</code>-pixel minimum line width and a
+<code>.7</code>-to-<code>1.5</code>-pixel seam stroke. SVG and Canvas are not pixel-identical.</li>
+</ul>
+<p>SVG line grouping still compares original color spelling before sanitization;
+the geometry DTO exposes safe paint values. Geometry consumers can reproduce
+appearance without reproducing XML class names or exact path chaining.</p>
+<p>Existing triangle, visibility-work and supplied-HLR limits remain. Geometry
+adds aggregate limits of 2,000,000 surfaces/layers/rings, 6,000,000 ring points
+and 1,000,000 lines, plus its attachment byte cap. Coordinates must be finite,
+rings have at least three points and widths are nonnegative. These are accepted
+work/output bounds, not a hard peak-memory sandbox.</p>
+<p>Native failures clear the result; resource failures return status 102. IPC
+remains reusable after recoverable operation errors. Typed clients terminate
+their connection on malformed results. TypeScript retains its existing CPU/work
+policies; shared DTO limits do not imply identical native/JS peak-memory bounds.
+Planar-only WASM is unsupported: that target has no generic operation ABI.</p>
+<p>The <a href="../../../../../../examples/python/illustration_geometry_canvas.py">Python-to-Canvas example</a>
+requests this operation and writes a standalone HTML preview and geometry JSON.
+Its Canvas consumer uses the same painting conventions as the Illustration Lab.</p>
+<p>The integer-formatting fast path accelerates shared native preparation/fusion
+for both outputs. It does not accelerate unrelated STEP/HLR/GLB operations or
+the separate TypeScript SVG/Canvas renderer.</p>
+
+</main>
+</body>
+</html>

@@ -1,5 +1,19 @@
 # Python Examples
 
+For custom illustration rendering, [illustration_geometry_canvas.py](illustration_geometry_canvas.py)
+requests colored drawing geometry and visible Fast HLR through native IPC, then
+writes a standalone HTML Canvas preview plus its `.geometry.json` data. It never
+generates or parses SVG. From the repository root with a current native build:
+
+```powershell
+uv run python examples/python/illustration_geometry_canvas.py --executable build/src/cpp/cli/geometer.exe
+```
+
+The default fixture is SOT-23 and output is `out/examples/illustration-geometry.html`.
+An optional positional STEP path, `--output`, and `--executable` select other inputs.
+See the [geometry contract](../../docs/design/mesh-illustration-geometry.md) for
+coordinates, ring holes, ordered paint layers and line widths.
+
 Use the installed `wn-geometer` package or the committed native release
 artifact. A source rebuild is needed only when changing native code:
 

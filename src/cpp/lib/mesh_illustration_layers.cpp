@@ -1,7 +1,6 @@
 #include "mesh_illustration_fusion.h"
 
 #include <algorithm>
-#include <unordered_set>
 
 namespace geometer::illustration_detail
 {
@@ -16,7 +15,13 @@ bool multiple_coplanar_materials(const std::vector<TriangleCommand>& commands,
                                  const std::vector<std::size_t>& members, double tolerance)
 {
     const auto& reference = *commands[members[0]].triangle;
-    std::unordered_set<std::string> materials;
+    const auto material_key = [](const Triangle& triangle)
+    {
+        return fixed_text(triangle.color[0]) + "," + fixed_text(triangle.color[1]) + "," +
+               fixed_text(triangle.color[2]) + "|" + fixed_text(triangle.opacity);
+    };
+    std::optional<std::string> first_key;
+    bool multiple = false;
     for (auto member : members)
     {
         const auto& triangle = *commands[member].triangle;
@@ -25,10 +30,17 @@ bool multiple_coplanar_materials(const std::vector<TriangleCommand>& commands,
         for (unsigned i = 0; i < 3; ++i)
             if (std::abs(triangle.depths[i] - depth_at(reference, triangle.points[i])) > tolerance)
                 return false;
-        materials.insert(fixed_text(triangle.color[0]) + "," + fixed_text(triangle.color[1]) + "," +
-                         fixed_text(triangle.color[2]) + "|" + fixed_text(triangle.opacity));
+        // Keep checking every member's coplanarity even after finding a second
+        // material. Distinct raw values can share the same 12-place key.
+        if (!multiple &&
+            (triangle.color != reference.color || triangle.opacity != reference.opacity))
+        {
+            if (!first_key)
+                first_key = material_key(reference);
+            multiple = material_key(triangle) != *first_key;
+        }
     }
-    return materials.size() >= 2;
+    return multiple;
 }
 
 std::vector<std::vector<std::size_t>>

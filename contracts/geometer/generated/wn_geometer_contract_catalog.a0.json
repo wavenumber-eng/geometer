@@ -129,6 +129,34 @@
       "option_patch": true
     },
     {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryA0",
+      "contract_identity": "geometry.mesh_illustration.geometry.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.mesh_illustration.geometry:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryInputA0",
+      "contract_identity": "geometry.mesh_illustration_geometry.input.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.mesh_illustration_geometry.input:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryRequestA0",
+      "contract_identity": "geometry.mesh_illustration_geometry.request.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.mesh_illustration_geometry.request:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryResultA0",
+      "contract_identity": "geometry.mesh_illustration_geometry.result.a0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.mesh_illustration_geometry.result:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0",
       "contract_identity": "geometry.mesh_illustration.request.a0",
       "schema_id": "urn:wavenumber:schema:geometer:geometry.mesh_illustration.request:a0",
@@ -5986,6 +6014,15 @@
       "constraints": {},
       "variants": [
         {
+          "name": "mesh_illustration_geometry",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryRequestA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
           "name": "mesh_illustration",
           "type": {
             "kind": "reference",
@@ -7215,6 +7252,764 @@
       ]
     },
     {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryAttachment",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "attachment",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "illustration_geometry"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.mesh_illustration.geometry.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "byte_length",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1,
+            "max_value": 268435456
+          }
+        },
+        {
+          "name": "sha256",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 64,
+            "max_length": 64
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryBounds",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "min",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationPoint2"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "max",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationPoint2"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryLayer",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "rings",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationRing"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 1,
+            "max_items": 2000000
+          }
+        },
+        {
+          "name": "fill",
+          "optional": false,
+          "doc": "Sanitized CSS color. Color alpha and numeric layer opacity multiply.",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "opacity",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "float64"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 0,
+            "max_value": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryLine",
+      "kind": "model",
+      "doc": "Draw after all surfaces, in array order. Width is in projected millimeters.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "start",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationPoint2"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "end",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationPoint2"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "color",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "width",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "float64"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryPresentation",
+      "kind": "model",
+      "doc": "Target-independent paint semantics; SVG fitting/quantization stays in its adapter.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "fill_rule",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "evenodd"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "line_cap",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "round"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "line_join",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "round"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "background",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "transparent_background",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "boolean"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "seam_width",
+          "optional": false,
+          "doc": "Same-fill seam stroke before target rounding/minimum-pixel rules.",
+          "type": {
+            "kind": "primitive",
+            "name": "float64"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 0
+          }
+        },
+        {
+          "name": "padding",
+          "optional": false,
+          "doc": "Existing SVG viewport padding in projected millimeters.",
+          "type": {
+            "kind": "primitive",
+            "name": "float64"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometrySurface",
+      "kind": "model",
+      "doc": "Array order is paint order, including ordered underpaint/inlay layers.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationSurfaceKind"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "layers",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryLayer"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 1,
+            "max_items": 2000000
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationPoint2",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {
+        "min_items": 2,
+        "max_items": 2
+      },
+      "model_kind": "array",
+      "base": null,
+      "index_value": {
+        "kind": "primitive",
+        "name": "float64"
+      },
+      "properties": []
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationRing",
+      "kind": "model",
+      "doc": "Implicitly closed ring. All rings of one layer form one even-odd filled path.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "points",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationPoint2"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 3,
+            "max_items": 6000000
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationSurfaceKind",
+      "kind": "enum",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "members": [
+        {
+          "name": "triangle",
+          "value": "triangle",
+          "doc": ""
+        },
+        {
+          "name": "fused",
+          "value": "fused",
+          "doc": ""
+        },
+        {
+          "name": "layered",
+          "value": "layered",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryA0",
+      "kind": "model",
+      "doc": "Shaded, fused drawing geometry; no SVG/XML/path strings and no original 3D mesh.\nCoordinates use X=dot(world,right) with mirror_x applied and Y=dot(world,up).\nright/up are the orthonormal basis derived from view. Origin is world origin.\nBounds include valid triangles before culling, exclude supplied HLR, and are\n[-1,-1]..[1,1] when all triangles skip. Arrays establish painter order:\nsurfaces/layers, then diagnostic raw lines, then HLR detail, then HLR outline.\nGlobal limits: 2,000,000 layers and rings, 6,000,000 ring points, 1,000,000 lines.\nstats.commands counts logical draws, not SVG elements after line chaining.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.mesh_illustration.geometry.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "length_unit",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "millimeter"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "view",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationView"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "bounds",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryBounds"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "surfaces",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometrySurface"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 2000000
+          }
+        },
+        {
+          "name": "lines",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryLine"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 1000000
+          }
+        },
+        {
+          "name": "presentation",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryPresentation"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "stats",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationRenderStats"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "warnings",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "primitive",
+              "name": "string"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 256
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryInputA0",
+      "kind": "model",
+      "doc": "Direct value input. Mesh coordinates and matrix translations must be millimeters.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.mesh_illustration_geometry.input.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "length_unit",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "millimeter"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "meshes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationMesh"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 1,
+            "max_items": 65536
+          }
+        },
+        {
+          "name": "view",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationView"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "prepare",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationPrepareOptions"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "style",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationStyleA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryRequestA0",
+      "kind": "model",
+      "doc": "Reuses bounded mesh_collection and optional matching visible HLR attachments.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.mesh_illustration_geometry.request.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "view",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationView"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "prepare",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationPrepareOptions"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "style",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationStyleA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryResultA0",
+      "kind": "model",
+      "doc": "Small transport result; statistics/warnings must match the geometry attachment.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.mesh_illustration_geometry.result.a0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "geometry",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryAttachment"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "stats",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationRenderStats"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "warnings",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "primitive",
+              "name": "string"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 256
+          }
+        }
+      ]
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0",
       "kind": "model",
       "doc": "Native one-shot illustration settings. Meshes arrive in the required\nmesh_collection attachment governed by geometry.mesh_collection.a0.\nReuses existing illustration A0 options and result; does not compute HLR.\nOptional hlr_projection attachment is geometry.hlr_projection.result.a0:\nexactly one matching view, millimeters, polyline outline/detail only.\nSupply visibility-filtered HLR from the same model, placement and transform\nas the meshes. The renderer mirrors and composes detail then outline over\nsurfaces according to show_hlr_detail/show_hlr_outline; it does not infer\nvisibility from arbitrary supplied segments. Maximum 1,000,000 segments.",
@@ -7976,6 +8771,15 @@
       "constraints": {},
       "composition": "one_of",
       "variants": [
+        {
+          "name": "mesh_illustration_geometry",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryResultA0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
         {
           "name": "mesh_illustration",
           "type": {
@@ -15716,6 +16520,44 @@
       "native_runtime_available": false,
       "runtime_dispatch": "logical_dto",
       "doc": "Project a synthesized indexed triangle mesh through the Fast HLR backend."
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.Operations.meshIllustrationGeometry",
+      "identity": "geometry.mesh_illustration_geometry.a0",
+      "request_contract": "geometry.mesh_illustration_geometry.request.a0",
+      "result_contract": "geometry.mesh_illustration_geometry.result.a0",
+      "input_attachments": [
+        {
+          "name": "hlr_projection",
+          "required": false,
+          "media_types": [
+            "application/vnd.wavenumber.geometer.hlr-projection+json"
+          ],
+          "max_bytes": 67108864
+        },
+        {
+          "name": "mesh_collection",
+          "required": true,
+          "media_types": [
+            "application/vnd.wavenumber.geometer.mesh-collection+json"
+          ],
+          "max_bytes": 268435456
+        }
+      ],
+      "output_attachments": [
+        {
+          "name": "illustration_geometry",
+          "required": true,
+          "media_types": [
+            "application/vnd.wavenumber.geometer.illustration-geometry+json"
+          ],
+          "max_bytes": 268435456
+        }
+      ],
+      "runtime_available": true,
+      "native_runtime_available": false,
+      "runtime_dispatch": "logical_dto",
+      "doc": "Return ordered shaded illustration geometry without generating SVG. Does not compute HLR."
     },
     {
       "name": "Wavenumber.Geometer.Contracts.Operations.meshIllustration",

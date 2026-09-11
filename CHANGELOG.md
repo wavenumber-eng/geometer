@@ -4,6 +4,24 @@ All notable changes to geometer are documented here.
 
 ## [Unreleased]
 
+## [2026.9.11] - 2026-09-11
+
+### Added
+
+- Added ordered, colored illustration geometry without SVG through C++, IPC,
+  Python, Rust, TypeScript and full browser WASM, with a Python Canvas example.
+
+### Changed
+
+- Reduced repeated native illustration formatting, material/vertex key work and
+  temporary allocation while preserving exact SVG output.
+- Optimized deterministic Fast HLR welding, triangle search and optional hidden
+  output, plus fast mesh-shadow sweep bookkeeping without changing linework.
+- Accelerated strict Python numeric-array codecs and reused validated mesh data
+  when forming illustration attachments. Existing validation errors are retained.
+- Advanced runtime and client versions together to match the expanded operation
+  catalog. OCCT remains pinned to 8.0.1.
+
 ## [2026.9.10] - 2026-09-10
 
 ### Changed

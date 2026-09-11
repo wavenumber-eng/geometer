@@ -2,11 +2,11 @@
   "artifacts": {
     "dist/wasm/browser/geometer.js": {
       "bytes": 163460,
-      "sha256": "5bfd6553fb5a72f44cc7b53307b84f5806ae722cb6e431d250743bce5a8502d4"
+      "sha256": "8ad3a07cc7c0de578ca0428eb4ea9c13e985c14caaa4edc086e10559685cc2e4"
     },
     "dist/wasm/browser/geometer.wasm": {
-      "bytes": 19322568,
-      "sha256": "622dc736d7bf22a4afed227bc80074e90daf21cea2ea75b218e73c35ad169146"
+      "bytes": 19358011,
+      "sha256": "6cc08d0d16b7f20c7789075c4717831385f34e8d388aee83244bf4892a43807f"
     },
     "dist/wasm/npm/geometer/README.md": {
       "bytes": 6042,
@@ -61,16 +61,16 @@
       "sha256": "fa949ab7bb094df35c3fb5bb90dc050a2e2ea72ad0b5e824ff334834a9c74cae"
     },
     "dist/wasm/npm/geometer/generated/codecs.d.ts": {
-      "bytes": 11353,
-      "sha256": "1a38fa1058313fdac21086c134dc9ae4e312a3b866ec81a4fc1bfcc53ee9fe05"
+      "bytes": 12443,
+      "sha256": "3632352f6c74bc21957a7eab36284b50cf72b2eb94a42fd87fc5f29e160afec3"
     },
     "dist/wasm/npm/geometer/generated/codecs.js": {
-      "bytes": 224375,
-      "sha256": "13f4cc39b02877e345bd81467f8773a3a51aa82a86a272b16a9dec87a639fc01"
+      "bytes": 241445,
+      "sha256": "9b7ba697f0ae7765959503e16a9b026520df82abd2d40ee7e40d54d10add5429"
     },
     "dist/wasm/npm/geometer/generated/contracts.d.ts": {
-      "bytes": 56684,
-      "sha256": "826d427d7912845aba0f9d85e283ccef1c94b2d14486d03f5f18af586d8822c4"
+      "bytes": 60970,
+      "sha256": "7e2d957af86d73951f55ba2e5a56fc0e40cf8c21c18cdcdf041676cfb52ea393"
     },
     "dist/wasm/npm/geometer/generated/contracts.js": {
       "bytes": 80,
@@ -85,12 +85,12 @@
       "sha256": "6e4731631af8b7473f72ecb2d014453cfa89d93f2b3d4b4b6a14f7d9be60145a"
     },
     "dist/wasm/npm/geometer/generated/operations.d.ts": {
-      "bytes": 15455,
-      "sha256": "3b4da6fb8faf5f0ca35e41e8d6d70934919f3a22faf453109ef2860fbf3ab011"
+      "bytes": 16852,
+      "sha256": "9028afeb4a0a87f84f1991daccb01848d0b33b6101218c9b72b40a9363511ce7"
     },
     "dist/wasm/npm/geometer/generated/operations.js": {
-      "bytes": 13245,
-      "sha256": "7419fcbca0e3a48988304579f6f6e916449aef6bb780d085a355028902f4585a"
+      "bytes": 14517,
+      "sha256": "4a69edc5652b35ac40720f706860bf3bda21146a727c49c208ca870b741567ee"
     },
     "dist/wasm/npm/geometer/illustrated-hlr.d.ts": {
       "bytes": 1891,
@@ -101,12 +101,12 @@
       "sha256": "6af909f706e6e386e49b97d8ddb3a55f59875b101a3f6b22c20ad04761819ade"
     },
     "dist/wasm/npm/geometer/index.d.ts": {
-      "bytes": 751,
-      "sha256": "e4f243269f7ff65152c4f8c2e208e8339575ca45a23bda2829399f423df947bf"
+      "bytes": 775,
+      "sha256": "3ef21fc40e9917fa1f23ae6f6e7466fe9762efdd49942bcd2c0a471c6bb7683d"
     },
     "dist/wasm/npm/geometer/index.js": {
-      "bytes": 546,
-      "sha256": "b90f712c923f110a5bea50c4d68c357e46529f93a0a88f28656eb4090ca1dcc1"
+      "bytes": 570,
+      "sha256": "d5f68a36ef73650d4d774641aa18daec26092a4f494f235094913eb36cd96fb7"
     },
     "dist/wasm/npm/geometer/indexed-mesh-packet-a0.d.ts": {
       "bytes": 1015,
@@ -141,12 +141,12 @@
       "sha256": "23e5e1f045b62ac004339f274936d6e1d0c60880f026023c199cae25cdfd2a6d"
     },
     "dist/wasm/npm/geometer/mesh-illustration.d.ts": {
-      "bytes": 5821,
-      "sha256": "ffdf33cbe05012136dac97fe6cebb981d394e5956614b1bcabcc8a9116d5e4df"
+      "bytes": 6289,
+      "sha256": "dd292df43b59dc13b32b21433608475e486e26bf007daf1073e6afe01b2b3666"
     },
     "dist/wasm/npm/geometer/mesh-illustration.js": {
-      "bytes": 79690,
-      "sha256": "35cd8a009134488c9c52882b357584e54a53aaef984c77a885bc0fcdcbc30b1e"
+      "bytes": 85309,
+      "sha256": "b7c3490a567ce2e3cb52823100c4af33a5e6729cd9e5738789dda8c52338adea"
     },
     "dist/wasm/npm/geometer/node-process-a0.d.ts": {
       "bytes": 1069,
@@ -166,7 +166,7 @@
     },
     "dist/wasm/npm/geometer/package.json": {
       "bytes": 1438,
-      "sha256": "c5a2a60d8b2c8ac148490c79c06bf4128e2516e8bd528f5de5ecbf7e9a32d86f"
+      "sha256": "764fdf3fdb44ee75a6316e2fbf302c52570033aec02e21908fb29b3dd525a771"
     },
     "dist/wasm/npm/geometer/step-topology-validation.d.ts": {
       "bytes": 3832,
@@ -206,7 +206,7 @@
     },
     "dist/wasm/planar-browser/geometer-planar-browser.wasm": {
       "bytes": 308969,
-      "sha256": "11a68b98e2bd8f544e0194222595b37fd72ac05b13564537f16166ff008f510e"
+      "sha256": "c3fc3d465febde0af4f008ec341c4a47ea3f3ee2f9b98b389c876bf555012b77"
     }
   },
   "build": {
@@ -214,22 +214,22 @@
     "contract_check_status": "passed",
     "source": {
       "authority": "git_head_and_source_worktree_excluding_dist_build_deps_out",
-      "revision": "ae9180c80ada7578492a0bf8f043a982a1137c41",
-      "tree_state": "clean"
+      "revision": "80d495480bc4064f86a25e3b00c144450705172f",
+      "tree_state": "dirty"
     },
-    "source_content_sha256": "5d354cb5995b4556fe4a66db1148bbbc5e4c03fc4b51233622284b22608c3dc8",
+    "source_content_sha256": "314e74dd1856f0520de3886b537cb14901395cd1d2a0de77d618bd414b68992b",
     "toolchain": {
       "emscripten": {
-        "executable": ".deps/emsdk/upstream/emscripten/emcc",
-        "executable_sha256": "b0c9551f9155fa9c028efa24591acdfd30f02f32fb247cf9266f5f0f2ede7589",
+        "executable": ".deps/emsdk/upstream/emscripten/emcc.bat",
+        "executable_sha256": "b61f25a114b9b93444de62bc31bf05d1b12b3986513c75f6b23ccc1711c6a634",
         "version": "3.1.56",
         "version_text": "emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 3.1.56 (cf90417346b78455089e64eb909d71d091ecc055)"
       },
-      "node": "v24.20.0",
+      "node": "v24.18.0",
       "npm": "11.16.0",
       "occt": {
         "profile": ".deps/occt-wasm-install/.geometer-occt-profile.json",
-        "profile_sha256": "1f736d8411f04f3271fa5dd2e2ef805020dd971d2343119f6337a1450aede988",
+        "profile_sha256": "8ff1dd083b46556c5e824b810091191b689ab6ff28d7651376915811ddc915c6",
         "recipe_hash": "c48157a47af466d1793739f4022457f0f53f88f5c63ddc1ea86cf7149fe9542b",
         "repo": "https://github.com/Open-Cascade-SAS/OCCT.git",
         "tag": "V8_0_1"

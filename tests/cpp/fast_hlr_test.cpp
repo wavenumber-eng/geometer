@@ -101,6 +101,44 @@ void indexed_mesh_welds_duplicate_seams_by_distance()
     const geometer::FastHlrPreparedMesh translated_prepared = prepare(translated);
     require(translated_prepared.vertices.size() == 4 && translated_prepared.edges.size() == 5,
             "welding should be invariant under a large common translation");
+
+    geometer::FastHlrIndexedMesh ambiguous;
+    ambiguous.vertices = {
+        {1.5, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.75, 0.0, 0.0}, {0.0, 4.0, 0.0}, {4.0, 4.0, 0.0}};
+    ambiguous.triangles = {{{2, 3, 4}, 1}};
+    options.weld_tolerance = 1.0;
+    const auto minimum_match = prepare(ambiguous, options);
+    require(minimum_match.triangles[0].vertices[0] == 0,
+            "welding must choose the minimum matching ID even if another cell is visited first");
+}
+
+void repeated_grid_references_preserve_candidate_budget()
+{
+    geometer::FastHlrIndexedMesh mesh;
+    for (std::uint32_t layer = 0; layer < 9; ++layer)
+    {
+        const std::uint32_t first = static_cast<std::uint32_t>(mesh.vertices.size());
+        const double z = static_cast<double>(layer);
+        mesh.vertices.insert(mesh.vertices.end(), {{0.0, 0.0, z}, {2.0, 0.0, z}, {0.0, 2.0, z}});
+        mesh.triangles.push_back({{first, first + 1, first + 2}, layer});
+    }
+    const auto prepared = prepare(mesh);
+    geometer::FastHlrOptions options;
+    geometer::ProjectedModeGeometry visible;
+    geometer::FastHlrStatistics statistics;
+    geometer::Status status;
+    // Every edge queries the other eight triangles, even when their bounds
+    // occupy several grid cells: 27 edges * 8 unique candidates.
+    options.limits.max_candidate_pairs = 215;
+    require(geometer::project_fast_hlr_detail(prepared, top_view(), options, &visible, nullptr,
+                                              &statistics, &status) != 0,
+            "candidate budget must reject one below the unique-pair count");
+    options.limits.max_candidate_pairs = 216;
+    require(geometer::project_fast_hlr_detail(prepared, top_view(), options, &visible, nullptr,
+                                              &statistics, &status) == 0,
+            "candidate budget must accept the exact unique-pair count");
+    require(statistics.candidate_triangle_pairs == 216,
+            "repeated queries must deduplicate bucket references without losing candidates");
 }
 
 void one_shot_matches_reusable_preparation()
@@ -861,6 +899,7 @@ int main()
     {
         square_builds_shared_adjacency();
         indexed_mesh_welds_duplicate_seams_by_distance();
+        repeated_grid_references_preserve_candidate_budget();
         one_shot_matches_reusable_preparation();
         invalid_indices_and_limits_are_rejected();
         malformed_prepared_data_and_invalid_options_are_rejected();

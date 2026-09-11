@@ -129,6 +129,7 @@ async fn native_composition_matches_browser_for_views_mirror_and_line_toggles() 
                     .mesh_illustration_with_hlr(input.clone(), hlr.clone())
                     .await
                     .unwrap();
+                assert_geometry(&client, &input, &hlr, &result).await;
                 assert_eq!(
                     result,
                     reference(&input, &hlr),
@@ -169,6 +170,49 @@ async fn native_composition_matches_browser_for_views_mirror_and_line_toggles() 
         rejects_mismatches(&client, &input, &hlr).await;
     }
     client.close().await.unwrap();
+}
+
+async fn assert_geometry(
+    client: &GeometerClient,
+    input: &MeshIllustrationInputA0,
+    hlr: &HlrProjectionResultA0,
+    result: &MeshIllustrationResultA0,
+) {
+    let geometry_input = MeshIllustrationGeometryInputA0 {
+        schema: "geometry.mesh_illustration_geometry.input.a0".into(),
+        length_unit: "millimeter".into(),
+        meshes: input.meshes.clone(),
+        view: input.view.clone(),
+        prepare: input.prepare.clone(),
+        style: input.style.clone(),
+    };
+    let geometry = client
+        .mesh_illustration_geometry_with_hlr(geometry_input.clone(), hlr.clone())
+        .await
+        .unwrap();
+    assert_eq!(geometry.stats, result.stats);
+    assert_eq!(geometry.warnings, result.warnings);
+    assert_eq!(geometry.view, input.view);
+    assert_eq!(
+        geometry.lines.len(),
+        (result.stats.outlines + result.stats.details) as usize
+    );
+    assert!(
+        !serde_json::to_value(&geometry)
+            .unwrap()
+            .as_object()
+            .unwrap()
+            .contains_key("svg")
+    );
+    if result.stats.outlines == 0 && result.stats.details == 0 {
+        assert_eq!(
+            geometry,
+            client
+                .mesh_illustration_geometry(geometry_input)
+                .await
+                .unwrap()
+        );
+    }
 }
 
 async fn rejects_mismatches(

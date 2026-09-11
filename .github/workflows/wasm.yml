@@ -18,6 +18,7 @@ name: WASM
       - "scripts/build_wasm.py"
       - "scripts/write_analytic_packet_vectors.py"
       - "scripts/build_analytic_polygon_pour_site.py"
+      - "scripts/build_pcb_polygon_pour_site.py"
       - "scripts/build_hlr_site.py"
       - "scripts/build_illustration_site.py"
       - "scripts/package_single_html_site.py"
@@ -121,6 +122,7 @@ jobs:
           google-chrome --version
           npm run check:typescript
           uv run python scripts/build_analytic_polygon_pour_site.py
+          uv run python scripts/build_pcb_polygon_pour_site.py
           uv run python scripts/build_hlr_site.py
           uv run python scripts/build_illustration_site.py
           uv run python scripts/build_standalone_demos.py all
@@ -129,6 +131,7 @@ jobs:
           node tests/typescript/illustration_static_site_validation.mjs
           node tests/typescript/analytic_self_contained_demo_validation.mjs
           uv run pytest tests/wasm/test_analytic_standalone_demo.py -q
+          uv run pytest tests/wasm/test_pcb_standalone_demo.py -q
           uv run pytest tests/wasm/test_hlr_static_site.py -q
           uv run pytest tests/wasm/test_illustration_static_site.py -q
           uv run pytest tests/python/test_package_single_html_site.py -q
@@ -136,6 +139,7 @@ jobs:
 
       - name: Run WASM validation tests
         run: |
+          node tests/typescript/wasm_client_validation.mjs
           node tests/wasm/planar_batch_solve_bytes_validation.js
           node tests/wasm/step_to_glb_bytes_validation.js
 

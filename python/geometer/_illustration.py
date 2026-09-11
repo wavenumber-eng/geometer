@@ -6,11 +6,8 @@ from typing import TYPE_CHECKING
 
 from ._generated.contracts.codecs import (
     encode_hlr_projection_result_a0_json,
-    encode_mesh_collection_a0_json,
-    encode_mesh_illustration_input_a0_json,
 )
 from ._generated.contracts.models import (
-    MeshCollectionA0,
     HlrProjectionResultA0,
     MeshIllustrationInputA0,
     MeshIllustrationRequestA0,
@@ -18,6 +15,7 @@ from ._generated.contracts.models import (
     OperationFailureA0,
 )
 from ._ipc_a0 import Attachment
+from ._illustration_input import _mesh_attachment
 
 if TYPE_CHECKING:
     from ._ipc_client import GeometerIpcClient
@@ -33,7 +31,7 @@ def mesh_illustration(
 
     # Validate the complete public input with its generated codec before adapting
     # it to the governed attachment-oriented executable request.
-    encode_mesh_illustration_input_a0_json(input)
+    mesh_data = _mesh_attachment(input, "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationInputA0")
     request = MeshIllustrationRequestA0(
         schema="geometry.mesh_illustration.request.a0",
         view=input.view,
@@ -41,12 +39,11 @@ def mesh_illustration(
         style=input.style,
         svg=input.svg,
     )
-    collection = MeshCollectionA0(schema="geometry.mesh_collection.a0", length_unit="millimeter", meshes=input.meshes)
     attachments = [
         Attachment(
             name="mesh_collection",
             media_type="application/vnd.wavenumber.geometer.mesh-collection+json",
-            data=encode_mesh_collection_a0_json(collection),
+            data=mesh_data,
         )
     ]
     if hlr_projection is not None:

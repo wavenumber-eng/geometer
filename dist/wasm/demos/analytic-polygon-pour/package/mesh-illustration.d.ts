@@ -1,4 +1,4 @@
-import type { MeshIllustrationInputA0, MeshIllustrationRenderStats as MeshIllustrationRenderStatsA0, MeshIllustrationResultA0, MeshIllustrationStyleA0, MeshIllustrationSvgOptions as MeshIllustrationSvgOptionsA0 } from "./generated/contracts.js";
+import type { MeshIllustrationGeometryA0, MeshIllustrationGeometryInputA0, MeshIllustrationInputA0, MeshIllustrationRenderStats as MeshIllustrationRenderStatsA0, MeshIllustrationResultA0, MeshIllustrationStyleA0, MeshIllustrationSvgOptions as MeshIllustrationSvgOptionsA0 } from "./generated/contracts.js";
 export type Vec2 = readonly [number, number];
 export type Vec3 = readonly [number, number, number];
 export type Rgb = readonly [number, number, number];
@@ -138,6 +138,8 @@ export declare function resolveMeshIllustrationStyle(style?: MeshIllustrationSty
 /** Convert a resolved ergonomic style into the governed standalone A0 DTO. */
 export declare function toMeshIllustrationStyleA0(style: MeshIllustrationStyle): MeshIllustrationStyleA0;
 export interface MeshIllustratorA0 {
+    /** Source meshes must be millimeters. Returns owning drawing arrays, no SVG. */
+    renderGeometry(style?: MeshIllustrationStyleA0): MeshIllustrationGeometryA0;
     readonly disposed: boolean;
     renderSvg(style?: MeshIllustrationStyleA0, svg?: MeshIllustrationSvgOptionsA0): MeshIllustrationResultA0;
     renderCanvas(context: CanvasRenderingContext2D, style?: MeshIllustrationStyleA0): MeshIllustrationRenderStatsA0;
@@ -147,3 +149,5 @@ export interface MeshIllustratorA0 {
 export declare function createIllustrator(input: MeshIllustrationInputA0, linework?: MeshIllustrationLinework): MeshIllustratorA0;
 /** Prepare and render one governed mesh-illustration A0 input to SVG. */
 export declare function illustrateMesh(input: MeshIllustrationInputA0): MeshIllustrationResultA0;
+/** Prepare and shade millimeter meshes without constructing SVG or Canvas commands. */
+export declare function illustrateMeshGeometry(input: MeshIllustrationGeometryInputA0, linework?: MeshIllustrationLinework): MeshIllustrationGeometryA0;

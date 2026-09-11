@@ -94,13 +94,13 @@ local_ctest_count = 10
 local_rack_passed = 66
 catalog_sha256 = "c93e41a3aa0d64ab4dab905cea82aaeb3b3792155d1f5b2850673567a699d59c"
 vector_manifest_sha256 = "30f697bf63e6ca1ba28e0b9617a061b59a90115ea4ef06a06761d09ea68301a5"
-# Current distributable lock, refreshed for 2026.9.10 from the successful browser
-# job 103099807720 in WASM run 34546382341 (clean source 02ad87824616c212510c0c0ea37045837c0b6295).
+# Current distributable lock, refreshed from the local 2026.9.11 release build.
+# Build provenance is recorded alongside the grouped WASM artifacts.
 # The original model-bounds promotion and historical review evidence above/below remain unchanged.
-browser_js_sha256 = "5bfd6553fb5a72f44cc7b53307b84f5806ae722cb6e431d250743bce5a8502d4"
+browser_js_sha256 = "8ad3a07cc7c0de578ca0428eb4ea9c13e985c14caaa4edc086e10559685cc2e4"
 historical_reviewed_browser_js_sha256 = "5c9f0594465cdb5732911777e2ca38cc2814c1ef9cb52b7672022df6a50bf937"
 browser_js_lock_remediation = "historical_worktree_bytes_unretained_relocked_to_committed_distributable"
-browser_wasm_sha256 = "622dc736d7bf22a4afed227bc80074e90daf21cea2ea75b218e73c35ad169146"
+browser_wasm_sha256 = "6cc08d0d16b7f20c7789075c4717831385f34e8d388aee83244bf4892a43807f"
 independent_review = "accepted"
 acceptance_packet = "reviewer-019ffcd8-e5bb-7531-934f-b9e50e73d2b2ab7"
 review_packet = "reviewer-019ffcc0-0b9f-73e9-85e9-928e32f54cfd"
@@ -601,7 +601,7 @@ sha256 = "87e16b5b2453ad1f9263d92953d5741a30780db02eeea0d59d61f10967c4537b"
 status = "vendored"
 
 [c_abi]
-generation = 20260910
+generation = 20260911
 source = "src/cpp/lib/geometer/c_api.h"
 symbols = [
   "geometer_operation_catalog_json",
@@ -1152,6 +1152,42 @@ pilot_required = true
 compatibility = "First production one-shot SVG result identity; Canvas and opaque reusable prepared objects stay direct package APIs."
 
 [[contracts]]
+id = "geometry.mesh_illustration.geometry.a0"
+kind = "result"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/mesh-illustration-geometry-a0.tsp"
+pilot_required = true
+compatibility = "Additive renderer-neutral ordered millimeter geometry; shared illustration semantics without SVG generation."
+
+[[contracts]]
+id = "geometry.mesh_illustration_geometry.input.a0"
+kind = "request"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/mesh-illustration-geometry-a0.tsp"
+pilot_required = true
+compatibility = "Explicit millimeter input for direct geometry-only illustration; existing SVG input unchanged."
+
+[[contracts]]
+id = "geometry.mesh_illustration_geometry.request.a0"
+kind = "request"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/mesh-illustration-geometry-operation-a0.tsp"
+pilot_required = true
+compatibility = "Additive attachment-oriented geometry-only request reusing existing view, preparation and style."
+
+[[contracts]]
+id = "geometry.mesh_illustration_geometry.result.a0"
+kind = "result"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/mesh-illustration-geometry-a0.tsp"
+pilot_required = true
+compatibility = "Bounded JSON geometry attachment descriptor with matching statistics and warnings."
+
+[[contracts]]
 id = "geometry.projection.options.b0"
 kind = "option_patch"
 status = "inventory_only"
@@ -1430,6 +1466,16 @@ cli_names = []
 compatibility_cli_names = []
 
 [[operations]]
+id = "geometry.mesh_illustration_geometry.a0"
+status = "pilot_candidate"
+request_contract = "geometry.mesh_illustration_geometry.request.a0"
+result_contract = "geometry.mesh_illustration_geometry.result.a0"
+input_attachments = ["mesh_collection", "hlr_projection"]
+output_attachments = ["illustration_geometry"]
+cli_names = []
+compatibility_cli_names = []
+
+[[operations]]
 id = "geometry.model_to_glb.a0"
 status = "inventory_only"
 request_contract = "geometry.step_to_glb.options.a0"
@@ -1573,7 +1619,7 @@ performance_qualification_default_request = "tests/contracts/vectors/analytic/cr
 real_board_packet_provenance = "docs/contracts/analytic-real-board-packet-provenance.toml"
 real_board_packet_provenance_sha256 = "3e465a113fb4edb7667b9b76e684337f1062f76e3456b7a5ef0404f82034d7c2"
 real_board_packet_provenance_test = "tests/python/test_contract_promotion_manifest.py"
-real_board_packet_provenance_test_sha256 = "484bbccce351579c1a0913f0f3aa474b4bfba3db9ad09689c7e710df2d8ba35c"
+real_board_packet_provenance_test_sha256 = "40fba61ecd2d76c971a2ac7bc1a1e02bb29f7a2b755dabcd145080591b53c96e"
 real_board_packet_provenance_status = "public_mit_redistribution_authorized_rt_generated_local_qualified_loz_pending"
 real_board_packet_case_ids = ["rt_super_c1_pwr4", "loz_old_man_curved_copper"]
 real_board_packet_source_sha256 = ["90545409b6ce16e0b636fce3176c90b73be301d03f0a9e32c4ab21a42ad14aca", "377d5a05ed24137ea603d11c663d52ae48849b378534b346010936b826eb2375"]
@@ -1652,10 +1698,10 @@ font_license = "docs/design/assets/fonts/JetBrainsMono/OFL.txt"
 font_license_sha256 = "60d55f23c6ce05a81099a762cb67ca2c9b6ea251c7912720998b4c89ebfd4faa"
 distribution = "dist/wasm/demos/analytic-polygon-pour/index.html"
 asset_manifest = "dist/wasm/demos/analytic-polygon-pour/asset-manifest.json"
-distribution_sha256 = "d7d18419557ff2fffc21c1613bee747518587dbb358d3d9da40e327b44887fd6"
+distribution_sha256 = "e4bafa21b8b155306930b6c7ae014b336f763761c53509561a63899c2f49ed47"
 headers = "dist/wasm/demos/analytic-polygon-pour/_headers"
 standalone_distribution = "dist/wasm/demos/analytic_polygon_pour_demo.html"
-standalone_sha256 = "dc5a76d81307c25b7b6cbced06ebabf9be5da81291ce172996d0693ae45a96ee"
+standalone_sha256 = "eb9ac9606bcad96cee959653b860dc1779d156c1a490b064d51bf16761c63c8e"
 owning_operation = "geometry.analytic_planar_boolean_batch.a0"
 status = "generated_typescript_worker_client_static_and_single_html_file_url_validated_local"
 
@@ -1674,10 +1720,10 @@ font_license = "docs/design/assets/fonts/JetBrainsMono/OFL.txt"
 font_license_sha256 = "60d55f23c6ce05a81099a762cb67ca2c9b6ea251c7912720998b4c89ebfd4faa"
 distribution = "dist/wasm/demos/pcb-polygon-pour/index.html"
 asset_manifest = "dist/wasm/demos/pcb-polygon-pour/asset-manifest.json"
-distribution_sha256 = "3969093a996beceb5f2631fb9d37e42c3c8bda44450c23d5cb3c73a46d50cf71"
+distribution_sha256 = "fc7da20c84564fbe90b55b3ec234faff1ae711c0345ebe074ad6f11f9496c132"
 headers = "dist/wasm/demos/pcb-polygon-pour/_headers"
 standalone_distribution = "dist/wasm/demos/pcb_polygon_pour_demo.html"
-standalone_sha256 = "9b64cc4e04a274711c2469683a0f74f669c5286707a1d0cbeb0cd56601977e27"
+standalone_sha256 = "3c95b979cc0843f5f33a17644fa43153c7e8c3d63768b6fe6cfd6c8e442efa93"
 owning_operation = "geometry.analytic_planar_boolean_batch.a0"
 status = "generated_typescript_worker_client_static_and_single_html_file_url_validated_local"
 

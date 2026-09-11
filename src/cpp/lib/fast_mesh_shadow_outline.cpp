@@ -268,6 +268,8 @@ struct SegmentBounds
     double max_x = 0.0;
     double min_y = 0.0;
     double max_y = 0.0;
+    std::size_t min_y_rank = 0;
+    std::size_t max_y_rank = 0;
 };
 
 class FenwickCounts
@@ -336,6 +338,15 @@ bool charge_union_pairs(const Clipper2Lib::PathsD& paths, std::size_t* remaining
     std::sort(y_coordinates.begin(), y_coordinates.end());
     y_coordinates.erase(std::unique(y_coordinates.begin(), y_coordinates.end()),
                         y_coordinates.end());
+    for (SegmentBounds& segment : segments)
+    {
+        segment.min_y_rank = static_cast<std::size_t>(
+            std::lower_bound(y_coordinates.begin(), y_coordinates.end(), segment.min_y) -
+            y_coordinates.begin());
+        segment.max_y_rank = static_cast<std::size_t>(
+            std::lower_bound(y_coordinates.begin(), y_coordinates.end(), segment.max_y) -
+            y_coordinates.begin());
+    }
 
     using ActiveSegment = std::pair<double, std::size_t>;
     std::priority_queue<ActiveSegment, std::vector<ActiveSegment>, std::greater<>> active_by_max_x;
@@ -347,40 +358,20 @@ bool charge_union_pairs(const Clipper2Lib::PathsD& paths, std::size_t* remaining
         while (!active_by_max_x.empty() && active_by_max_x.top().first < current.min_x)
         {
             const SegmentBounds& expired = segments[active_by_max_x.top().second];
-            active_min_y.add(
-                static_cast<std::size_t>(
-                    std::lower_bound(y_coordinates.begin(), y_coordinates.end(), expired.min_y) -
-                    y_coordinates.begin()),
-                -1);
-            active_max_y.add(
-                static_cast<std::size_t>(
-                    std::lower_bound(y_coordinates.begin(), y_coordinates.end(), expired.max_y) -
-                    y_coordinates.begin()),
-                -1);
+            active_min_y.add(expired.min_y_rank, -1);
+            active_max_y.add(expired.max_y_rank, -1);
             active_by_max_x.pop();
         }
 
-        const std::size_t min_y_at_most_max = active_min_y.prefix_sum(static_cast<std::size_t>(
-            std::upper_bound(y_coordinates.begin(), y_coordinates.end(), current.max_y) -
-            y_coordinates.begin()));
-        const std::size_t max_y_below_min = active_max_y.prefix_sum(static_cast<std::size_t>(
-            std::lower_bound(y_coordinates.begin(), y_coordinates.end(), current.min_y) -
-            y_coordinates.begin()));
+        const std::size_t min_y_at_most_max = active_min_y.prefix_sum(current.max_y_rank + 1);
+        const std::size_t max_y_below_min = active_max_y.prefix_sum(current.min_y_rank);
         const std::size_t candidates = min_y_at_most_max - max_y_below_min;
         if (candidates > *remaining_pairs)
             return false;
         *remaining_pairs -= candidates;
 
-        active_min_y.add(
-            static_cast<std::size_t>(
-                std::lower_bound(y_coordinates.begin(), y_coordinates.end(), current.min_y) -
-                y_coordinates.begin()),
-            1);
-        active_max_y.add(
-            static_cast<std::size_t>(
-                std::lower_bound(y_coordinates.begin(), y_coordinates.end(), current.max_y) -
-                y_coordinates.begin()),
-            1);
+        active_min_y.add(current.min_y_rank, 1);
+        active_max_y.add(current.max_y_rank, 1);
         active_by_max_x.emplace(current.max_x, index);
     }
     return true;

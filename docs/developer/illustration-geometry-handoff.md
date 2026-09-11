@@ -34,6 +34,11 @@ distributions. Local attestations identify local development source; hosted
 release jobs independently rebuild and validate Windows, Linux x64/ARM64,
 macOS ARM64 and WASM before publishing their artifacts and wheels.
 
+The Linux x64/ARM64 and macOS ARM64 runtime and C++ preview copies were
+refreshed from successful jobs in CI run `34618554713`, with executable hashes
+verified against their clean-source attestations. The user visually accepted
+the refreshed Windows Rust Lab and Illustration HTML demo.
+
 ## Consumption
 
 Install the published `wn-geometer==2026.9.11` package once release jobs finish.

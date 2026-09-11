@@ -8,6 +8,11 @@ pub fn decode_logical_request(
     data: &[u8],
 ) -> Result<contracts::IpcRequestValueA0, contracts::ContractError> {
     match contract {
+        "geometry.mesh_illustration_geometry.request.a0" => {
+            Ok(contracts::IpcRequestValueA0::MeshIllustrationGeometry(
+                contracts::decode_json::<contracts::MeshIllustrationGeometryRequestA0>(data)?,
+            ))
+        }
         "geometry.mesh_illustration.request.a0" => {
             Ok(contracts::IpcRequestValueA0::MeshIllustration(
                 contracts::decode_json::<contracts::MeshIllustrationRequestA0>(data)?,
@@ -97,6 +102,9 @@ pub fn decode_logical_request(
 
 pub fn logical_request_contract(value: &contracts::IpcRequestValueA0) -> Option<&'static str> {
     match value {
+        contracts::IpcRequestValueA0::MeshIllustrationGeometry(_) => {
+            Some("geometry.mesh_illustration_geometry.request.a0")
+        }
         contracts::IpcRequestValueA0::MeshIllustration(_) => {
             Some("geometry.mesh_illustration.request.a0")
         }
@@ -149,6 +157,9 @@ pub fn logical_request_contract(value: &contracts::IpcRequestValueA0) -> Option<
 
 pub fn logical_result_contract(value: &contracts::OperationResultValueA0) -> Option<&'static str> {
     match value {
+        contracts::OperationResultValueA0::MeshIllustrationGeometry(_) => {
+            Some("geometry.mesh_illustration_geometry.result.a0")
+        }
         contracts::OperationResultValueA0::MeshIllustration(_) => {
             Some("geometry.mesh_illustration.result.a0")
         }

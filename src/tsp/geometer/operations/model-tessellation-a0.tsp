@@ -38,6 +38,8 @@ model ModelTessellationRequestA0 {
   root_placement?: ModelRootPlacement = ModelRootPlacement.strip;
   @minValue(1) @maxValue(2000000)
   max_triangles?: uint32 = 750000;
+  /** Return usable faces with warnings when completed meshing has local face failures. */
+  allow_partial?: boolean = true;
 }
 
 /** UTF-8 JSON attachment governed by geometry.mesh_collection.a0, not an opaque mesh format. */

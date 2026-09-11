@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56">
+  <title>Illustration geometry release handoff — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/developer/illustration-geometry-handoff.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="illustration-geometry-release-handoff">Illustration geometry release handoff</h1></header>
+<p>The illustration optimization plans are complete. Version <code>2026.9.11</code>, tag
+<code>v2026-09-11</code>, packages the reviewed work on <code>perf/illustration-geometry</code>.
+Publication status is authoritative on the GitHub release and PyPI; the
+qualification below records local evidence before hosted release validation.</p>
+<p>Native integer formatting, shared preparation/fusion, material/vertex-key
+reuse and Python numeric-array validation avoid repeated work. Owned Fast HLR
+and mesh-shadow paths preserve deterministic ordering while reducing search
+bookkeeping. The additive <a href="../design/mesh-illustration-geometry.html">drawing geometry API</a>
+returns shaded surfaces and linework without producing SVG.</p>
+<h2 id="qualification">Qualification</h2>
+<p>The <a href="../../../../../research/illustration-performance.md">measurement record</a> contains
+paired native, IPC and whole-board results, including scope and memory limits.
+All 398 captured poses retain exact illustration and full-precision Fast
+HLR/shadow results. Paired four-worker uncached board runs retained all 12 SVGs
+exactly: Loz 52.30/36.95 seconds, RT 9.95/10.04, NXP 122.61/102.91 and OV
+51.20/42.65. Independent reviews found no further demonstrated low-risk
+optimization that warrants expanding this release.</p>
+<p>The versioned Windows build passed all 71 CTest cases. A clean installed wheel
+passed tessellation, SVG, drawing geometry and the headless Python example.
+Full browser and Node-test WASM plus the planar-only runtime were rebuilt
+against the existing OCCT cache. Browser demos passed Chrome smoke checks;
+native Node examples, Python Canvas and optional PyVista off-screen rendering
+passed. The C++ preview and Rust Lab were rebuilt with the current code. See
+the <a href="demo-status.html">demo audit</a> for retained interactive-review limitations.</p>
+<p>Artifact hashes and build provenance live beside the grouped native/WASM
+distributions. Local attestations identify local development source; hosted
+release jobs independently rebuild and validate Windows, Linux x64/ARM64,
+macOS ARM64 and WASM before publishing their artifacts and wheels.</p>
+<p>The Linux x64/ARM64 and macOS ARM64 runtime and C++ preview copies were
+refreshed from successful jobs in CI run <code>34618554713</code>, with executable hashes
+verified against their clean-source attestations. The user visually accepted
+the refreshed Windows Rust Lab and Illustration HTML demo.</p>
+<h2 id="consumption">Consumption</h2>
+<p>Install the published <code>wn-geometer==2026.9.11</code> package once release jobs finish.
+Use matching generated Python/Rust/TypeScript clients and native/WASM runtimes:
+an older client rejects the expanded operation catalog during handshake.
+Replacing only its executable is insufficient. Altium Cruncher should consume
+the published package with its ordinary dependency pin and lockfile, without
+source-path or executable overrides.</p>
+<p>The existing SVG API remains available. Drawing geometry can be larger and
+slower over IPC than compact fused SVG; it is intended for custom renderers.
+Planar-only WASM has no generic illustration operation. Experimental AO remains
+outside the native interface. PNG optimization and Altium Monkey's separate
+changes remain outside this Geometer release.</p>
+<p>Independent reviews covered contracts, attachment limits, typed clients,
+numerical/render parity and benchmark methodology. Camera snapshot ownership,
+finite extent enforcement and merged-style validation findings were fixed.
+Temporary working plans were removed after their conclusions were transferred
+to the maintained design and measurement documents.</p>
+
+</main>
+</body>
+</html>

@@ -52,6 +52,15 @@ of assuming a particular executable or WASM build exposes an operation.
 
 ## Direct C++ Fast API
 
+Fast preparation uses a lookup-only weld table while retaining input order and
+the minimum matching vertex ID. Per-view triangle search deduplicates grid
+references before sorting candidate IDs, preserving visibility order and
+candidate-pair limit accounting. Mesh-shadow sweep ranks are reused without
+changing inclusive endpoint overlap. Prepared values remain validated on each
+public projection call. These implementation optimizations do not change
+projection tolerances or linework contracts; measurements and memory tradeoffs
+are recorded in [illustration performance](../research/illustration-performance.md).
+
 `geometer/fast_hlr.h` is the stable semantic boundary. The simplest call uses
 the indexed-mesh overload:
 

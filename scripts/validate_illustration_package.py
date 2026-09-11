@@ -50,6 +50,18 @@ def validate(step: Path, output: Path) -> None:
             ),
         )
         composed = client.mesh_illustration(input, hlr_projection=hlr)
+        geometry_input = geometer.MeshIllustrationGeometryInputA0(
+            schema="geometry.mesh_illustration_geometry.input.a0",
+            length_unit="millimeter",
+            meshes=input.meshes,
+            view=view,
+            style=style,
+        )
+        geometry = client.mesh_illustration_geometry(geometry_input, hlr_projection=hlr)
+        assert geometry.stats == composed.stats and geometry.warnings == composed.warnings
+        assert isinstance(geometry, geometer.MeshIllustrationGeometryA0)
+        assert geometry.surfaces and geometry.lines and not hasattr(geometry, "svg")
+        assert "geometry.mesh_illustration_geometry.a0" in operations
         assert composed == client.mesh_illustration(input, hlr_projection=hlr)
         assert composed.stats.outlines > 0 and composed.stats.details > 0
         assert isinstance(composed, geometer.MeshIllustrationResultA0)
@@ -66,6 +78,7 @@ def validate(step: Path, output: Path) -> None:
     assert geometer.model_tessellation(model, executable=executable) == meshes
     assert geometer.mesh_illustration(input) == pure
     assert geometer.mesh_illustration(input, executable=executable, hlr_projection=hlr) == composed
+    assert geometer.mesh_illustration_geometry(geometry_input, hlr_projection=hlr) == geometry
     output.mkdir(parents=True, exist_ok=True)
     (output / "native-illustration.svg").write_text(composed.svg, encoding="utf-8")
     print(f"Installed illustration APIs passed: {composed.stats.triangles} triangles; {len(composed.svg)} SVG bytes")

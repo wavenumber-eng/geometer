@@ -1,4 +1,12 @@
+import {
+  encodeMeshIllustrationGeometryInputA0Json,
+  encodeMeshIllustrationStyleA0Json,
+} from "./generated/codecs.js";
 import type {
+  IllustrationGeometryLine,
+  IllustrationGeometrySurface,
+  MeshIllustrationGeometryA0,
+  MeshIllustrationGeometryInputA0,
   MeshIllustrationInputA0,
   MeshIllustrationRenderStats as MeshIllustrationRenderStatsA0,
   MeshIllustrationResultA0,
@@ -2232,6 +2240,8 @@ export function toMeshIllustrationStyleA0(style: MeshIllustrationStyle): MeshIll
 }
 
 export interface MeshIllustratorA0 {
+  /** Source meshes must be millimeters. Returns owning drawing arrays, no SVG. */
+  renderGeometry(style?: MeshIllustrationStyleA0): MeshIllustrationGeometryA0;
   readonly disposed: boolean;
   renderSvg(
     style?: MeshIllustrationStyleA0,
@@ -2251,6 +2261,11 @@ export function createIllustrator(
 ): MeshIllustratorA0 {
   const baseStyle = { ...input.style };
   const baseSvg = { ...input.svg };
+  const preparedView = {
+    ...input.view,
+    direction: [...input.view.direction] as [number, number, number],
+    up: [...input.view.up] as [number, number, number],
+  };
   let scene: MeshIllustrationScene | null = prepareMeshIllustration(
     {
       meshes: input.meshes.map((mesh) => ({
@@ -2289,6 +2304,115 @@ export function createIllustrator(
     get disposed() {
       return disposed;
     },
+    renderGeometry(style = {}) {
+      const current = requireScene();
+      encodeMeshIllustrationStyleA0Json({ ...baseStyle, ...style });
+      const resolved = mergedStyle(style);
+      const span = Math.max(
+        current.bounds.maxX - current.bounds.minX,
+        current.bounds.maxY - current.bounds.minY,
+        1e-9,
+      );
+      if (
+        ![
+          current.bounds.minX,
+          current.bounds.minY,
+          current.bounds.maxX,
+          current.bounds.maxY,
+          span,
+        ].every(Number.isFinite)
+      )
+        throw new Error("Illustration geometry bounds and extent must be finite.");
+      const { commands, stats } = renderCommands(current, resolved);
+      const surfaces: IllustrationGeometrySurface[] = [];
+      const lines: IllustrationGeometryLine[] = [];
+      const geometry: MeshIllustrationGeometryA0 = {
+        schema: "geometry.mesh_illustration.geometry.a0",
+        length_unit: "millimeter",
+        view: { ...preparedView, direction: [...preparedView.direction], up: [...preparedView.up] },
+        bounds: {
+          min: [current.bounds.minX, current.bounds.minY],
+          max: [current.bounds.maxX, current.bounds.maxY],
+        },
+        surfaces,
+        lines,
+        presentation: {
+          fill_rule: "evenodd",
+          line_cap: "round",
+          line_join: "round",
+          background: safeCssColor(resolved.background),
+          transparent_background: resolved.transparentBackground,
+          seam_width: span * 0.003,
+          padding: span * 0.06,
+        },
+        stats: illustrationStatsA0(stats),
+        warnings: [...current.warnings],
+      };
+      let layerCount = 0,
+        ringCount = 0,
+        pointCount = 0;
+      const copyPoint = (point: Vec2): [number, number] => {
+        if (!point.every(Number.isFinite))
+          throw new Error("Illustration geometry coordinates must be finite.");
+        return [point[0], point[1]];
+      };
+      for (const command of commands) {
+        if (
+          command.kind === "triangle" ||
+          command.kind === "fused-surface" ||
+          command.kind === "layered-surface"
+        ) {
+          const layers =
+            command.kind === "layered-surface"
+              ? command.layers
+              : [
+                  {
+                    rings: command.kind === "triangle" ? [command.triangle.points] : command.rings,
+                    fill: command.fill,
+                    opacity: command.opacity,
+                  },
+                ];
+          layerCount += layers.length;
+          surfaces.push({
+            kind:
+              command.kind === "triangle"
+                ? "triangle"
+                : command.kind === "fused-surface"
+                  ? "fused"
+                  : "layered",
+            layers: layers.map((layer) => ({
+              fill: safeCssColor(layer.fill),
+              opacity: layer.opacity,
+              rings: layer.rings.map((ring) => {
+                ringCount += 1;
+                pointCount += ring.length;
+                if (
+                  ring.length < 3 ||
+                  layerCount > 2000000 ||
+                  ringCount > 2000000 ||
+                  pointCount > 6000000
+                )
+                  throw new Error("Illustration geometry exceeds its ring/count limits.");
+                return { points: ring.map(copyPoint) };
+              }),
+            })),
+          });
+        } else {
+          const points = "points" in command ? command.points : command.edge.points;
+          if (!Number.isFinite(command.width) || command.width < 0)
+            throw new Error("Illustration geometry line width must be finite and nonnegative.");
+          if (lines.length >= 1000000)
+            throw new Error("Illustration geometry exceeds its line limit.");
+          lines.push({
+            start: copyPoint(points[0]),
+            end: copyPoint(points[1]),
+            color: safeCssColor(command.color),
+            width: command.width,
+          });
+        }
+      }
+      return geometry;
+    },
     renderSvg(style = {}, svg = {}) {
       const options = { ...baseSvg, ...svg };
       const rendered = renderMeshIllustrationSvg(
@@ -2325,6 +2449,29 @@ export function illustrateMesh(input: MeshIllustrationInputA0): MeshIllustration
   const illustrator = createIllustrator(input);
   try {
     return illustrator.renderSvg();
+  } finally {
+    illustrator.dispose();
+  }
+}
+
+/** Prepare and shade millimeter meshes without constructing SVG or Canvas commands. */
+export function illustrateMeshGeometry(
+  input: MeshIllustrationGeometryInputA0,
+  linework: MeshIllustrationLinework = {},
+): MeshIllustrationGeometryA0 {
+  encodeMeshIllustrationGeometryInputA0Json(input);
+  const illustrator = createIllustrator(
+    {
+      schema: "geometry.mesh_illustration.input.a0",
+      meshes: input.meshes,
+      view: input.view,
+      ...(input.prepare === undefined ? {} : { prepare: input.prepare }),
+      ...(input.style === undefined ? {} : { style: input.style }),
+    },
+    linework,
+  );
+  try {
+    return illustrator.renderGeometry();
   } finally {
     illustrator.dispose();
   }

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Literal, TypeAlias
 
-NORMALIZED_CATALOG_SHA256 = "078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d"
+NORMALIZED_CATALOG_SHA256 = "2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56"
 
 JobId: TypeAlias = int
 
@@ -850,6 +850,15 @@ class MeshIllustrationStyleA0:
     rim_amount: float | None = None
 
 
+# Reuses bounded mesh_collection and optional matching visible HLR attachments.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshIllustrationGeometryRequestA0:
+    schema: Literal["geometry.mesh_illustration_geometry.request.a0"]
+    view: MeshIllustrationView
+    prepare: MeshIllustrationPrepareOptions | None = None
+    style: MeshIllustrationStyleA0 | None = None
+
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class MeshIllustrationSvgOptions:
     coordinate_span: int | None = None
@@ -879,6 +888,8 @@ class ModelTessellationRequestA0:
     angular_deflection_rad: float | None = None
     root_placement: ModelRootPlacement | None = None
     max_triangles: int | None = None
+    # Return usable faces with warnings when completed meshing has local face failures.
+    allow_partial: bool | None = None
 
 
 # Canonical model source format. Compatibility readers may additionally accept STEP.
@@ -1364,7 +1375,8 @@ class StepTopologyAnalyzeRecoveryRequestA0:
 
 # Structurally representable request payloads for executable IPC A0. A variant is callable only when the negotiated runtime catalog advertises its operation; structural presence does not imply runtime availability.
 IpcRequestValueA0: TypeAlias = (
-    MeshIllustrationRequestA0
+    MeshIllustrationGeometryRequestA0
+    | MeshIllustrationRequestA0
     | ModelTessellationRequestA0
     | ModelBoundsOptionsA0
     | HlrProjectionOptionsA0
@@ -1462,6 +1474,107 @@ class MeshIllustrationRenderStats:
 class MeshIllustrationResultA0:
     schema: Literal["geometry.mesh_illustration.result.a0"]
     svg: str
+    stats: MeshIllustrationRenderStats
+    warnings: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class IllustrationGeometryAttachment:
+    attachment: Literal["illustration_geometry"]
+    schema: Literal["geometry.mesh_illustration.geometry.a0"]
+    byte_length: int
+    sha256: str
+
+
+IllustrationPoint2: TypeAlias = tuple[float, float]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class IllustrationGeometryBounds:
+    min: IllustrationPoint2
+    max: IllustrationPoint2
+
+
+# Implicitly closed ring. All rings of one layer form one even-odd filled path.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class IllustrationRing:
+    points: tuple[IllustrationPoint2, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class IllustrationGeometryLayer:
+    rings: tuple[IllustrationRing, ...]
+    # Sanitized CSS color. Color alpha and numeric layer opacity multiply.
+    fill: str
+    opacity: float
+
+
+# Draw after all surfaces, in array order. Width is in projected millimeters.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class IllustrationGeometryLine:
+    start: IllustrationPoint2
+    end: IllustrationPoint2
+    color: str
+    width: float
+
+
+# Target-independent paint semantics; SVG fitting/quantization stays in its adapter.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class IllustrationGeometryPresentation:
+    fill_rule: Literal["evenodd"]
+    line_cap: Literal["round"]
+    line_join: Literal["round"]
+    background: str
+    transparent_background: bool
+    # Same-fill seam stroke before target rounding/minimum-pixel rules.
+    seam_width: float
+    # Existing SVG viewport padding in projected millimeters.
+    padding: float
+
+
+class IllustrationSurfaceKind(str, Enum):
+    TRIANGLE = "triangle"
+    FUSED = "fused"
+    LAYERED = "layered"
+
+
+# Array order is paint order, including ordered underpaint/inlay layers.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class IllustrationGeometrySurface:
+    kind: IllustrationSurfaceKind
+    layers: tuple[IllustrationGeometryLayer, ...]
+
+
+# Shaded, fused drawing geometry; no SVG/XML/path strings and no original 3D mesh. Coordinates use X=dot(world,right) with mirror_x applied and Y=dot(world,up). right/up are the orthonormal basis derived from view. Origin is world origin. Bounds include valid triangles before culling, exclude supplied HLR, and are [-1,-1]..[1,1] when all triangles skip. Arrays establish painter order: surfaces/layers, then diagnostic raw lines, then HLR detail, then HLR outline. Global limits: 2,000,000 layers and rings, 6,000,000 ring points, 1,000,000 lines. stats.commands counts logical draws, not SVG elements after line chaining.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshIllustrationGeometryA0:
+    schema: Literal["geometry.mesh_illustration.geometry.a0"]
+    length_unit: Literal["millimeter"]
+    view: MeshIllustrationView
+    bounds: IllustrationGeometryBounds
+    surfaces: tuple[IllustrationGeometrySurface, ...]
+    lines: tuple[IllustrationGeometryLine, ...]
+    presentation: IllustrationGeometryPresentation
+    stats: MeshIllustrationRenderStats
+    warnings: tuple[str, ...]
+
+
+# Direct value input. Mesh coordinates and matrix translations must be millimeters.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshIllustrationGeometryInputA0:
+    schema: Literal["geometry.mesh_illustration_geometry.input.a0"]
+    length_unit: Literal["millimeter"]
+    meshes: tuple[MeshIllustrationMesh, ...]
+    view: MeshIllustrationView
+    prepare: MeshIllustrationPrepareOptions | None = None
+    style: MeshIllustrationStyleA0 | None = None
+
+
+# Small transport result; statistics/warnings must match the geometry attachment.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshIllustrationGeometryResultA0:
+    schema: Literal["geometry.mesh_illustration_geometry.result.a0"]
+    geometry: IllustrationGeometryAttachment
     stats: MeshIllustrationRenderStats
     warnings: tuple[str, ...]
 
@@ -2015,7 +2128,8 @@ class StepTopologyAnalyzeRecoveryResultA0:
 
 # Structurally representable operation results. A result variant may belong to a runtime-unavailable experimental operation and is not an availability claim; the negotiated operation catalog remains authoritative.
 OperationResultValueA0: TypeAlias = (
-    MeshIllustrationResultA0
+    MeshIllustrationGeometryResultA0
+    | MeshIllustrationResultA0
     | ModelTessellationResultA0
     | ModelBoundsResultA0
     | HlrProjectionResultA0
@@ -2090,6 +2204,17 @@ MODEL_TYPES = {
     "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationStyleA0": MeshIllustrationStyleA0,
     "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationSvgOptions": MeshIllustrationSvgOptions,
     "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationView": MeshIllustrationView,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryAttachment": IllustrationGeometryAttachment,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryBounds": IllustrationGeometryBounds,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryLayer": IllustrationGeometryLayer,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryLine": IllustrationGeometryLine,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryPresentation": IllustrationGeometryPresentation,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometrySurface": IllustrationGeometrySurface,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationRing": IllustrationRing,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryA0": MeshIllustrationGeometryA0,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryInputA0": MeshIllustrationGeometryInputA0,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryRequestA0": MeshIllustrationGeometryRequestA0,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryResultA0": MeshIllustrationGeometryResultA0,
     "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0": MeshIllustrationRequestA0,
     "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsOptionsA0": ModelBoundsOptionsA0,
     "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsResultA0": ModelBoundsResultA0,
@@ -2206,6 +2331,7 @@ ENUM_TYPES = {
     "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrSourceKind": HlrSourceKind,
     "Wavenumber.Geometer.Contracts.IpcA0.IpcRuntimeDispatchA0": IpcRuntimeDispatchA0,
     "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationShading": MeshIllustrationShading,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationSurfaceKind": IllustrationSurfaceKind,
     "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelFormat": ModelFormat,
     "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelRootPlacement": ModelRootPlacement,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.CarrierSupportState": CarrierSupportState,

@@ -21,6 +21,14 @@ target = "tests/typescript/STRATUM.toml"
 [[verification_refs]]
 kind = "local_file"
 target = "tests/python/test_fast_hlr_benchmark.py"
+
+[[verification_refs]]
+kind = "local_file"
+target = "tests/cpp/mesh_illustration_geometry_test.cpp"
+
+[[verification_refs]]
+kind = "local_file"
+target = "tests/python/test_illustration_geometry.py"
 +++
 
 # REQ-010: Fast HLR And Illustration Interfaces
@@ -66,3 +74,12 @@ exact or polygonal behavior.
     snapshots; and keep the native/WASM benchmark reproducible.
 13. Keep PCB, documentation-generator, visualizer, and other application style
     policy outside the generic Geometer implementation.
+14. Provide native SVG illustration and additive illustration drawing geometry
+    through shared preparation, styling, fusion and HLR composition. The geometry
+    value API must avoid SVG construction and output serialization; the IPC API
+    must carry bounded geometry JSON in a declared attachment. Retain owning
+    ordered fills, ring holes, opacity, visible linework and millimeter coordinates.
+15. Preserve existing numeric/SVG output while optimizing illustration-specific
+    integer formatting. Qualify native and TypeScript geometry consumers, typed
+    Python/Rust IPC helpers and full WASM dispatch; do not advertise this operation
+    for the planar-only WASM target.

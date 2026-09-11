@@ -1,13 +1,15 @@
 #include "mesh_illustration_operation.h"
 #include "geometer/mesh_illustration.h"
+#include "geometer/sha256.h"
 
 namespace geometer
 {
 void execute_mesh_illustration(const unsigned char* request, std::size_t size,
                                const std::vector<OperationAttachmentView>& attachments,
-                               OperationExecution* execution)
+                               OperationExecution* execution, bool geometry_only)
 {
-    constexpr const char* operation = "geometry.mesh_illustration.a0";
+    const char* operation =
+        geometry_only ? "geometry.mesh_illustration_geometry.a0" : "geometry.mesh_illustration.a0";
     const auto fail = [&](const std::string& code, const std::string& message,
                           contracts::DiagnosticCategory category)
     {
@@ -25,7 +27,18 @@ void execute_mesh_illustration(const unsigned char* request, std::size_t size,
     };
     contracts::MeshIllustrationRequestA0 options;
     contracts::ContractError error;
-    if (!contracts::decode_json(request, size, &options, &error))
+    bool decoded = false;
+    if (geometry_only)
+    {
+        contracts::MeshIllustrationGeometryRequestA0 geometry_options;
+        decoded = contracts::decode_json(request, size, &geometry_options, &error);
+        options.view = std::move(geometry_options.view);
+        options.prepare = std::move(geometry_options.prepare);
+        options.style = std::move(geometry_options.style);
+    }
+    else
+        decoded = contracts::decode_json(request, size, &options, &error);
+    if (!decoded)
     {
         fail(error.code, error.message, contracts::DiagnosticCategory::contract);
         return;
@@ -78,8 +91,21 @@ void execute_mesh_illustration(const unsigned char* request, std::size_t size,
         fail(error.code, error.message, contracts::DiagnosticCategory::contract);
         return;
     }
-    const auto code = linework ? illustrate_mesh(input, hlr, &result, &status)
-                               : illustrate_mesh(input, &result, &status);
+    contracts::MeshIllustrationGeometryA0 geometry;
+    int code;
+    if (geometry_only)
+    {
+        contracts::MeshIllustrationGeometryInputA0 geometry_input;
+        geometry_input.meshes = std::move(input.meshes);
+        geometry_input.view = std::move(input.view);
+        geometry_input.prepare = std::move(input.prepare);
+        geometry_input.style = std::move(input.style);
+        code = linework ? illustrate_mesh_geometry(geometry_input, hlr, &geometry, &status)
+                        : illustrate_mesh_geometry(geometry_input, &geometry, &status);
+    }
+    else
+        code = linework ? illustrate_mesh(input, hlr, &result, &status)
+                        : illustrate_mesh(input, &result, &status);
     if (code != 0)
     {
         fail(code == 102 ? "geometer.operation.resource_limit_exceeded"
@@ -89,6 +115,34 @@ void execute_mesh_illustration(const unsigned char* request, std::size_t size,
     }
     contracts::OperationSuccessA0 success;
     success.operation = operation;
+    if (geometry_only)
+    {
+        std::string json;
+        if (!contracts::encode_json(geometry, &json, &error))
+        {
+            fail(error.code, error.message, contracts::DiagnosticCategory::operation);
+            return;
+        }
+        if (json.size() > 268435456)
+        {
+            fail("geometer.operation.resource_limit_exceeded",
+                 "Illustration geometry JSON exceeds 256 MiB.",
+                 contracts::DiagnosticCategory::operation);
+            return;
+        }
+        contracts::MeshIllustrationGeometryResultA0 metadata;
+        metadata.stats = geometry.stats;
+        metadata.warnings = std::move(geometry.warnings);
+        metadata.geometry.byte_length = static_cast<std::uint32_t>(json.size());
+        metadata.geometry.sha256 =
+            sha256_hex(reinterpret_cast<const std::uint8_t*>(json.data()), json.size());
+        success.result = std::move(metadata);
+        execution->outcome = std::move(success);
+        execution->attachments = {{"illustration_geometry",
+                                   "application/vnd.wavenumber.geometer.illustration-geometry+json",
+                                   std::vector<unsigned char>(json.begin(), json.end())}};
+        return;
+    }
     success.result = std::move(result);
     execution->outcome = std::move(success);
     execution->attachments.clear();

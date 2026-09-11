@@ -1,5 +1,6 @@
 #include "geometer/mesh_illustration.h"
 #include "geometer/model_tessellation.h"
+#include "mesh_illustration_fusion.h"
 #include "mesh_illustration_internal.h"
 #include "mesh_illustration_svg.h"
 
@@ -7,6 +8,7 @@
 #include <iomanip>
 #include <iostream>
 #include <iterator>
+#include <limits>
 #include <locale>
 #include <rapidjson/document.h>
 #include <stdexcept>
@@ -71,8 +73,71 @@ geometer::contracts::MeshIllustrationInputA0 fixture()
     return input;
 }
 
+void material_key_regressions()
+{
+    using namespace geometer::illustration_detail;
+    std::array<Triangle, 3> triangles{};
+    triangles[0].points = {{{0, 0}, {1, 0}, {1, 1}}};
+    triangles[1].points = {{{0, 0}, {1, 1}, {0, 1}}};
+    triangles[2].points = {{{0, 1}, {1, 1}, {0, 2}}};
+    std::vector<TriangleCommand> commands;
+    for (std::size_t i = 0; i < triangles.size(); ++i)
+    {
+        auto& t = triangles[i];
+        t.geometric_normal = {0, 0, 1};
+        t.color = i == 1 ? Vec3{.1, .2, .8} : Vec3{.8, .2, .1};
+        t.opacity = 1;
+        commands.push_back({&t, 0, i, i == 1 ? "blue" : "red", 1});
+    }
+    const std::vector<std::size_t> members{0, 1, 2};
+    const std::vector<std::vector<std::size_t>> adjacency(3);
+    WorkBudget budget;
+    require(layered_surface(commands, members, adjacency, 1e-9, 1e-9, budget).has_value(),
+            "layered material regression control failed");
+    triangles[2].depths = {.1, .1, .1};
+    require(!layered_surface(commands, members, adjacency, 1e-9, 1e-9, budget),
+            "second material skipped later coplanarity validation");
+    triangles[2].depths = {0, 0, 0};
+    triangles[1].color = triangles[0].color;
+    triangles[1].color[0] += 1e-13;
+    require(!layered_surface(commands, members, adjacency, 1e-9, 1e-9, budget),
+            "raw material differences bypassed rounded-key equivalence");
+}
+
 void smoke()
 {
+    material_key_regressions();
+    using geometer::illustration_detail::fixed_text;
+    using geometer::illustration_detail::integer_text;
+    using geometer::illustration_detail::number_text;
+    require(fixed_text(-0.0) == "0.000000000000" && fixed_text(0.0) == "0.000000000000" &&
+                fixed_text(1.0) == "1.000000000000",
+            "fixed material endpoint formatting");
+    require(number_text(-0.0) == "0" && integer_text(-0.0) == "0", "negative zero formatting");
+    require(integer_text(-.5) == "0" && integer_text(std::nextafter(-.5, -1.0)) == "-1" &&
+                integer_text(.5) == "1" && integer_text(std::nextafter(.5, 0.0)) == "0",
+            "integer fast path changed JS halfway rounding");
+    for (double value : {999999999999.0, -999999999999.0, 1e12, -1e12})
+        require(number_text(value) == integer_text(value), "integer bound formatting differs");
+    require(integer_text(999999999999.5) == "1000000000000" &&
+                integer_text(-999999999999.5) == "-999999999999",
+            "rounding across integer fast-path bound changed");
+    for (double value :
+         {std::numeric_limits<double>::infinity(), -std::numeric_limits<double>::infinity(),
+          std::numeric_limits<double>::quiet_NaN()})
+        for (const auto format : {number_text, integer_text})
+        {
+            bool rejected = false;
+            try
+            {
+                format(value);
+            }
+            catch (const std::runtime_error&)
+            {
+                rejected = true;
+            }
+            require(rejected, "nonfinite number accepted by formatter");
+        }
     auto input = fixture();
     geometer::contracts::MeshIllustrationResultA0 result, repeated;
     geometer::Status status;
@@ -100,7 +165,8 @@ void smoke()
     const auto previous_locale = std::locale();
     std::locale::global(std::locale(previous_locale, new CommaDecimal));
     require(geometer::illustration_detail::number_text(.5001220703125) == "0.500122070313" &&
-                geometer::illustration_detail::fixed_text(.5001220703125) == "0.500122070313",
+                geometer::illustration_detail::fixed_text(.5001220703125) == "0.500122070313" &&
+                number_text(-123456789) == "-123456789" && integer_text(123456789.4) == "123456789",
             "illustration formatting depends on global decimal locale");
     std::locale::global(previous_locale);
     require(geometer::illustration_detail::number_text(1e-7) == "1e-7" &&
@@ -228,6 +294,27 @@ int main(int argc, char** argv)
             std::string output;
             geometer::contracts::ContractError error;
             require(geometer::contracts::encode_json(meshes, &output, &error),
+                    error.message.c_str());
+            std::cout << output;
+            return 0;
+        }
+        if (argc == 3 && std::string(argv[1]) == "--geometry")
+        {
+            std::ifstream file(argv[2], std::ios::binary);
+            require(file.good(), "Cannot read geometry fixture");
+            const std::string bytes{std::istreambuf_iterator<char>(file), {}};
+            geometer::contracts::MeshIllustrationGeometryInputA0 input;
+            geometer::contracts::ContractError error;
+            require(geometer::contracts::decode_json(
+                        reinterpret_cast<const unsigned char*>(bytes.data()), bytes.size(), &input,
+                        &error),
+                    error.message.c_str());
+            geometer::contracts::MeshIllustrationGeometryA0 result;
+            geometer::Status status;
+            require(geometer::illustrate_mesh_geometry(input, &result, &status) == 0,
+                    status.message.c_str());
+            std::string output;
+            require(geometer::contracts::encode_json(result, &output, &error),
                     error.message.c_str());
             std::cout << output;
             return 0;

@@ -12,7 +12,7 @@ struct FusionEdge
 {
     std::size_t triangle;
     Vec2 start, end, third;
-    std::string start_key, end_key, key;
+    std::string start_key, end_key;
 };
 
 struct Disjoint

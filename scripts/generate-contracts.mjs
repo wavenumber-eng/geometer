@@ -139,7 +139,7 @@ async function validateGeneratedState(manifest, catalog) {
   ].sort((left, right) => left.id.localeCompare(right.id));
   assertEqual(
     catalog.operations.map((operation) => operation.identity).sort(),
-    expectedOperations.map((operation) => operation.id),
+    expectedOperations.map((operation) => operation.id).sort(),
     "generated operation identities",
   );
   for (const expected of expectedOperations) {

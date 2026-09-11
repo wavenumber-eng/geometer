@@ -465,6 +465,7 @@ def _assert_contract_and_operation_inventory(manifest: dict[str, Any]) -> None:
     _unique(operation_ids, "operation id")
     assert {item["id"] for item in operations if item["status"] == "pilot_candidate"} == {
         "geometry.mesh_illustration.a0",
+        "geometry.mesh_illustration_geometry.a0",
         "geometry.model_hlr_projection.a0",
         "geometry.mesh_hlr_projection.a0",
         "geometry.model_tessellation.a0",

@@ -630,6 +630,9 @@ configure_geometer_fixture_test(geometer_model_tessellation_test
 add_test(NAME geometer_model_tessellation_test COMMAND geometer_model_tessellation_test)
 
 add_executable(geometer_mesh_illustration_test mesh_illustration_test.cpp)
+add_executable(geometer_mesh_illustration_geometry_test mesh_illustration_geometry_test.cpp)
+target_link_libraries(geometer_mesh_illustration_geometry_test PRIVATE geometer_lib)
+add_test(NAME geometer_mesh_illustration_geometry_test COMMAND geometer_mesh_illustration_geometry_test)
 target_link_libraries(geometer_mesh_illustration_test PRIVATE geometer_lib)
 add_test(NAME geometer_mesh_illustration_test COMMAND geometer_mesh_illustration_test)
 if(NOT EMSCRIPTEN)
@@ -867,6 +870,7 @@ if(EMSCRIPTEN)
         geometer_planar_step_test
         geometer_model_bounds_test
         geometer_mesh_illustration_test
+        geometer_mesh_illustration_geometry_test
         geometer_operation_contract_test
         geometer_projection_options_json_test
         geometer_projection_model_transform_test

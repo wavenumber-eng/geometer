@@ -1,4 +1,9 @@
 import { readFile } from "node:fs/promises";
+import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { nativeIllustrationFixtures } from "./native_illustration_fixtures.mjs";
+import { illustrateMesh, illustrateMeshGeometry } from "../../dist/wasm/npm/geometer/mesh-illustration.js";
+import { decodeMeshIllustrationGeometryA0Json } from "../../dist/wasm/npm/geometer/generated/codecs.js";
 import { createRequire } from "node:module";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -38,6 +43,42 @@ function observeNextExecute() {
   };
 }
 const client = await createGeometerWasmClient(module);
+assert.ok(client.capabilities.operations.includes("geometry.mesh_illustration_geometry.a0"));
+for (const { name, input } of nativeIllustrationFixtures()) {
+  const collection = Buffer.from(JSON.stringify({ schema: "geometry.mesh_collection.a0",
+    length_unit: "millimeter", meshes: input.meshes }));
+  const request = { schema: "geometry.mesh_illustration_geometry.request.a0",
+    view: input.view, prepare: input.prepare, style: input.style };
+  const attachments = [{ name: "mesh_collection",
+    mediaType: "application/vnd.wavenumber.geometer.mesh-collection+json", data: collection }];
+  const reply = client.execute("geometry.mesh_illustration_geometry.a0", JSON.stringify(request), attachments);
+  assert.ok(reply.outcome.ok, `${name}: geometry failed`);
+  assert.equal(reply.attachments.length, 1);
+  const drawing = reply.attachments[0];
+  assert.equal(drawing.name, "illustration_geometry");
+  assert.equal(drawing.mediaType, "application/vnd.wavenumber.geometer.illustration-geometry+json");
+  assert.equal(drawing.data.length, reply.outcome.result.geometry.byte_length);
+  assert.equal(createHash("sha256").update(drawing.data).digest("hex"), reply.outcome.result.geometry.sha256);
+  const geometry = decodeMeshIllustrationGeometryA0Json(new TextDecoder().decode(drawing.data));
+  const expected = illustrateMeshGeometry({ schema: "geometry.mesh_illustration_geometry.input.a0",
+    length_unit: "millimeter", meshes: input.meshes, view: input.view,
+    ...(input.prepare === undefined ? {} : { prepare: input.prepare }),
+    ...(input.style === undefined ? {} : { style: input.style }) });
+  const compare = (a, b) => {
+    if (typeof b === "number") {
+      assert.ok(Number.isFinite(a) && Math.abs(a-b) <= 32*Number.EPSILON*Math.max(1, Math.abs(a), Math.abs(b)));
+    } else if (b !== null && typeof b === "object") {
+      assert.deepEqual(Object.keys(a).sort(), Object.keys(b).sort());
+      for (const key of Object.keys(b)) compare(a[key], b[key]);
+    } else assert.equal(a, b);
+  };
+  compare(geometry, expected);
+  assert.deepEqual(geometry.stats, reply.outcome.result.stats);
+  const svg = client.execute("geometry.mesh_illustration.a0", JSON.stringify({ ...request,
+    schema: "geometry.mesh_illustration.request.a0", svg: input.svg }), attachments);
+  assert.ok(svg.outcome.ok);
+  assert.deepEqual(svg.outcome.result, illustrateMesh(input), `${name}: full WASM SVG parity`);
+}
 const model = await readFile(
   join(root, "tests", "fixtures", "step", "embedded_models", "SOT-23.STEP"),
 );

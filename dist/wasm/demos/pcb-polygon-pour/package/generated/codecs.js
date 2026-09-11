@@ -1172,6 +1172,18 @@ const declarations = {
         variants: [
             {
                 kind: "reference",
+                target: "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryRequestA0",
+            },
+            {
+                kind: "reference",
+                target: "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0",
+            },
+            {
+                kind: "reference",
+                target: "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationRequestA0",
+            },
+            {
+                kind: "reference",
                 target: "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsOptionsA0",
             },
             {
@@ -1694,6 +1706,453 @@ const declarations = {
             mirror_x: { type: { kind: "primitive", name: "boolean" }, optional: true, constraints: {} },
         },
     },
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryAttachment": {
+        kind: "object",
+        properties: {
+            attachment: {
+                type: { kind: "literal", value_type: "string", value: "illustration_geometry" },
+                optional: false,
+                constraints: {},
+            },
+            schema: {
+                type: {
+                    kind: "literal",
+                    value_type: "string",
+                    value: "geometry.mesh_illustration.geometry.a0",
+                },
+                optional: false,
+                constraints: {},
+            },
+            byte_length: {
+                type: { kind: "primitive", name: "uint32" },
+                optional: false,
+                constraints: { min_value: 1, max_value: 268435456 },
+            },
+            sha256: {
+                type: { kind: "primitive", name: "string" },
+                optional: false,
+                constraints: { min_length: 64, max_length: 64 },
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryBounds": {
+        kind: "object",
+        properties: {
+            min: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationPoint2",
+                },
+                optional: false,
+                constraints: {},
+            },
+            max: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationPoint2",
+                },
+                optional: false,
+                constraints: {},
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryLayer": {
+        kind: "object",
+        properties: {
+            rings: {
+                type: {
+                    kind: "array",
+                    element: {
+                        kind: "reference",
+                        target: "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationRing",
+                    },
+                },
+                optional: false,
+                constraints: { min_items: 1, max_items: 2000000 },
+            },
+            fill: {
+                type: { kind: "primitive", name: "string" },
+                optional: false,
+                constraints: { min_length: 1, max_length: 128 },
+            },
+            opacity: {
+                type: { kind: "primitive", name: "float64" },
+                optional: false,
+                constraints: { min_value: 0, max_value: 1 },
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryLine": {
+        kind: "object",
+        properties: {
+            start: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationPoint2",
+                },
+                optional: false,
+                constraints: {},
+            },
+            end: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationPoint2",
+                },
+                optional: false,
+                constraints: {},
+            },
+            color: {
+                type: { kind: "primitive", name: "string" },
+                optional: false,
+                constraints: { min_length: 1, max_length: 128 },
+            },
+            width: {
+                type: { kind: "primitive", name: "float64" },
+                optional: false,
+                constraints: { min_value: 0 },
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryPresentation": {
+        kind: "object",
+        properties: {
+            fill_rule: {
+                type: { kind: "literal", value_type: "string", value: "evenodd" },
+                optional: false,
+                constraints: {},
+            },
+            line_cap: {
+                type: { kind: "literal", value_type: "string", value: "round" },
+                optional: false,
+                constraints: {},
+            },
+            line_join: {
+                type: { kind: "literal", value_type: "string", value: "round" },
+                optional: false,
+                constraints: {},
+            },
+            background: {
+                type: { kind: "primitive", name: "string" },
+                optional: false,
+                constraints: { min_length: 1, max_length: 128 },
+            },
+            transparent_background: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: false,
+                constraints: {},
+            },
+            seam_width: {
+                type: { kind: "primitive", name: "float64" },
+                optional: false,
+                constraints: { min_value: 0 },
+            },
+            padding: {
+                type: { kind: "primitive", name: "float64" },
+                optional: false,
+                constraints: { min_value: 0 },
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometrySurface": {
+        kind: "object",
+        properties: {
+            kind: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationSurfaceKind",
+                },
+                optional: false,
+                constraints: {},
+            },
+            layers: {
+                type: {
+                    kind: "array",
+                    element: {
+                        kind: "reference",
+                        target: "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryLayer",
+                    },
+                },
+                optional: false,
+                constraints: { min_items: 1, max_items: 2000000 },
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationPoint2": {
+        kind: "array",
+        element: { kind: "primitive", name: "float64" },
+        constraints: { min_items: 2, max_items: 2 },
+    },
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationRing": {
+        kind: "object",
+        properties: {
+            points: {
+                type: {
+                    kind: "array",
+                    element: {
+                        kind: "reference",
+                        target: "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationPoint2",
+                    },
+                },
+                optional: false,
+                constraints: { min_items: 3, max_items: 6000000 },
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationSurfaceKind": {
+        kind: "enum",
+        values: ["triangle", "fused", "layered"],
+    },
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryA0": {
+        kind: "object",
+        properties: {
+            schema: {
+                type: {
+                    kind: "literal",
+                    value_type: "string",
+                    value: "geometry.mesh_illustration.geometry.a0",
+                },
+                optional: false,
+                constraints: {},
+            },
+            length_unit: {
+                type: { kind: "literal", value_type: "string", value: "millimeter" },
+                optional: false,
+                constraints: {},
+            },
+            view: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationView",
+                },
+                optional: false,
+                constraints: {},
+            },
+            bounds: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryBounds",
+                },
+                optional: false,
+                constraints: {},
+            },
+            surfaces: {
+                type: {
+                    kind: "array",
+                    element: {
+                        kind: "reference",
+                        target: "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometrySurface",
+                    },
+                },
+                optional: false,
+                constraints: { max_items: 2000000 },
+            },
+            lines: {
+                type: {
+                    kind: "array",
+                    element: {
+                        kind: "reference",
+                        target: "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryLine",
+                    },
+                },
+                optional: false,
+                constraints: { max_items: 1000000 },
+            },
+            presentation: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryPresentation",
+                },
+                optional: false,
+                constraints: {},
+            },
+            stats: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationRenderStats",
+                },
+                optional: false,
+                constraints: {},
+            },
+            warnings: {
+                type: { kind: "array", element: { kind: "primitive", name: "string" } },
+                optional: false,
+                constraints: { max_items: 256 },
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryInputA0": {
+        kind: "object",
+        properties: {
+            schema: {
+                type: {
+                    kind: "literal",
+                    value_type: "string",
+                    value: "geometry.mesh_illustration_geometry.input.a0",
+                },
+                optional: false,
+                constraints: {},
+            },
+            length_unit: {
+                type: { kind: "literal", value_type: "string", value: "millimeter" },
+                optional: false,
+                constraints: {},
+            },
+            meshes: {
+                type: {
+                    kind: "array",
+                    element: {
+                        kind: "reference",
+                        target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationMesh",
+                    },
+                },
+                optional: false,
+                constraints: { min_items: 1, max_items: 65536 },
+            },
+            view: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationView",
+                },
+                optional: false,
+                constraints: {},
+            },
+            prepare: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationPrepareOptions",
+                },
+                optional: true,
+                constraints: {},
+            },
+            style: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationStyleA0",
+                },
+                optional: true,
+                constraints: {},
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryRequestA0": {
+        kind: "object",
+        properties: {
+            schema: {
+                type: {
+                    kind: "literal",
+                    value_type: "string",
+                    value: "geometry.mesh_illustration_geometry.request.a0",
+                },
+                optional: false,
+                constraints: {},
+            },
+            view: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationView",
+                },
+                optional: false,
+                constraints: {},
+            },
+            prepare: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationPrepareOptions",
+                },
+                optional: true,
+                constraints: {},
+            },
+            style: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationStyleA0",
+                },
+                optional: true,
+                constraints: {},
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryResultA0": {
+        kind: "object",
+        properties: {
+            schema: {
+                type: {
+                    kind: "literal",
+                    value_type: "string",
+                    value: "geometry.mesh_illustration_geometry.result.a0",
+                },
+                optional: false,
+                constraints: {},
+            },
+            geometry: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryAttachment",
+                },
+                optional: false,
+                constraints: {},
+            },
+            stats: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationRenderStats",
+                },
+                optional: false,
+                constraints: {},
+            },
+            warnings: {
+                type: { kind: "array", element: { kind: "primitive", name: "string" } },
+                optional: false,
+                constraints: { max_items: 256 },
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0": {
+        kind: "object",
+        properties: {
+            schema: {
+                type: {
+                    kind: "literal",
+                    value_type: "string",
+                    value: "geometry.mesh_illustration.request.a0",
+                },
+                optional: false,
+                constraints: {},
+            },
+            view: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationView",
+                },
+                optional: false,
+                constraints: {},
+            },
+            prepare: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationPrepareOptions",
+                },
+                optional: true,
+                constraints: {},
+            },
+            style: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationStyleA0",
+                },
+                optional: true,
+                constraints: {},
+            },
+            svg: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationSvgOptions",
+                },
+                optional: true,
+                constraints: {},
+            },
+        },
+    },
     "Wavenumber.Geometer.Contracts.ModelBoundsA0.Matrix4x4": {
         kind: "array",
         element: { kind: "primitive", name: "float64" },
@@ -1819,6 +2278,145 @@ const declarations = {
         element: { kind: "primitive", name: "float64" },
         constraints: { min_items: 3, max_items: 3 },
     },
+    "Wavenumber.Geometer.Contracts.ModelTessellationA0.MeshCollectionA0": {
+        kind: "object",
+        properties: {
+            schema: {
+                type: { kind: "literal", value_type: "string", value: "geometry.mesh_collection.a0" },
+                optional: false,
+                constraints: {},
+            },
+            length_unit: {
+                type: { kind: "literal", value_type: "string", value: "millimeter" },
+                optional: false,
+                constraints: {},
+            },
+            meshes: {
+                type: {
+                    kind: "array",
+                    element: {
+                        kind: "reference",
+                        target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationMesh",
+                    },
+                },
+                optional: false,
+                constraints: { min_items: 1, max_items: 65536 },
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.ModelTessellationA0.MeshCollectionAttachment": {
+        kind: "object",
+        properties: {
+            attachment: {
+                type: { kind: "literal", value_type: "string", value: "mesh_collection" },
+                optional: false,
+                constraints: {},
+            },
+            schema: {
+                type: { kind: "literal", value_type: "string", value: "geometry.mesh_collection.a0" },
+                optional: false,
+                constraints: {},
+            },
+            byte_length: {
+                type: { kind: "primitive", name: "uint32" },
+                optional: false,
+                constraints: { min_value: 1, max_value: 268435456 },
+            },
+            sha256: {
+                type: { kind: "primitive", name: "string" },
+                optional: false,
+                constraints: { min_length: 64, max_length: 64 },
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelRootPlacement": {
+        kind: "enum",
+        values: ["strip", "preserve"],
+    },
+    "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationRequestA0": {
+        kind: "object",
+        properties: {
+            schema: {
+                type: {
+                    kind: "literal",
+                    value_type: "string",
+                    value: "geometry.model_tessellation.request.a0",
+                },
+                optional: false,
+                constraints: {},
+            },
+            linear_deflection_mm: {
+                type: { kind: "primitive", name: "float64" },
+                optional: true,
+                constraints: { min_value: 0.000001, max_value: 1000 },
+            },
+            angular_deflection_rad: {
+                type: { kind: "primitive", name: "float64" },
+                optional: true,
+                constraints: { min_value: 0.000001, max_value: Math.PI },
+            },
+            root_placement: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelRootPlacement",
+                },
+                optional: true,
+                constraints: {},
+            },
+            max_triangles: {
+                type: { kind: "primitive", name: "uint32" },
+                optional: true,
+                constraints: { min_value: 1, max_value: 2000000 },
+            },
+            allow_partial: {
+                type: { kind: "primitive", name: "boolean" },
+                optional: true,
+                constraints: {},
+            },
+        },
+    },
+    "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationResultA0": {
+        kind: "object",
+        properties: {
+            schema: {
+                type: {
+                    kind: "literal",
+                    value_type: "string",
+                    value: "geometry.model_tessellation.result.a0",
+                },
+                optional: false,
+                constraints: {},
+            },
+            mesh_collection: {
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.ModelTessellationA0.MeshCollectionAttachment",
+                },
+                optional: false,
+                constraints: {},
+            },
+            source_sha256: {
+                type: { kind: "primitive", name: "string" },
+                optional: false,
+                constraints: { min_length: 64, max_length: 64 },
+            },
+            meshes: {
+                type: { kind: "primitive", name: "uint32" },
+                optional: false,
+                constraints: { min_value: 1, max_value: 65536 },
+            },
+            triangles: {
+                type: { kind: "primitive", name: "uint32" },
+                optional: false,
+                constraints: { min_value: 1, max_value: 2000000 },
+            },
+            warnings: {
+                type: { kind: "array", element: { kind: "primitive", name: "string" } },
+                optional: false,
+                constraints: { max_items: 256 },
+            },
+        },
+    },
     "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationFailureA0": {
         kind: "object",
         properties: {
@@ -1861,6 +2459,18 @@ const declarations = {
     "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationResultValueA0": {
         kind: "union",
         variants: [
+            {
+                kind: "reference",
+                target: "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryResultA0",
+            },
+            {
+                kind: "reference",
+                target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationResultA0",
+            },
+            {
+                kind: "reference",
+                target: "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationResultA0",
+            },
             {
                 kind: "reference",
                 target: "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsResultA0",
@@ -5459,6 +6069,66 @@ export function encodeMeshIllustrationStyleA0Json(value) {
         target: "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationStyleA0",
     }, declarations);
 }
+export function decodeMeshIllustrationGeometryA0Json(data) {
+    return decodeContractJson(data, {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryA0",
+    }, declarations);
+}
+export function encodeMeshIllustrationGeometryA0Json(value) {
+    return encodeContractJson(value, {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryA0",
+    }, declarations);
+}
+export function decodeMeshIllustrationGeometryInputA0Json(data) {
+    return decodeContractJson(data, {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryInputA0",
+    }, declarations);
+}
+export function encodeMeshIllustrationGeometryInputA0Json(value) {
+    return encodeContractJson(value, {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryInputA0",
+    }, declarations);
+}
+export function decodeMeshIllustrationGeometryRequestA0Json(data) {
+    return decodeContractJson(data, {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryRequestA0",
+    }, declarations);
+}
+export function encodeMeshIllustrationGeometryRequestA0Json(value) {
+    return encodeContractJson(value, {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryRequestA0",
+    }, declarations);
+}
+export function decodeMeshIllustrationGeometryResultA0Json(data) {
+    return decodeContractJson(data, {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryResultA0",
+    }, declarations);
+}
+export function encodeMeshIllustrationGeometryResultA0Json(value) {
+    return encodeContractJson(value, {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryResultA0",
+    }, declarations);
+}
+export function decodeMeshIllustrationRequestA0Json(data) {
+    return decodeContractJson(data, {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0",
+    }, declarations);
+}
+export function encodeMeshIllustrationRequestA0Json(value) {
+    return encodeContractJson(value, {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0",
+    }, declarations);
+}
 export function decodeModelBoundsOptionsA0Json(data) {
     return decodeContractJson(data, {
         kind: "reference",
@@ -5481,6 +6151,42 @@ export function encodeModelBoundsResultA0Json(value) {
     return encodeContractJson(value, {
         kind: "reference",
         target: "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsResultA0",
+    }, declarations);
+}
+export function decodeMeshCollectionA0Json(data) {
+    return decodeContractJson(data, {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.ModelTessellationA0.MeshCollectionA0",
+    }, declarations);
+}
+export function encodeMeshCollectionA0Json(value) {
+    return encodeContractJson(value, {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.ModelTessellationA0.MeshCollectionA0",
+    }, declarations);
+}
+export function decodeModelTessellationRequestA0Json(data) {
+    return decodeContractJson(data, {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationRequestA0",
+    }, declarations);
+}
+export function encodeModelTessellationRequestA0Json(value) {
+    return encodeContractJson(value, {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationRequestA0",
+    }, declarations);
+}
+export function decodeModelTessellationResultA0Json(data) {
+    return decodeContractJson(data, {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationResultA0",
+    }, declarations);
+}
+export function encodeModelTessellationResultA0Json(value) {
+    return encodeContractJson(value, {
+        kind: "reference",
+        target: "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationResultA0",
     }, declarations);
 }
 export function decodeOperationOutcomeA0Json(data) {

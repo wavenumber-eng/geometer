@@ -29,6 +29,7 @@ impl ModelTessellationRequest {
                 angular_deflection_rad: None,
                 root_placement: None,
                 max_triangles: None,
+                allow_partial: None,
             },
         }
     }

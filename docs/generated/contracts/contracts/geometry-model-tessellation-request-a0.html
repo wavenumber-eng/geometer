@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <meta name="wn-catalog-sha256" content="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56">
   <title>geometry.model_tessellation.request.a0 — Geometer</title>
   <link rel="stylesheet" href="../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="contract" data-contract-identity="geometry.model_tessellation.request.a0" data-promotion-status="pilot_candidate">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56" data-page-kind="contract" data-contract-identity="geometry.model_tessellation.request.a0" data-promotion-status="pilot_candidate">
 <main>
 <header>
   <p class="page-type">Contract root</p>
@@ -30,7 +30,8 @@
 <tr><td><code>linear_deflection_mm</code></td><td>optional</td><td><code>float64</code></td><td><code>0.1</code></td><td><code>min_value=0.000001</code> <code>max_value=1000</code></td><td></td></tr>
 <tr><td><code>angular_deflection_rad</code></td><td>optional</td><td><code>float64</code></td><td><code>0.5</code></td><td><code>min_value=0.000001</code> <code>max_value=3.141592653589793</code></td><td></td></tr>
 <tr><td><code>root_placement</code></td><td>optional</td><td><code><a href="#declaration-wavenumber-geometer-contracts-modeltessellationa0-modelrootplacement">ModelRootPlacement</a></code></td><td><code>&quot;strip&quot;</code></td><td>none</td><td></td></tr>
-<tr><td><code>max_triangles</code></td><td>optional</td><td><code>uint32</code></td><td><code>750000</code></td><td><code>min_value=1</code> <code>max_value=2000000</code></td><td></td></tr></tbody></table></details>
+<tr><td><code>max_triangles</code></td><td>optional</td><td><code>uint32</code></td><td><code>750000</code></td><td><code>min_value=1</code> <code>max_value=2000000</code></td><td></td></tr>
+<tr><td><code>allow_partial</code></td><td>optional</td><td><code>boolean</code></td><td><code>true</code></td><td>none</td><td>Return usable faces with warnings when completed meshing has local face failures.</td></tr></tbody></table></details>
 <details open id="declaration-wavenumber-geometer-contracts-modeltessellationa0-modelrootplacement"><summary><h2><code>ModelRootPlacement</code> <span class="tag">enum</span></h2></summary><p></p><table><thead><tr><th>Member</th><th>Wire value</th><th>Description</th></tr></thead><tbody><tr><td><code>strip</code></td><td><code>strip</code></td><td>Match the existing STEP-to-GLB path: remove free-root placements only.</td></tr>
 <tr><td><code>preserve</code></td><td><code>preserve</code></td><td>Retain every source root and component placement.</td></tr></tbody></table></details></section>
 </main>

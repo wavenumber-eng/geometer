@@ -75,22 +75,29 @@ def _assert_catalog_lineage(path: Path, historical_hash: str) -> None:
     catalog = json.loads(path.read_text(encoding="utf-8"))
     prefix = "Wavenumber.Geometer.Contracts.ModelTessellationA0."
     illustration_prefix = "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0."
-    prefixes = (prefix, illustration_prefix)
+    geometry_prefix = "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0."
+    prefixes = (prefix, illustration_prefix, geometry_prefix)
     catalog["declarations"] = [item for item in catalog["declarations"] if not item["name"].startswith(prefixes)]
     catalog["roots"] = [item for item in catalog["roots"] if not item["name"].startswith(prefixes)]
     catalog["operations"] = [
         item
         for item in catalog["operations"]
-        if item["identity"] not in {"geometry.model_tessellation.a0", "geometry.mesh_illustration.a0"}
+        if item["identity"] not in {
+            "geometry.model_tessellation.a0",
+            "geometry.mesh_illustration.a0",
+            "geometry.mesh_illustration_geometry.a0",
+        }
     ]
     additions = {
         "Wavenumber.Geometer.Contracts.IpcA0.IpcRequestValueA0": [
             ("model_tessellation", prefix + "ModelTessellationRequestA0"),
             ("mesh_illustration", illustration_prefix + "MeshIllustrationRequestA0"),
+            ("mesh_illustration_geometry", geometry_prefix + "MeshIllustrationGeometryRequestA0"),
         ],
         "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationResultValueA0": [
             ("model_tessellation", prefix + "ModelTessellationResultA0"),
             ("mesh_illustration", "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationResultA0"),
+            ("mesh_illustration_geometry", geometry_prefix + "MeshIllustrationGeometryResultA0"),
         ],
     }
     for union, variants in additions.items():
@@ -122,7 +129,7 @@ def _assert_slice_a(manifest: dict[str, Any]) -> tuple[list[dict[str, Any]], dic
     assert slice_a == {
         "status": "unpromoted_structural_candidate",
         "catalog_sha256": "197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e",
-        "vector_manifest_sha256": ("d43333ddc5a216fc02eeb909561ee436d211060d308be29c8e1a1de4ac531496"),
+        "vector_manifest_sha256": ("522ea0eada1d34c138848fdf251ea187cb9115a0a4c064bdc5b83f93d2dd584f"),
         "governed_vector_ids": [
             "strict.ipc-step-topology-open-envelope.accept",
             "strict.operation-step-topology-open-outcome.accept",
@@ -183,7 +190,7 @@ def _assert_slice_b(manifest: dict[str, Any], topology_vectors: list[dict[str, A
     assert slice_b == {
         "status": "unpromoted_structural_candidate",
         "catalog_sha256": "197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e",
-        "vector_manifest_sha256": ("d43333ddc5a216fc02eeb909561ee436d211060d308be29c8e1a1de4ac531496"),
+        "vector_manifest_sha256": ("522ea0eada1d34c138848fdf251ea187cb9115a0a4c064bdc5b83f93d2dd584f"),
         "governed_vector_ids": [
             "strict.step-topology-apply-groups.accept",
             "semantic.step-topology-apply-groups-uppercase.accept",
@@ -256,7 +263,7 @@ def _assert_slice_c(
     assert slice_c == {
         "status": "unpromoted_structural_candidate",
         "catalog_sha256": "197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e",
-        "vector_manifest_sha256": ("d43333ddc5a216fc02eeb909561ee436d211060d308be29c8e1a1de4ac531496"),
+        "vector_manifest_sha256": ("522ea0eada1d34c138848fdf251ea187cb9115a0a4c064bdc5b83f93d2dd584f"),
         "governed_vector_ids": [
             "schema.step-topology-save-result.accept",
             "semantic.step-topology-save-attachments.accept",

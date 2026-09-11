@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <meta name="wn-catalog-sha256" content="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56">
   <title>Public Entry-Point Reconciliation — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/contracts/public-entrypoints.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="public-entry-point-reconciliation">Public Entry-Point Reconciliation</h1></header>
 <p>Release target <code>v2026-09-07</code>. This maps semantic operations separately from
@@ -97,6 +97,13 @@ in that boundary requires documentation review, not automatic promotion.</p>
 </tbody>
 </table>
 <h2 id="helpers-aliases-and-ownership-are-not-additional-wire-operations">Helpers, Aliases And Ownership Are Not Additional Wire Operations</h2>
+<p>The additive <code>geometry.mesh_illustration_geometry.a0</code> operation shares the mesh
+illustration pipeline and returns an owning colored drawing DTO without SVG.
+Its direct C++ value API, generic C ABI/full WASM operation, Python/Rust typed
+helpers and TypeScript prepared/one-shot methods are specified in
+<a href="../design/mesh-illustration-geometry.html">illustration drawing geometry</a>.
+The IPC result describes one required geometry JSON attachment; it does not
+extend or reinterpret the existing SVG result. Planar-only WASM is unsupported.</p>
 <ul>
 <li><code>planar_contours.h</code> exposes a direct C++ contour-building helper used by HLR.
 Its native value structures remain handwritten. If offered as an independent

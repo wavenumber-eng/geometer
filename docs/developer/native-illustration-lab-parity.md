@@ -75,6 +75,15 @@ are obtained directly through the governed STEP tessellation operation.
 
 ## Focused evidence and next work
 
+The 2026-09-11 integer-format optimization preserves the existing native SVG
+result and is inherited by the Rust Lab when using the updated executable.
+The browser Lab remains on TypeScript. Both prepared TypeScript and native
+clients now also expose [drawing geometry](../design/mesh-illustration-geometry.md)
+for custom consumers; the [Python Canvas example](../../examples/python/illustration_geometry_canvas.py)
+demonstrates that path without making the Rust Lab compute two output formats
+on each camera update. Native/TypeScript drawing parity preserves ring holes,
+ordered layers, opacity and linework; Canvas and SVG retain their own pixel rules.
+
 The optional RUST_002 native-settings check uses the same SOT-23 generated input
 through TypeScript and native illustration and compares the entire A0 result.
 Raw mesh lines off produces zero outline/crease commands with nonempty surfaces;

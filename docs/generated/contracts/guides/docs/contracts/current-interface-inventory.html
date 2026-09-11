@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <meta name="wn-catalog-sha256" content="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56">
   <title>Current Interface And Contract Authority — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/contracts/current-interface-inventory.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="current-interface-and-contract-authority">Current Interface And Contract Authority</h1></header>
 <p>Updated for release target <code>v2026-09-07</code>. This inventory
@@ -61,15 +61,17 @@ is historical and must not be used for runtime discovery.</p>
 </tr>
 </tbody>
 </table>
-<p>The catalog contains 18 generated operation declarations: six with the portable
+<p>The catalog contains 19 generated operation declarations: seven with the portable
 runtime flag (model bounds, model HLR, mesh HLR, experimental analytic,
-tessellation and illustration), nine additional native-only experimental
+tessellation, SVG illustration and drawing geometry), nine additional native-only experimental
 topology operations, and three structural-only
 topology operations. Effective native availability is portable OR additional
 native-only availability. Always discover the actual executable's operations
 through its welcome catalog; see the <a href="../design/executable-ipc.html">IPC guide</a>.
-The new tessellation/illustration APIs are qualified through native clients;
-catalog flags alone do not establish browser build/test coverage.</p>
+The illustration drawing extension is qualified through native clients and a
+rebuilt full-WASM generic C ABI fixture replay; catalog flags alone do not
+establish browser build/test coverage. See the
+<a href="../../../../../research/illustration-performance.md">qualification record</a>.</p>
 <p>Model bounds is promoted. HLR structural contracts are pilots. Analytic and
 topology remain experimental/non-production regardless of callable transports
 or frozen bytes. Public package support and demo-application support are

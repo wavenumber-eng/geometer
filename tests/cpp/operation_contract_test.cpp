@@ -131,6 +131,11 @@ bool decode_contract_vector(const std::string& identity, const std::vector<unsig
     {
         return geometer::contracts::decode_json(data.data(), data.size(), options, &error);
     }
+    if (identity == "geometry.model_tessellation.request.a0")
+    {
+        geometer::contracts::ModelTessellationRequestA0 value;
+        return geometer::contracts::decode_json(data.data(), data.size(), &value, &error);
+    }
     if (identity == "geometry.hlr_projection.options.a0")
     {
         geometer::contracts::HlrProjectionOptionsA0 value;
@@ -430,7 +435,7 @@ void generated_cpp_replays_all_governed_contract_vectors()
             "contract vector manifest should be valid JSON");
     require(manifest.HasMember("vectors") && manifest["vectors"].IsArray(),
             "contract vector manifest should contain an array");
-    require(manifest["vectors"].Size() == 128U, "C++ must replay every governed contract vector");
+    require(manifest["vectors"].Size() == 132U, "C++ must replay every governed contract vector");
 
     for (const auto& vector : manifest["vectors"].GetArray())
     {
@@ -747,11 +752,12 @@ void generic_c_abi_catalog_and_typed_failures()
     catalog_document.Parse(catalog_text.data(), catalog_text.size());
     require(!catalog_document.HasParseError() && catalog_document.IsObject(),
             "generated runtime catalog should be valid JSON");
-    require(catalog_document["operations"].Size() == 6U,
+    require(catalog_document["operations"].Size() == 7U,
             "runtime catalog should contain every generated operation exactly once");
     require(catalog_text.find("geometry.model_tessellation.a0") != std::string::npos &&
-                catalog_text.find("geometry.mesh_illustration.a0") != std::string::npos,
-            "portable catalog should advertise tessellation and illustration");
+                catalog_text.find("geometry.mesh_illustration.a0") != std::string::npos &&
+                catalog_text.find("geometry.mesh_illustration_geometry.a0") != std::string::npos,
+            "portable catalog should advertise tessellation, SVG and drawing geometry");
     require(catalog_text.find("geometry.model_hlr_projection.a0") != std::string::npos &&
                 catalog_text.find("geometry.mesh_hlr_projection.a0") != std::string::npos,
             "portable catalog should advertise model and indexed-mesh HLR");
@@ -772,7 +778,7 @@ void generic_c_abi_catalog_and_typed_failures()
     native_catalog_document.Parse(native_catalog_text.data(), native_catalog_text.size());
     require(!native_catalog_document.HasParseError() && native_catalog_document.IsObject(),
             "generated native runtime catalog should be valid JSON");
-    require(native_catalog_document["operations"].Size() == 15U,
+    require(native_catalog_document["operations"].Size() == 16U,
             "native catalog should add the nine bounded topology research operations");
     require(native_catalog_text.find("geometry.step_topology.open.a0") != std::string::npos &&
                 native_catalog_text.find("geometry.step_topology.inspect.a0") !=

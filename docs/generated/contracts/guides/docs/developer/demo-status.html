@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <meta name="wn-catalog-sha256" content="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56">
   <title>Demo And Example Audit — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/developer/demo-status.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="demo-and-example-audit">Demo And Example Audit</h1></header>
 <p>Audited 2026-09-05 using committed <code>v2026-09-04</code> Windows x64/native and
@@ -28,6 +28,27 @@ against unchanged kernel sources using cached OCCT; no new kernel release is
 implied. Updated windows were launched for user recheck; visual acceptance of
 the repaired angle remains pending.</p>
 <h2 id="runtime-evidence-and-disposition">Runtime Evidence And Disposition</h2>
+<p>Release refresh for 2026.9.11: native Windows and all three WASM targets were
+rebuilt using the cached OCCT dependency. Generated TypeScript/example bundles,
+all five standalone browser demos, all four hosted demo directories, the direct
+C++ preview and Rust Lab were rebuilt. The optional Python example environment
+now locks the matching editable package. Chrome smoke tests passed for the HLR,
+illustration, analytic and PCB pages. Installed-wheel Python, the geometry
+Canvas, Node bounds/topology and PyVista off-screen rendering passed against
+the new runtime. The Rust Lab's format, lint and unit checks passed. These
+automated checks do not replace the previously deferred interactive GUI review.</p>
+<p>The user visually accepted the rebuilt 2026.9.11 Illustration HTML demo and
+Native Rust API Lab on 2026-09-11. Both were opened with the current artifacts;
+the Rust Lab used the matching Windows executable and SOT-23 fixture.</p>
+<p>Illustration follow-up on 2026-09-11: the native integer-format optimization is
+behind the Rust Lab's existing SVG operation; the browser Lab still uses its
+separate TypeScript SVG/Canvas renderer. Both retain the previous appearance.
+The new <a href="../../../../../../examples/python/illustration_geometry_canvas.py">Python-to-Canvas example</a>
+requests native drawing geometry without SVG, writes a self-contained page and
+geometry JSON, and passed native execution plus headless Chrome visual inspection
+on Windows. This additive example does not replace either Lab. See the
+<a href="../../../../../research/illustration-performance.md">performance and qualification record</a>
+for test costs and release limitations.</p>
 <p>The optional <a href="../../../../../../examples/rust/native_viewer/README.md">Native Rust API Lab</a>
 is a twelfth entry added on the native API feature branch, not a replacement
 for the 11 retained demos. It uses the maintained Rust executable client and

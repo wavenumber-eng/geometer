@@ -24,7 +24,7 @@ fn replays_all_governed_contract_vectors() {
     let vector_root = root.join("tests/contracts/vectors");
     let manifest: Manifest =
         serde_json::from_slice(&fs::read(vector_root.join("manifest.json")).unwrap()).unwrap();
-    assert_eq!(manifest.vectors.len(), 128);
+    assert_eq!(manifest.vectors.len(), 132);
     for vector in manifest.vectors {
         let path = vector_root.join(&vector.file);
         let data = if path.extension().and_then(|value| value.to_str()) == Some("hex") {
@@ -44,8 +44,9 @@ fn replays_all_governed_contract_vectors() {
 type ContractDecoder = fn(&str, &[u8], &str) -> Option<bool>;
 
 fn decode_contract_vector(identity: &str, data: &[u8], vector_id: &str) -> bool {
-    let decoders: [ContractDecoder; 4] = [
+    let decoders: [ContractDecoder; 5] = [
         decode_core_contract,
+        decode_illustration_contract,
         decode_topology_mutation_contract,
         decode_topology_persistence_contract,
         decode_topology_interaction_contract,
@@ -67,12 +68,6 @@ fn decode_core_contract(identity: &str, data: &[u8], _vector_id: &str) -> Option
         "geometry.hlr_projection.result.a0" => {
             contracts::decode_hlr_projection_result_a0_json(data).is_ok()
         }
-        "geometry.mesh_illustration.input.a0" => {
-            contracts::decode_mesh_illustration_input_a0_json(data).is_ok()
-        }
-        "geometry.mesh_illustration.result.a0" => {
-            contracts::decode_mesh_illustration_result_a0_json(data).is_ok()
-        }
         "geometry.model_bounds.options.a0" => {
             contracts::decode_model_bounds_options_a0_json(data).is_ok()
         }
@@ -81,6 +76,21 @@ fn decode_core_contract(identity: &str, data: &[u8], _vector_id: &str) -> Option
             contracts::decode_operation_outcome_a0_json(data).is_ok()
         }
         "geometer.ipc.request.a0" => contracts::decode_ipc_request_a0_json(data).is_ok(),
+        _ => return None,
+    })
+}
+
+fn decode_illustration_contract(identity: &str, data: &[u8], _vector_id: &str) -> Option<bool> {
+    Some(match identity {
+        "geometry.mesh_illustration.input.a0" => {
+            contracts::decode_mesh_illustration_input_a0_json(data).is_ok()
+        }
+        "geometry.mesh_illustration.result.a0" => {
+            contracts::decode_mesh_illustration_result_a0_json(data).is_ok()
+        }
+        "geometry.model_tessellation.request.a0" => {
+            contracts::decode_model_tessellation_request_a0_json(data).is_ok()
+        }
         _ => return None,
     })
 }

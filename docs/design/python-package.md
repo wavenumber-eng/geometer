@@ -20,6 +20,13 @@ client:` block for a STEP/tessellation/HLR/illustration sequence or repeated wor
 The optional HLR argument is already computed visible polyline geometry, not an
 instruction to compute HLR or re-occlude arbitrary 2D lines.
 
+Generated JSON codecs retain strict scalar validation for numeric arrays,
+including exact Python types, finite float conversion, unsigned ranges and
+indexed error paths. Their runtime avoids per-number descriptor dispatch and
+path allocation for valid direct numeric arrays. Illustration conveniences
+validate the full input once and reuse its normalized mesh subtree when
+creating the IPC attachment; this does not bypass root or mesh validation.
+
 ```python
 from pathlib import Path
 

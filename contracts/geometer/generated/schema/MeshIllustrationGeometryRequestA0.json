@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.mesh_illustration_geometry.request:a0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.mesh_illustration_geometry.request.a0"
+    },
+    "view": {
+      "$ref": "#/$defs/MeshIllustrationView"
+    },
+    "prepare": {
+      "$ref": "#/$defs/MeshIllustrationPrepareOptions"
+    },
+    "style": {
+      "$ref": "urn:wavenumber:schema:geometer:geometry.mesh_illustration.style:a0"
+    }
+  },
+  "required": [
+    "schema",
+    "view"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Reuses bounded mesh_collection and optional matching visible HLR attachments.",
+  "$defs": {
+    "MeshIllustrationView": {
+      "type": "object",
+      "properties": {
+        "direction": {
+          "$ref": "#/$defs/IllustrationVector3"
+        },
+        "up": {
+          "$ref": "#/$defs/IllustrationVector3"
+        },
+        "mirror_x": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "direction",
+        "up"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "MeshIllustrationPrepareOptions": {
+      "type": "object",
+      "properties": {
+        "max_triangles": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2000000,
+          "default": 750000
+        },
+        "weld_tolerance": {
+          "type": "number",
+          "default": 1e-7,
+          "exclusiveMinimum": 0
+        }
+      },
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "IllustrationVector3": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3
+    }
+  }
+}

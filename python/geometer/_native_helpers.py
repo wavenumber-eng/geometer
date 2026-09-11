@@ -7,6 +7,8 @@ from pathlib import Path
 from ._generated.contracts.models import (
     HlrProjectionResultA0,
     MeshIllustrationInputA0,
+    MeshIllustrationGeometryInputA0,
+    MeshIllustrationGeometryA0,
     MeshIllustrationResultA0,
     ModelTessellationRequestA0,
 )
@@ -28,6 +30,21 @@ def model_tessellation(
     """
     with GeometerIpcClient(executable) as client:
         return client.model_tessellation(model, options, timeout=timeout)
+
+
+def mesh_illustration_geometry(
+    input: MeshIllustrationGeometryInputA0,
+    *,
+    hlr_projection: HlrProjectionResultA0 | None = None,
+    executable: str | Path | None = None,
+    timeout: float | None = None,
+) -> MeshIllustrationGeometryA0:
+    """Return owning millimeter drawing geometry with one managed native process.
+
+    No SVG is generated. Prefer the persistent client for repeated work.
+    """
+    with GeometerIpcClient(executable) as client:
+        return client.mesh_illustration_geometry(input, hlr_projection=hlr_projection, timeout=timeout)
 
 
 def mesh_illustration(

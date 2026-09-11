@@ -25,6 +25,14 @@ in that boundary requires documentation review, not automatic promotion.
 
 ## Helpers, Aliases And Ownership Are Not Additional Wire Operations
 
+The additive `geometry.mesh_illustration_geometry.a0` operation shares the mesh
+illustration pipeline and returns an owning colored drawing DTO without SVG.
+Its direct C++ value API, generic C ABI/full WASM operation, Python/Rust typed
+helpers and TypeScript prepared/one-shot methods are specified in
+[illustration drawing geometry](../design/mesh-illustration-geometry.md).
+The IPC result describes one required geometry JSON attachment; it does not
+extend or reinterpret the existing SVG result. Planar-only WASM is unsupported.
+
 - `planar_contours.h` exposes a direct C++ contour-building helper used by HLR.
   Its native value structures remain handwritten. If offered as an independent
   portable operation, include its structural request/result in wave 2 before

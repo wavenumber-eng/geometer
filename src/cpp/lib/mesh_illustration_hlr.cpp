@@ -4,9 +4,8 @@
 
 namespace geometer::illustration_detail
 {
-void append_hlr(const contracts::MeshIllustrationInputA0& input,
-                const contracts::HlrProjectionResultA0& hlr, const Scene& scene, const Style& style,
-                Commands& commands)
+void append_hlr(const IllustrationInputView& input, const contracts::HlrProjectionResultA0& hlr,
+                const Scene& scene, const Style& style, Commands& commands)
 {
     // Enforce the work limit before generated validation serializes large data.
     std::size_t count = 0;

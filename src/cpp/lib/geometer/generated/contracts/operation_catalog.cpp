@@ -31,9 +31,20 @@ const char* operation_catalog_json()
         "\"required\":true,\"media_types\":[\"application/"
         "vnd.wavenumber.geometer.indexed-triangle-mesh\"],\"max_bytes\":268435456}],\"output_"
         "attachments\":[],\"runtime_dispatch\":\"logical_dto\"},{\"identity\":\"geometry.mesh_"
-        "illustration.a0\",\"request_contract\":\"geometry.mesh_illustration.request.a0\",\"result_"
-        "contract\":\"geometry.mesh_illustration.result.a0\",\"input_attachments\":[{\"name\":"
-        "\"hlr_projection\",\"required\":false,\"media_types\":[\"application/"
+        "illustration_geometry.a0\",\"request_contract\":\"geometry.mesh_illustration_geometry."
+        "request.a0\",\"result_contract\":\"geometry.mesh_illustration_geometry.result.a0\","
+        "\"input_attachments\":[{\"name\":\"hlr_projection\",\"required\":false,\"media_types\":["
+        "\"application/"
+        "vnd.wavenumber.geometer.hlr-projection+json\"],\"max_bytes\":67108864},{\"name\":\"mesh_"
+        "collection\",\"required\":true,\"media_types\":[\"application/"
+        "vnd.wavenumber.geometer.mesh-collection+json\"],\"max_bytes\":268435456}],\"output_"
+        "attachments\":[{\"name\":\"illustration_geometry\",\"required\":true,\"media_types\":["
+        "\"application/"
+        "vnd.wavenumber.geometer.illustration-geometry+json\"],\"max_bytes\":268435456}],\"runtime_"
+        "dispatch\":\"logical_dto\"},{\"identity\":\"geometry.mesh_illustration.a0\",\"request_"
+        "contract\":\"geometry.mesh_illustration.request.a0\",\"result_contract\":\"geometry.mesh_"
+        "illustration.result.a0\",\"input_attachments\":[{\"name\":\"hlr_projection\",\"required\":"
+        "false,\"media_types\":[\"application/"
         "vnd.wavenumber.geometer.hlr-projection+json\"],\"max_bytes\":67108864},{\"name\":\"mesh_"
         "collection\",\"required\":true,\"media_types\":[\"application/"
         "vnd.wavenumber.geometer.mesh-collection+json\"],\"max_bytes\":268435456}],\"output_"
@@ -90,9 +101,20 @@ const char* native_operation_catalog_json()
         "\"required\":true,\"media_types\":[\"application/"
         "vnd.wavenumber.geometer.indexed-triangle-mesh\"],\"max_bytes\":268435456}],\"output_"
         "attachments\":[],\"runtime_dispatch\":\"logical_dto\"},{\"identity\":\"geometry.mesh_"
-        "illustration.a0\",\"request_contract\":\"geometry.mesh_illustration.request.a0\",\"result_"
-        "contract\":\"geometry.mesh_illustration.result.a0\",\"input_attachments\":[{\"name\":"
-        "\"hlr_projection\",\"required\":false,\"media_types\":[\"application/"
+        "illustration_geometry.a0\",\"request_contract\":\"geometry.mesh_illustration_geometry."
+        "request.a0\",\"result_contract\":\"geometry.mesh_illustration_geometry.result.a0\","
+        "\"input_attachments\":[{\"name\":\"hlr_projection\",\"required\":false,\"media_types\":["
+        "\"application/"
+        "vnd.wavenumber.geometer.hlr-projection+json\"],\"max_bytes\":67108864},{\"name\":\"mesh_"
+        "collection\",\"required\":true,\"media_types\":[\"application/"
+        "vnd.wavenumber.geometer.mesh-collection+json\"],\"max_bytes\":268435456}],\"output_"
+        "attachments\":[{\"name\":\"illustration_geometry\",\"required\":true,\"media_types\":["
+        "\"application/"
+        "vnd.wavenumber.geometer.illustration-geometry+json\"],\"max_bytes\":268435456}],\"runtime_"
+        "dispatch\":\"logical_dto\"},{\"identity\":\"geometry.mesh_illustration.a0\",\"request_"
+        "contract\":\"geometry.mesh_illustration.request.a0\",\"result_contract\":\"geometry.mesh_"
+        "illustration.result.a0\",\"input_attachments\":[{\"name\":\"hlr_projection\",\"required\":"
+        "false,\"media_types\":[\"application/"
         "vnd.wavenumber.geometer.hlr-projection+json\"],\"max_bytes\":67108864},{\"name\":\"mesh_"
         "collection\",\"required\":true,\"media_types\":[\"application/"
         "vnd.wavenumber.geometer.mesh-collection+json\"],\"max_bytes\":268435456}],\"output_"
@@ -173,7 +195,7 @@ const char* native_operation_catalog_json()
 
 const char* normalized_contract_catalog_sha256()
 {
-    return "078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d";
+    return "2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56";
 }
 
 bool operation_output_attachment_declared(const std::string& operation_id,
@@ -183,6 +205,10 @@ bool operation_output_attachment_declared(const std::string& operation_id,
     if (operation_id == "geometry.analytic_planar_boolean_batch.a0" &&
         attachment_name == "analytic_planar_boolean_result" &&
         media_type == "application/vnd.wavenumber.geometer.analytic-planar-boolean-result")
+        return true;
+    if (operation_id == "geometry.mesh_illustration_geometry.a0" &&
+        attachment_name == "illustration_geometry" &&
+        media_type == "application/vnd.wavenumber.geometer.illustration-geometry+json")
         return true;
     if (operation_id == "geometry.model_tessellation.a0" && attachment_name == "mesh_collection" &&
         media_type == "application/vnd.wavenumber.geometer.mesh-collection+json")
@@ -218,6 +244,14 @@ bool operation_input_attachment_declared(const std::string& operation_id,
         return true;
     if (operation_id == "geometry.mesh_hlr_projection.a0" && attachment_name == "mesh" &&
         media_type == "application/vnd.wavenumber.geometer.indexed-triangle-mesh")
+        return true;
+    if (operation_id == "geometry.mesh_illustration_geometry.a0" &&
+        attachment_name == "hlr_projection" &&
+        media_type == "application/vnd.wavenumber.geometer.hlr-projection+json")
+        return true;
+    if (operation_id == "geometry.mesh_illustration_geometry.a0" &&
+        attachment_name == "mesh_collection" &&
+        media_type == "application/vnd.wavenumber.geometer.mesh-collection+json")
         return true;
     if (operation_id == "geometry.mesh_illustration.a0" && attachment_name == "hlr_projection" &&
         media_type == "application/vnd.wavenumber.geometer.hlr-projection+json")
@@ -273,6 +307,12 @@ std::size_t operation_input_attachment_max_bytes(const std::string& operation_id
         return 268435456U;
     if (operation_id == "geometry.mesh_hlr_projection.a0" && attachment_name == "mesh")
         return 268435456U;
+    if (operation_id == "geometry.mesh_illustration_geometry.a0" &&
+        attachment_name == "hlr_projection")
+        return 67108864U;
+    if (operation_id == "geometry.mesh_illustration_geometry.a0" &&
+        attachment_name == "mesh_collection")
+        return 268435456U;
     if (operation_id == "geometry.mesh_illustration.a0" && attachment_name == "hlr_projection")
         return 67108864U;
     if (operation_id == "geometry.mesh_illustration.a0" && attachment_name == "mesh_collection")
@@ -302,6 +342,12 @@ const char* operation_input_attachment_primary_media_type(const std::string& ope
         return "application/vnd.wavenumber.geometer.analytic-planar-boolean-request";
     if (operation_id == "geometry.mesh_hlr_projection.a0" && attachment_name == "mesh")
         return "application/vnd.wavenumber.geometer.indexed-triangle-mesh";
+    if (operation_id == "geometry.mesh_illustration_geometry.a0" &&
+        attachment_name == "hlr_projection")
+        return "application/vnd.wavenumber.geometer.hlr-projection+json";
+    if (operation_id == "geometry.mesh_illustration_geometry.a0" &&
+        attachment_name == "mesh_collection")
+        return "application/vnd.wavenumber.geometer.mesh-collection+json";
     if (operation_id == "geometry.mesh_illustration.a0" && attachment_name == "hlr_projection")
         return "application/vnd.wavenumber.geometer.hlr-projection+json";
     if (operation_id == "geometry.mesh_illustration.a0" && attachment_name == "mesh_collection")
@@ -329,6 +375,9 @@ std::size_t operation_output_attachment_max_bytes(const std::string& operation_i
     if (operation_id == "geometry.analytic_planar_boolean_batch.a0" &&
         attachment_name == "analytic_planar_boolean_result")
         return 268435456U;
+    if (operation_id == "geometry.mesh_illustration_geometry.a0" &&
+        attachment_name == "illustration_geometry")
+        return 268435456U;
     if (operation_id == "geometry.model_tessellation.a0" && attachment_name == "mesh_collection")
         return 268435456U;
     if (operation_id == "geometry.step_topology.checkpoint_edit_journal.a0" &&
@@ -352,6 +401,9 @@ const char* operation_output_attachment_primary_media_type(const std::string& op
     if (operation_id == "geometry.analytic_planar_boolean_batch.a0" &&
         attachment_name == "analytic_planar_boolean_result")
         return "application/vnd.wavenumber.geometer.analytic-planar-boolean-result";
+    if (operation_id == "geometry.mesh_illustration_geometry.a0" &&
+        attachment_name == "illustration_geometry")
+        return "application/vnd.wavenumber.geometer.illustration-geometry+json";
     if (operation_id == "geometry.model_tessellation.a0" && attachment_name == "mesh_collection")
         return "application/vnd.wavenumber.geometer.mesh-collection+json";
     if (operation_id == "geometry.step_topology.checkpoint_edit_journal.a0" &&
@@ -375,6 +427,8 @@ const char* operation_request_contract(const std::string& operation_id)
         return "geometry.analytic_planar_boolean_batch.request.a0";
     if (operation_id == "geometry.mesh_hlr_projection.a0")
         return "geometry.hlr_projection.options.a0";
+    if (operation_id == "geometry.mesh_illustration_geometry.a0")
+        return "geometry.mesh_illustration_geometry.request.a0";
     if (operation_id == "geometry.mesh_illustration.a0")
         return "geometry.mesh_illustration.request.a0";
     if (operation_id == "geometry.model_bounds.a0")
@@ -426,6 +480,8 @@ const char* operation_result_contract(const std::string& operation_id)
         return "geometry.analytic_planar_boolean_batch.result.a0";
     if (operation_id == "geometry.mesh_hlr_projection.a0")
         return "geometry.hlr_projection.result.a0";
+    if (operation_id == "geometry.mesh_illustration_geometry.a0")
+        return "geometry.mesh_illustration_geometry.result.a0";
     if (operation_id == "geometry.mesh_illustration.a0")
         return "geometry.mesh_illustration.result.a0";
     if (operation_id == "geometry.model_bounds.a0")
@@ -476,6 +532,8 @@ bool operation_logical_result_matches(const std::string& operation_id,
 {
     if (operation_id == "geometry.mesh_hlr_projection.a0")
         return std::holds_alternative<contracts::HlrProjectionResultA0>(result);
+    if (operation_id == "geometry.mesh_illustration_geometry.a0")
+        return std::holds_alternative<contracts::MeshIllustrationGeometryResultA0>(result);
     if (operation_id == "geometry.mesh_illustration.a0")
         return std::holds_alternative<contracts::MeshIllustrationResultA0>(result);
     if (operation_id == "geometry.model_bounds.a0")
@@ -514,6 +572,8 @@ bool operation_request_value_matches(const std::string& operation_id,
         return std::holds_alternative<contracts::PackedAttachmentProjectionA0>(request);
     if (operation_id == "geometry.mesh_hlr_projection.a0")
         return std::holds_alternative<contracts::HlrProjectionOptionsA0>(request);
+    if (operation_id == "geometry.mesh_illustration_geometry.a0")
+        return std::holds_alternative<contracts::MeshIllustrationGeometryRequestA0>(request);
     if (operation_id == "geometry.mesh_illustration.a0")
         return std::holds_alternative<contracts::MeshIllustrationRequestA0>(request);
     if (operation_id == "geometry.model_bounds.a0")
@@ -559,6 +619,8 @@ bool operation_result_value_matches(const std::string& operation_id,
         return std::holds_alternative<contracts::PackedAttachmentProjectionA0>(result);
     if (operation_id == "geometry.mesh_hlr_projection.a0")
         return std::holds_alternative<contracts::HlrProjectionResultA0>(result);
+    if (operation_id == "geometry.mesh_illustration_geometry.a0")
+        return std::holds_alternative<contracts::MeshIllustrationGeometryResultA0>(result);
     if (operation_id == "geometry.mesh_illustration.a0")
         return std::holds_alternative<contracts::MeshIllustrationResultA0>(result);
     if (operation_id == "geometry.model_bounds.a0")
@@ -602,6 +664,8 @@ std::size_t operation_required_output_attachment_count(const std::string& operat
         return 1U;
     if (operation_id == "geometry.mesh_hlr_projection.a0")
         return 0U;
+    if (operation_id == "geometry.mesh_illustration_geometry.a0")
+        return 1U;
     if (operation_id == "geometry.mesh_illustration.a0")
         return 0U;
     if (operation_id == "geometry.model_bounds.a0")
@@ -636,6 +700,8 @@ const char* operation_required_output_attachment_name(const std::string& operati
 {
     if (operation_id == "geometry.analytic_planar_boolean_batch.a0" && index == 0U)
         return "analytic_planar_boolean_result";
+    if (operation_id == "geometry.mesh_illustration_geometry.a0" && index == 0U)
+        return "illustration_geometry";
     if (operation_id == "geometry.model_tessellation.a0" && index == 0U)
         return "mesh_collection";
     if (operation_id == "geometry.step_topology.checkpoint_edit_journal.a0" && index == 0U)

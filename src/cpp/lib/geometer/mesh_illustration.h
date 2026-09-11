@@ -5,6 +5,18 @@
 
 namespace geometer
 {
+/// Return owning, ordered shaded geometry in millimeters without generating SVG.
+/// Reuses the SVG renderer's preparation, shading, fusion and supplied-HLR rules.
+/// Array order is painter order; layers use implicit closed even-odd rings.
+/// Returns 102 on resource limits; all failures clear the result.
+int illustrate_mesh_geometry(const contracts::MeshIllustrationGeometryInputA0& input,
+                             contracts::MeshIllustrationGeometryA0* result,
+                             Status* status = nullptr);
+int illustrate_mesh_geometry(const contracts::MeshIllustrationGeometryInputA0& input,
+                             const contracts::HlrProjectionResultA0& hlr,
+                             contracts::MeshIllustrationGeometryA0* result,
+                             Status* status = nullptr);
+
 /// Render the governed A0 illustration input without a JavaScript/WASM runtime.
 /// This direct value API shares the browser renderer's production styling policy.
 /// Returns 102 on native resource limits; errors clear the result (no partial SVG).

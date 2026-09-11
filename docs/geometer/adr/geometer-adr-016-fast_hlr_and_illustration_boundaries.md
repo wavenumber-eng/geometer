@@ -65,6 +65,18 @@ architectural boundary.
 
 ## Consequences
 
+### Native illustration extension (2026-09-11)
+
+The original TypeScript-first boundary now also has a C++ illustration renderer
+and an executable SVG operation. The additive
+`geometry.mesh_illustration_geometry.a0` operation exposes its shared ordered
+drawing data for custom renderers. Geometry output stops before SVG writing;
+direct C++ returns owning values, while IPC carries a governed JSON attachment.
+TypeScript exposes the same drawing contract using its existing prepared scene.
+The [drawing contract](../../design/mesh-illustration-geometry.md) records units,
+paint order, holes, opacity, resource limits and target availability. HLR remains
+independently callable, and application placement/provenance remains outside it.
+
 Consumers with synthesized geometry can encode one bounded indexed mesh and
 use Fast HLR without constructing STEP. STEP consumers continue to use OCCT
 for import and tessellation before the triangle visibility engine runs.
@@ -74,5 +86,5 @@ consumers do not need to copy algorithms from a demo. The separation permits
 the illustration renderer to evolve without changing the portable HLR result.
 
 Perspective vector guarantees, multithreaded WASM visibility, stable serialized
-prepared models, native illustration rendering, and changing the default HLR
+prepared models, and changing the default HLR
 backend require later decisions.

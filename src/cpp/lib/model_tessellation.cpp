@@ -3,7 +3,12 @@
 #include "model_tessellation_status.h"
 #include "step_xcaf_root_frame.h"
 
+#include <BRepMesh_Context.hxx>
 #include <BRepMesh_IncrementalMesh.hxx>
+#include <BRep_Tool.hxx>
+#include <IMeshData_Face.hxx>
+#include <IMeshData_Model.hxx>
+#include <IMeshData_Wire.hxx>
 #include <Quantity_Color.hxx>
 #include <RWMesh_FaceIterator.hxx>
 #include <STEPCAFControl_Reader.hxx>
@@ -21,6 +26,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <unordered_set>
 #include <utility>
 
 namespace geometer
@@ -29,6 +35,42 @@ namespace
 {
 constexpr std::size_t kMaxVertices = 2000000;
 constexpr std::size_t kMaxMeshes = 65536;
+
+struct MeshProblems
+{
+    // Triangulations are attached to TShape, shared by every located occurrence.
+    // A problematic definition must therefore be omitted at every placement.
+    std::unordered_set<const TopoDS_TShape*> shapes;
+    std::size_t faces = 0;
+    std::vector<std::string> details;
+};
+
+MeshProblems inspect_mesh(const Handle(IMeshData_Model) & model)
+{
+    if (model.IsNull())
+        throw std::runtime_error("STEP tessellation produced no meshing context.");
+    MeshProblems problems;
+    for (int index = 0; index < model->FacesNb(); ++index)
+    {
+        const auto& face = model->GetFace(index);
+        int flags = face->GetStatusMask();
+        for (int wire = 0; wire < face->WiresNb(); ++wire)
+            flags |= face->GetWire(wire)->GetStatusMask();
+        TopLoc_Location location;
+        const auto triangulation = BRep_Tool::Triangulation(face->GetFace(), location);
+        const bool missing = triangulation.IsNull() || triangulation->NbTriangles() == 0;
+        if (!missing && (flags & ~model_tessellation_detail::successful_flags) == 0)
+            continue;
+        ++problems.faces;
+        problems.shapes.insert(face->GetFace().TShape().get());
+        if (problems.details.size() < 255)
+            problems.details.push_back(
+                "Omitted meshing face " + std::to_string(index) +
+                ": OCCT status flags=" + std::to_string(flags) +
+                (missing ? "; no triangles." : "; unreliable triangulation."));
+    }
+    return problems;
+}
 
 void append_vector(std::vector<double>* values, double x, double y, double z)
 {
@@ -86,7 +128,7 @@ contracts::MeshIllustrationMesh face_mesh(const RWMesh_FaceIterator& face, std::
 }
 
 void collect_meshes(const Handle(TDocStd_Document) & document, std::size_t max_triangles,
-                    contracts::MeshCollectionA0* collection)
+                    const MeshProblems& problems, contracts::MeshCollectionA0* collection)
 {
     std::size_t triangles = 0;
     std::size_t vertices = 0;
@@ -102,7 +144,8 @@ void collect_meshes(const Handle(TDocStd_Document) & document, std::size_t max_t
         for (RWMesh_FaceIterator face(node.RefLabel, node.Location, true, node.Style); face.More();
              face.Next())
         {
-            if (!face.FaceStyle().IsVisible() || face.NbTriangles() == 0)
+            if (!face.FaceStyle().IsVisible() || face.NbTriangles() == 0 ||
+                problems.shapes.count(face.Face().TShape().get()) != 0)
                 continue;
             const auto count = static_cast<std::size_t>(face.NbTriangles());
             const auto node_count = static_cast<std::size_t>(face.NbNodes());
@@ -122,8 +165,11 @@ void collect_meshes(const Handle(TDocStd_Document) & document, std::size_t max_t
 
 int model_tessellation_from_bytes(const unsigned char* data, std::size_t size,
                                   const contracts::ModelTessellationRequestA0& options,
-                                  contracts::MeshCollectionA0* meshes, Status* status)
+                                  contracts::MeshCollectionA0* meshes, Status* status,
+                                  std::vector<std::string>* warnings)
 {
+    if (warnings)
+        warnings->clear();
     const auto fail = [&](int code, const std::string& message)
     {
         if (meshes)
@@ -167,13 +213,41 @@ int model_tessellation_from_bytes(const unsigned char* data, std::size_t size,
         const auto shape = free_shape_compound(document);
         if (shape.IsNull())
             return fail(1, "STEP transfer produced no shapes.");
-        BRepMesh_IncrementalMesh mesher(shape, options.linear_deflection_mm.value_or(0.1), false,
-                                        options.angular_deflection_rad.value_or(0.5), false);
-        if (!model_tessellation_detail::meshing_succeeded(mesher.IsDone(), mesher.GetStatusFlags()))
+        Handle(BRepMesh_Context) context = new BRepMesh_Context();
+        BRepMesh_IncrementalMesh mesher;
+        mesher.SetShape(shape);
+        auto& parameters = mesher.ChangeParameters();
+        parameters.Deflection = options.linear_deflection_mm.value_or(0.1);
+        parameters.Angle = options.angular_deflection_rad.value_or(0.5);
+        parameters.Relative = false;
+        parameters.InParallel = false;
+        parameters.CleanModel = false;
+        mesher.Perform(context);
+        const bool partial = options.allow_partial.value_or(true);
+        const int flags = mesher.GetStatusFlags();
+        if (!model_tessellation_detail::meshing_succeeded(mesher.IsDone(), flags, true))
             return fail(
-                1, "STEP tessellation did not complete cleanly; partial meshes are not returned.");
+                1, "STEP meshing did not complete safely: done=" + std::to_string(mesher.IsDone()) +
+                       "; OCCT status flags=" + std::to_string(flags) + ".");
+        const auto problems = inspect_mesh(context->GetModel());
+        if (!partial &&
+            (!model_tessellation_detail::meshing_succeeded(true, flags) || problems.faces))
+            return fail(
+                1, "STEP tessellation has " + std::to_string(problems.faces) +
+                       " problematic meshing face(s); OCCT status flags=" + std::to_string(flags) +
+                       "; partial meshes are not returned "
+                       "unless allow_partial=true.");
         contracts::MeshCollectionA0 output;
-        collect_meshes(document, options.max_triangles.value_or(750000), &output);
+        collect_meshes(document, options.max_triangles.value_or(750000), problems, &output);
+        if (warnings && problems.faces)
+        {
+            warnings->push_back(
+                "Partial STEP tessellation: omitted " + std::to_string(problems.faces) + " of " +
+                std::to_string(context->GetModel()->FacesNb()) +
+                " meshing faces; OCCT status flags=" + std::to_string(flags) +
+                ". Face indices are local to this tessellation; details capped at 255.");
+            warnings->insert(warnings->end(), problems.details.begin(), problems.details.end());
+        }
         *meshes = std::move(output);
         if (status)
         {

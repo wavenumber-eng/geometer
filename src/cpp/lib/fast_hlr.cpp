@@ -11,6 +11,7 @@
 #include <limits>
 #include <map>
 #include <numeric>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -45,13 +46,21 @@ struct WeldCell
     std::int64_t y = 0;
     std::int64_t z = 0;
 
-    bool operator<(const WeldCell& other) const
+    bool operator==(const WeldCell& other) const
     {
-        if (x != other.x)
-            return x < other.x;
-        if (y != other.y)
-            return y < other.y;
-        return z < other.z;
+        return x == other.x && y == other.y && z == other.z;
+    }
+};
+
+struct WeldCellHash
+{
+    std::size_t operator()(const WeldCell& cell) const
+    {
+        std::size_t result = std::hash<std::int64_t>{}(cell.x);
+        for (std::int64_t value : {cell.y, cell.z})
+            result ^=
+                std::hash<std::int64_t>{}(value) + 0x9e3779b9U + (result << 6U) + (result >> 2U);
+        return result;
     }
 };
 
@@ -173,7 +182,10 @@ bool within_weld_tolerance(const FastHlrVec3& first, const FastHlrVec3& second, 
 bool weld_indexed_vertices(const FastHlrIndexedMesh& mesh, double tolerance,
                            std::vector<FastHlrVec3>* vertices, std::vector<std::uint32_t>* remap)
 {
-    std::map<WeldCell, std::vector<std::uint32_t>> cells;
+    // This table is lookup-only; input traversal and the minimum matching
+    // vertex ID determine welding, independent of hash-table iteration order.
+    std::unordered_map<WeldCell, std::vector<std::uint32_t>, WeldCellHash> cells;
+    cells.reserve(mesh.vertices.size());
     vertices->reserve(mesh.vertices.size());
     remap->reserve(mesh.vertices.size());
     const FastHlrVec3 origin = mesh.vertices.empty() ? FastHlrVec3{} : mesh.vertices.front();
@@ -191,8 +203,8 @@ bool weld_indexed_vertices(const FastHlrIndexedMesh& mesh, double tolerance,
                     if (found == cells.end())
                         continue;
                     for (std::uint32_t candidate : found->second)
-                        if (within_weld_tolerance(point, (*vertices)[candidate], tolerance) &&
-                            candidate < match)
+                        if (candidate < match &&
+                            within_weld_tolerance(point, (*vertices)[candidate], tolerance))
                             match = candidate;
                 }
         if (match == std::numeric_limits<std::uint32_t>::max())
@@ -488,6 +500,7 @@ class TriangleGrid
         dimension_ = static_cast<std::size_t>(std::ceil(std::sqrt(count / 8.0)));
         dimension_ = std::max<std::size_t>(1, std::min<std::size_t>(dimension_, 256));
         cells_.resize(dimension_ * dimension_);
+        seen_.resize(triangles.size(), 0);
         for (std::uint32_t triangle = 0; triangle < triangles.size(); ++triangle)
         {
             const ProjectedTriangle& item = triangles[triangle];
@@ -514,9 +527,14 @@ class TriangleGrid
     }
 
     void query(double min_x, double min_y, double max_x, double max_y,
-               std::vector<std::uint32_t>* triangles) const
+               std::vector<std::uint32_t>* triangles)
     {
         triangles->clear();
+        if (++generation_ == 0)
+        {
+            std::fill(seen_.begin(), seen_.end(), 0);
+            generation_ = 1;
+        }
         const auto x_range = cell_range(min_x, max_x, min_x_, max_x_);
         const auto y_range = cell_range(min_y, max_y, min_y_, max_y_);
         for (std::size_t y = y_range.first; y <= y_range.second; ++y)
@@ -524,11 +542,17 @@ class TriangleGrid
             for (std::size_t x = x_range.first; x <= x_range.second; ++x)
             {
                 const std::vector<std::uint32_t>& cell = cells_[y * dimension_ + x];
-                triangles->insert(triangles->end(), cell.begin(), cell.end());
+                for (std::uint32_t triangle : cell)
+                {
+                    if (seen_[triangle] != generation_)
+                    {
+                        seen_[triangle] = generation_;
+                        triangles->push_back(triangle);
+                    }
+                }
             }
         }
         std::sort(triangles->begin(), triangles->end());
-        triangles->erase(std::unique(triangles->begin(), triangles->end()), triangles->end());
     }
 
   private:
@@ -559,6 +583,8 @@ class TriangleGrid
     std::size_t dimension_ = 1;
     std::size_t reference_count_ = 0;
     std::vector<std::vector<std::uint32_t>> cells_;
+    std::vector<std::uint32_t> seen_;
+    std::uint32_t generation_ = 0;
 };
 
 bool valid_options(const FastHlrOptions& options)
@@ -991,8 +1017,6 @@ int project_fast_hlr_detail(const FastHlrPreparedMesh& prepared, const Projectio
         excluded.insert(excluded.end(), merged_seams.begin(), merged_seams.end());
         excluded = merge_intervals(std::move(excluded), 0.0);
         const std::vector<Interval> visible_intervals = subtract_intervals({{0.0, 1.0}}, excluded);
-        const std::vector<Interval> reported_hidden =
-            subtract_intervals(merged_hidden, merged_seams);
         output_statistics.hidden_intervals += merged_hidden.size();
         output_statistics.coplanar_seam_intervals += merged_seams.size();
         for (const Interval& interval : visible_intervals)
@@ -1011,6 +1035,8 @@ int project_fast_hlr_detail(const FastHlrPreparedMesh& prepared, const Projectio
         }
         if (options.include_hidden && hidden != nullptr)
         {
+            const std::vector<Interval> reported_hidden =
+                subtract_intervals(merged_hidden, merged_seams);
             for (const Interval& interval : reported_hidden)
             {
                 if (!append_projected_fragment(start, end, interval, edge, provenance,

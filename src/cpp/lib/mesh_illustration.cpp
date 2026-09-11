@@ -5,6 +5,43 @@
 
 namespace geometer::illustration_detail
 {
+namespace
+{
+template <typename Input>
+PreparedIllustration prepare_validated(const Input& input,
+                                       const contracts::HlrProjectionResultA0* hlr)
+{
+    // Retain generated validation for value callers as well as the IPC boundary.
+    std::string validated;
+    contracts::ContractError error;
+    if (!contracts::encode_json(input, &validated, &error))
+        throw std::runtime_error(error.message);
+    validated.clear();
+    validated.shrink_to_fit();
+    const IllustrationInputView view{input.meshes, input.view, input.prepare, input.style};
+    PreparedIllustration result;
+    result.scene = prepare_scene(view);
+    result.style = resolve_style(input.style.value_or(contracts::MeshIllustrationStyleA0{}));
+    WorkBudget budget;
+    result.commands = render_commands(result.scene, result.style, budget);
+    if (hlr)
+        append_hlr(view, *hlr, result.scene, result.style, result.commands);
+    return result;
+}
+} // namespace
+
+PreparedIllustration prepare_illustration(const contracts::MeshIllustrationInputA0& input,
+                                          const contracts::HlrProjectionResultA0* hlr)
+{
+    return prepare_validated(input, hlr);
+}
+
+PreparedIllustration prepare_illustration(const contracts::MeshIllustrationGeometryInputA0& input,
+                                          const contracts::HlrProjectionResultA0* hlr)
+{
+    return prepare_validated(input, hlr);
+}
+
 Commands render_commands(const Scene& scene, const Style& style, WorkBudget& budget)
 {
     Commands result;
@@ -80,20 +117,10 @@ int render(const contracts::MeshIllustrationInputA0& input,
         return fail(1, "Mesh illustration result pointer is null.");
     try
     {
-        // Reuse generated TypeSpec validation for direct callers as well as IPC.
-        std::string validated;
-        contracts::ContractError error;
-        if (!contracts::encode_json(input, &validated, &error))
-            return fail(1, error.message);
-        validated.clear();
-        validated.shrink_to_fit();
-        const auto scene = illustration_detail::prepare_scene(input);
-        const auto style = illustration_detail::resolve_style(
-            input.style.value_or(contracts::MeshIllustrationStyleA0{}));
-        illustration_detail::WorkBudget budget;
-        auto commands = illustration_detail::render_commands(scene, style, budget);
-        if (hlr)
-            illustration_detail::append_hlr(input, *hlr, scene, style, commands);
+        const auto prepared = illustration_detail::prepare_illustration(input, hlr);
+        const auto& scene = prepared.scene;
+        const auto& style = prepared.style;
+        const auto& commands = prepared.commands;
         auto svg = illustration_detail::render_svg(
             scene, style, commands, input.svg.value_or(contracts::MeshIllustrationSvgOptions{}));
         result->svg = std::move(svg);

@@ -43,7 +43,10 @@
       "oracle": "generated_schema",
       "expected": "accept",
       "comparison": "exact",
-      "excluded_fields": ["/result/timings/model_read_ms", "/result/timings/bounds_ms"],
+      "excluded_fields": [
+        "/result/timings/model_read_ms",
+        "/result/timings/bounds_ms"
+      ],
       "tolerance": null
     },
     {
@@ -98,32 +101,104 @@
       "oracle": "step_topology_ipc_pair_matrix",
       "expected": "accept",
       "request_pairs": [
-        ["geometry.step_topology.open.a0", "geometry.step_topology.open.request.a0"],
-        ["geometry.step_topology.close.a0", "geometry.step_topology.close.request.a0"],
-        ["geometry.step_topology.inspect.a0", "geometry.step_topology.inspect.request.a0"],
-        ["geometry.step_topology.render.a0", "geometry.step_topology.render.request.a0"],
-        ["geometry.step_topology.resolve_hit.a0", "geometry.step_topology.resolve_hit.request.a0"],
-        ["geometry.step_topology.apply_logical_groups.a0", "geometry.step_topology.apply_logical_groups.request.a0"],
-        ["geometry.step_topology.apply_metadata_probes.a0", "geometry.step_topology.apply_metadata_probes.request.a0"],
-        ["geometry.step_topology.checkpoint_edit_journal.a0", "geometry.step_topology.checkpoint_edit_journal.request.a0"],
-        ["geometry.step_topology.apply_hierarchy.a0", "geometry.step_topology.apply_hierarchy.request.a0"],
-        ["geometry.step_topology.save.a0", "geometry.step_topology.save.request.a0"],
-        ["geometry.step_topology.restore.a0", "geometry.step_topology.restore.request.a0"],
-        ["geometry.step_topology.analyze_recovery.a0", "geometry.step_topology.analyze_recovery.request.a0"]
+        [
+          "geometry.step_topology.open.a0",
+          "geometry.step_topology.open.request.a0"
+        ],
+        [
+          "geometry.step_topology.close.a0",
+          "geometry.step_topology.close.request.a0"
+        ],
+        [
+          "geometry.step_topology.inspect.a0",
+          "geometry.step_topology.inspect.request.a0"
+        ],
+        [
+          "geometry.step_topology.render.a0",
+          "geometry.step_topology.render.request.a0"
+        ],
+        [
+          "geometry.step_topology.resolve_hit.a0",
+          "geometry.step_topology.resolve_hit.request.a0"
+        ],
+        [
+          "geometry.step_topology.apply_logical_groups.a0",
+          "geometry.step_topology.apply_logical_groups.request.a0"
+        ],
+        [
+          "geometry.step_topology.apply_metadata_probes.a0",
+          "geometry.step_topology.apply_metadata_probes.request.a0"
+        ],
+        [
+          "geometry.step_topology.checkpoint_edit_journal.a0",
+          "geometry.step_topology.checkpoint_edit_journal.request.a0"
+        ],
+        [
+          "geometry.step_topology.apply_hierarchy.a0",
+          "geometry.step_topology.apply_hierarchy.request.a0"
+        ],
+        [
+          "geometry.step_topology.save.a0",
+          "geometry.step_topology.save.request.a0"
+        ],
+        [
+          "geometry.step_topology.restore.a0",
+          "geometry.step_topology.restore.request.a0"
+        ],
+        [
+          "geometry.step_topology.analyze_recovery.a0",
+          "geometry.step_topology.analyze_recovery.request.a0"
+        ]
       ],
       "result_pairs": [
-        ["geometry.step_topology.open.a0", "geometry.step_topology.open.result.a0"],
-        ["geometry.step_topology.close.a0", "geometry.step_topology.close.result.a0"],
-        ["geometry.step_topology.inspect.a0", "geometry.step_topology.inspect.result.a0"],
-        ["geometry.step_topology.render.a0", "geometry.step_topology.render.result.a0"],
-        ["geometry.step_topology.resolve_hit.a0", "geometry.step_topology.resolve_hit.result.a0"],
-        ["geometry.step_topology.apply_logical_groups.a0", "geometry.step_topology.apply_logical_groups.result.a0"],
-        ["geometry.step_topology.apply_metadata_probes.a0", "geometry.step_topology.apply_metadata_probes.result.a0"],
-        ["geometry.step_topology.checkpoint_edit_journal.a0", "geometry.step_topology.checkpoint_edit_journal.result.a0"],
-        ["geometry.step_topology.apply_hierarchy.a0", "geometry.step_topology.apply_hierarchy.result.a0"],
-        ["geometry.step_topology.save.a0", "geometry.step_topology.save.result.a0"],
-        ["geometry.step_topology.restore.a0", "geometry.step_topology.restore.result.a0"],
-        ["geometry.step_topology.analyze_recovery.a0", "geometry.step_topology.analyze_recovery.result.a0"]
+        [
+          "geometry.step_topology.open.a0",
+          "geometry.step_topology.open.result.a0"
+        ],
+        [
+          "geometry.step_topology.close.a0",
+          "geometry.step_topology.close.result.a0"
+        ],
+        [
+          "geometry.step_topology.inspect.a0",
+          "geometry.step_topology.inspect.result.a0"
+        ],
+        [
+          "geometry.step_topology.render.a0",
+          "geometry.step_topology.render.result.a0"
+        ],
+        [
+          "geometry.step_topology.resolve_hit.a0",
+          "geometry.step_topology.resolve_hit.result.a0"
+        ],
+        [
+          "geometry.step_topology.apply_logical_groups.a0",
+          "geometry.step_topology.apply_logical_groups.result.a0"
+        ],
+        [
+          "geometry.step_topology.apply_metadata_probes.a0",
+          "geometry.step_topology.apply_metadata_probes.result.a0"
+        ],
+        [
+          "geometry.step_topology.checkpoint_edit_journal.a0",
+          "geometry.step_topology.checkpoint_edit_journal.result.a0"
+        ],
+        [
+          "geometry.step_topology.apply_hierarchy.a0",
+          "geometry.step_topology.apply_hierarchy.result.a0"
+        ],
+        [
+          "geometry.step_topology.save.a0",
+          "geometry.step_topology.save.result.a0"
+        ],
+        [
+          "geometry.step_topology.restore.a0",
+          "geometry.step_topology.restore.result.a0"
+        ],
+        [
+          "geometry.step_topology.analyze_recovery.a0",
+          "geometry.step_topology.analyze_recovery.result.a0"
+        ]
       ],
       "comparison": "exact",
       "excluded_fields": [],
@@ -269,7 +344,10 @@
       "oracle": "generated_schema",
       "expected": "accept",
       "comparison": "exact",
-      "excluded_fields": ["/timings/model_read_ms", "/timings/bounds_ms"],
+      "excluded_fields": [
+        "/timings/model_read_ms",
+        "/timings/bounds_ms"
+      ],
       "tolerance": null
     },
     {
@@ -280,7 +358,10 @@
       "oracle": "generated_schema",
       "expected": "reject",
       "comparison": "exact",
-      "excluded_fields": ["/timings/model_read_ms", "/timings/bounds_ms"],
+      "excluded_fields": [
+        "/timings/model_read_ms",
+        "/timings/bounds_ms"
+      ],
       "tolerance": null
     },
     {
@@ -311,9 +392,15 @@
       "file": "cases/options-empty.json",
       "lane": "semantic",
       "oracle": "presence_projection",
-      "fields": ["format", "model_transform"],
+      "fields": [
+        "format",
+        "model_transform"
+      ],
       "expected": "accept",
-      "expected_value": { "format": "absent", "model_transform": "absent" },
+      "expected_value": {
+        "format": "absent",
+        "model_transform": "absent"
+      },
       "comparison": "exact",
       "excluded_fields": [],
       "tolerance": null
@@ -324,9 +411,15 @@
       "file": "cases/options-explicit-default.json",
       "lane": "semantic",
       "oracle": "presence_projection",
-      "fields": ["format", "model_transform"],
+      "fields": [
+        "format",
+        "model_transform"
+      ],
       "expected": "accept",
-      "expected_value": { "format": "present", "model_transform": "absent" },
+      "expected_value": {
+        "format": "present",
+        "model_transform": "absent"
+      },
       "comparison": "exact",
       "excluded_fields": [],
       "tolerance": null
@@ -337,9 +430,15 @@
       "file": "cases/options-canonical.json",
       "lane": "semantic",
       "oracle": "presence_projection",
-      "fields": ["format", "model_transform"],
+      "fields": [
+        "format",
+        "model_transform"
+      ],
       "expected": "accept",
-      "expected_value": { "format": "present", "model_transform": "present" },
+      "expected_value": {
+        "format": "present",
+        "model_transform": "present"
+      },
       "comparison": "exact",
       "excluded_fields": [],
       "tolerance": null
@@ -451,7 +550,12 @@
       "oracle": "generated_schema",
       "expected": "accept",
       "comparison": "exact",
-      "excluded_fields": ["/timings/step_read_ms", "/timings/mesh_ms", "/timings/hlr_ms", "/timings/extract_ms"],
+      "excluded_fields": [
+        "/timings/step_read_ms",
+        "/timings/mesh_ms",
+        "/timings/hlr_ms",
+        "/timings/extract_ms"
+      ],
       "tolerance": null
     },
     {
@@ -614,7 +718,9 @@
       "id": "semantic.step-topology-cross-page-duplicate.reject",
       "contract_identity": "geometry.step_topology.inspect.result.a0",
       "file": "cases/step-topology-inspect-cross-page-duplicate-page-2.json",
-      "prior_pages": ["cases/step-topology-inspect-cross-page-duplicate-page-1.json"],
+      "prior_pages": [
+        "cases/step-topology-inspect-cross-page-duplicate-page-1.json"
+      ],
       "lane": "semantic",
       "oracle": "step_topology_inspection",
       "expected": "reject",
@@ -626,7 +732,9 @@
       "id": "semantic.step-topology-cross-page-edge.reject",
       "contract_identity": "geometry.step_topology.inspect.result.a0",
       "file": "cases/step-topology-inspect-cross-page-edge-page-2.json",
-      "prior_pages": ["cases/step-topology-inspect-cross-page-edge-page-1.json"],
+      "prior_pages": [
+        "cases/step-topology-inspect-cross-page-edge-page-1.json"
+      ],
       "lane": "semantic",
       "oracle": "step_topology_inspection",
       "expected": "reject",
@@ -638,7 +746,9 @@
       "id": "semantic.step-topology-over-count-before-terminal.reject",
       "contract_identity": "geometry.step_topology.inspect.result.a0",
       "file": "cases/step-topology-inspect-over-count-page-2.json",
-      "prior_pages": ["cases/step-topology-inspect-over-count-page-1.json"],
+      "prior_pages": [
+        "cases/step-topology-inspect-over-count-page-1.json"
+      ],
       "lane": "semantic",
       "oracle": "step_topology_inspection",
       "expected": "reject",
@@ -650,7 +760,9 @@
       "id": "semantic.step-topology-empty-continuation.reject",
       "contract_identity": "geometry.step_topology.inspect.result.a0",
       "file": "cases/step-topology-inspect-empty-continuation-page-2.json",
-      "prior_pages": ["cases/step-topology-inspect-empty-continuation-page-1.json"],
+      "prior_pages": [
+        "cases/step-topology-inspect-empty-continuation-page-1.json"
+      ],
       "lane": "semantic",
       "oracle": "step_topology_inspection",
       "expected": "reject",
@@ -1056,7 +1168,13 @@
       "file": "cases/step-topology-checkpoint-valid.json",
       "lane": "semantic",
       "oracle": "step_topology_checkpoint_attachment",
-      "attachments": [{"name":"wrong","media_type":"application/vnd.wavenumber.geometer.step-topology-edit-journal","file":"cases/step-topology-render-attachment.bin"}],
+      "attachments": [
+        {
+          "name": "wrong",
+          "media_type": "application/vnd.wavenumber.geometer.step-topology-edit-journal",
+          "file": "cases/step-topology-render-attachment.bin"
+        }
+      ],
       "expected": "reject",
       "comparison": "exact",
       "excluded_fields": [],
@@ -1068,7 +1186,13 @@
       "file": "cases/step-topology-checkpoint-valid.json",
       "lane": "semantic",
       "oracle": "step_topology_checkpoint_attachment",
-      "attachments": [{"name":"edit_journal","media_type":"application/octet-stream","file":"cases/step-topology-render-attachment.bin"}],
+      "attachments": [
+        {
+          "name": "edit_journal",
+          "media_type": "application/octet-stream",
+          "file": "cases/step-topology-render-attachment.bin"
+        }
+      ],
       "expected": "reject",
       "comparison": "exact",
       "excluded_fields": [],
@@ -1080,7 +1204,13 @@
       "file": "cases/step-topology-checkpoint-bytes-mismatch.json",
       "lane": "semantic",
       "oracle": "step_topology_checkpoint_attachment",
-      "attachments": [{"name":"edit_journal","media_type":"application/vnd.wavenumber.geometer.step-topology-edit-journal","file":"cases/step-topology-render-attachment.bin"}],
+      "attachments": [
+        {
+          "name": "edit_journal",
+          "media_type": "application/vnd.wavenumber.geometer.step-topology-edit-journal",
+          "file": "cases/step-topology-render-attachment.bin"
+        }
+      ],
       "expected": "reject",
       "comparison": "exact",
       "excluded_fields": [],
@@ -1092,7 +1222,18 @@
       "file": "cases/step-topology-checkpoint-valid.json",
       "lane": "semantic",
       "oracle": "step_topology_checkpoint_attachment",
-      "attachments": [{"name":"edit_journal","media_type":"application/vnd.wavenumber.geometer.step-topology-edit-journal","file":"cases/step-topology-render-attachment.bin"},{"name":"extra","media_type":"application/vnd.wavenumber.geometer.step-topology-edit-journal","file":"cases/step-topology-render-attachment.bin"}],
+      "attachments": [
+        {
+          "name": "edit_journal",
+          "media_type": "application/vnd.wavenumber.geometer.step-topology-edit-journal",
+          "file": "cases/step-topology-render-attachment.bin"
+        },
+        {
+          "name": "extra",
+          "media_type": "application/vnd.wavenumber.geometer.step-topology-edit-journal",
+          "file": "cases/step-topology-render-attachment.bin"
+        }
+      ],
       "expected": "reject",
       "comparison": "exact",
       "excluded_fields": [],
@@ -1193,7 +1334,13 @@
       "lane": "semantic",
       "oracle": "step_topology_save_attachments",
       "context_file": "cases/step-topology-save-request-xbf.json",
-      "attachments": [{"name":"state_artifact","media_type":"application/vnd.opencascade.xbf","file":"cases/step-topology-render-attachment.bin"}],
+      "attachments": [
+        {
+          "name": "state_artifact",
+          "media_type": "application/vnd.opencascade.xbf",
+          "file": "cases/step-topology-render-attachment.bin"
+        }
+      ],
       "expected": "accept",
       "comparison": "exact",
       "excluded_fields": [],
@@ -1206,7 +1353,13 @@
       "lane": "semantic",
       "oracle": "step_topology_save_attachments",
       "context_file": "cases/step-topology-save-request-xbf.json",
-      "attachments": [{"name":"state_artifact","media_type":"application/octet-stream","file":"cases/step-topology-render-attachment.bin"}],
+      "attachments": [
+        {
+          "name": "state_artifact",
+          "media_type": "application/octet-stream",
+          "file": "cases/step-topology-render-attachment.bin"
+        }
+      ],
       "expected": "reject",
       "comparison": "exact",
       "excluded_fields": [],
@@ -1219,7 +1372,13 @@
       "lane": "semantic",
       "oracle": "step_topology_save_attachments",
       "context_file": "cases/step-topology-save-request-xbf.json",
-      "attachments": [{"name":"state_artifact","media_type":"application/vnd.opencascade.xbf","file":"cases/step-topology-render-attachment.bin"}],
+      "attachments": [
+        {
+          "name": "state_artifact",
+          "media_type": "application/vnd.opencascade.xbf",
+          "file": "cases/step-topology-render-attachment.bin"
+        }
+      ],
       "expected": "reject",
       "comparison": "exact",
       "excluded_fields": [],
@@ -1232,7 +1391,13 @@
       "lane": "semantic",
       "oracle": "step_topology_save_attachments",
       "context_file": "cases/step-topology-save-request-step-ap242.json",
-      "attachments": [{"name":"state_artifact","media_type":"application/vnd.opencascade.xbf","file":"cases/step-topology-render-attachment.bin"}],
+      "attachments": [
+        {
+          "name": "state_artifact",
+          "media_type": "application/vnd.opencascade.xbf",
+          "file": "cases/step-topology-render-attachment.bin"
+        }
+      ],
       "expected": "reject",
       "comparison": "exact",
       "excluded_fields": [],
@@ -1255,7 +1420,18 @@
       "file": "cases/step-topology-restore-request-valid.json",
       "lane": "semantic",
       "oracle": "step_topology_restore_attachments",
-      "attachments": [{"name":"source","media_type":"application/step","file":"cases/step-topology-render-attachment.bin"},{"name":"state_artifact","media_type":"application/vnd.wavenumber.geometer.step-topology-edit-journal","file":"cases/step-topology-render-attachment.bin"}],
+      "attachments": [
+        {
+          "name": "source",
+          "media_type": "application/step",
+          "file": "cases/step-topology-render-attachment.bin"
+        },
+        {
+          "name": "state_artifact",
+          "media_type": "application/vnd.wavenumber.geometer.step-topology-edit-journal",
+          "file": "cases/step-topology-render-attachment.bin"
+        }
+      ],
       "expected": "accept",
       "comparison": "exact",
       "excluded_fields": [],
@@ -1267,7 +1443,18 @@
       "file": "cases/step-topology-restore-request-replay-source-mismatch.json",
       "lane": "semantic",
       "oracle": "step_topology_restore_attachments",
-      "attachments": [{"name":"source","media_type":"application/step","file":"cases/step-topology-render-attachment.bin"},{"name":"state_artifact","media_type":"application/vnd.wavenumber.geometer.step-topology-edit-journal","file":"cases/step-topology-render-attachment.bin"}],
+      "attachments": [
+        {
+          "name": "source",
+          "media_type": "application/step",
+          "file": "cases/step-topology-render-attachment.bin"
+        },
+        {
+          "name": "state_artifact",
+          "media_type": "application/vnd.wavenumber.geometer.step-topology-edit-journal",
+          "file": "cases/step-topology-render-attachment.bin"
+        }
+      ],
       "expected": "reject",
       "comparison": "exact",
       "excluded_fields": [],
@@ -1279,7 +1466,18 @@
       "file": "cases/step-topology-restore-request-valid.json",
       "lane": "semantic",
       "oracle": "step_topology_restore_attachments",
-      "attachments": [{"name":"source","media_type":"model/step","file":"cases/step-topology-render-attachment.bin"},{"name":"state_artifact","media_type":"application/vnd.wavenumber.geometer.step-topology-edit-journal","file":"cases/step-topology-render-attachment.bin"}],
+      "attachments": [
+        {
+          "name": "source",
+          "media_type": "model/step",
+          "file": "cases/step-topology-render-attachment.bin"
+        },
+        {
+          "name": "state_artifact",
+          "media_type": "application/vnd.wavenumber.geometer.step-topology-edit-journal",
+          "file": "cases/step-topology-render-attachment.bin"
+        }
+      ],
       "expected": "accept",
       "comparison": "exact",
       "excluded_fields": [],
@@ -1291,7 +1489,18 @@
       "file": "cases/step-topology-restore-request-valid.json",
       "lane": "semantic",
       "oracle": "step_topology_restore_attachments",
-      "attachments": [{"name":"source","media_type":"application/octet-stream","file":"cases/step-topology-render-attachment.bin"},{"name":"state_artifact","media_type":"application/vnd.wavenumber.geometer.step-topology-edit-journal","file":"cases/step-topology-render-attachment.bin"}],
+      "attachments": [
+        {
+          "name": "source",
+          "media_type": "application/octet-stream",
+          "file": "cases/step-topology-render-attachment.bin"
+        },
+        {
+          "name": "state_artifact",
+          "media_type": "application/vnd.wavenumber.geometer.step-topology-edit-journal",
+          "file": "cases/step-topology-render-attachment.bin"
+        }
+      ],
       "expected": "reject",
       "comparison": "exact",
       "excluded_fields": [],
@@ -1509,6 +1718,50 @@
       "comparison": "exact",
       "excluded_fields": [],
       "tolerance": null
+    },
+    {
+      "id": "schema.model-tessellation-default.accept",
+      "contract_identity": "geometry.model_tessellation.request.a0",
+      "file": "cases/model-tessellation-default.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "accept",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "schema.model-tessellation-strict.accept",
+      "contract_identity": "geometry.model_tessellation.request.a0",
+      "file": "cases/model-tessellation-strict.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "accept",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "schema.model-tessellation-partial.accept",
+      "contract_identity": "geometry.model_tessellation.request.a0",
+      "file": "cases/model-tessellation-partial.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "accept",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "schema.model-tessellation-invalid.reject",
+      "contract_identity": "geometry.model_tessellation.request.a0",
+      "file": "cases/model-tessellation-invalid.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
     }
   ],
   "operation_vectors": [
@@ -1528,7 +1781,10 @@
       "expected": "success",
       "expected_result_file": "cases/operation-model-bounds-identity-result.json",
       "comparison": "structural_numeric_tolerance",
-      "excluded_fields": ["/result/timings/model_read_ms", "/result/timings/bounds_ms"],
+      "excluded_fields": [
+        "/result/timings/model_read_ms",
+        "/result/timings/bounds_ms"
+      ],
       "computed_fields": [
         {
           "path": "/result/source/hash",
@@ -1537,9 +1793,17 @@
           "comparison": "exact"
         }
       ],
-      "tolerance": { "absolute": 1e-9, "relative": 1e-12 },
+      "tolerance": {
+        "absolute": 1e-09,
+        "relative": 1e-12
+      },
       "equivalence_group": "model_bounds.sot23.identity",
-      "runtimes": ["native_c_abi", "browser_wasm", "executable_ipc", "python_compat"]
+      "runtimes": [
+        "native_c_abi",
+        "browser_wasm",
+        "executable_ipc",
+        "python_compat"
+      ]
     },
     {
       "id": "diagnostic.model-bounds.non-affine-transform",
@@ -1562,10 +1826,16 @@
         "retryable": false
       },
       "comparison": "exact",
-      "excluded_fields": ["/diagnostics/0/message"],
+      "excluded_fields": [
+        "/diagnostics/0/message"
+      ],
       "computed_fields": [],
       "tolerance": null,
-      "runtimes": ["native_c_abi", "browser_wasm", "executable_ipc"]
+      "runtimes": [
+        "native_c_abi",
+        "browser_wasm",
+        "executable_ipc"
+      ]
     }
   ]
 }

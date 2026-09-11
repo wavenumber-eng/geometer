@@ -1,6 +1,7 @@
 #include "geometer/model_tessellation.h"
 #include "model_tessellation_status.h"
 
+#include <BRepBuilderAPI_MakeEdge.hxx>
 #include <STEPConstruct_ExternRefs.hxx>
 #include <STEPControl_Reader.hxx>
 #include <STEPControl_Writer.hxx>
@@ -35,6 +36,65 @@ void check_status_policy()
                      IMeshData_UnorientedWire, IMeshData_TooFewPoints, IMeshData_Outdated,
                      IMeshData_UserBreak})
         require(!meshing_succeeded(true, flag | IMeshData_ReMesh), "meshing problem flag accepted");
+    for (int flag : {IMeshData_OpenWire, IMeshData_SelfIntersectingWire, IMeshData_Failure,
+                     IMeshData_UnorientedWire, IMeshData_TooFewPoints})
+        require(meshing_succeeded(true, flag | IMeshData_ReMesh, true),
+                "partial face failure rejected");
+    for (int flag : std::vector<int>{IMeshData_Outdated, IMeshData_UserBreak, 0x200})
+        require(!meshing_succeeded(true, flag | IMeshData_Failure, true),
+                "unsafe partial mesh accepted");
+    require(!meshing_succeeded(false, IMeshData_Failure, true), "unfinished partial mesh accepted");
+}
+
+void check_partial_connector()
+{
+    std::ifstream file(std::string(GEOMETER_TEST_SOURCE_DIR) +
+                           "/tests/fixtures/step/embedded_models/GT-USB-7010C.STEP",
+                       std::ios::binary);
+    require(static_cast<bool>(file), "partial connector fixture missing");
+    const std::vector<unsigned char> data{std::istreambuf_iterator<char>(file), {}};
+    geometer::contracts::ModelTessellationRequestA0 options;
+    options.linear_deflection_mm = 0.01;
+    geometer::contracts::MeshCollectionA0 meshes;
+    geometer::Status status;
+    std::vector<std::string> warnings;
+    require(geometer::model_tessellation_from_bytes(data.data(), data.size(), options, &meshes,
+                                                    &status, &warnings) == 0,
+            "default partial rejected");
+    require(!meshes.meshes.empty() && warnings.size() >= 2,
+            "partial result lacks geometry or warning");
+    require(warnings[0].find("Partial STEP tessellation") != std::string::npos, "missing summary");
+    options.allow_partial = false;
+    require(geometer::model_tessellation_from_bytes(data.data(), data.size(), options, &meshes,
+                                                    &status, &warnings) != 0,
+            "strict request succeeded");
+    require(meshes.meshes.empty() && warnings.empty(), "failure leaked partial outputs");
+    require(status.message.find("OCCT status flags=") != std::string::npos,
+            "missing native status");
+    options.allow_partial = true;
+    options.max_triangles = 1;
+    require(geometer::model_tessellation_from_bytes(data.data(), data.size(), options, &meshes,
+                                                    &status, &warnings) == 102,
+            "partial ignored limit");
+    require(meshes.meshes.empty() && warnings.empty(), "limit failure leaked outputs");
+}
+
+void reject_empty_surface_output()
+{
+    const auto edge = BRepBuilderAPI_MakeEdge(gp_Pnt(0, 0, 0), gp_Pnt(1, 0, 0)).Shape();
+    STEPControl_Writer writer;
+    require(writer.Transfer(edge, STEPControl_AsIs) == IFSelect_RetDone, "edge transfer failed");
+    std::ostringstream stream;
+    require(writer.WriteStream(stream) == IFSelect_RetDone, "edge STEP write failed");
+    const auto data = stream.str();
+    geometer::contracts::MeshCollectionA0 meshes;
+    geometer::Status status;
+    std::vector<std::string> warnings;
+    require(
+        geometer::model_tessellation_from_bytes(reinterpret_cast<const unsigned char*>(data.data()),
+                                                data.size(), {}, &meshes, &status, &warnings) != 0,
+        "partial request accepted no usable faces");
+    require(meshes.meshes.empty() && warnings.empty(), "empty output returned partial success");
 }
 
 struct RestoreUnits
@@ -119,6 +179,8 @@ int main()
     try
     {
         check_status_policy();
+        check_partial_connector();
+        reject_empty_surface_output();
         check_unit_independence();
         reject_external_reference();
     }

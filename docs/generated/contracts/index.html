@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <meta name="wn-catalog-sha256" content="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56">
   <title>Geometer Contract Reference</title>
   <link rel="stylesheet" href="../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="index">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56" data-page-kind="index">
 <main>
 <header>
   <p class="page-type">Generated contract reference</p>
@@ -27,7 +27,7 @@
 </nav>
 <aside class="callout"><strong>Generated reference.</strong> Authored TypeSpec owns promoted structure; this site is a deterministic navigation and review artifact.</aside>
 <section>
-  <h2>Contract roots <span class="tag">48</span></h2>
+  <h2>Contract roots <span class="tag">52</span></h2>
   <div class="grid"><article class="panel">
   <h3><a href="contracts/geometry-analytic-planar-boolean-batch-request-a0.html"><code>geometry.analytic_planar_boolean_batch.request.a0</code></a></h3>
   <p>Logical request projected to the governed packed request attachment.</p>
@@ -111,6 +111,33 @@
 <article class="panel">
   <h3><a href="contracts/geometry-mesh-illustration-style-a0.html"><code>geometry.mesh_illustration.style.a0</code></a></h3>
   <p>Presence-preserving illustration style. Package defaults apply to absent fields.</p>
+  <p><span class="tag">model</span> <span class="status">pilot_candidate</span></p><p>See interface support policy; promotion is not maturity</p>
+</article>
+<article class="panel">
+  <h3><a href="contracts/geometry-mesh-illustration-geometry-a0.html"><code>geometry.mesh_illustration.geometry.a0</code></a></h3>
+  <p>Shaded, fused drawing geometry; no SVG/XML/path strings and no original 3D mesh.
+Coordinates use X=dot(world,right) with mirror_x applied and Y=dot(world,up).
+right/up are the orthonormal basis derived from view. Origin is world origin.
+Bounds include valid triangles before culling, exclude supplied HLR, and are
+[-1,-1]..[1,1] when all triangles skip. Arrays establish painter order:
+surfaces/layers, then diagnostic raw lines, then HLR detail, then HLR outline.
+Global limits: 2,000,000 layers and rings, 6,000,000 ring points, 1,000,000 lines.
+stats.commands counts logical draws, not SVG elements after line chaining.</p>
+  <p><span class="tag">model</span> <span class="status">pilot_candidate</span></p><p>See interface support policy; promotion is not maturity</p>
+</article>
+<article class="panel">
+  <h3><a href="contracts/geometry-mesh-illustration-geometry-input-a0.html"><code>geometry.mesh_illustration_geometry.input.a0</code></a></h3>
+  <p>Direct value input. Mesh coordinates and matrix translations must be millimeters.</p>
+  <p><span class="tag">model</span> <span class="status">pilot_candidate</span></p><p>See interface support policy; promotion is not maturity</p>
+</article>
+<article class="panel">
+  <h3><a href="contracts/geometry-mesh-illustration-geometry-request-a0.html"><code>geometry.mesh_illustration_geometry.request.a0</code></a></h3>
+  <p>Reuses bounded mesh_collection and optional matching visible HLR attachments.</p>
+  <p><span class="tag">model</span> <span class="status">pilot_candidate</span></p><p>See interface support policy; promotion is not maturity</p>
+</article>
+<article class="panel">
+  <h3><a href="contracts/geometry-mesh-illustration-geometry-result-a0.html"><code>geometry.mesh_illustration_geometry.result.a0</code></a></h3>
+  <p>Small transport result; statistics/warnings must match the geometry attachment.</p>
   <p><span class="tag">model</span> <span class="status">pilot_candidate</span></p><p>See interface support policy; promotion is not maturity</p>
 </article>
 <article class="panel">
@@ -278,9 +305,10 @@ visibility from arbitrary supplied segments. Maximum 1,000,000 segments.</p>
 </article></div>
 </section>
 <section>
-  <h2>Operations <span class="tag">18</span></h2>
+  <h2>Operations <span class="tag">19</span></h2>
   <table><thead><tr><th>Identity</th><th>Request</th><th>Result</th><th>Lifecycle</th></tr></thead><tbody><tr><td><a href="operations/geometry-analytic-planar-boolean-batch-a0.html"><code>geometry.analytic_planar_boolean_batch.a0</code></a></td><td>geometry.analytic_planar_boolean_batch.request.a0</td><td>geometry.analytic_planar_boolean_batch.result.a0</td><td>pre_release_matz_candidate; experimental_not_production_ready</td></tr>
 <tr><td><a href="operations/geometry-mesh-hlr-projection-a0.html"><code>geometry.mesh_hlr_projection.a0</code></a></td><td>geometry.hlr_projection.options.a0</td><td>geometry.hlr_projection.result.a0</td><td>pilot_candidate; See interface support policy; promotion is not maturity</td></tr>
+<tr><td><a href="operations/geometry-mesh-illustration-geometry-a0.html"><code>geometry.mesh_illustration_geometry.a0</code></a></td><td>geometry.mesh_illustration_geometry.request.a0</td><td>geometry.mesh_illustration_geometry.result.a0</td><td>pilot_candidate; See interface support policy; promotion is not maturity</td></tr>
 <tr><td><a href="operations/geometry-mesh-illustration-a0.html"><code>geometry.mesh_illustration.a0</code></a></td><td>geometry.mesh_illustration.request.a0</td><td>geometry.mesh_illustration.result.a0</td><td>pilot_candidate; See interface support policy; promotion is not maturity</td></tr>
 <tr><td><a href="operations/geometry-model-bounds-a0.html"><code>geometry.model_bounds.a0</code></a></td><td>geometry.model_bounds.options.a0</td><td>geometry.model_bounds.a0</td><td>promoted; See interface support policy; promotion is not maturity</td></tr>
 <tr><td><a href="operations/geometry-model-hlr-projection-a0.html"><code>geometry.model_hlr_projection.a0</code></a></td><td>geometry.hlr_projection.options.a0</td><td>geometry.hlr_projection.result.a0</td><td>pilot_candidate; See interface support policy; promotion is not maturity</td></tr>
@@ -300,7 +328,7 @@ visibility from arbitrary supplied segments. Maximum 1,000,000 segments.</p>
 </section>
 <section>
   <h2>Generated inputs</h2>
-  <div class="panel"><p>Catalog <code>wn.geometer.contract_catalog:a0</code></p><p>SHA-256 <code>078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d</code></p><p><a href="../../../contracts/geometer/generated/wn_geometer_contract_catalog.a0.json">Normalized catalog JSON</a></p></div>
+  <div class="panel"><p>Catalog <code>wn.geometer.contract_catalog:a0</code></p><p>SHA-256 <code>2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56</code></p><p><a href="../../../contracts/geometer/generated/wn_geometer_contract_catalog.a0.json">Normalized catalog JSON</a></p></div>
 </section>
 </main>
 </body>

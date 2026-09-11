@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <meta name="wn-catalog-sha256" content="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56">
   <title>REQ-010: Fast HLR And Illustration Interfaces — Geometer</title>
   <link rel="stylesheet" href="../../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/geometer/requirements/geometer-req-010-fast_hlr_and_illustration.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="req-010-fast-hlr-and-illustration-interfaces">REQ-010: Fast HLR And Illustration Interfaces</h1></header>
 <h2 id="summary">Summary</h2>
@@ -50,6 +50,15 @@ validate native/WASM equivalence; preserve downstream compatibility
 snapshots; and keep the native/WASM benchmark reproducible.</li>
 <li>Keep PCB, documentation-generator, visualizer, and other application style
 policy outside the generic Geometer implementation.</li>
+<li>Provide native SVG illustration and additive illustration drawing geometry
+through shared preparation, styling, fusion and HLR composition. The geometry
+value API must avoid SVG construction and output serialization; the IPC API
+must carry bounded geometry JSON in a declared attachment. Retain owning
+ordered fills, ring holes, opacity, visible linework and millimeter coordinates.</li>
+<li>Preserve existing numeric/SVG output while optimizing illustration-specific
+integer formatting. Qualify native and TypeScript geometry consumers, typed
+Python/Rust IPC helpers and full WASM dispatch; do not advertise this operation
+for the planar-only WASM target.</li>
 </ol>
 
 </main>

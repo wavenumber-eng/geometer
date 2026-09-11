@@ -174,17 +174,33 @@ std::string js_number(double value, bool precision12)
 
 std::string number_text(double value)
 {
+    // These exactly representable integers already bypass precision rounding in
+    // js_number and use plain decimal notation in ECMAScript. Avoid searching
+    // and parsing decimal candidates for quantized geometry keys/SVG points.
+    if (std::isfinite(value) && std::trunc(value) == value && std::abs(value) < 1e12)
+        return std::to_string(static_cast<long long>(value));
     return js_number(value, true);
 }
 
 std::string integer_text(double value)
 {
-    return js_number(js_round(value), false);
+    const double rounded = js_round(value);
+    // Check the bound before casting; preserve JS halfway rounding and normalize
+    // negative zero. Larger values retain the exact decimal/exponent fallback.
+    if (std::isfinite(rounded) && std::abs(rounded) < 1e12)
+        return std::to_string(static_cast<long long>(rounded));
+    return js_number(rounded, false);
 }
 
 std::string fixed_text(double value)
 {
     finite_result(value);
+    // Exact material endpoints dominate opacity keys. Keep fractional values on
+    // the existing decimal-rounding path, including its halfway behavior.
+    if (value == 0)
+        return "0.000000000000";
+    if (value == 1)
+        return "1.000000000000";
     return rounded_decimal(value, 12, false);
 }
 
@@ -258,8 +274,9 @@ Vec3 transform_normal(const Matrix& m, Vec3 n)
     Vec3 result{(e * i - f * h) * n[0] + (f * g - d * i) * n[1] + (d * h - e * g) * n[2],
                 (c * h - b * i) * n[0] + (a * i - c * g) * n[1] + (b * g - a * h) * n[2],
                 (b * f - c * e) * n[0] + (c * d - a * f) * n[1] + (a * e - b * d) * n[2]};
+    const double sign = determinant_sign(m);
     for (auto& value : result)
-        value *= determinant_sign(m);
+        value *= sign;
     return normalize(result, "Transformed normal");
 }
 void Bounds::include(Vec2 point)
@@ -286,7 +303,14 @@ double signed_area(const Ring& points)
 }
 double signed_area(const std::array<Vec2, 3>& points)
 {
-    return signed_area(Ring(points.begin(), points.end()));
+    double area = 0;
+    for (std::size_t i = 0; i < points.size(); ++i)
+    {
+        const auto& a = points[i];
+        const auto& b = points[(i + 1) % points.size()];
+        area += a[0] * b[1] - b[0] * a[1];
+    }
+    return finite_result(area * .5);
 }
 Bounds projected_bounds(const Triangle& triangle)
 {

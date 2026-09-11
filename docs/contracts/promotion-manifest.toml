@@ -94,13 +94,13 @@ local_ctest_count = 10
 local_rack_passed = 66
 catalog_sha256 = "c93e41a3aa0d64ab4dab905cea82aaeb3b3792155d1f5b2850673567a699d59c"
 vector_manifest_sha256 = "30f697bf63e6ca1ba28e0b9617a061b59a90115ea4ef06a06761d09ea68301a5"
-# Current distributable lock, refreshed for 2026.9.7 from the successful browser
-# job 101514489712 in WASM run 34043554415 (clean source 6c582dbfe623076dc0122f51b4e06b9d144170c1).
+# Current distributable lock, refreshed from the local 2026.9.11 release build.
+# Build provenance is recorded alongside the grouped WASM artifacts.
 # The original model-bounds promotion and historical review evidence above/below remain unchanged.
-browser_js_sha256 = "361d29258cf29ffa7d2a2e1a33cc66f2a95b3a5cfb906535756b445ed9466d42"
+browser_js_sha256 = "8ad3a07cc7c0de578ca0428eb4ea9c13e985c14caaa4edc086e10559685cc2e4"
 historical_reviewed_browser_js_sha256 = "5c9f0594465cdb5732911777e2ca38cc2814c1ef9cb52b7672022df6a50bf937"
 browser_js_lock_remediation = "historical_worktree_bytes_unretained_relocked_to_committed_distributable"
-browser_wasm_sha256 = "36d85d572e643deee19264fbb3b19e924571a12ff2b3585c8ddef4849b6b097f"
+browser_wasm_sha256 = "6cc08d0d16b7f20c7789075c4717831385f34e8d388aee83244bf4892a43807f"
 independent_review = "accepted"
 acceptance_packet = "reviewer-019ffcd8-e5bb-7531-934f-b9e50e73d2b2ab7"
 review_packet = "reviewer-019ffcc0-0b9f-73e9-85e9-928e32f54cfd"
@@ -112,7 +112,7 @@ remediation_probe_disposition = "rejected_cross_platform_source_hash_literal"
 [experimental_evidence.step_topology_slice_a]
 status = "unpromoted_structural_candidate"
 catalog_sha256 = "197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e"
-vector_manifest_sha256 = "d43333ddc5a216fc02eeb909561ee436d211060d308be29c8e1a1de4ac531496"
+vector_manifest_sha256 = "522ea0eada1d34c138848fdf251ea187cb9115a0a4c064bdc5b83f93d2dd584f"
 governed_vector_ids = ["strict.ipc-step-topology-open-envelope.accept", "strict.operation-step-topology-open-outcome.accept", "semantic.step-topology-ipc-envelope-pair-matrix.accept", "semantic.step-topology-ipc-request-operation-mismatch.reject", "semantic.step-topology-operation-result-operation-mismatch.reject", "strict.step-topology-resolve-hit.accept", "schema.step-topology-resolve-hit-unknown-field.reject", "schema.step-topology-resolve-hit-zero-generation.reject", "schema.step-topology-resolve-hit-range.reject", "schema.step-topology-render-attachment-relationship.reject", "schema.step-topology-resolve-hit-result-max.accept", "schema.step-topology-resolve-hit-result-instance-over-max.reject", "schema.step-topology-resolve-hit-result-primitive-over-max.reject", "schema.step-topology-resolve-hit-result-triangle-over-max.reject", "schema.step-topology-inspect-depth-max.accept", "schema.step-topology-inspect-depth-over-max.reject", "semantic.step-topology-stale-generation.reject", "semantic.step-topology-duplicate-target.reject", "semantic.step-topology-inspection-membership.accept", "semantic.step-topology-cross-page-duplicate.reject", "semantic.step-topology-cross-page-edge.reject", "semantic.step-topology-over-count-before-terminal.reject", "semantic.step-topology-empty-continuation.reject", "semantic.step-topology-high-fan-in.accept", "semantic.step-topology-render-attachments.accept", "semantic.step-topology-render-digest-relationship.reject"]
 governed_vector_count = 26
 structural_vector_count = 13
@@ -127,7 +127,7 @@ legacy_gltf_enrichment_reused = false
 [experimental_evidence.step_topology_slice_b]
 status = "unpromoted_structural_candidate"
 catalog_sha256 = "197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e"
-vector_manifest_sha256 = "d43333ddc5a216fc02eeb909561ee436d211060d308be29c8e1a1de4ac531496"
+vector_manifest_sha256 = "522ea0eada1d34c138848fdf251ea187cb9115a0a4c064bdc5b83f93d2dd584f"
 governed_vector_ids = ["strict.step-topology-apply-groups.accept", "semantic.step-topology-apply-groups-uppercase.accept", "schema.step-topology-apply-groups-unknown-field.reject", "semantic.step-topology-apply-groups-short-handle.reject", "schema.step-topology-apply-groups-create-revision.reject", "semantic.step-topology-apply-groups-duplicate-member.reject", "semantic.step-topology-apply-groups-invalid-namespace.reject", "semantic.step-topology-apply-groups-duplicate-create.reject", "strict.step-topology-probe-duplicate-discriminator.reject", "strict.step-topology-probe-duplicate-payload-field.reject", "schema.step-topology-probe-erase-payload.reject", "schema.step-topology-probe-invalid-target-shape.reject", "semantic.step-topology-probe-invalid-key-namespace.reject", "semantic.step-topology-checkpoint-attachment.accept", "semantic.step-topology-checkpoint-digest.reject", "semantic.step-topology-checkpoint-revision.reject", "schema.step-topology-checkpoint-bytes-over-max.reject", "semantic.step-topology-apply-groups-lifecycle.accept", "semantic.step-topology-apply-probes-targets-lifecycle.accept", "semantic.step-topology-apply-groups-result-max-revision.accept", "schema.step-topology-apply-probes-result.accept", "semantic.step-topology-apply-probes-result-groups.accept", "strict.step-topology-checkpoint-request.accept", "semantic.step-topology-probe-invalid-group-namespace.reject", "semantic.step-topology-probe-duplicate-attach.reject", "semantic.step-topology-group-request-aggregate-members-exact.accept", "semantic.step-topology-group-request-aggregate-members.reject", "semantic.step-topology-group-result-aggregate-members-exact.accept", "semantic.step-topology-group-result-aggregate-members.reject", "semantic.step-topology-checkpoint-name.reject", "semantic.step-topology-checkpoint-media.reject", "semantic.step-topology-checkpoint-bytes.reject", "semantic.step-topology-checkpoint-count.reject", "semantic.step-topology-apply-hierarchy.accept", "semantic.step-topology-apply-hierarchy-lifecycle.accept", "semantic.step-topology-apply-hierarchy-uppercase.reject", "semantic.step-topology-apply-hierarchy-revision-max.accept", "schema.step-topology-apply-hierarchy-revision-over-max.reject", "semantic.step-topology-hierarchy-result.accept", "semantic.step-topology-hierarchy-cycle.reject"]
 governed_vector_count = 40
 structural_vector_count = 11
@@ -142,7 +142,7 @@ legacy_gltf_enrichment_reused = false
 [experimental_evidence.step_topology_slice_c]
 status = "unpromoted_structural_candidate"
 catalog_sha256 = "197a92a02c431d012b71cd1a6700ae19ecb6241891dc765095ecbf58f55e147e"
-vector_manifest_sha256 = "d43333ddc5a216fc02eeb909561ee436d211060d308be29c8e1a1de4ac531496"
+vector_manifest_sha256 = "522ea0eada1d34c138848fdf251ea187cb9115a0a4c064bdc5b83f93d2dd584f"
 governed_vector_ids = ["schema.step-topology-save-result.accept", "semantic.step-topology-save-attachments.accept", "semantic.step-topology-save-media.reject", "semantic.step-topology-save-capabilities.reject", "semantic.step-topology-save-request-carrier.reject", "strict.step-topology-restore-request.accept", "semantic.step-topology-restore-attachments.accept", "semantic.step-topology-restore-replay-source.reject", "semantic.step-topology-restore-model-step.accept", "semantic.step-topology-restore-source-media.reject", "semantic.step-topology-restore-result.accept", "semantic.step-topology-restore-result-source.reject", "semantic.step-topology-restore-result-count.reject", "semantic.step-topology-restore-result-recovery.reject", "semantic.step-topology-recovery-request.accept", "semantic.step-topology-recovery-candidates-max.accept", "schema.step-topology-recovery-candidates-over-max.reject", "semantic.step-topology-recovery-missing-authored-id.reject", "semantic.step-topology-recovery-empty-locator.reject", "semantic.step-topology-recovery-uppercase-digest.reject", "semantic.step-topology-recovery-invalid-bounds.reject", "semantic.step-topology-recovery-partial.accept", "semantic.step-topology-recovery-count-mismatch.reject", "semantic.step-topology-recovery-evidence-count.reject", "semantic.step-topology-recovery-resolved-rejected-overlap.reject", "semantic.step-topology-recovery-ambiguous.accept", "semantic.step-topology-recovery-changed.accept", "semantic.step-topology-recovery-unavailable.accept", "schema.step-topology-recovery-empty-group.reject"]
 governed_vector_count = 29
 structural_vector_count = 4
@@ -601,7 +601,7 @@ sha256 = "87e16b5b2453ad1f9263d92953d5741a30780db02eeea0d59d61f10967c4537b"
 status = "vendored"
 
 [c_abi]
-generation = 20260907
+generation = 20260911
 source = "src/cpp/lib/geometer/c_api.h"
 symbols = [
   "geometer_operation_catalog_json",
@@ -1152,6 +1152,42 @@ pilot_required = true
 compatibility = "First production one-shot SVG result identity; Canvas and opaque reusable prepared objects stay direct package APIs."
 
 [[contracts]]
+id = "geometry.mesh_illustration.geometry.a0"
+kind = "result"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/mesh-illustration-geometry-a0.tsp"
+pilot_required = true
+compatibility = "Additive renderer-neutral ordered millimeter geometry; shared illustration semantics without SVG generation."
+
+[[contracts]]
+id = "geometry.mesh_illustration_geometry.input.a0"
+kind = "request"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/mesh-illustration-geometry-a0.tsp"
+pilot_required = true
+compatibility = "Explicit millimeter input for direct geometry-only illustration; existing SVG input unchanged."
+
+[[contracts]]
+id = "geometry.mesh_illustration_geometry.request.a0"
+kind = "request"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/mesh-illustration-geometry-operation-a0.tsp"
+pilot_required = true
+compatibility = "Additive attachment-oriented geometry-only request reusing existing view, preparation and style."
+
+[[contracts]]
+id = "geometry.mesh_illustration_geometry.result.a0"
+kind = "result"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/mesh-illustration-geometry-a0.tsp"
+pilot_required = true
+compatibility = "Bounded JSON geometry attachment descriptor with matching statistics and warnings."
+
+[[contracts]]
 id = "geometry.projection.options.b0"
 kind = "option_patch"
 status = "inventory_only"
@@ -1430,6 +1466,16 @@ cli_names = []
 compatibility_cli_names = []
 
 [[operations]]
+id = "geometry.mesh_illustration_geometry.a0"
+status = "pilot_candidate"
+request_contract = "geometry.mesh_illustration_geometry.request.a0"
+result_contract = "geometry.mesh_illustration_geometry.result.a0"
+input_attachments = ["mesh_collection", "hlr_projection"]
+output_attachments = ["illustration_geometry"]
+cli_names = []
+compatibility_cli_names = []
+
+[[operations]]
 id = "geometry.model_to_glb.a0"
 status = "inventory_only"
 request_contract = "geometry.step_to_glb.options.a0"
@@ -1573,7 +1619,7 @@ performance_qualification_default_request = "tests/contracts/vectors/analytic/cr
 real_board_packet_provenance = "docs/contracts/analytic-real-board-packet-provenance.toml"
 real_board_packet_provenance_sha256 = "3e465a113fb4edb7667b9b76e684337f1062f76e3456b7a5ef0404f82034d7c2"
 real_board_packet_provenance_test = "tests/python/test_contract_promotion_manifest.py"
-real_board_packet_provenance_test_sha256 = "484bbccce351579c1a0913f0f3aa474b4bfba3db9ad09689c7e710df2d8ba35c"
+real_board_packet_provenance_test_sha256 = "40fba61ecd2d76c971a2ac7bc1a1e02bb29f7a2b755dabcd145080591b53c96e"
 real_board_packet_provenance_status = "public_mit_redistribution_authorized_rt_generated_local_qualified_loz_pending"
 real_board_packet_case_ids = ["rt_super_c1_pwr4", "loz_old_man_curved_copper"]
 real_board_packet_source_sha256 = ["90545409b6ce16e0b636fce3176c90b73be301d03f0a9e32c4ab21a42ad14aca", "377d5a05ed24137ea603d11c663d52ae48849b378534b346010936b826eb2375"]
@@ -1652,10 +1698,10 @@ font_license = "docs/design/assets/fonts/JetBrainsMono/OFL.txt"
 font_license_sha256 = "60d55f23c6ce05a81099a762cb67ca2c9b6ea251c7912720998b4c89ebfd4faa"
 distribution = "dist/wasm/demos/analytic-polygon-pour/index.html"
 asset_manifest = "dist/wasm/demos/analytic-polygon-pour/asset-manifest.json"
-distribution_sha256 = "acb13a8a8f0c8ba0c5516eae2c996fca66ccb072a459c49dfe34cf94dc6486e2"
+distribution_sha256 = "e4bafa21b8b155306930b6c7ae014b336f763761c53509561a63899c2f49ed47"
 headers = "dist/wasm/demos/analytic-polygon-pour/_headers"
 standalone_distribution = "dist/wasm/demos/analytic_polygon_pour_demo.html"
-standalone_sha256 = "eea074d2f63bcbc645ee95128378951cc44965db95525bb527c5020b7b4ccadb"
+standalone_sha256 = "eb9ac9606bcad96cee959653b860dc1779d156c1a490b064d51bf16761c63c8e"
 owning_operation = "geometry.analytic_planar_boolean_batch.a0"
 status = "generated_typescript_worker_client_static_and_single_html_file_url_validated_local"
 
@@ -1674,10 +1720,10 @@ font_license = "docs/design/assets/fonts/JetBrainsMono/OFL.txt"
 font_license_sha256 = "60d55f23c6ce05a81099a762cb67ca2c9b6ea251c7912720998b4c89ebfd4faa"
 distribution = "dist/wasm/demos/pcb-polygon-pour/index.html"
 asset_manifest = "dist/wasm/demos/pcb-polygon-pour/asset-manifest.json"
-distribution_sha256 = "3969093a996beceb5f2631fb9d37e42c3c8bda44450c23d5cb3c73a46d50cf71"
+distribution_sha256 = "fc7da20c84564fbe90b55b3ec234faff1ae711c0345ebe074ad6f11f9496c132"
 headers = "dist/wasm/demos/pcb-polygon-pour/_headers"
 standalone_distribution = "dist/wasm/demos/pcb_polygon_pour_demo.html"
-standalone_sha256 = "47caf01bc17b2a0b32775665b0a17eb2076ff912c5c1faa10c29ff69cacc7263"
+standalone_sha256 = "3c95b979cc0843f5f33a17644fa43153c7e8c3d63768b6fe6cfd6c8e442efa93"
 owning_operation = "geometry.analytic_planar_boolean_batch.a0"
 status = "generated_typescript_worker_client_static_and_single_html_file_url_validated_local"
 

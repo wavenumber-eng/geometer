@@ -37,6 +37,7 @@ pub fn mesh_defaults() -> ModelTessellationRequestA0 {
         angular_deflection_rad: Some(0.5),
         root_placement: None,
         max_triangles: None,
+        allow_partial: None,
     }
 }
 

@@ -825,6 +825,14 @@ struct MeshIllustrationStyleA0
     std::optional<double> rim_amount{};
 };
 
+struct MeshIllustrationGeometryRequestA0
+{
+    std::string schema = "geometry.mesh_illustration_geometry.request.a0";
+    MeshIllustrationView view{};
+    std::optional<MeshIllustrationPrepareOptions> prepare{};
+    std::optional<MeshIllustrationStyleA0> style{};
+};
+
 struct MeshIllustrationSvgOptions
 {
     std::optional<std::uint32_t> coordinate_span{};
@@ -853,6 +861,7 @@ struct ModelTessellationRequestA0
     std::optional<double> angular_deflection_rad{};
     std::optional<ModelRootPlacement> root_placement{};
     std::optional<std::uint32_t> max_triangles{};
+    std::optional<bool> allow_partial{};
 };
 
 enum class ModelFormat
@@ -1315,15 +1324,14 @@ struct StepTopologyAnalyzeRecoveryRequestA0
     std::vector<RecoveryGroupRequest> groups{};
 };
 
-using IpcRequestValueA0 =
-    std::variant<MeshIllustrationRequestA0, ModelTessellationRequestA0, ModelBoundsOptionsA0,
-                 HlrProjectionOptionsA0, PackedAttachmentProjectionA0, StepTopologyOpenRequestA0,
-                 StepTopologyCloseRequestA0, StepTopologyInspectRequestA0,
-                 StepTopologyRenderRequestA0, StepTopologyResolveHitRequestA0,
-                 StepTopologyApplyLogicalGroupsRequestA0, StepTopologyApplyMetadataProbesRequestA0,
-                 StepTopologyCheckpointEditJournalRequestA0, StepTopologyApplyHierarchyRequestA0,
-                 StepTopologySaveRequestA0, StepTopologyRestoreRequestA0,
-                 StepTopologyAnalyzeRecoveryRequestA0>;
+using IpcRequestValueA0 = std::variant<
+    MeshIllustrationGeometryRequestA0, MeshIllustrationRequestA0, ModelTessellationRequestA0,
+    ModelBoundsOptionsA0, HlrProjectionOptionsA0, PackedAttachmentProjectionA0,
+    StepTopologyOpenRequestA0, StepTopologyCloseRequestA0, StepTopologyInspectRequestA0,
+    StepTopologyRenderRequestA0, StepTopologyResolveHitRequestA0,
+    StepTopologyApplyLogicalGroupsRequestA0, StepTopologyApplyMetadataProbesRequestA0,
+    StepTopologyCheckpointEditJournalRequestA0, StepTopologyApplyHierarchyRequestA0,
+    StepTopologySaveRequestA0, StepTopologyRestoreRequestA0, StepTopologyAnalyzeRecoveryRequestA0>;
 
 struct IpcRequestA0
 {
@@ -1395,6 +1403,97 @@ struct MeshIllustrationResultA0
 {
     std::string schema = "geometry.mesh_illustration.result.a0";
     std::string svg{};
+    MeshIllustrationRenderStats stats{};
+    std::vector<std::string> warnings{};
+};
+
+struct IllustrationGeometryAttachment
+{
+    std::string attachment = "illustration_geometry";
+    std::string schema = "geometry.mesh_illustration.geometry.a0";
+    std::uint32_t byte_length{};
+    std::string sha256{};
+};
+
+using IllustrationPoint2 = std::vector<double>;
+
+struct IllustrationGeometryBounds
+{
+    IllustrationPoint2 min{};
+    IllustrationPoint2 max{};
+};
+
+struct IllustrationRing
+{
+    std::vector<IllustrationPoint2> points{};
+};
+
+struct IllustrationGeometryLayer
+{
+    std::vector<IllustrationRing> rings{};
+    std::string fill{};
+    double opacity{};
+};
+
+struct IllustrationGeometryLine
+{
+    IllustrationPoint2 start{};
+    IllustrationPoint2 end{};
+    std::string color{};
+    double width{};
+};
+
+struct IllustrationGeometryPresentation
+{
+    std::string fill_rule = "evenodd";
+    std::string line_cap = "round";
+    std::string line_join = "round";
+    std::string background{};
+    bool transparent_background{};
+    double seam_width{};
+    double padding{};
+};
+
+enum class IllustrationSurfaceKind
+{
+    triangle,
+    fused,
+    layered,
+};
+
+struct IllustrationGeometrySurface
+{
+    IllustrationSurfaceKind kind{};
+    std::vector<IllustrationGeometryLayer> layers{};
+};
+
+struct MeshIllustrationGeometryA0
+{
+    std::string schema = "geometry.mesh_illustration.geometry.a0";
+    std::string length_unit = "millimeter";
+    MeshIllustrationView view{};
+    IllustrationGeometryBounds bounds{};
+    std::vector<IllustrationGeometrySurface> surfaces{};
+    std::vector<IllustrationGeometryLine> lines{};
+    IllustrationGeometryPresentation presentation{};
+    MeshIllustrationRenderStats stats{};
+    std::vector<std::string> warnings{};
+};
+
+struct MeshIllustrationGeometryInputA0
+{
+    std::string schema = "geometry.mesh_illustration_geometry.input.a0";
+    std::string length_unit = "millimeter";
+    std::vector<MeshIllustrationMesh> meshes{};
+    MeshIllustrationView view{};
+    std::optional<MeshIllustrationPrepareOptions> prepare{};
+    std::optional<MeshIllustrationStyleA0> style{};
+};
+
+struct MeshIllustrationGeometryResultA0
+{
+    std::string schema = "geometry.mesh_illustration_geometry.result.a0";
+    IllustrationGeometryAttachment geometry{};
     MeshIllustrationRenderStats stats{};
     std::vector<std::string> warnings{};
 };
@@ -1945,9 +2044,10 @@ struct StepTopologyAnalyzeRecoveryResultA0
 };
 
 using OperationResultValueA0 =
-    std::variant<MeshIllustrationResultA0, ModelTessellationResultA0, ModelBoundsResultA0,
-                 HlrProjectionResultA0, PackedAttachmentProjectionA0, StepTopologyOpenResultA0,
-                 StepTopologyCloseResultA0, StepTopologyInspectResultA0, StepTopologyRenderResultA0,
+    std::variant<MeshIllustrationGeometryResultA0, MeshIllustrationResultA0,
+                 ModelTessellationResultA0, ModelBoundsResultA0, HlrProjectionResultA0,
+                 PackedAttachmentProjectionA0, StepTopologyOpenResultA0, StepTopologyCloseResultA0,
+                 StepTopologyInspectResultA0, StepTopologyRenderResultA0,
                  StepTopologyResolveHitResultA0, StepTopologyApplyLogicalGroupsResultA0,
                  StepTopologyApplyMetadataProbesResultA0, StepTopologyCheckpointEditJournalResultA0,
                  StepTopologyApplyHierarchyResultA0, StepTopologySaveResultA0,
@@ -2028,6 +2128,26 @@ bool encode_json(const MeshIllustrationResultA0& value, std::string* json,
 bool decode_json(const unsigned char* data, std::size_t size, MeshIllustrationStyleA0* value,
                  ContractError* error = nullptr);
 bool encode_json(const MeshIllustrationStyleA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, MeshIllustrationGeometryA0* value,
+                 ContractError* error = nullptr);
+bool encode_json(const MeshIllustrationGeometryA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size,
+                 MeshIllustrationGeometryInputA0* value, ContractError* error = nullptr);
+bool encode_json(const MeshIllustrationGeometryInputA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size,
+                 MeshIllustrationGeometryRequestA0* value, ContractError* error = nullptr);
+bool encode_json(const MeshIllustrationGeometryRequestA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size,
+                 MeshIllustrationGeometryResultA0* value, ContractError* error = nullptr);
+bool encode_json(const MeshIllustrationGeometryResultA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, MeshIllustrationRequestA0* value,

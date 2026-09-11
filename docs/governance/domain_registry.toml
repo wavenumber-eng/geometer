@@ -25,7 +25,12 @@ owned_roots = [
   "uv.lock",
   "wn-dev-std.toml",
 ]
-ignore = ["out/**", "examples/python/.venv/**"]
+ignore = [
+  "out/**",
+  "examples/python/.venv/**",
+  "examples/rust/native_viewer/target/**",
+  "src/rust/geometer-client/target/**",
+]
 
 [[domains]]
 id = "geometer"

@@ -7778,6 +7778,18 @@
             "max_value": 2000000
           },
           "default": 750000
+        },
+        {
+          "name": "allow_partial",
+          "optional": true,
+          "doc": "Return usable faces with warnings when completed meshing has local face failures.",
+          "type": {
+            "kind": "primitive",
+            "name": "boolean"
+          },
+          "annotations": {},
+          "constraints": {},
+          "default": true
         }
       ]
     },

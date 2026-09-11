@@ -853,6 +853,7 @@ struct ModelTessellationRequestA0
     std::optional<double> angular_deflection_rad{};
     std::optional<ModelRootPlacement> root_placement{};
     std::optional<std::uint32_t> max_triangles{};
+    std::optional<bool> allow_partial{};
 };
 
 enum class ModelFormat

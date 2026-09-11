@@ -764,6 +764,8 @@ export interface ModelTessellationRequestA0 {
   readonly angular_deflection_rad?: number;
   readonly root_placement?: ModelRootPlacement;
   readonly max_triangles?: number;
+  /** Return usable faces with warnings when completed meshing has local face failures. */
+  readonly allow_partial?: boolean;
 }
 
 /** Canonical model source format. Compatibility readers may additionally accept STEP. */

@@ -4,6 +4,18 @@ All notable changes to geometer are documented here.
 
 ## [Unreleased]
 
+## [2026.9.10] - 2026-09-10
+
+### Changed
+
+- Colored STEP tessellation now returns usable faces with warnings by default
+  when individual faces fail to mesh. Set `allow_partial=false` to require a
+  complete mesh. Warnings report native status flags and omitted face counts.
+- Models with no usable geometry, incomplete meshing and resource-limit
+  failures still fail. Partial results preserve source colors and placement.
+- Python/runtime, Rust and TypeScript packages advance together; OCCT remains
+  pinned to 8.0.1 and uses the existing dependency builds.
+
 ## [2026.9.7] - 2026-09-07
 
 ### Added

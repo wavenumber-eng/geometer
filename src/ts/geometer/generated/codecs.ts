@@ -2018,6 +2018,11 @@ const declarations: ContractDescriptorMap = {
         optional: true,
         constraints: { min_value: 1, max_value: 2000000 },
       },
+      allow_partial: {
+        type: { kind: "primitive", name: "boolean" },
+        optional: true,
+        constraints: {},
+      },
     },
   },
   "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationResultA0": {

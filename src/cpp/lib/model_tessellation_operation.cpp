@@ -47,8 +47,9 @@ void execute_model_tessellation(const unsigned char* request, std::size_t size,
     const auto& model = attachments[0];
     contracts::MeshCollectionA0 collection;
     Status status;
-    const int code =
-        model_tessellation_from_bytes(model.data, model.size, options, &collection, &status);
+    std::vector<std::string> warnings;
+    const int code = model_tessellation_from_bytes(model.data, model.size, options, &collection,
+                                                   &status, &warnings);
     if (code != 0)
     {
         fail(code == 102   ? "geometer.operation.resource_limit_exceeded"
@@ -72,6 +73,7 @@ void execute_model_tessellation(const unsigned char* request, std::size_t size,
         return;
     }
     contracts::ModelTessellationResultA0 result;
+    result.warnings = std::move(warnings);
     result.mesh_collection.byte_length = static_cast<std::uint32_t>(json.size());
     result.mesh_collection.sha256 =
         sha256_hex(reinterpret_cast<const std::uint8_t*>(json.data()), json.size());

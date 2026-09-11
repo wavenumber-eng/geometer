@@ -3399,6 +3399,15 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
                 },
                 "field": "max_triangles",
             },
+            "allow_partial": {
+                "type": {
+                    "kind": "primitive",
+                    "name": "boolean",
+                },
+                "optional": True,
+                "constraints": {},
+                "field": "allow_partial",
+            },
         },
     },
     "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationResultA0": {

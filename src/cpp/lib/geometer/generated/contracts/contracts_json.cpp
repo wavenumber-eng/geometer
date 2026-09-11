@@ -5457,9 +5457,10 @@ bool decode_ModelTessellationRequestA0(const rapidjson::Value& value,
                                        ModelTessellationRequestA0* out, const std::string& path,
                                        ContractError* error)
 {
-    static const char* const names[] = {"schema", "linear_deflection_mm", "angular_deflection_rad",
-                                        "root_placement", "max_triangles"};
-    if (!validate_object(value, names, 5U, path, error))
+    static const char* const names[] = {
+        "schema",         "linear_deflection_mm", "angular_deflection_rad",
+        "root_placement", "max_triangles",        "allow_partial"};
+    if (!validate_object(value, names, 6U, path, error))
         return false;
     {
         const auto member = value.FindMember("schema");
@@ -5522,6 +5523,18 @@ bool decode_ModelTessellationRequestA0(const rapidjson::Value& value,
         else
             out->max_triangles.reset();
     }
+    {
+        const auto member = value.FindMember("allow_partial");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "allow_partial"), error))
+                return false;
+            out->allow_partial = std::move(decoded);
+        }
+        else
+            out->allow_partial.reset();
+    }
     return true;
 }
 
@@ -5556,6 +5569,12 @@ bool write_ModelTessellationRequestA0(rapidjson::Writer<rapidjson::StringBuffer>
     {
         writer.Key("max_triangles");
         if (!write_uint32(writer, *value.max_triangles, error, 1ULL, 2000000ULL))
+            return false;
+    }
+    if (value.allow_partial.has_value())
+    {
+        writer.Key("allow_partial");
+        if (!(writer.Bool(*value.allow_partial), true))
             return false;
     }
     writer.EndObject();

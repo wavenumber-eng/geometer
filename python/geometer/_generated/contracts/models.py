@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Literal, TypeAlias
 
-NORMALIZED_CATALOG_SHA256 = "078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d"
+NORMALIZED_CATALOG_SHA256 = "16df2f7cb95d89dbe80438390e4be799a1f193bd625a668c759a020b52346a2f"
 
 JobId: TypeAlias = int
 
@@ -879,6 +879,8 @@ class ModelTessellationRequestA0:
     angular_deflection_rad: float | None = None
     root_placement: ModelRootPlacement | None = None
     max_triangles: int | None = None
+    # Return usable faces with warnings when completed meshing has local face failures.
+    allow_partial: bool | None = None
 
 
 # Canonical model source format. Compatibility readers may additionally accept STEP.

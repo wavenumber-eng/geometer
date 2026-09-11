@@ -20,7 +20,7 @@
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 pub const NORMALIZED_CATALOG_SHA256: &str =
-    "078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d";
+    "16df2f7cb95d89dbe80438390e4be799a1f193bd625a668c759a020b52346a2f";
 
 #[derive(Debug, thiserror::Error)]
 pub enum ContractError {
@@ -4243,6 +4243,12 @@ pub struct ModelTessellationRequestA0 {
         skip_serializing_if = "Option::is_none"
     )]
     pub max_triangles: Option<u32>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub allow_partial: Option<bool>,
 }
 
 impl Validate for ModelTessellationRequestA0 {

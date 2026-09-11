@@ -36,14 +36,24 @@ colors are converted from OCCT linear channels to sRGB. Unassigned material uses
 `[0.72, 0.74, 0.78]`, opacity 1. Invisible nodes/faces are omitted. Textures and
 product-specific styling are not part of this boundary.
 
+`allow_partial` defaults to true. Completed meshing with local face problems
+returns usable faces and `warnings` describing omitted faces and native status
+flags. Set it to false to require complete geometry. Failed face definitions
+are excluded at every occurrence; no repair or replacement geometry is added.
+Warnings contain one summary and at most 255 face details. Indices refer to the
+current meshing context, not persistent topology. Counts and attachment hashes
+describe only the meshes actually returned.
+
 ## Limits and failure
 
 Maximum accepted output: 2,000,000 triangles (or the lower requested cap),
 2,000,000 vertices across the collection, 65,536 meshes/leaf occurrences and
 256 MiB serialized mesh JSON. Transport envelopes remain at 8 MiB; mesh payloads
-use the existing bounded attachment path. Mesh failures/status flags reject the
-call; no partial successful result is returned. Malformed STEP and limit errors
-are operation failures, and the persistent process can service the next call.
+use the existing bounded attachment path. Incomplete work, cancellation, stale/unknown status flags and no usable
+visible triangles reject the call even with partial output enabled. Malformed
+STEP and limit errors are operation failures, and the persistent process can
+service the next call. Strict mode (`allow_partial=false`) also rejects local
+face failures and identifies native flags and problematic-face counts.
 While serving IPC, OCCT diagnostics go to stderr, never the binary stdout stream.
 
 These are input/output acceptance limits, **not a hard peak-memory or CPU bound
@@ -70,7 +80,8 @@ with geometer.GeometerClient() as client:
     meshes = result.mesh_collection.meshes
 ```
 
-Use a 2026.9.6 or later compatible executable matching the generated catalog. Source Rust
+The partial-output option and default require 2026.9.10 or later, with matching
+generated clients and executable catalog. Older releases reject partial output. Source Rust
 process tests accept `GEOMETER_EXECUTABLE`; Python uses `GEOMETER_EXE`. Released
 2026.9.4 executables do not advertise this operation. A generated TypeScript DTO
 does not prove that an older browser WASM binary supports the new operation.

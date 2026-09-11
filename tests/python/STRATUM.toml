@@ -159,7 +159,7 @@ test_case_type = "unit"
 id = "PY_020"
 file = "test_model_tessellation.py"
 name = "Native Colored Model Tessellation"
-description = "Checks deterministic colored STEP meshes, limits, recoverable operation failure and attachment metadata validation."
+description = "Checks deterministic colored STEP meshes, default partial output with warnings, explicit strict rejection, limits, recoverable operation failure and attachment metadata validation."
 test_case_type = "integration"
 
 [[subtests]]

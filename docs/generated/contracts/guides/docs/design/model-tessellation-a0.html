@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d">
+  <meta name="wn-catalog-sha256" content="16df2f7cb95d89dbe80438390e4be799a1f193bd625a668c759a020b52346a2f">
   <title>Colored model tessellation A0 — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="078d05afec931ac53089915c053803a77144ecc089749212a0d7eae3785ca93d" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="16df2f7cb95d89dbe80438390e4be799a1f193bd625a668c759a020b52346a2f" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/model-tessellation-a0.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="colored-model-tessellation-a0">Colored model tessellation A0</h1></header>
 <p>Introduced in 2026.9.6; see <a href="../developer/native-api-readiness.html">release qualification</a>.
@@ -41,13 +41,22 @@ XCAF document/face iterators resolve source occurrence and subshape styles;
 colors are converted from OCCT linear channels to sRGB. Unassigned material uses
 <code>[0.72, 0.74, 0.78]</code>, opacity 1. Invisible nodes/faces are omitted. Textures and
 product-specific styling are not part of this boundary.</p>
+<p><code>allow_partial</code> defaults to true. Completed meshing with local face problems
+returns usable faces and <code>warnings</code> describing omitted faces and native status
+flags. Set it to false to require complete geometry. Failed face definitions
+are excluded at every occurrence; no repair or replacement geometry is added.
+Warnings contain one summary and at most 255 face details. Indices refer to the
+current meshing context, not persistent topology. Counts and attachment hashes
+describe only the meshes actually returned.</p>
 <h2 id="limits-and-failure">Limits and failure</h2>
 <p>Maximum accepted output: 2,000,000 triangles (or the lower requested cap),
 2,000,000 vertices across the collection, 65,536 meshes/leaf occurrences and
 256 MiB serialized mesh JSON. Transport envelopes remain at 8 MiB; mesh payloads
-use the existing bounded attachment path. Mesh failures/status flags reject the
-call; no partial successful result is returned. Malformed STEP and limit errors
-are operation failures, and the persistent process can service the next call.
+use the existing bounded attachment path. Incomplete work, cancellation, stale/unknown status flags and no usable
+visible triangles reject the call even with partial output enabled. Malformed
+STEP and limit errors are operation failures, and the persistent process can
+service the next call. Strict mode (<code>allow_partial=false</code>) also rejects local
+face failures and identifies native flags and problematic-face counts.
 While serving IPC, OCCT diagnostics go to stderr, never the binary stdout stream.</p>
 <p>These are input/output acceptance limits, <strong>not a hard peak-memory or CPU bound
 inside OCCT</strong>. STEP transfer and meshing precede output validation; generated
@@ -67,7 +76,8 @@ with geometer.GeometerClient() as client:
     result = client.model_tessellation(step_bytes)
     meshes = result.mesh_collection.meshes
 </code></pre>
-<p>Use a 2026.9.6 or later compatible executable matching the generated catalog. Source Rust
+<p>The partial-output option and default require 2026.9.10 or later, with matching
+generated clients and executable catalog. Older releases reject partial output. Source Rust
 process tests accept <code>GEOMETER_EXECUTABLE</code>; Python uses <code>GEOMETER_EXE</code>. Released
 2026.9.4 executables do not advertise this operation. A generated TypeScript DTO
 does not prove that an older browser WASM binary supports the new operation.</p>

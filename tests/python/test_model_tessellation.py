@@ -16,6 +16,26 @@ from geometer._tessellation import _decode_response
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def test_partial_tessellation_defaults_to_usable_faces_with_warnings() -> None:
+    model = (ROOT / "tests/fixtures/step/embedded_models/GT-USB-7010C.STEP").read_bytes()
+    options = geometer.ModelTessellationRequestA0(
+        schema="geometry.model_tessellation.request.a0", linear_deflection_mm=0.01
+    )
+    with geometer.GeometerClient() as client:
+        result = client.model_tessellation(model, options)
+        assert result.metadata.meshes > 900
+        assert result.metadata.triangles > 8000
+        assert 2 <= len(result.metadata.warnings) <= 256
+        assert result.metadata.warnings[0].startswith("Partial STEP tessellation: omitted ")
+        assert "OCCT status flags=4" in result.metadata.warnings[0]
+        assert "no triangles" in result.metadata.warnings[1]
+        assert client.model_tessellation(model, replace(options, allow_partial=True)) == result
+        with pytest.raises(geometer.GeometerOperationError) as rejected:
+            client.model_tessellation(model, replace(options, allow_partial=False))
+        assert "problematic meshing face" in rejected.value.diagnostics[0].message
+        assert client.model_tessellation(model, options) == result
+
+
 def test_native_colored_tessellation_is_deterministic_and_bounded() -> None:
     model = (ROOT / "tests/fixtures/step/embedded_models/SOT-23.STEP").read_bytes()
     with geometer.GeometerClient() as client:

@@ -28,6 +28,11 @@
       "minimum": 1,
       "maximum": 2000000,
       "default": 750000
+    },
+    "allow_partial": {
+      "type": "boolean",
+      "default": true,
+      "description": "Return usable faces with warnings when completed meshing has local face failures."
     }
   },
   "required": [

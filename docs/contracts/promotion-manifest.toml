@@ -94,7 +94,7 @@ local_ctest_count = 10
 local_rack_passed = 66
 catalog_sha256 = "c93e41a3aa0d64ab4dab905cea82aaeb3b3792155d1f5b2850673567a699d59c"
 vector_manifest_sha256 = "30f697bf63e6ca1ba28e0b9617a061b59a90115ea4ef06a06761d09ea68301a5"
-# Current distributable lock, refreshed for 2026.9.7 from the successful browser
+# Current distributable lock, refreshed for 2026.9.10 from the successful browser
 # job 101514489712 in WASM run 34043554415 (clean source 6c582dbfe623076dc0122f51b4e06b9d144170c1).
 # The original model-bounds promotion and historical review evidence above/below remain unchanged.
 browser_js_sha256 = "361d29258cf29ffa7d2a2e1a33cc66f2a95b3a5cfb906535756b445ed9466d42"
@@ -601,7 +601,7 @@ sha256 = "87e16b5b2453ad1f9263d92953d5741a30780db02eeea0d59d61f10967c4537b"
 status = "vendored"
 
 [c_abi]
-generation = 20260907
+generation = 20260910
 source = "src/cpp/lib/geometer/c_api.h"
 symbols = [
   "geometer_operation_catalog_json",

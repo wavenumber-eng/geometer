@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wn-geometer"
-version = "2026.9.7"
+version = "2026.9.10"
 description = "Python bindings for Geometer CAD geometry operations"
 requires-python = ">=3.10"
 readme = "README.md"
@@ -51,7 +51,7 @@ where = ["python"]
 geometer = ["native/*", "native/*/*"]
 
 [tool.wn_dev_std]
-standard_version = "2026.8.12"
+standard_version = "2026.9.8"
 profile = "python-native-wasm"
 distribution = "pypi"
 languages = ["python", "cpp", "wasm", "typescript", "rust"]

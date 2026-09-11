@@ -13,6 +13,7 @@ import {
   decodeMeshIllustrationResultA0Json,
   decodeModelBoundsOptionsA0Json,
   decodeModelBoundsResultA0Json,
+  decodeModelTessellationRequestA0Json,
   decodeOperationOutcomeA0Json,
   decodeStepTopologyAnalyzeRecoveryRequestA0Json,
   decodeStepTopologyAnalyzeRecoveryResultA0Json,
@@ -70,6 +71,7 @@ const decoders = {
   "geometry.mesh_illustration.result.a0": decodeMeshIllustrationResultA0Json,
   "geometry.model_bounds.a0": decodeModelBoundsResultA0Json,
   "geometry.model_bounds.options.a0": decodeModelBoundsOptionsA0Json,
+  "geometry.model_tessellation.request.a0": decodeModelTessellationRequestA0Json,
   "geometer.operation.outcome.a0": decodeOperationOutcomeA0Json,
   "geometer.ipc.request.a0": decodeIpcRequestA0Json,
   "geometry.step_topology.apply_logical_groups.request.a0":

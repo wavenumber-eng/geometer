@@ -1,19 +1,19 @@
 {
   "artifact": {
     "name": "geometer",
-    "sha256": "9edafb827a5c4a4d6b2ccc998cbc24e3285ec35a426d00676589b771711136f6"
+    "sha256": "fa1f2b7bf2fb11ba3c8281858b18907258e0cc2f51578ebc1f8707acdb2e4ee2"
   },
   "build": {
     "arch": "x64",
     "build_type": "Release",
-    "c_abi_version": 20260907,
+    "c_abi_version": 20260910,
     "compiler": {
       "authority": "cmake_compiler_id_and_version",
       "id": "GNU",
       "version": "11.4.0"
     },
     "generator": "Ninja",
-    "geometer_version": "2026.9.7",
+    "geometer_version": "2026.9.10",
     "occt": {
       "authority": "geometer_occt_profile_verified",
       "profile_sha256": "6cc4ee799fe58a1eb12a7799786df5f4712bc2f5e4c190361ed725ba94c57866",
@@ -24,7 +24,7 @@
     "platform": "linux",
     "source": {
       "authority": "git_head_and_source_worktree_excluding_dist_build_deps_out",
-      "revision": "bab90ae3cbc83c029abed97a7e7831409b734e94",
+      "revision": "ae9180c80ada7578492a0bf8f043a982a1137c41",
       "tree_state": "clean"
     }
   },

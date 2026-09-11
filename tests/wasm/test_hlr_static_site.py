@@ -100,7 +100,7 @@ async function main() {
     const deadline = Date.now() + 120000;
     while (Date.now() < deadline) {
       const button = document.querySelector("#exportSvgButton");
-      if (!document.body.classList.contains("busy") && button && !button.disabled) {
+      if (document.body && button && !document.body.classList.contains("busy") && !button.disabled) {
         return {
           model: document.querySelector("#modelSelect")?.value,
           projection: document.querySelector("#projectionMetric")?.textContent,

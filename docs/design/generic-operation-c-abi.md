@@ -230,7 +230,7 @@ for this C ABI generation:
 | Item | A0 maximum |
 | --- | ---: |
 | Operation identity | 128 bytes |
-| Request or response JSON | 8 MiB |
+| Request or response JSON | 32 MiB |
 | Attachment count | 16 |
 | Attachment name | 128 bytes |
 | Media type | 128 bytes |

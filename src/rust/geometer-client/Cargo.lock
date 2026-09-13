@@ -74,7 +74,7 @@ dependencies = [
 
 [[package]]
 name = "geometer-client"
-version = "2026.9.11"
+version = "2026.9.12"
 dependencies = [
  "serde",
  "serde_json",

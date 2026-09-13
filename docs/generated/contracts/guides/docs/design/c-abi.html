@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56">
+  <meta name="wn-catalog-sha256" content="e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd">
   <title>C ABI — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/c-abi.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="c-abi">C ABI</h1></header>
 <p>The retained per-operation ABI and the additive generic operation ABI are both
@@ -185,7 +185,7 @@ The catalog reports the release/C ABI generations, descriptor layouts, limits,
 and operation attachment declarations so clients do not hard-code them.
 Its runtime C++ implementation is generated from the same normalized operation
 catalog as the DTOs and schemas. Before a result handle becomes visible, the
-transport validates the generated JSON against the 8 MiB response limit and
+transport validates the generated JSON against the 32 MiB response limit and
 validates output attachment count, unique/nonempty names, media types,
 declarations, UTF-8, individual sizes, and native/WASM aggregate sizes. This
 keeps every accessor conversion to <code>uint32_t</code> inside a proven range.</p>

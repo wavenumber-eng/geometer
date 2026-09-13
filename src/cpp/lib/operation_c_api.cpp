@@ -22,7 +22,7 @@ namespace
 {
 
 constexpr uint32_t kMaxOperationIdBytes = 128U;
-constexpr uint32_t kMaxJsonBytes = 8U * 1024U * 1024U;
+constexpr uint32_t kMaxJsonBytes = 32U * 1024U * 1024U;
 constexpr uint32_t kMaxAttachmentCount = 16U;
 constexpr uint32_t kMaxAttachmentTextBytes = 128U;
 constexpr uint32_t kMaxAttachmentBytes = 256U * 1024U * 1024U;

@@ -107,7 +107,7 @@ async function main() {
     throw new Error("Unexpected wasm32 attachment descriptor size.");
   }
   if (
-    catalog.limits.response_json_bytes !== 8 * 1024 * 1024 ||
+    catalog.limits.response_json_bytes !== 32 * 1024 * 1024 ||
     catalog.limits.attachment_count !== 16 ||
     catalog.limits.aggregate_attachment_bytes_wasm !== 256 * 1024 * 1024
   ) {

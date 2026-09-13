@@ -204,7 +204,7 @@ invalid XML text fail explicitly. Out-of-range or degenerate triangles retain
 the browser warning-and-skip policy; warnings are capped at 256 entries.
 
 The generated prepare option defaults to 750,000 source triangles and allows
-at most 2,000,000. Native processing additionally rejects more than 20,000,000
+at most 2,000,000. Native processing additionally rejects more than 100,000,000
 candidate/simplification work items, 4,000,000 visibility constraints or stored
 same-style overlaps, and complete SVG documents larger than 256 MiB. These
 limits return status 102; there is no approximate-renderer fallback.
@@ -214,7 +214,7 @@ Generated value validation serializes input; scene/graph/SVG assembly allocates
 intermediate storage. Callers processing untrusted inputs should use the
 managed executable boundary with process limits.
 
-IPC still has an **8 MiB encoded JSON envelope limit**, including escaped SVG,
+IPC has a **32 MiB encoded JSON envelope limit**, including escaped SVG,
 warnings and outcome metadata. A larger result returns
 `geometer.transport.response_limit_exceeded`; the process stays usable. No
 implicit truncation, oversized frame or hidden alternate result schema is used.

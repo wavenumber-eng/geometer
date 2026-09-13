@@ -82,7 +82,8 @@ def _assert_catalog_lineage(path: Path, historical_hash: str) -> None:
     catalog["operations"] = [
         item
         for item in catalog["operations"]
-        if item["identity"] not in {
+        if item["identity"]
+        not in {
             "geometry.model_tessellation.a0",
             "geometry.mesh_illustration.a0",
             "geometry.mesh_illustration_geometry.a0",
@@ -106,6 +107,24 @@ def _assert_catalog_lineage(path: Path, historical_hash: str) -> None:
             expected = {"name": name, "type": {"kind": "reference", "target": target}, "doc": "", "annotations": {}}
             assert [item for item in declaration["variants"] if item["name"] == name] == [expected]
             declaration["variants"].remove(expected)
+    # The executable and generic-operation JSON envelopes were increased after
+    # the topology slices were reviewed. Restore their former values before
+    # checking the historical catalog digest so that unrelated topology
+    # evidence remains immutable.
+    historical_limits = {
+        "Wavenumber.Geometer.Contracts.IpcA0.IpcEffectiveLimitsA0": {
+            "json_bytes": 8388608,
+        },
+        "Wavenumber.Geometer.Contracts.IpcA0.IpcGenericAbiLimitsA0": {
+            "request_json_bytes": 8388608,
+            "response_json_bytes": 8388608,
+        },
+    }
+    for declaration_name, properties in historical_limits.items():
+        declaration = next(item for item in catalog["declarations"] if item["name"] == declaration_name)
+        for property_name, value in properties.items():
+            property_model = next(item for item in declaration["properties"] if item["name"] == property_name)
+            property_model["constraints"]["max_value"] = value
     # Exact reconstruction proves every preexisting root, operation and field is
     # unchanged. Do not replace the old evidence hash with the current catalog.
     # Use the catalog generator's ECMAScript number serialization, not Python's

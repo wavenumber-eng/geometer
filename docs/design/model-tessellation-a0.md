@@ -48,7 +48,7 @@ describe only the meshes actually returned.
 
 Maximum accepted output: 2,000,000 triangles (or the lower requested cap),
 2,000,000 vertices across the collection, 65,536 meshes/leaf occurrences and
-256 MiB serialized mesh JSON. Transport envelopes remain at 8 MiB; mesh payloads
+256 MiB serialized mesh JSON. Transport envelopes allow 32 MiB; mesh payloads
 use the existing bounded attachment path. Incomplete work, cancellation, stale/unknown status flags and no usable
 visible triangles reject the call even with partial output enabled. Malformed
 STEP and limit errors are operation failures, and the persistent process can

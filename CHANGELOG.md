@@ -4,6 +4,17 @@ All notable changes to geometer are documented here.
 
 ## [Unreleased]
 
+## [2026.9.12] - 2026-09-12
+
+### Changed
+
+- Increased executable and generic-operation request/response JSON envelopes
+  from 8 MiB to 32 MiB.
+- JSON geometry attachments now decode against their operation-catalog limits,
+  allowing mesh collections through 256 MiB and optional HLR through 64 MiB.
+- Increased the bounded native illustration comparison budget to 100 million
+  so complex, valid models can retain same-color surface fusion.
+
 ## [2026.9.11] - 2026-09-11
 
 ### Added

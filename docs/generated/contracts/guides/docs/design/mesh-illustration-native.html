@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56">
+  <meta name="wn-catalog-sha256" content="e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd">
   <title>Native mesh illustration — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/mesh-illustration-native.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="native-mesh-illustration">Native mesh illustration</h1></header>
 <p>For custom renderers, the additive <a href="mesh-illustration-geometry.html">illustration geometry API</a>
@@ -182,7 +182,7 @@ including SVG. Invalid generated DTOs, invalid view bases, numeric overflow and
 invalid XML text fail explicitly. Out-of-range or degenerate triangles retain
 the browser warning-and-skip policy; warnings are capped at 256 entries.</p>
 <p>The generated prepare option defaults to 750,000 source triangles and allows
-at most 2,000,000. Native processing additionally rejects more than 20,000,000
+at most 2,000,000. Native processing additionally rejects more than 100,000,000
 candidate/simplification work items, 4,000,000 visibility constraints or stored
 same-style overlaps, and complete SVG documents larger than 256 MiB. These
 limits return status 102; there is no approximate-renderer fallback.</p>
@@ -190,7 +190,7 @@ limits return status 102; there is no approximate-renderer fallback.</p>
 Generated value validation serializes input; scene/graph/SVG assembly allocates
 intermediate storage. Callers processing untrusted inputs should use the
 managed executable boundary with process limits.</p>
-<p>IPC still has an <strong>8 MiB encoded JSON envelope limit</strong>, including escaped SVG,
+<p>IPC has a <strong>32 MiB encoded JSON envelope limit</strong>, including escaped SVG,
 warnings and outcome metadata. A larger result returns
 <code>geometer.transport.response_limit_exceeded</code>; the process stays usable. No
 implicit truncation, oversized frame or hidden alternate result schema is used.</p>

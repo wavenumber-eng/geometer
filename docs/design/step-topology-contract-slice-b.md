@@ -50,7 +50,7 @@ Successful results publish the refreshed session/generation, edit-journal
 revision, bounded accounting, and the complete applicable group/probe state.
 Target handles in results belong only to that refreshed generation. The native
 adapter pre-encodes that exact candidate outcome and applies the executable
-IPC 8 MiB JSON limit before commit; rejection rolls back generation, journal,
+IPC 32 MiB JSON limit before commit; rejection rolls back generation, journal,
 handles, and authored state.
 
 Generated codecs enforce the closed union variants, required fields, bounded

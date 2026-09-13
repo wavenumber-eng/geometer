@@ -149,7 +149,7 @@ struct ResourceLimit : std::runtime_error
 // Bound adversarial broad-phase work without silently switching renderers.
 struct WorkBudget
 {
-    std::size_t remaining = 20000000;
+    std::size_t remaining = 100000000;
     void consume()
     {
         if (remaining == 0)

@@ -133,12 +133,12 @@
         "request_json_bytes": {
           "type": "integer",
           "minimum": 0,
-          "maximum": 8388608
+          "maximum": 33554432
         },
         "response_json_bytes": {
           "type": "integer",
           "minimum": 0,
-          "maximum": 8388608
+          "maximum": 33554432
         },
         "attachment_count": {
           "type": "integer",

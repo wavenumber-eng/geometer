@@ -533,8 +533,8 @@ packet = "docs/research/history/transport-design-review.md"
 packet_sha256 = "865964402ff6258151b199f748ae0754c9fc4908021af01ffc6abdb47f2013ea"
 reviewed_adr_sha256 = "d4905bda88727fadeb221a3b6c5bfb392f5e062bb6033b0cded29f59fb492de0"
 adr_sha256 = "2a69d9e05baa7894be3677d2a9c250098bd45915a7cc9d083639650d3151d7d8"
-generic_c_abi_sha256 = "1b9d02d310110530cb62c82125613865a90bcb2f9da49397ae61dbc61abcd861"
-executable_ipc_sha256 = "06d845025d79908f0c4a092a615e1040b9e7e7672a475e26564f10f2e53af871"
+generic_c_abi_sha256 = "0a2f4b83e3e7ca473c0c0e73911bcd12e11121e3f19aa7b752ed73ee80bc4fa6"
+executable_ipc_sha256 = "ff537447705d8bd7d54347c2bb5627f15729faa848e3e733dac5ba9ae336643e"
 reviewer = "independent-reviewer"
 review_date = "2026-08-12"
 reviewed_revision = "529c768e559b4c88874264748d4186e775c8a4dd"
@@ -601,7 +601,7 @@ sha256 = "87e16b5b2453ad1f9263d92953d5741a30780db02eeea0d59d61f10967c4537b"
 status = "vendored"
 
 [c_abi]
-generation = 20260911
+generation = 20260912
 source = "src/cpp/lib/geometer/c_api.h"
 symbols = [
   "geometer_operation_catalog_json",

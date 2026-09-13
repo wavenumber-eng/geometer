@@ -257,8 +257,8 @@ function operationCatalogTemplate() {
     },
     limits: {
       operation_id_bytes: 128,
-      request_json_bytes: 8 * 1024 * 1024,
-      response_json_bytes: 8 * 1024 * 1024,
+      request_json_bytes: 32 * 1024 * 1024,
+      response_json_bytes: 32 * 1024 * 1024,
       attachment_count: 16,
       attachment_name_bytes: 128,
       attachment_media_type_bytes: 128,

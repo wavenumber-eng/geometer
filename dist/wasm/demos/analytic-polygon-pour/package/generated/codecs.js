@@ -862,7 +862,7 @@ const declarations = {
             json_bytes: {
                 type: { kind: "primitive", name: "uint32" },
                 optional: false,
-                constraints: { max_value: 8388608 },
+                constraints: { max_value: 33554432 },
             },
             attachment_count: {
                 type: { kind: "primitive", name: "uint32" },
@@ -922,12 +922,12 @@ const declarations = {
             request_json_bytes: {
                 type: { kind: "primitive", name: "uint32" },
                 optional: false,
-                constraints: { max_value: 8388608 },
+                constraints: { max_value: 33554432 },
             },
             response_json_bytes: {
                 type: { kind: "primitive", name: "uint32" },
                 optional: false,
-                constraints: { max_value: 8388608 },
+                constraints: { max_value: 33554432 },
             },
             attachment_count: {
                 type: { kind: "primitive", name: "uint32" },

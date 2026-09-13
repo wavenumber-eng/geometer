@@ -22,7 +22,7 @@ the repaired angle remains pending.
 
 ## Runtime Evidence And Disposition
 
-Release refresh for 2026.9.11: native Windows and all three WASM targets were
+Release refresh for 2026.9.12: native Windows and all three WASM targets were
 rebuilt using the cached OCCT dependency. Generated TypeScript/example bundles,
 all five standalone browser demos, all four hosted demo directories, the direct
 C++ preview and Rust Lab were rebuilt. The optional Python example environment
@@ -31,6 +31,10 @@ illustration, analytic and PCB pages. Installed-wheel Python, the geometry
 Canvas, Node bounds/topology and PyVista off-screen rendering passed against
 the new runtime. The Rust Lab's format, lint and unit checks passed. These
 automated checks do not replace the previously deferred interactive GUI review.
+
+The 2026.9.12 rebuild carries the expanded executable JSON envelope and
+operation-specific illustration attachment decoding into every native, WASM,
+TypeScript and packaged browser-demo surface.
 
 The user visually accepted the rebuilt 2026.9.11 Illustration HTML demo and
 Native Rust API Lab on 2026-09-11. Both were opened with the current artifacts;

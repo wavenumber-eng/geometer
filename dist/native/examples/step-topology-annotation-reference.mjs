@@ -24799,7 +24799,7 @@ var declarations = {
       json_bytes: {
         type: { kind: "primitive", name: "uint32" },
         optional: false,
-        constraints: { max_value: 8388608 }
+        constraints: { max_value: 33554432 }
       },
       attachment_count: {
         type: { kind: "primitive", name: "uint32" },
@@ -24859,12 +24859,12 @@ var declarations = {
       request_json_bytes: {
         type: { kind: "primitive", name: "uint32" },
         optional: false,
-        constraints: { max_value: 8388608 }
+        constraints: { max_value: 33554432 }
       },
       response_json_bytes: {
         type: { kind: "primitive", name: "uint32" },
         optional: false,
-        constraints: { max_value: 8388608 }
+        constraints: { max_value: 33554432 }
       },
       attachment_count: {
         type: { kind: "primitive", name: "uint32" },
@@ -29954,7 +29954,7 @@ function decodeOperationOutcomeA0Json(data) {
 }
 
 // src/ts/geometer/generated/operations.ts
-var NORMALIZED_CONTRACT_CATALOG_SHA256 = "2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56";
+var NORMALIZED_CONTRACT_CATALOG_SHA256 = "e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd";
 var operationCatalog = {
   "geometry.analytic_planar_boolean_batch.a0": {
     identity: "geometry.analytic_planar_boolean_batch.a0",
@@ -30416,7 +30416,7 @@ function fail2(message) {
 // src/ts/geometer/ipc-a0.ts
 var MAGIC2 = new Uint8Array([71, 77, 73, 80, 67, 65, 48, 49]);
 var HEADER_BYTES2 = 48;
-var MAX_JSON_BYTES = 8 * 1024 * 1024;
+var MAX_JSON_BYTES = 32 * 1024 * 1024;
 var MAX_ATTACHMENT_COUNT = 16;
 var MAX_ATTACHMENT_TEXT_BYTES = 128;
 var MAX_ATTACHMENT_BYTES = 256 * 1024 * 1024;

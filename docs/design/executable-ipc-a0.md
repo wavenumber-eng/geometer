@@ -175,7 +175,7 @@ payloads. A0 hard maxima are:
 
 | Item | A0 maximum |
 | --- | ---: |
-| JSON section | 8 MiB |
+| JSON section | 32 MiB |
 | Attachments per frame | 16 |
 | Attachment name | 128 bytes |
 | Media type | 128 bytes |

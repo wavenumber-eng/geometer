@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56">
+  <meta name="wn-catalog-sha256" content="e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd">
   <title>STEP Topology Metadata Probes — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/step-topology-metadata-probes.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="step-topology-metadata-probes">STEP Topology Metadata Probes</h1></header>
 <p>Status: experimental carrier-research surface</p>
@@ -36,7 +36,7 @@ handles. A logical group with an attached probe cannot be erased. Any command,
 refresh, remap, allocation, or publication failure restores the prior probes,
 snapshot, handle registry, generation, journal, and accounting and clears the
 result. Native IPC encodes and validates the exact generated success outcome
-against the 8 MiB JSON ceiling before committing, so an oversized complete-state
+against the 32 MiB JSON ceiling before committing, so an oversized complete-state
 response cannot turn a successful mutation into a transport failure.</p>
 <h2 id="identity-and-replay">Identity And Replay</h2>
 <p>The live record stores a source-bound target class, ordinal, and evidence

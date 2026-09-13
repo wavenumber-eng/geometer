@@ -10,7 +10,7 @@ namespace geometer::ipc_a0
 {
 
 constexpr std::size_t kHeaderSize = 48U;
-constexpr std::size_t kMaxJsonBytes = 8U * 1024U * 1024U;
+constexpr std::size_t kMaxJsonBytes = 32U * 1024U * 1024U;
 constexpr std::size_t kMaxAttachmentCount = 16U;
 constexpr std::size_t kMaxAttachmentTextBytes = 128U;
 constexpr std::size_t kMaxAttachmentBytes = 256U * 1024U * 1024U;

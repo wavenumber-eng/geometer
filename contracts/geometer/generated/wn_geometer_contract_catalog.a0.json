@@ -5315,7 +5315,7 @@
           },
           "annotations": {},
           "constraints": {
-            "max_value": 8388608
+            "max_value": 33554432
           }
         },
         {
@@ -5470,7 +5470,7 @@
           },
           "annotations": {},
           "constraints": {
-            "max_value": 8388608
+            "max_value": 33554432
           }
         },
         {
@@ -5483,7 +5483,7 @@
           },
           "annotations": {},
           "constraints": {
-            "max_value": 8388608
+            "max_value": 33554432
           }
         },
         {

@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56">
+  <meta name="wn-catalog-sha256" content="e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd">
   <title>STEP Topology Contract Slice B — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/step-topology-contract-slice-b.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="step-topology-contract-slice-b">STEP Topology Contract Slice B</h1></header>
 <p>Status: unpromoted experimental candidate; native mutation/checkpoint subset available</p>
@@ -53,7 +53,7 @@ structural rather than relying on ignored placeholder fields.</p>
 revision, bounded accounting, and the complete applicable group/probe state.
 Target handles in results belong only to that refreshed generation. The native
 adapter pre-encodes that exact candidate outcome and applies the executable
-IPC 8 MiB JSON limit before commit; rejection rolls back generation, journal,
+IPC 32 MiB JSON limit before commit; rejection rolls back generation, journal,
 handles, and authored state.</p>
 <p>Generated codecs enforce the closed union variants, required fields, bounded
 arrays and strings, positive <code>uint32</code> revisions, and numeric resource ceilings.

@@ -457,7 +457,7 @@ Frame execute_request(const QueuedRequest& request)
     {
         return operation_failure(
             request.id, request.operation, "geometer.transport.response_limit_exceeded", false,
-            "The encoded operation response exceeds the 8 MiB IPC JSON limit.");
+            "The encoded operation response exceeds the 32 MiB IPC JSON limit.");
     }
     if (validate_operation_response(request.operation, response.json, execution.attachments,
                                     &validation_message) != OperationResponseValidationStatus::ok)

@@ -2063,244 +2063,258 @@ struct OperationSuccessA0
 using OperationOutcomeA0 = std::variant<OperationSuccessA0, OperationFailureA0>;
 
 bool decode_json(const unsigned char* data, std::size_t size, DiagnosticA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const DiagnosticA0& value, std::string* json, ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, HlrProjectionOptionsA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const HlrProjectionOptionsA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, HlrProjectionResultA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const HlrProjectionResultA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, IpcCancelledA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const IpcCancelledA0& value, std::string* json, ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, IpcCancelRejectedA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const IpcCancelRejectedA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, IpcHelloA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const IpcHelloA0& value, std::string* json, ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, IpcOperationCatalogA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const IpcOperationCatalogA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, IpcProtocolErrorA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const IpcProtocolErrorA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, IpcReasonA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const IpcReasonA0& value, std::string* json, ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, IpcRequestA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const IpcRequestA0& value, std::string* json, ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, IpcShutdownAckA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const IpcShutdownAckA0& value, std::string* json, ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, IpcWelcomeA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const IpcWelcomeA0& value, std::string* json, ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, MeshIllustrationInputA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const MeshIllustrationInputA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, MeshIllustrationResultA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const MeshIllustrationResultA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, MeshIllustrationStyleA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const MeshIllustrationStyleA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, MeshIllustrationGeometryA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const MeshIllustrationGeometryA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size,
-                 MeshIllustrationGeometryInputA0* value, ContractError* error = nullptr);
+                 MeshIllustrationGeometryInputA0* value, ContractError* error = nullptr,
+                 std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const MeshIllustrationGeometryInputA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size,
-                 MeshIllustrationGeometryRequestA0* value, ContractError* error = nullptr);
+                 MeshIllustrationGeometryRequestA0* value, ContractError* error = nullptr,
+                 std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const MeshIllustrationGeometryRequestA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size,
-                 MeshIllustrationGeometryResultA0* value, ContractError* error = nullptr);
+                 MeshIllustrationGeometryResultA0* value, ContractError* error = nullptr,
+                 std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const MeshIllustrationGeometryResultA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, MeshIllustrationRequestA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const MeshIllustrationRequestA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, ModelBoundsOptionsA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const ModelBoundsOptionsA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, ModelBoundsResultA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const ModelBoundsResultA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, MeshCollectionA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const MeshCollectionA0& value, std::string* json, ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, ModelTessellationRequestA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const ModelTessellationRequestA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, ModelTessellationResultA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const ModelTessellationResultA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, OperationOutcomeA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const OperationOutcomeA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size,
-                 StepTopologyAnalyzeRecoveryRequestA0* value, ContractError* error = nullptr);
+                 StepTopologyAnalyzeRecoveryRequestA0* value, ContractError* error = nullptr,
+                 std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const StepTopologyAnalyzeRecoveryRequestA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size,
-                 StepTopologyAnalyzeRecoveryResultA0* value, ContractError* error = nullptr);
+                 StepTopologyAnalyzeRecoveryResultA0* value, ContractError* error = nullptr,
+                 std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const StepTopologyAnalyzeRecoveryResultA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size,
-                 StepTopologyApplyHierarchyRequestA0* value, ContractError* error = nullptr);
+                 StepTopologyApplyHierarchyRequestA0* value, ContractError* error = nullptr,
+                 std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const StepTopologyApplyHierarchyRequestA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size,
-                 StepTopologyApplyHierarchyResultA0* value, ContractError* error = nullptr);
+                 StepTopologyApplyHierarchyResultA0* value, ContractError* error = nullptr,
+                 std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const StepTopologyApplyHierarchyResultA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size,
-                 StepTopologyApplyLogicalGroupsRequestA0* value, ContractError* error = nullptr);
+                 StepTopologyApplyLogicalGroupsRequestA0* value, ContractError* error = nullptr,
+                 std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const StepTopologyApplyLogicalGroupsRequestA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size,
-                 StepTopologyApplyLogicalGroupsResultA0* value, ContractError* error = nullptr);
+                 StepTopologyApplyLogicalGroupsResultA0* value, ContractError* error = nullptr,
+                 std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const StepTopologyApplyLogicalGroupsResultA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size,
-                 StepTopologyApplyMetadataProbesRequestA0* value, ContractError* error = nullptr);
+                 StepTopologyApplyMetadataProbesRequestA0* value, ContractError* error = nullptr,
+                 std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const StepTopologyApplyMetadataProbesRequestA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size,
-                 StepTopologyApplyMetadataProbesResultA0* value, ContractError* error = nullptr);
+                 StepTopologyApplyMetadataProbesResultA0* value, ContractError* error = nullptr,
+                 std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const StepTopologyApplyMetadataProbesResultA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size,
-                 StepTopologyCheckpointEditJournalRequestA0* value, ContractError* error = nullptr);
+                 StepTopologyCheckpointEditJournalRequestA0* value, ContractError* error = nullptr,
+                 std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const StepTopologyCheckpointEditJournalRequestA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size,
-                 StepTopologyCheckpointEditJournalResultA0* value, ContractError* error = nullptr);
+                 StepTopologyCheckpointEditJournalResultA0* value, ContractError* error = nullptr,
+                 std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const StepTopologyCheckpointEditJournalResultA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, StepTopologyCloseRequestA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const StepTopologyCloseRequestA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, StepTopologyCloseResultA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const StepTopologyCloseResultA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, StepTopologyInspectRequestA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const StepTopologyInspectRequestA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, StepTopologyInspectResultA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const StepTopologyInspectResultA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, StepTopologyOpenRequestA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const StepTopologyOpenRequestA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, StepTopologyOpenResultA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const StepTopologyOpenResultA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, StepTopologyRenderRequestA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const StepTopologyRenderRequestA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, StepTopologyRenderResultA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const StepTopologyRenderResultA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size,
-                 StepTopologyResolveHitRequestA0* value, ContractError* error = nullptr);
+                 StepTopologyResolveHitRequestA0* value, ContractError* error = nullptr,
+                 std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const StepTopologyResolveHitRequestA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, StepTopologyResolveHitResultA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const StepTopologyResolveHitResultA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, StepTopologyRestoreRequestA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const StepTopologyRestoreRequestA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, StepTopologyRestoreResultA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const StepTopologyRestoreResultA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, StepTopologySaveRequestA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const StepTopologySaveRequestA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, StepTopologySaveResultA0* value,
-                 ContractError* error = nullptr);
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const StepTopologySaveResultA0& value, std::string* json,
                  ContractError* error = nullptr);
 

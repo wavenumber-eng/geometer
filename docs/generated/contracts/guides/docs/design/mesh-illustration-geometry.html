@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56">
+  <meta name="wn-catalog-sha256" content="e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd">
   <title>Illustration drawing geometry — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/mesh-illustration-geometry.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="illustration-drawing-geometry">Illustration drawing geometry</h1></header>
 <p><code>geometry.mesh_illustration_geometry.a0</code> returns colored, ordered 2D drawing
@@ -64,7 +64,7 @@ HLR or determines visibility for arbitrary supplied lines.</p>
 schema, byte length and SHA-256. One required <code>illustration_geometry</code> attachment
 contains UTF-8 <code>geometry.mesh_illustration.geometry.a0</code> JSON, media type
 <code>application/vnd.wavenumber.geometer.illustration-geometry+json</code>, maximum 256 MiB.
-This uses existing attachments, outside the 8 MiB inline envelope; platform
+This uses existing attachments, outside the 32 MiB inline envelope; platform
 aggregate budgets still apply. Typed Python/Rust helpers validate integrity and
 draw counts, then return the owning geometry DTO. Generic execute returns the
 descriptor and bytes.</p>

@@ -14,6 +14,9 @@ export function renderNativeGeometrySvg(geometry: MeshIllustrationGeometryA0, ti
   const titleElement = document.createElementNS(namespace, "title");
   titleElement.textContent = title;
   root.append(titleElement);
+  const metadata = document.createElementNS(namespace, "metadata");
+  metadata.textContent = "geometry.mesh_illustration.geometry.a0";
+  root.append(metadata);
   if (!geometry.presentation.transparent_background) {
     const background = document.createElementNS(namespace, "rect");
     background.setAttribute("x", String(geometry.bounds.min[0] - pad));
@@ -26,6 +29,7 @@ export function renderNativeGeometrySvg(geometry: MeshIllustrationGeometryA0, ti
   for (const surface of geometry.surfaces)
     for (const layer of surface.layers) {
       const path = document.createElementNS(namespace, "path");
+      path.setAttribute("class", "gms-native");
       path.setAttribute(
         "d",
         layer.rings
@@ -47,11 +51,12 @@ export function renderNativeGeometrySvg(geometry: MeshIllustrationGeometryA0, ti
       root.append(path);
     }
   for (const line of geometry.lines) {
-    const element = document.createElementNS(namespace, "line");
-    element.setAttribute("x1", String(line.start[0]));
-    element.setAttribute("y1", String(-line.start[1]));
-    element.setAttribute("x2", String(line.end[0]));
-    element.setAttribute("y2", String(-line.end[1]));
+    const element = document.createElementNS(namespace, "path");
+    element.setAttribute("class", "gml-native");
+    element.setAttribute(
+      "d",
+      `M${line.start[0]} ${-line.start[1]}L${line.end[0]} ${-line.end[1]}`,
+    );
     element.setAttribute("stroke", line.color);
     element.setAttribute("stroke-width", String(line.width));
     element.setAttribute("stroke-linecap", geometry.presentation.line_cap);
@@ -109,4 +114,3 @@ export function renderNativeGeometryCanvas(
   }
   return geometry.stats.commands;
 }
-

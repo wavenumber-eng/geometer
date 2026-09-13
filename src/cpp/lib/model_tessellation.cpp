@@ -224,7 +224,17 @@ int model_tessellation_from_bytes(const unsigned char* data, std::size_t size,
         parameters.CleanModel = false;
         mesher.Perform(context);
         const bool partial = options.allow_partial.value_or(true);
-        const int flags = mesher.GetStatusFlags();
+        int flags = mesher.GetStatusFlags();
+        if (mesher.IsDone() && (flags & IMeshData_Outdated) != 0)
+        {
+            // Some STEP files carry triangulations whose deflection is coarser
+            // than requested. Retry once after removing those stale meshes;
+            // otherwise OCCT reports Outdated beside recoverable face errors.
+            context = new BRepMesh_Context();
+            parameters.CleanModel = true;
+            mesher.Perform(context);
+            flags = mesher.GetStatusFlags();
+        }
         if (!model_tessellation_detail::meshing_succeeded(mesher.IsDone(), flags, true))
             return fail(
                 1, "STEP meshing did not complete safely: done=" + std::to_string(mesher.IsDone()) +

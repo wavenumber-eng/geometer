@@ -105,16 +105,16 @@ model HlrProjectionOptionsA0 {
   edge_h_iso?: boolean = false;
 
   union_outline_polygons?: boolean = true;
-  /** Omission selects the operation-specific default: poly for model HLR and Fast for mesh HLR. */
-  projection_algorithm?: HlrProjectionAlgorithm;
+  /** Omission selects Fast triangle detail. Older OCCT algorithms require explicit selection. */
+  projection_algorithm?: HlrProjectionAlgorithm = HlrProjectionAlgorithm.fast;
   @minValue(0) mesh_linear_deflection?: float64 = 0.01;
   @minValue(0) @maxValue(3.141592653589793)
   mesh_angular_deflection?: float64 = 0.5;
   mesh_relative?: boolean = false;
   mesh_deflection_mode?: HlrMeshDeflectionMode = HlrMeshDeflectionMode.bbox_relative;
   @minValue(0) mesh_deflection_coefficient?: float64 = 0.004;
-  /** Omission selects the operation-specific default: HLR-close for model HLR and Fast mesh-shadow for mesh HLR. */
-  outline_algorithm?: HlrOutlineAlgorithm;
+  /** Omission selects Fast Mesh Shadow. Older outline algorithms require explicit selection. */
+  outline_algorithm?: HlrOutlineAlgorithm = HlrOutlineAlgorithm.fast_mesh_shadow;
   @minValue(0) @maxValue(3.141592653589793)
   hlr_angle_tolerance?: float64 = 0.0174533;
   fast?: FastHlrOptionsA0;

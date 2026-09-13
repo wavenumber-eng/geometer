@@ -124,8 +124,9 @@ struct HlrProjectionOptions
 
     bool union_outline_polygons = true;
 
-    // 1.1: poly-algo path defaults. Exact path is selected explicitly.
-    ProjectionAlgorithm projection_algorithm = ProjectionAlgorithm::Poly;
+    // Fast triangle detail and Fast Mesh Shadow are the public defaults. The
+    // older OCCT poly/exact paths remain available through explicit selection.
+    ProjectionAlgorithm projection_algorithm = ProjectionAlgorithm::Fast;
     double mesh_linear_deflection = 0.01; // mm (used when mode == Absolute)
     double mesh_angular_deflection = 0.5; // rad (~28.6 deg)
     bool mesh_relative = false;
@@ -134,7 +135,7 @@ struct HlrProjectionOptions
     // mesh_deflection_coefficient; Altium's native OccProxy uses 0.004.
     MeshDeflectionMode mesh_deflection_mode = MeshDeflectionMode::BboxRelative;
     double mesh_deflection_coefficient = 0.004;
-    ProjectionOutlineAlgorithm outline_algorithm = ProjectionOutlineAlgorithm::HlrClosedEdges;
+    ProjectionOutlineAlgorithm outline_algorithm = ProjectionOutlineAlgorithm::FastMeshShadow;
     double hlr_angle_tolerance = 0.0174533; // ~1 deg
 };
 

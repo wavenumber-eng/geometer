@@ -7,6 +7,7 @@ import "./operations/step-topology-a0.tsp";
 import "./operations/model-tessellation-a0.tsp";
 import "./operations/mesh-illustration-operation-a0.tsp";
 import "./operations/mesh-illustration-geometry-a0.tsp";
+import "./operations/model-illustration-a0.tsp";
 
 using TypeSpec.JsonSchema;
 using Wavenumber.Geometer.ContractMetadata;
@@ -49,6 +50,8 @@ model IpcReasonA0 {
  * its operation; structural presence does not imply runtime availability.
  */
 union IpcRequestValueA0 {
+  model_illustration_geometry: Wavenumber.Geometer.Contracts.ModelIllustrationA0.ModelIllustrationGeometryRequestA0,
+  model_illustration: Wavenumber.Geometer.Contracts.ModelIllustrationA0.ModelIllustrationRequestA0,
   mesh_illustration_geometry: Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryRequestA0,
   mesh_illustration: Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0,
   model_tessellation: Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationRequestA0,

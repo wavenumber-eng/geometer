@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd">
+  <meta name="wn-catalog-sha256" content="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d">
   <title>REQ-010: Fast HLR And Illustration Interfaces — Geometer</title>
   <link rel="stylesheet" href="../../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/geometer/requirements/geometer-req-010-fast_hlr_and_illustration.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="req-010-fast-hlr-and-illustration-interfaces">REQ-010: Fast HLR And Illustration Interfaces</h1></header>
 <h2 id="summary">Summary</h2>
@@ -17,10 +17,10 @@ source, and production TypeScript mesh illustration without changing existing
 exact or polygonal behavior.</p>
 <h2 id="requirements">Requirements</h2>
 <ol>
-<li>Keep <code>poly</code> as the model/STEP default projection algorithm, use <code>fast</code> as
-the indexed-mesh default, and retain all documented exact/poly options,
+<li>Use <code>fast</code> detail and <code>fast-mesh-shadow</code> as the model/STEP and indexed-mesh
+defaults, and retain all documented exact/poly and older outline options,
 aliases, output layers, CLI calls, Python calls, and focused C ABI
-compatibility functions.</li>
+compatibility functions as explicit selections.</li>
 <li>Publish <code>geometry.model_hlr_projection.a0</code> and
 <code>geometry.mesh_hlr_projection.a0</code> through the generic C ABI, executable IPC,
 full browser WASM, Python, TypeScript, and Rust support lanes.</li>
@@ -59,6 +59,17 @@ ordered fills, ring holes, opacity, visible linework and millimeter coordinates.
 integer formatting. Qualify native and TypeScript geometry consumers, typed
 Python/Rust IPC helpers and full WASM dispatch; do not advertise this operation
 for the planar-only WASM target.</li>
+<li>Provide a one-pass model-illustration boundary that accepts one attached
+STEP model or one bounded analytic 2.5D scene and returns SVG or existing
+renderer-neutral illustration geometry without exposing an intermediate
+mesh collection.</li>
+<li>Lower analytic definitions once and place repeated occurrences with finite,
+well-conditioned affine transforms. Support planar extrusions with holes
+and circular arcs, vertical cylinders, and spheres under explicit authored,
+sampling, expanded-triangle, visibility, and drawing-command limits.</li>
+<li>The combined operation must use Fast detail and Fast Mesh Shadow, reject
+hidden linework, preserve partial STEP warnings, and expose truthful phase
+timings through TypeSpec-governed generated clients.</li>
 </ol>
 
 </main>

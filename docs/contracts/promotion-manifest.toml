@@ -94,7 +94,7 @@ local_ctest_count = 10
 local_rack_passed = 66
 catalog_sha256 = "c93e41a3aa0d64ab4dab905cea82aaeb3b3792155d1f5b2850673567a699d59c"
 vector_manifest_sha256 = "30f697bf63e6ca1ba28e0b9617a061b59a90115ea4ef06a06761d09ea68301a5"
-# Current distributable lock, refreshed from the local 2026.9.12 release build.
+# Current distributable lock, refreshed from the local 2026.9.13 release build.
 # Build provenance is recorded alongside the grouped WASM artifacts.
 # The original model-bounds promotion and historical review evidence above/below remain unchanged.
 browser_js_sha256 = "da8c64a3138c5a7f70559012c707220eac31a156689f2571aade03eac3873b47"
@@ -601,7 +601,7 @@ sha256 = "87e16b5b2453ad1f9263d92953d5741a30780db02eeea0d59d61f10967c4537b"
 status = "vendored"
 
 [c_abi]
-generation = 20260912
+generation = 20260913
 source = "src/cpp/lib/geometer/c_api.h"
 symbols = [
   "geometer_operation_catalog_json",
@@ -1107,6 +1107,42 @@ pilot_required = true
 compatibility = "Additive stateless STEP tessellation; explicit root placement with strip default matching existing GLB conversion."
 
 [[contracts]]
+id = "geometry.model_illustration.request.a0"
+kind = "request"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/model-illustration-a0.tsp"
+pilot_required = true
+compatibility = "Additive one-pass model or analytic illustration request; one optional STEP attachment and no serialized intermediate mesh."
+
+[[contracts]]
+id = "geometry.model_illustration.result.a0"
+kind = "result"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/model-illustration-a0.tsp"
+pilot_required = true
+compatibility = "Additive one-pass deterministic SVG result with source summary, timing, statistics and bounded warnings."
+
+[[contracts]]
+id = "geometry.model_illustration_geometry.request.a0"
+kind = "request"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/model-illustration-a0.tsp"
+pilot_required = true
+compatibility = "Additive one-pass model or analytic request for renderer-neutral illustration geometry."
+
+[[contracts]]
+id = "geometry.model_illustration_geometry.result.a0"
+kind = "result"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/model-illustration-a0.tsp"
+pilot_required = true
+compatibility = "Additive bounded illustration-geometry attachment descriptor with source summary, timing, statistics and warnings."
+
+[[contracts]]
 id = "geometry.model_tessellation.result.a0"
 kind = "result"
 status = "pilot_candidate"
@@ -1446,6 +1482,26 @@ cli_names = ["mesh_hlr_projection_json"]
 compatibility_cli_names = []
 
 [[operations]]
+id = "geometry.model_illustration.a0"
+status = "pilot_candidate"
+request_contract = "geometry.model_illustration.request.a0"
+result_contract = "geometry.model_illustration.result.a0"
+input_attachments = ["model"]
+output_attachments = []
+cli_names = []
+compatibility_cli_names = []
+
+[[operations]]
+id = "geometry.model_illustration_geometry.a0"
+status = "pilot_candidate"
+request_contract = "geometry.model_illustration_geometry.request.a0"
+result_contract = "geometry.model_illustration_geometry.result.a0"
+input_attachments = ["model"]
+output_attachments = ["illustration_geometry"]
+cli_names = []
+compatibility_cli_names = []
+
+[[operations]]
 id = "geometry.model_tessellation.a0"
 status = "pilot_candidate"
 request_contract = "geometry.model_tessellation.request.a0"
@@ -1619,7 +1675,7 @@ performance_qualification_default_request = "tests/contracts/vectors/analytic/cr
 real_board_packet_provenance = "docs/contracts/analytic-real-board-packet-provenance.toml"
 real_board_packet_provenance_sha256 = "3e465a113fb4edb7667b9b76e684337f1062f76e3456b7a5ef0404f82034d7c2"
 real_board_packet_provenance_test = "tests/python/test_contract_promotion_manifest.py"
-real_board_packet_provenance_test_sha256 = "40fba61ecd2d76c971a2ac7bc1a1e02bb29f7a2b755dabcd145080591b53c96e"
+real_board_packet_provenance_test_sha256 = "b32d573fadd875afc6f0ec80f4724cf2e1f8b8b32b5eb09608ac686ae2584c1c"
 real_board_packet_provenance_status = "public_mit_redistribution_authorized_rt_generated_local_qualified_loz_pending"
 real_board_packet_case_ids = ["rt_super_c1_pwr4", "loz_old_man_curved_copper"]
 real_board_packet_source_sha256 = ["90545409b6ce16e0b636fce3176c90b73be301d03f0a9e32c4ab21a42ad14aca", "377d5a05ed24137ea603d11c663d52ae48849b378534b346010936b826eb2375"]

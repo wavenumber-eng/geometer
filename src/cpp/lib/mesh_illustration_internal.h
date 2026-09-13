@@ -132,14 +132,29 @@ struct PreparedIllustration
     Commands commands;
 };
 
+// Internal path for meshes produced and validated inside Geometer. Public value
+// callers use the DTO overloads below, which retain generated contract validation.
+PreparedIllustration prepare_illustration(const IllustrationInputView& input,
+                                          const contracts::HlrProjectionResultA0* hlr,
+                                          std::size_t max_candidate_comparisons = 100000000,
+                                          std::size_t max_drawing_commands = 2000000);
+
 PreparedIllustration prepare_illustration(const contracts::MeshIllustrationInputA0& input,
-                                          const contracts::HlrProjectionResultA0* hlr);
+                                          const contracts::HlrProjectionResultA0* hlr,
+                                          std::size_t max_candidate_comparisons = 100000000,
+                                          std::size_t max_drawing_commands = 2000000);
 PreparedIllustration prepare_illustration(const contracts::MeshIllustrationGeometryInputA0& input,
-                                          const contracts::HlrProjectionResultA0* hlr);
+                                          const contracts::HlrProjectionResultA0* hlr,
+                                          std::size_t max_candidate_comparisons = 100000000,
+                                          std::size_t max_drawing_commands = 2000000);
+contracts::MeshIllustrationGeometryA0
+make_illustration_geometry(const PreparedIllustration& prepared,
+                           const contracts::MeshIllustrationView& view);
 std::string safe_illustration_color(const std::string& text);
 
 void append_hlr(const IllustrationInputView& input, const contracts::HlrProjectionResultA0& hlr,
-                const Scene& scene, const Style& style, Commands& commands);
+                const Scene& scene, const Style& style, Commands& commands,
+                struct WorkBudget& budget);
 
 struct ResourceLimit : std::runtime_error
 {
@@ -149,12 +164,32 @@ struct ResourceLimit : std::runtime_error
 // Bound adversarial broad-phase work without silently switching renderers.
 struct WorkBudget
 {
-    std::size_t remaining = 100000000;
+    explicit WorkBudget(std::size_t limit = 100000000, std::size_t command_limit = 2000000)
+        : remaining(limit), commands_remaining(command_limit)
+    {
+    }
+    std::size_t remaining;
+    std::size_t commands_remaining;
     void consume()
     {
         if (remaining == 0)
             throw ResourceLimit("Mesh illustration exceeds the candidate comparison limit.");
         --remaining;
+    }
+    void consume_commands(std::size_t amount = 1)
+    {
+        if (amount > commands_remaining)
+            throw ResourceLimit("Mesh illustration exceeds the drawing command limit.");
+        commands_remaining -= amount;
+    }
+    void require_commands(std::size_t amount = 1) const
+    {
+        if (amount > commands_remaining)
+            throw ResourceLimit("Mesh illustration exceeds the drawing command limit.");
+    }
+    bool can_fit_commands(std::size_t amount = 1) const
+    {
+        return amount <= commands_remaining;
     }
 };
 

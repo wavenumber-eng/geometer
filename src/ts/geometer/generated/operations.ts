@@ -1,7 +1,7 @@
 // Generated from wn_geometer_contract_catalog.a0.json. Do not edit.
 
 export const NORMALIZED_CONTRACT_CATALOG_SHA256 =
-  "e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd" as const;
+  "0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d" as const;
 
 export const operationCatalog = {
   "geometry.analytic_planar_boolean_batch.a0": {
@@ -151,6 +151,50 @@ export const operationCatalog = {
     outputAttachments: [],
     documentation:
       "Project STEP model bytes through the selected polygonal, exact, or Fast HLR backend.",
+  },
+  "geometry.model_illustration_geometry.a0": {
+    identity: "geometry.model_illustration_geometry.a0",
+    requestContract: "geometry.model_illustration_geometry.request.a0",
+    resultContract: "geometry.model_illustration_geometry.result.a0",
+    runtimeAvailable: true,
+    nativeRuntimeAvailable: false,
+    runtimeDispatch: "logical_dto",
+    inputAttachments: [
+      {
+        name: "model",
+        required: false,
+        media_types: ["application/step", "model/step"],
+        max_bytes: 268435456,
+      },
+    ],
+    outputAttachments: [
+      {
+        name: "illustration_geometry",
+        required: true,
+        media_types: ["application/vnd.wavenumber.geometer.illustration-geometry+json"],
+        max_bytes: 268435456,
+      },
+    ],
+    documentation: "Import or lower one source and return renderer-neutral illustration geometry.",
+  },
+  "geometry.model_illustration.a0": {
+    identity: "geometry.model_illustration.a0",
+    requestContract: "geometry.model_illustration.request.a0",
+    resultContract: "geometry.model_illustration.result.a0",
+    runtimeAvailable: true,
+    nativeRuntimeAvailable: false,
+    runtimeDispatch: "logical_dto",
+    inputAttachments: [
+      {
+        name: "model",
+        required: false,
+        media_types: ["application/step", "model/step"],
+        max_bytes: 268435456,
+      },
+    ],
+    outputAttachments: [],
+    documentation:
+      "Import or lower one source and return a complete deterministic SVG illustration.",
   },
   "geometry.model_tessellation.a0": {
     identity: "geometry.model_tessellation.a0",

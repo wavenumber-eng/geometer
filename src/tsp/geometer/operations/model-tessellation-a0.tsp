@@ -25,12 +25,8 @@ enum ModelRootPlacement {
   preserve,
 }
 
-/** Stateless STEP tessellation; component placement is retained in either root mode. */
-@jsonSchema
-@id("urn:wavenumber:schema:geometer:geometry.model_tessellation.request:a0")
-@contractIdentity("geometry.model_tessellation.request.a0")
-model ModelTessellationRequestA0 {
-  schema: "geometry.model_tessellation.request.a0";
+/** Reusable bounded STEP tessellation controls. */
+model ModelTessellationOptionsA0 {
   @minValue(0.000001) @maxValue(1000)
   linear_deflection_mm?: float64 = 0.1;
   @minValue(0.000001) @maxValue(3.141592653589793)
@@ -40,6 +36,15 @@ model ModelTessellationRequestA0 {
   max_triangles?: uint32 = 750000;
   /** Return usable faces with warnings when completed meshing has local face failures. */
   allow_partial?: boolean = true;
+}
+
+/** Stateless STEP tessellation; component placement is retained in either root mode. */
+@jsonSchema
+@id("urn:wavenumber:schema:geometer:geometry.model_tessellation.request:a0")
+@contractIdentity("geometry.model_tessellation.request.a0")
+model ModelTessellationRequestA0 {
+  schema: "geometry.model_tessellation.request.a0";
+  ...ModelTessellationOptionsA0;
 }
 
 /** UTF-8 JSON attachment governed by geometry.mesh_collection.a0, not an opaque mesh format. */

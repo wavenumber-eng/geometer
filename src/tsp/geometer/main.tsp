@@ -9,6 +9,7 @@ import "./operations/mesh-illustration-a0.tsp";
 import "./operations/model-tessellation-operation-a0.tsp";
 import "./operations/mesh-illustration-operation-a0.tsp";
 import "./operations/mesh-illustration-geometry-operation-a0.tsp";
+import "./operations/model-illustration-operation-a0.tsp";
 import "./operation-outcome-a0.tsp";
 import "./ipc-a0.tsp";
 import "./operations/analytic-planar-boolean-a0.tsp";

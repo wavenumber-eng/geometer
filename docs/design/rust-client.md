@@ -148,9 +148,9 @@ checked before payload allocation.
 
 `GeometerClient::model_hlr_projection()` accepts STEP bytes and canonical HLR
 options. `mesh_hlr_projection()` accepts an indexed-mesh A0 packet;
-`MeshHlrProjectionRequest::from_mesh()` encodes a structured mesh. The model
-operation retains the `poly` default, while omitted mesh selectors choose the
-only applicable Fast detail and Fast mesh-shadow paths.
+`MeshHlrProjectionRequest::from_mesh()` encodes a structured mesh. Omitted
+selectors choose Fast detail and Fast Mesh Shadow for both operations. The model
+operation also accepts the older algorithms when explicitly requested.
 
 `OperationCall::cancel()` requests queue-only cancellation. `wait_timeout()` is
 a local timeout: it sends a cancellation request and reports whether the server

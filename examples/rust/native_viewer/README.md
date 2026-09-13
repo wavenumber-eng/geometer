@@ -55,9 +55,11 @@ related options](../../../docs/design/mesh-illustration-native.md#fuse-surfaces-
 
 - Colored mesh: `geometry.model_tessellation.a0`, millimeters, stripped root
   placement, generated mesh-collection attachment.
-- Illustration: `geometry.mesh_illustration.a0`, original A0 SVG result, five
-  shading choices, bands/ambient/key/rim, material/fusion/back-face/color/line
-  width/background controls matching the browser Lab's supported defaults.
+- Illustration: `geometry.model_illustration.a0`, with STEP import,
+  tessellation, Fast linework, shading and fusion completed in one native
+  request. It returns the original A0 SVG result with five shading choices,
+  bands/ambient/key/rim, material/fusion/back-face/color/line width/background
+  controls matching the browser Lab's supported defaults.
   Raw mesh outlines/creases are off by default and available only as diagnostic
   controls: they are not occlusion-filtered. The Fast HLR crease slider controls
   different geometry. See the [visibility/settings comparison](../../../docs/developer/native-illustration-lab-parity.md).

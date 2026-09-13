@@ -161,13 +161,13 @@ struct HlrProjectionOptions {
     bool edge_h_sewn = false;
     bool edge_h_iso = false;
     bool union_outline_polygons = true;
-    ProjectionAlgorithm projection_algorithm = ProjectionAlgorithm::Poly;
+    ProjectionAlgorithm projection_algorithm = ProjectionAlgorithm::Fast;
     double mesh_linear_deflection = 0.01;
     double mesh_angular_deflection = 0.5;
     bool mesh_relative = false;
     MeshDeflectionMode mesh_deflection_mode = MeshDeflectionMode::BboxRelative;
     double mesh_deflection_coefficient = 0.004;
-    ProjectionOutlineAlgorithm outline_algorithm = ProjectionOutlineAlgorithm::HlrClosedEdges;
+    ProjectionOutlineAlgorithm outline_algorithm = ProjectionOutlineAlgorithm::FastMeshShadow;
     double hlr_angle_tolerance = 0.0174533;
 };
 ```

@@ -22,6 +22,12 @@ the repaired angle remains pending.
 
 ## Runtime Evidence And Disposition
 
+Release candidate refresh for 2026.9.13: the browser illustration demo and
+Native Rust API Lab use the governed one-pass model illustration boundary. The
+analytic Python example uses the same source union without STEP bytes. Native
+Windows, browser WASM, generated clients and all standalone browser demos are
+rebuilt from the candidate catalog before interactive signoff.
+
 Release refresh for 2026.9.12: native Windows and all three WASM targets were
 rebuilt using the cached OCCT dependency. Generated TypeScript/example bundles,
 all five standalone browser demos, all four hosted demo directories, the direct
@@ -49,6 +55,11 @@ geometry JSON, and passed native execution plus headless Chrome visual inspectio
 on Windows. This additive example does not replace either Lab. See the
 [performance and qualification record](../research/illustration-performance.md)
 for test costs and release limitations.
+
+The [analytic model illustration example](../../examples/python/model_illustration_analytic.py)
+exercises the combined A0 boundary with reusable definitions plus extrusion,
+cylinder, and sphere primitives. It writes native SVG directly without an IPC
+mesh round trip and is retained as the smallest analytic-source example.
 
 The optional [Native Rust API Lab](../../examples/rust/native_viewer/README.md)
 is a twelfth entry added on the native API feature branch, not a replacement
@@ -81,6 +92,7 @@ browser AO remains explicitly unavailable, not a hidden fallback.
 | Planar ring solver / packed polygon example | [page](../../examples/wasm/planar_ring_solver_demo.html) | Headless Chrome loaded the committed standalone page and solved: 1 region, 2 holes, 27.223347 square mm, runtime 2026.9.4 / ABI 20260904. | Keep provisionally as a working packed polygon example; do not prune solely for age. |
 | Native C++ HLR preview / direct embedding | [source](../../examples/cpp/hlr_preview.cpp) | User inspected the original GUI and reported depth-order artifacts. Updated demo built/launched; focused depth regression passed in 0.01 seconds. Corrected angled-view appearance awaits user recheck. | Keep; repair remains subject to visual acceptance. |
 | Python headless HLR/SVG / Python consumers | [source](../../examples/python/step_hlr_svg.py) | Executed against committed binary; produced projection JSON, SVG and GLB. | Keep primary Python example. |
+| Python analytic model illustration / combined-boundary consumers | [source](../../examples/python/model_illustration_analytic.py) | Native SVG smoke covers reusable analytic definitions, occurrences, extrusion, cylinder, and sphere input. | Keep minimal combined analytic-source example. |
 | Python PyVista/Qt viewer / optional GUI experiment | [source](../../examples/python/pyvista_hlr_viewer.py) | Existing GUI environment passed off-screen rendering (53 meshes/bounds), then user inspection. Follow-up Qt control smoke switched fast/poly/exact detail and all outline choices, returning nonempty geometry; updated GUI relaunched for user recheck. | Keep optional GUI experiment; no dependency upgrade required. |
 | Node topology reference / experimental IPC consumers | [source](../../examples/node/step_topology_annotation_reference.ts), [guide](../../examples/node/README.md) | Native open/inspect/group/probe/checkpoint/restart/replay passed. | Keep clearly experimental, not the introductory IPC example. |
 | Node model-bounds quick start / introductory IPC | [source](../../examples/node/ipc-model-bounds.mjs) | Native handshake, discovery, STEP attachment, bounds and graceful close passed. | Keep minimal introductory IPC example. |

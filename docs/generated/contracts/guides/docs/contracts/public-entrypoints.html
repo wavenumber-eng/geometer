@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd">
+  <meta name="wn-catalog-sha256" content="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d">
   <title>Public Entry-Point Reconciliation — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/contracts/public-entrypoints.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="public-entry-point-reconciliation">Public Entry-Point Reconciliation</h1></header>
 <p>Release target <code>v2026-09-07</code>. This maps semantic operations separately from
@@ -38,7 +38,7 @@ in that boundary requires documentation review, not automatic promotion.</p>
 <td>Model HLR / SVG presentation</td>
 <td><code>projection.h</code>, <code>fast_hlr.h</code>; generic operation plus legacy STEP byte ABI; <code>model-project-hlr/svg</code>, STEP aliases</td>
 <td>Python <code>project_model_hlr</code>, <code>model_hlr_projection_json</code>, STEP wrappers; TS/Rust model-HLR requests</td>
-<td>A0 options/result generated pilot; legacy projection B0/SVG file boundary remains wave 3. SVG is presentation of projection, not an extra generated geometry operation.</td>
+<td>A0 options/result generated pilot; omitted selectors use Fast detail and Fast Mesh Shadow, while older OCCT modes remain explicit. Legacy projection B0/SVG file boundary remains wave 3. SVG is presentation of projection, not an extra generated geometry operation.</td>
 </tr>
 <tr>
 <td>Mesh HLR</td>
@@ -93,6 +93,12 @@ in that boundary requires documentation review, not automatic promotion.</p>
 <td>Browser renderer; direct C++ <code>mesh_illustration.h</code> and <code>geometry.mesh_illustration.a0</code> native operation since 2026.9.6</td>
 <td>Browser exports, typed Rust/Python executable methods and Python one-shot helper</td>
 <td>Existing generated A0 input/style/result reused; generated settings plus mesh attachment and optional bounded HLR-result attachment. Native composition handles selected detail/outline ordering. See <a href="../design/mesh-illustration-native.html">native boundary</a>.</td>
+</tr>
+<tr>
+<td>Model illustration</td>
+<td>Direct C++ <code>model_illustration.h</code>; <code>geometry.model_illustration.a0</code> and <code>geometry.model_illustration_geometry.a0</code> generic operations</td>
+<td>Typed Python, TypeScript, Rust, Worker, and WASM methods; Python one-shot helpers</td>
+<td>Generated file/analytic source union, reusable definitions/occurrences, bounded extrusion/cylinder/sphere input, Fast linework controls, SVG result, and renderer-neutral geometry attachment. STEP import, tessellation, linework, fusion, and rendering stay inside one operation. See <a href="../design/model-illustration-a0.html">combined boundary</a>.</td>
 </tr>
 </tbody>
 </table>

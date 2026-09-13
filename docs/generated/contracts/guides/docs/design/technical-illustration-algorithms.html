@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d">
+  <title>Technical illustration algorithms — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/technical-illustration-algorithms.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="technical-illustration-algorithms">Technical illustration algorithms</h1></header>
+<p>Geometer technical illustration combines three maintained stages: Fast vector
+linework, projected triangle visibility and shading, and drawing-surface
+fusion. The combined model-illustration operation orchestrates them; the
+independent HLR and mesh-illustration APIs remain available for consumers that
+already own geometry or need separate intermediate products.</p>
+<h2 id="fast-vector-detail">Fast vector detail</h2>
+<p>Fast detail starts from indexed triangles. It welds vertices within the
+configured tolerance, builds edge incidence, and classifies boundaries,
+creases, silhouettes, and optional coplanar seams. View projection maps the 3D
+segments into one orthographic 2D basis. A bounded spatial candidate pass tests
+projected triangle coverage and depth, splitting or rejecting hidden fragments.
+The algorithm emits polylines and source-face identities; it does not invoke
+OCCT HLR.</p>
+<p>The name <code>fast</code> distinguishes this triangle-based route from the older OCCT
+exact and polygonal projection engines. Finished model illustrations always use
+Fast detail and reject hidden output. The independent HLR APIs retain all older
+algorithm choices.</p>
+<h2 id="fast-mesh-shadow">Fast Mesh Shadow</h2>
+<p>Fast Mesh Shadow derives the visible projected boundary from the same indexed
+surface mesh. Candidate edges are classified from triangle incidence and
+front/back orientation, then tested against projected occluders. Coplanar seam
+suppression and tolerances come from the nested Fast options. This produces the
+strong outside contour used over technical illustration fills.</p>
+<p>Fast Mesh Shadow operates on source geometry and never unions CAD solids.
+Separate component bodies therefore keep their own visible contours and
+material shading while normal depth visibility resolves overlaps.</p>
+<h2 id="illustration-preparation-and-visibility">Illustration preparation and visibility</h2>
+<p>The illustration renderer validates mesh positions, indices, normals,
+materials, and transforms, then projects triangles into the requested view.
+Normals use inverse-transpose transformation and reflections reverse winding.
+Back-facing triangles are removed unless double-sided rendering is selected.</p>
+<p>Projected bounding boxes drive a bounded broad phase. Significant overlaps
+produce depth-order constraints; stable strongly connected components resolve
+cycles without depending on hash iteration order. This painter order governs
+all emitted fills. Supplied Fast linework is already visibility-filtered and is
+composed over fills, with detail before outline.</p>
+<p>Toon, banded, Lambert, flat, and unlit styles share the same scene. Source sRGB
+materials, opacity, ambient/key lighting, light direction, rim amount, and
+fallback color determine fill colors. The raw geometry and SVG operations use
+the same style resolution.</p>
+<h2 id="same-color-surface-fusion">Same-color surface fusion</h2>
+<p>After shading and ordering, compatible adjacent triangles with the same final
+fill and opacity can be fused into polygon rings. Fusion uses projected planar
+topology and preserves holes, material layers, painter-order constraints, and
+visible boundaries. It reduces drawing commands and SVG size after source mesh
+preparation; it does not reduce model attachment size or create a portable mesh
+cache.</p>
+<p>Fusion is deterministic for identical validated input, view, and options.
+Numeric SVG formatting uses locale-independent integer-grid and compact decimal
+paths. Raw geometry retains millimeter coordinates and painter order so a
+custom renderer can reproduce the same drawing.</p>
+<h2 id="limits-and-diagnostics">Limits and diagnostics</h2>
+<p>Every public input has structural count bounds. Runtime budgets additionally
+cap triangles, Fast visibility candidate pairs, illustration overlap/fusion
+comparisons, drawing commands, output attachment bytes, analytic sampling, and
+analytic topology candidate pairs.
+Budget exhaustion returns a stable resource-limit failure; it does not silently
+switch algorithms or return a partial illustration. Partial STEP tessellation
+is separate: Geometer cleans and retries outdated OCCT triangulations once, then
+recoverable source faces may be omitted with warnings before the remaining
+complete illustration is built.</p>
+<p>Timings distinguish source preparation, Fast linework, illustration work, and
+raw attachment encoding. These fields locate consumer-visible cost without
+claiming a stable subdivision of private importer or renderer stages.</p>
+
+</main>
+</body>
+</html>

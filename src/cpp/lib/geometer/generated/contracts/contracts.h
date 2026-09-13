@@ -775,7 +775,155 @@ struct IpcReasonA0
     std::optional<std::string> reason{};
 };
 
+using IllustrationMatrix4x4 = std::vector<double>;
+
 using IllustrationVector3 = std::vector<double>;
+
+struct MeshIllustrationMaterial
+{
+    IllustrationVector3 color{};
+    std::optional<double> opacity{};
+    std::optional<std::string> name{};
+};
+
+enum class ModelRootPlacement
+{
+    strip,
+    preserve,
+};
+
+struct ModelTessellationOptionsA0
+{
+    std::optional<double> linear_deflection_mm{};
+    std::optional<double> angular_deflection_rad{};
+    std::optional<ModelRootPlacement> root_placement{};
+    std::optional<std::uint32_t> max_triangles{};
+    std::optional<bool> allow_partial{};
+};
+
+struct ModelAttachmentIllustrationSourceA0
+{
+    std::string kind = "model";
+    std::string attachment = "model";
+    std::optional<IllustrationMatrix4x4> transform{};
+    std::optional<MeshIllustrationMaterial> material_override{};
+    std::optional<ModelTessellationOptionsA0> tessellation{};
+};
+
+using IllustrationVector2Mm = std::vector<double>;
+
+struct IllustrationProfileLineA0
+{
+    std::string kind = "line";
+};
+
+enum class PlanarArcSweep
+{
+    cw,
+    ccw,
+};
+
+struct IllustrationProfileCircularArcA0
+{
+    std::string kind = "circular_arc";
+    IllustrationVector2Mm center_mm{};
+    PlanarArcSweep sweep{};
+};
+
+using IllustrationProfileSegmentA0 =
+    std::variant<IllustrationProfileLineA0, IllustrationProfileCircularArcA0>;
+
+struct IllustrationProfileRingA0
+{
+    std::vector<IllustrationVector2Mm> points_mm{};
+    std::vector<IllustrationProfileSegmentA0> segments{};
+};
+
+struct IllustrationProfileRegionA0
+{
+    IllustrationProfileRingA0 outer{};
+    std::optional<std::vector<IllustrationProfileRingA0>> holes{};
+};
+
+struct AnalyticExtrusionA0
+{
+    std::string kind = "extrusion";
+    std::string id{};
+    std::vector<IllustrationProfileRegionA0> regions{};
+    double z_min_mm{};
+    double z_max_mm{};
+    MeshIllustrationMaterial material{};
+};
+
+struct AnalyticCylinderA0
+{
+    std::string kind = "cylinder";
+    std::string id{};
+    IllustrationVector2Mm center_mm{};
+    double radius_mm{};
+    double z_min_mm{};
+    double z_max_mm{};
+    MeshIllustrationMaterial material{};
+};
+
+struct AnalyticSphereA0
+{
+    std::string kind = "sphere";
+    std::string id{};
+    IllustrationVector3 center_mm{};
+    double radius_mm{};
+    MeshIllustrationMaterial material{};
+};
+
+using AnalyticPrimitiveA0 = std::variant<AnalyticExtrusionA0, AnalyticCylinderA0, AnalyticSphereA0>;
+
+struct AnalyticDefinitionA0
+{
+    std::string id{};
+    std::vector<AnalyticPrimitiveA0> primitives{};
+};
+
+struct AnalyticOccurrenceA0
+{
+    std::string id{};
+    std::string definition_id{};
+    std::optional<IllustrationMatrix4x4> transform{};
+};
+
+struct AnalyticSceneA0
+{
+    std::vector<AnalyticDefinitionA0> definitions{};
+    std::vector<AnalyticOccurrenceA0> occurrences{};
+};
+
+struct AnalyticIllustrationLimitsA0
+{
+    std::optional<std::uint32_t> max_reached_definitions{};
+    std::optional<std::uint32_t> max_reached_occurrences{};
+    std::optional<std::uint32_t> max_reached_primitives{};
+    std::optional<std::uint32_t> max_reached_rings{};
+    std::optional<std::uint32_t> max_reached_points{};
+    std::optional<std::uint32_t> max_generated_curve_samples{};
+    std::optional<std::uint32_t> max_definition_triangles{};
+    std::optional<std::uint32_t> max_topology_candidate_pairs{};
+};
+
+struct AnalyticLoweringOptionsA0
+{
+    std::optional<double> linear_deflection_mm{};
+    std::optional<double> angular_deflection_rad{};
+    std::optional<AnalyticIllustrationLimitsA0> limits{};
+};
+
+struct AnalyticIllustrationSourceA0
+{
+    std::string kind = "analytic";
+    AnalyticSceneA0 scene{};
+    std::optional<AnalyticLoweringOptionsA0> lowering{};
+};
+
+using ModelIllustrationSourceA0 =
+    std::variant<ModelAttachmentIllustrationSourceA0, AnalyticIllustrationSourceA0>;
 
 struct MeshIllustrationView
 {
@@ -788,6 +936,13 @@ struct MeshIllustrationPrepareOptions
 {
     std::optional<std::uint32_t> max_triangles{};
     std::optional<double> weld_tolerance{};
+};
+
+struct ModelIllustrationLineworkOptionsA0
+{
+    std::optional<FastHlrOptionsA0> fast{};
+    std::optional<double> outline_width_mm{};
+    std::optional<double> detail_width_mm{};
 };
 
 enum class MeshIllustrationShading
@@ -825,18 +980,47 @@ struct MeshIllustrationStyleA0
     std::optional<double> rim_amount{};
 };
 
-struct MeshIllustrationGeometryRequestA0
+struct ModelIllustrationWorkLimitsA0
 {
-    std::string schema = "geometry.mesh_illustration_geometry.request.a0";
+    std::optional<std::uint32_t> max_visibility_candidate_pairs{};
+    std::optional<std::uint32_t> max_drawing_commands{};
+};
+
+struct ModelIllustrationGeometryRequestA0
+{
+    std::string schema = "geometry.model_illustration_geometry.request.a0";
+    ModelIllustrationSourceA0 source{};
     MeshIllustrationView view{};
     std::optional<MeshIllustrationPrepareOptions> prepare{};
+    std::optional<ModelIllustrationLineworkOptionsA0> linework{};
     std::optional<MeshIllustrationStyleA0> style{};
+    std::optional<ModelIllustrationWorkLimitsA0> work_limits{};
 };
 
 struct MeshIllustrationSvgOptions
 {
     std::optional<std::uint32_t> coordinate_span{};
     std::optional<std::string> title{};
+};
+
+struct ModelIllustrationRequestA0
+{
+    std::string schema = "geometry.model_illustration.request.a0";
+    ModelIllustrationSourceA0 source{};
+    MeshIllustrationView view{};
+    std::optional<MeshIllustrationPrepareOptions> prepare{};
+    std::optional<ModelIllustrationLineworkOptionsA0> linework{};
+    std::optional<MeshIllustrationStyleA0> style{};
+    std::optional<MeshIllustrationSvgOptions> svg{};
+    std::optional<ModelIllustrationWorkLimitsA0> work_limits{};
+};
+
+struct MeshIllustrationGeometryRequestA0
+{
+    std::string schema = "geometry.mesh_illustration_geometry.request.a0";
+    MeshIllustrationView view{};
+    std::optional<MeshIllustrationPrepareOptions> prepare{};
+    std::optional<MeshIllustrationStyleA0> style{};
 };
 
 struct MeshIllustrationRequestA0
@@ -846,12 +1030,6 @@ struct MeshIllustrationRequestA0
     std::optional<MeshIllustrationPrepareOptions> prepare{};
     std::optional<MeshIllustrationStyleA0> style{};
     std::optional<MeshIllustrationSvgOptions> svg{};
-};
-
-enum class ModelRootPlacement
-{
-    strip,
-    preserve,
 };
 
 struct ModelTessellationRequestA0
@@ -1325,6 +1503,7 @@ struct StepTopologyAnalyzeRecoveryRequestA0
 };
 
 using IpcRequestValueA0 = std::variant<
+    ModelIllustrationGeometryRequestA0, ModelIllustrationRequestA0,
     MeshIllustrationGeometryRequestA0, MeshIllustrationRequestA0, ModelTessellationRequestA0,
     ModelBoundsOptionsA0, HlrProjectionOptionsA0, PackedAttachmentProjectionA0,
     StepTopologyOpenRequestA0, StepTopologyCloseRequestA0, StepTopologyInspectRequestA0,
@@ -1355,15 +1534,6 @@ struct IpcWelcomeA0
     IpcOperationCatalogA0 operation_catalog{};
     IpcEffectiveLimitsA0 limits{};
     std::vector<std::string> capabilities{};
-};
-
-using IllustrationMatrix4x4 = std::vector<double>;
-
-struct MeshIllustrationMaterial
-{
-    IllustrationVector3 color{};
-    std::optional<double> opacity{};
-    std::optional<std::string> name{};
 };
 
 struct MeshIllustrationMesh
@@ -1527,6 +1697,65 @@ struct ModelBoundsResultA0
     ModelBoundsSource source{};
     ModelBoundsValues bounds{};
     ModelBoundsTimings timings{};
+};
+
+struct AnalyticSourceSummaryA0
+{
+    std::string kind = "analytic";
+    std::uint32_t definitions{};
+    std::uint32_t occurrences{};
+    std::uint32_t primitives{};
+    std::uint32_t triangles{};
+};
+
+enum class ModelAttachmentMediaTypeA0
+{
+    application_step,
+    model_step,
+};
+
+struct ModelAttachmentSourceSummaryA0
+{
+    std::string kind = "model";
+    ModelAttachmentMediaTypeA0 media_type{};
+    std::string source_sha256{};
+    std::uint32_t meshes{};
+    std::uint32_t triangles{};
+};
+
+using ModelIllustrationBounds3MmA0 = std::vector<double>;
+
+using ModelIllustrationSourceSummaryA0 =
+    std::variant<ModelAttachmentSourceSummaryA0, AnalyticSourceSummaryA0>;
+
+struct ModelIllustrationTimingsA0
+{
+    double source_preparation_ms{};
+    double linework_ms{};
+    double illustration_ms{};
+    double attachment_encoding_ms{};
+};
+
+struct ModelIllustrationGeometryResultA0
+{
+    std::string schema = "geometry.model_illustration_geometry.result.a0";
+    IllustrationGeometryAttachment geometry{};
+    ModelIllustrationBounds3MmA0 bounds_mm{};
+    ModelIllustrationSourceSummaryA0 source{};
+    MeshIllustrationRenderStats stats{};
+    ModelIllustrationTimingsA0 timings{};
+    std::vector<std::string> warnings{};
+};
+
+struct ModelIllustrationResultA0
+{
+    std::string schema = "geometry.model_illustration.result.a0";
+    std::string svg{};
+    ModelIllustrationBounds3MmA0 bounds_mm{};
+    ModelIllustrationSourceSummaryA0 source{};
+    MeshIllustrationRenderStats stats{};
+    ModelIllustrationTimingsA0 timings{};
+    std::vector<std::string> warnings{};
 };
 
 struct MeshCollectionA0
@@ -2043,15 +2272,14 @@ struct StepTopologyAnalyzeRecoveryResultA0
     std::vector<DiagnosticA0> diagnostics{};
 };
 
-using OperationResultValueA0 =
-    std::variant<MeshIllustrationGeometryResultA0, MeshIllustrationResultA0,
-                 ModelTessellationResultA0, ModelBoundsResultA0, HlrProjectionResultA0,
-                 PackedAttachmentProjectionA0, StepTopologyOpenResultA0, StepTopologyCloseResultA0,
-                 StepTopologyInspectResultA0, StepTopologyRenderResultA0,
-                 StepTopologyResolveHitResultA0, StepTopologyApplyLogicalGroupsResultA0,
-                 StepTopologyApplyMetadataProbesResultA0, StepTopologyCheckpointEditJournalResultA0,
-                 StepTopologyApplyHierarchyResultA0, StepTopologySaveResultA0,
-                 StepTopologyRestoreResultA0, StepTopologyAnalyzeRecoveryResultA0>;
+using OperationResultValueA0 = std::variant<
+    ModelIllustrationGeometryResultA0, ModelIllustrationResultA0, MeshIllustrationGeometryResultA0,
+    MeshIllustrationResultA0, ModelTessellationResultA0, ModelBoundsResultA0, HlrProjectionResultA0,
+    PackedAttachmentProjectionA0, StepTopologyOpenResultA0, StepTopologyCloseResultA0,
+    StepTopologyInspectResultA0, StepTopologyRenderResultA0, StepTopologyResolveHitResultA0,
+    StepTopologyApplyLogicalGroupsResultA0, StepTopologyApplyMetadataProbesResultA0,
+    StepTopologyCheckpointEditJournalResultA0, StepTopologyApplyHierarchyResultA0,
+    StepTopologySaveResultA0, StepTopologyRestoreResultA0, StepTopologyAnalyzeRecoveryResultA0>;
 
 struct OperationSuccessA0
 {
@@ -2166,6 +2394,28 @@ bool encode_json(const ModelBoundsOptionsA0& value, std::string* json,
 bool decode_json(const unsigned char* data, std::size_t size, ModelBoundsResultA0* value,
                  ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const ModelBoundsResultA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size,
+                 ModelIllustrationGeometryRequestA0* value, ContractError* error = nullptr,
+                 std::size_t max_json_bytes = 32U * 1024U * 1024U);
+bool encode_json(const ModelIllustrationGeometryRequestA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size,
+                 ModelIllustrationGeometryResultA0* value, ContractError* error = nullptr,
+                 std::size_t max_json_bytes = 32U * 1024U * 1024U);
+bool encode_json(const ModelIllustrationGeometryResultA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, ModelIllustrationRequestA0* value,
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
+bool encode_json(const ModelIllustrationRequestA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, ModelIllustrationResultA0* value,
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
+bool encode_json(const ModelIllustrationResultA0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, MeshCollectionA0* value,

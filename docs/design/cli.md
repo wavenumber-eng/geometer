@@ -53,10 +53,9 @@ Projection CLI options:
 - `--deflection-mode <absolute|bbox-relative>`
 - `--deflection-coefficient <value>`
 
-`--projection-algorithm fast` selects Fast vector detail without changing the
-default `poly` behavior. `--outline-algorithm fast-mesh-shadow` independently
-selects the Fast outline implementation. They may be used together or with an
-older compatible counterpart.
+Fast vector detail and Fast Mesh Shadow are the defaults when the algorithm
+selectors are omitted. The selectors can explicitly request an older compatible
+counterpart for model/STEP projection.
 
 The direct projection commands expose the common selectors above. The `run`
 request is the file-oriented route for the full canonical nested `fast` block,

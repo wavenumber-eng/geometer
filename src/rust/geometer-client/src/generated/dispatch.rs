@@ -1,5 +1,10 @@
 // Generated from wn_geometer_contract_catalog.a0.json. Do not edit.
 
+#![allow(
+    clippy::too_many_lines,
+    reason = "generated dispatch enumerates governed contracts"
+)]
+
 use super::contracts;
 
 /// Decode using the negotiated operation's exact contract, not union trial order.
@@ -8,6 +13,16 @@ pub fn decode_logical_request(
     data: &[u8],
 ) -> Result<contracts::IpcRequestValueA0, contracts::ContractError> {
     match contract {
+        "geometry.model_illustration_geometry.request.a0" => {
+            Ok(contracts::IpcRequestValueA0::ModelIllustrationGeometry(
+                contracts::decode_json::<contracts::ModelIllustrationGeometryRequestA0>(data)?,
+            ))
+        }
+        "geometry.model_illustration.request.a0" => {
+            Ok(contracts::IpcRequestValueA0::ModelIllustration(
+                contracts::decode_json::<contracts::ModelIllustrationRequestA0>(data)?,
+            ))
+        }
         "geometry.mesh_illustration_geometry.request.a0" => {
             Ok(contracts::IpcRequestValueA0::MeshIllustrationGeometry(
                 contracts::decode_json::<contracts::MeshIllustrationGeometryRequestA0>(data)?,
@@ -102,6 +117,12 @@ pub fn decode_logical_request(
 
 pub fn logical_request_contract(value: &contracts::IpcRequestValueA0) -> Option<&'static str> {
     match value {
+        contracts::IpcRequestValueA0::ModelIllustrationGeometry(_) => {
+            Some("geometry.model_illustration_geometry.request.a0")
+        }
+        contracts::IpcRequestValueA0::ModelIllustration(_) => {
+            Some("geometry.model_illustration.request.a0")
+        }
         contracts::IpcRequestValueA0::MeshIllustrationGeometry(_) => {
             Some("geometry.mesh_illustration_geometry.request.a0")
         }
@@ -157,6 +178,12 @@ pub fn logical_request_contract(value: &contracts::IpcRequestValueA0) -> Option<
 
 pub fn logical_result_contract(value: &contracts::OperationResultValueA0) -> Option<&'static str> {
     match value {
+        contracts::OperationResultValueA0::ModelIllustrationGeometry(_) => {
+            Some("geometry.model_illustration_geometry.result.a0")
+        }
+        contracts::OperationResultValueA0::ModelIllustration(_) => {
+            Some("geometry.model_illustration.result.a0")
+        }
         contracts::OperationResultValueA0::MeshIllustrationGeometry(_) => {
             Some("geometry.mesh_illustration_geometry.result.a0")
         }

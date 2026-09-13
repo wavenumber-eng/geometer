@@ -106,6 +106,69 @@ function projectMeshShadow(module, stepBytes, view, modelTransform, hlrOptions =
   );
 }
 
+function illustrateModel(module, stepBytes, view, modelTransform, meshOptions = {}, hlrOptions = {}, style = {}) {
+  const request = {
+    schema: "geometry.model_illustration_geometry.request.a0",
+    source: {
+      kind: "model",
+      attachment: "model",
+      transform: modelTransform,
+      tessellation: {
+        linear_deflection_mm: meshOptions.linearDeflectionMm ?? 0.1,
+        angular_deflection_rad: meshOptions.angularDeflectionRad ?? 0.5,
+        root_placement: "strip",
+        allow_partial: true,
+      },
+    },
+    view: {
+      direction: view.direction,
+      up: view.up,
+      mirror_x: view.mirrorX ?? false,
+    },
+    linework: {
+      fast: {
+        include_hidden: false,
+        crease_angle_rad: hlrOptions.creaseAngleRad ?? (25 * Math.PI) / 180,
+        suppress_coplanar_seams: hlrOptions.suppressCoplanarSeams ?? false,
+        coplanar_seam_angle_rad: hlrOptions.coplanarSeamAngleRad ?? Math.PI / 180,
+        coplanar_seam_depth_tolerance: hlrOptions.coplanarSeamDepthTolerance ?? 0.001,
+      },
+    },
+    style: {
+      shading: style.shading,
+      ambient: style.ambient,
+      key_intensity: style.keyIntensity,
+      light_direction: style.lightDirection,
+      bands: style.bands,
+      source_colors: style.sourceColors,
+      fallback_color: style.fallbackColor,
+      background: style.background,
+      transparent_background: style.transparentBackground,
+      fuse_surfaces: style.fuseSurfaces,
+      layer_coplanar_materials: style.layerCoplanarMaterials,
+      show_hlr_outline: style.showHlrOutline,
+      show_hlr_detail: style.showHlrDetail,
+      show_outlines: false,
+      show_creases: false,
+      outline_color: style.outlineColor,
+      crease_color: style.creaseColor,
+      outline_width: style.outlineWidth,
+      crease_width: style.creaseWidth,
+      double_sided: style.doubleSided,
+      rim_amount: style.rimAmount,
+    },
+  };
+  const response = self.GeometerOperationWorker.executeOneAttachmentWithOutputs(
+    module,
+    "geometry.model_illustration_geometry.a0",
+    request,
+    { name: "model", mediaType: "application/step", data: stepBytes },
+  );
+  const attachment = response.attachments.find((item) => item.name === "illustration_geometry");
+  if (!attachment) throw new Error("Model illustration returned no drawing geometry.");
+  return { metadata: response.result, geometry: JSON.parse(new TextDecoder().decode(attachment.data)) };
+}
+
 self.onmessage = async (event) => {
   const {
     id,
@@ -127,6 +190,21 @@ self.onmessage = async (event) => {
       const glbBuffer = stepToGlb(module, stepBytes, meshOptions);
       timings.glbMs = performance.now() - conversionStarted;
       self.postMessage({ id, ok: true, operation, glbBuffer, timings }, [glbBuffer]);
+      return;
+    }
+    if (operation === "model-illustration") {
+      const illustrationStarted = performance.now();
+      const illustration = illustrateModel(
+        module,
+        stepBytes,
+        view,
+        modelTransform,
+        meshOptions,
+        hlrOptions,
+        event.data.style,
+      );
+      timings.illustrationMs = performance.now() - illustrationStarted;
+      self.postMessage({ id, ok: true, operation, illustration, timings });
       return;
     }
     if (operation !== "mesh-shadow") throw new Error(`Unsupported operation: ${operation}`);

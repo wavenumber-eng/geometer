@@ -8,8 +8,9 @@ namespace geometer::illustration_detail
 namespace
 {
 template <typename Input>
-PreparedIllustration prepare_validated(const Input& input,
-                                       const contracts::HlrProjectionResultA0* hlr)
+PreparedIllustration
+prepare_validated(const Input& input, const contracts::HlrProjectionResultA0* hlr,
+                  std::size_t max_candidate_comparisons, std::size_t max_drawing_commands)
 {
     // Retain generated validation for value callers as well as the IPC boundary.
     std::string validated;
@@ -19,27 +20,39 @@ PreparedIllustration prepare_validated(const Input& input,
     validated.clear();
     validated.shrink_to_fit();
     const IllustrationInputView view{input.meshes, input.view, input.prepare, input.style};
-    PreparedIllustration result;
-    result.scene = prepare_scene(view);
-    result.style = resolve_style(input.style.value_or(contracts::MeshIllustrationStyleA0{}));
-    WorkBudget budget;
-    result.commands = render_commands(result.scene, result.style, budget);
-    if (hlr)
-        append_hlr(view, *hlr, result.scene, result.style, result.commands);
-    return result;
+    return prepare_illustration(view, hlr, max_candidate_comparisons, max_drawing_commands);
 }
 } // namespace
 
-PreparedIllustration prepare_illustration(const contracts::MeshIllustrationInputA0& input,
-                                          const contracts::HlrProjectionResultA0* hlr)
+PreparedIllustration prepare_illustration(const IllustrationInputView& view,
+                                          const contracts::HlrProjectionResultA0* hlr,
+                                          std::size_t max_candidate_comparisons,
+                                          std::size_t max_drawing_commands)
 {
-    return prepare_validated(input, hlr);
+    PreparedIllustration result;
+    result.scene = prepare_scene(view);
+    result.style = resolve_style(view.style.value_or(contracts::MeshIllustrationStyleA0{}));
+    WorkBudget budget(max_candidate_comparisons, max_drawing_commands);
+    result.commands = render_commands(result.scene, result.style, budget);
+    if (hlr)
+        append_hlr(view, *hlr, result.scene, result.style, result.commands, budget);
+    return result;
+}
+
+PreparedIllustration prepare_illustration(const contracts::MeshIllustrationInputA0& input,
+                                          const contracts::HlrProjectionResultA0* hlr,
+                                          std::size_t max_candidate_comparisons,
+                                          std::size_t max_drawing_commands)
+{
+    return prepare_validated(input, hlr, max_candidate_comparisons, max_drawing_commands);
 }
 
 PreparedIllustration prepare_illustration(const contracts::MeshIllustrationGeometryInputA0& input,
-                                          const contracts::HlrProjectionResultA0* hlr)
+                                          const contracts::HlrProjectionResultA0* hlr,
+                                          std::size_t max_candidate_comparisons,
+                                          std::size_t max_drawing_commands)
 {
-    return prepare_validated(input, hlr);
+    return prepare_validated(input, hlr, max_candidate_comparisons, max_drawing_commands);
 }
 
 Commands render_commands(const Scene& scene, const Style& style, WorkBudget& budget)
@@ -66,6 +79,7 @@ Commands render_commands(const Scene& scene, const Style& style, WorkBudget& bud
                             edge.normal_b && dot(edge.normal_a, *edge.normal_b) < threshold;
         if (!outline && !crease)
             continue;
+        budget.consume_commands();
         result.lines.push_back({edge.points, outline ? style.outline_color : style.crease_color,
                                 span * (outline ? style.outline_width : style.crease_width),
                                 edge.depth, order++});
@@ -80,7 +94,10 @@ Commands render_commands(const Scene& scene, const Style& style, WorkBudget& bud
             fuse_triangles(ordered, scene.bounds, style.layer_coplanar_materials, budget);
     else
         for (const auto& triangle : ordered)
+        {
+            budget.consume_commands();
             result.surfaces.push_back(triangle_surface(triangle));
+        }
     for (const auto& surface : result.surfaces)
     {
         result.stats.surface_draws += static_cast<std::uint32_t>(surface.layers.size());
@@ -101,7 +118,7 @@ namespace
 {
 int render(const contracts::MeshIllustrationInputA0& input,
            const contracts::HlrProjectionResultA0* hlr, contracts::MeshIllustrationResultA0* result,
-           Status* status)
+           Status* status, const MeshIllustrationExecutionLimits& limits)
 {
     if (result)
         *result = {};
@@ -117,7 +134,8 @@ int render(const contracts::MeshIllustrationInputA0& input,
         return fail(1, "Mesh illustration result pointer is null.");
     try
     {
-        const auto prepared = illustration_detail::prepare_illustration(input, hlr);
+        const auto prepared = illustration_detail::prepare_illustration(
+            input, hlr, limits.max_candidate_comparisons, limits.max_drawing_commands);
         const auto& scene = prepared.scene;
         const auto& style = prepared.style;
         const auto& commands = prepared.commands;
@@ -149,13 +167,21 @@ int render(const contracts::MeshIllustrationInputA0& input,
 int illustrate_mesh(const contracts::MeshIllustrationInputA0& input,
                     contracts::MeshIllustrationResultA0* result, Status* status)
 {
-    return render(input, nullptr, result, status);
+    return render(input, nullptr, result, status, {});
 }
 
 int illustrate_mesh(const contracts::MeshIllustrationInputA0& input,
                     const contracts::HlrProjectionResultA0& hlr,
                     contracts::MeshIllustrationResultA0* result, Status* status)
 {
-    return render(input, &hlr, result, status);
+    return render(input, &hlr, result, status, {});
+}
+
+int illustrate_mesh(const contracts::MeshIllustrationInputA0& input,
+                    const contracts::HlrProjectionResultA0* hlr,
+                    const MeshIllustrationExecutionLimits& limits,
+                    contracts::MeshIllustrationResultA0* result, Status* status)
+{
+    return render(input, hlr, result, status, limits);
 }
 } // namespace geometer

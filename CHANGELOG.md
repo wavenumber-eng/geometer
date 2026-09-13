@@ -4,6 +4,26 @@ All notable changes to geometer are documented here.
 
 ## [Unreleased]
 
+## [2026.9.13] - 2026-09-13
+
+### Added
+
+- Added governed one-pass model illustration and renderer-neutral illustration
+  geometry operations for embedded STEP and reusable analytic 2.5D scenes.
+- Added analytic extrusion, cylinder, and sphere illustration sources with
+  occurrence transforms, material overrides, depth ordering, and occlusion.
+
+### Changed
+
+- Model illustration now keeps STEP import, tessellation, Fast detail, Fast
+  Mesh Shadow, shading, and same-color surface fusion inside Geometer.
+- HLR API, IPC, CLI, and maintained-client defaults now resolve to Fast detail
+  and Fast Mesh Shadow; older algorithms remain explicit opt-ins.
+- Partial STEP tessellation is the default and reports ordered warnings while
+  retaining usable faces, including a cleaned-model recovery pass.
+- Reserved combined mesh storage once per imported model, avoiding repeated
+  face-by-face reallocation on complex STEP files.
+
 ## [2026.9.12] - 2026-09-12
 
 ### Changed

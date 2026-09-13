@@ -4,20 +4,20 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd">
+  <meta name="wn-catalog-sha256" content="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d">
   <title>HLR Projection A0 — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/hlr-projection-a0.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="hlr-projection-a0">HLR Projection A0</h1></header>
 <h2 id="boundary">Boundary</h2>
 <p><code>geometry.hlr_projection.options.a0</code> and
 <code>geometry.hlr_projection.result.a0</code> are the canonical additive contracts shared
-by the model and indexed-mesh projection operations. The default projection
-algorithm remains <code>poly</code> for model/STEP projection. Indexed-mesh projection
-defaults to <code>fast</code>; explicit selectors remain available where the source
-supports them.</p>
+by the model and indexed-mesh projection operations. Both operations default to
+Fast detail and Fast Mesh Shadow when their algorithm selectors are omitted.
+The older OCCT <code>poly</code>, <code>exact</code>, and <code>hlr-close</code> paths remain available for
+model/STEP projection when explicitly selected.</p>
 <p>The existing <code>geometry.projection.options.b0</code> and <code>geometry.projection.b0</code>
 identities, focused C ABI functions, CLI commands, and Python helpers remain
 compatibility surfaces. Their accepted aliases are mapped into the canonical
@@ -52,11 +52,11 @@ of assuming a particular executable or WASM build exposes an operation.</p>
 </thead>
 <tbody>
 <tr>
-<td><code>poly</code> (model default)</td>
+<td><code>poly</code></td>
 <td>STEP through OCCT</td>
 <td>OCCT polygonal HLR</td>
 <td>Segments</td>
-<td>Existing compatibility path</td>
+<td>Explicit compatibility path</td>
 </tr>
 <tr>
 <td><code>exact</code></td>
@@ -66,7 +66,7 @@ of assuming a particular executable or WASM build exposes an operation.</p>
 <td>Highest-fidelity, higher-cost path</td>
 </tr>
 <tr>
-<td><code>fast</code> (mesh default)</td>
+<td><code>fast</code> (default)</td>
 <td>STEP tessellation or an indexed mesh</td>
 <td>Triangle incidence plus spatial visibility classification</td>
 <td>Segments</td>
@@ -84,15 +84,15 @@ of assuming a particular executable or WASM build exposes an operation.</p>
 </thead>
 <tbody>
 <tr>
-<td><code>hlr-close</code> (model default)</td>
-<td>Forms outline polygons from HLR edges and closes small gaps.</td>
+<td><code>hlr-close</code></td>
+<td>Forms outline polygons from explicitly selected OCCT HLR edges and closes small gaps.</td>
 </tr>
 <tr>
 <td><code>mesh-shadow</code></td>
 <td>Unions projected tessellated triangles through the established Clipper2 path.</td>
 </tr>
 <tr>
-<td><code>fast-mesh-shadow</code> (mesh default)</td>
+<td><code>fast-mesh-shadow</code> (default)</td>
 <td>Reconstructs projected source-face loops, with bounded triangle-union fallbacks.</td>
 </tr>
 </tbody>
@@ -132,11 +132,11 @@ provide <code>modelHlrProjection</code> and <code>meshHlrProjection</code>; Pyth
 the matching methods on <code>GeometerClient</code>. The mesh methods accept the governed
 indexed-mesh packet, and the Python and TypeScript facades also accept their
 language-native <code>IndexedTriangleMeshA0</code> value.</p>
-<p>The STEP operation retains the common <code>poly</code> default. Because an indexed mesh
-has no OCCT topology to run through the old backends, the mesh operation uses
-Fast detail and Fast mesh-shadow outline when those selectors are absent. It
-rejects explicit <code>poly</code>, <code>exact</code>, or <code>hlr-close</code> selections rather than silently
-changing them. Typed IPC clients materialize the existing
+<p>Both operations use Fast detail and Fast Mesh Shadow when those selectors are
+absent. Because an indexed mesh has no OCCT topology to run through the old
+backends, the mesh operation rejects explicit <code>poly</code>, <code>exact</code>, or <code>hlr-close</code>
+selections rather than silently changing them. The model operation accepts
+those older modes only when explicitly requested. Typed IPC clients materialize the existing
 <code>output_detail=true</code> default on the wire to distinguish HLR's presence-only
 options from the older model-bounds options; this does not change projection
 semantics.</p>
@@ -296,9 +296,9 @@ and source/model units for direct indexed-mesh preparation.</p>
 </tr>
 <tr>
 <td><code>projection_algorithm</code></td>
-<td style="text-align:right">operation-specific</td>
+<td style="text-align:right"><code>fast</code></td>
 <td>—</td>
-<td>Common selector: <code>poly</code>, <code>exact</code>, or <code>fast</code>. Omission means <code>poly</code> for model HLR and <code>fast</code> for indexed-mesh HLR.</td>
+<td>Common selector: <code>poly</code>, <code>exact</code>, or <code>fast</code>. Omission selects Fast detail for both HLR operations.</td>
 </tr>
 <tr>
 <td><code>mesh_linear_deflection</code></td>
@@ -332,9 +332,9 @@ and source/model units for direct indexed-mesh preparation.</p>
 </tr>
 <tr>
 <td><code>outline_algorithm</code></td>
-<td style="text-align:right">operation-specific</td>
+<td style="text-align:right"><code>fast-mesh-shadow</code></td>
 <td>—</td>
-<td>Common outline selector, independent of detail algorithm. Omission means <code>hlr-close</code> for model HLR and <code>fast-mesh-shadow</code> for indexed-mesh HLR.</td>
+<td>Common outline selector, independent of detail algorithm. Omission selects Fast Mesh Shadow for both HLR operations.</td>
 </tr>
 <tr>
 <td><code>hlr_angle_tolerance</code></td>

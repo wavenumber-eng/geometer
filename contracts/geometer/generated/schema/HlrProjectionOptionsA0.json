@@ -92,7 +92,8 @@
     },
     "projection_algorithm": {
       "$ref": "#/$defs/HlrProjectionAlgorithm",
-      "description": "Omission selects the operation-specific default: poly for model HLR and Fast for mesh HLR."
+      "default": "fast",
+      "description": "Omission selects Fast triangle detail. Older OCCT algorithms require explicit selection."
     },
     "mesh_linear_deflection": {
       "type": "number",
@@ -120,7 +121,8 @@
     },
     "outline_algorithm": {
       "$ref": "#/$defs/HlrOutlineAlgorithm",
-      "description": "Omission selects the operation-specific default: HLR-close for model HLR and Fast mesh-shadow for mesh HLR."
+      "default": "fast-mesh-shadow",
+      "description": "Omission selects Fast Mesh Shadow. Older outline algorithms require explicit selection."
     },
     "hlr_angle_tolerance": {
       "type": "number",

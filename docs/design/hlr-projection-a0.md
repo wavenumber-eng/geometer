@@ -4,10 +4,10 @@
 
 `geometry.hlr_projection.options.a0` and
 `geometry.hlr_projection.result.a0` are the canonical additive contracts shared
-by the model and indexed-mesh projection operations. The default projection
-algorithm remains `poly` for model/STEP projection. Indexed-mesh projection
-defaults to `fast`; explicit selectors remain available where the source
-supports them.
+by the model and indexed-mesh projection operations. Both operations default to
+Fast detail and Fast Mesh Shadow when their algorithm selectors are omitted.
+The older OCCT `poly`, `exact`, and `hlr-close` paths remain available for
+model/STEP projection when explicitly selected.
 
 The existing `geometry.projection.options.b0` and `geometry.projection.b0`
 identities, focused C ABI functions, CLI commands, and Python helpers remain
@@ -38,17 +38,17 @@ of assuming a particular executable or WASM build exposes an operation.
 
 | Selection | Geometry source | Detail behavior | Curve output | Performance posture |
 |---|---|---|---|---|
-| `poly` (model default) | STEP through OCCT | OCCT polygonal HLR | Segments | Existing compatibility path |
+| `poly` | STEP through OCCT | OCCT polygonal HLR | Segments | Explicit compatibility path |
 | `exact` | STEP through OCCT | OCCT exact HLR | Native circular arcs or sampled segments | Highest-fidelity, higher-cost path |
-| `fast` (mesh default) | STEP tessellation or an indexed mesh | Triangle incidence plus spatial visibility classification | Segments | Low-latency one-shot; prepare-once API supports repeated views |
+| `fast` (default) | STEP tessellation or an indexed mesh | Triangle incidence plus spatial visibility classification | Segments | Low-latency one-shot; prepare-once API supports repeated views |
 
 `outline_algorithm` is independent of `projection_algorithm`:
 
 | Value | Effect |
 |---|---|
-| `hlr-close` (model default) | Forms outline polygons from HLR edges and closes small gaps. |
+| `hlr-close` | Forms outline polygons from explicitly selected OCCT HLR edges and closes small gaps. |
 | `mesh-shadow` | Unions projected tessellated triangles through the established Clipper2 path. |
-| `fast-mesh-shadow` (mesh default) | Reconstructs projected source-face loops, with bounded triangle-union fallbacks. |
+| `fast-mesh-shadow` (default) | Reconstructs projected source-face loops, with bounded triangle-union fallbacks. |
 
 ## Direct C++ Fast API
 
@@ -96,11 +96,11 @@ the matching methods on `GeometerClient`. The mesh methods accept the governed
 indexed-mesh packet, and the Python and TypeScript facades also accept their
 language-native `IndexedTriangleMeshA0` value.
 
-The STEP operation retains the common `poly` default. Because an indexed mesh
-has no OCCT topology to run through the old backends, the mesh operation uses
-Fast detail and Fast mesh-shadow outline when those selectors are absent. It
-rejects explicit `poly`, `exact`, or `hlr-close` selections rather than silently
-changing them. Typed IPC clients materialize the existing
+Both operations use Fast detail and Fast Mesh Shadow when those selectors are
+absent. Because an indexed mesh has no OCCT topology to run through the old
+backends, the mesh operation rejects explicit `poly`, `exact`, or `hlr-close`
+selections rather than silently changing them. The model operation accepts
+those older modes only when explicitly requested. Typed IPC clients materialize the existing
 `output_detail=true` default on the wire to distinguish HLR's presence-only
 options from the older model-bounds options; this does not change projection
 semantics.
@@ -193,13 +193,13 @@ and source/model units for direct indexed-mesh preparation.
 | `edge_h_sharp`, `edge_h_outline` | `false` | — | Exact and poly hidden categories. Fast uses `fast.include_hidden` with Fast candidate categories. |
 | `edge_h_smooth`, `edge_h_sewn`, `edge_h_iso` | `false` | — | Exact only. Poly and Fast do not provide these OCCT categories. |
 | `union_outline_polygons` | `true` | — | `hlr-close` outline only; ignored by mesh-shadow algorithms. |
-| `projection_algorithm` | operation-specific | — | Common selector: `poly`, `exact`, or `fast`. Omission means `poly` for model HLR and `fast` for indexed-mesh HLR. |
+| `projection_algorithm` | `fast` | — | Common selector: `poly`, `exact`, or `fast`. Omission selects Fast detail for both HLR operations. |
 | `mesh_linear_deflection` | `0.01` | mm/model units | STEP tessellation when absolute mode is active; affects poly, Fast, and mesh-shadow inputs. Not used by exact detail. |
 | `mesh_angular_deflection` | `0.5` | radians | STEP tessellation for poly/Fast/mesh-shadow paths. |
 | `mesh_relative` | `false` | — | Compatibility input to OCCT tessellation. Bbox-relative mode computes an absolute value first. |
 | `mesh_deflection_mode` | `bbox-relative` | — | STEP tessellation: `absolute` or model-bounds-scaled. |
 | `mesh_deflection_coefficient` | `0.004` | ratio | STEP tessellation in bbox-relative mode. |
-| `outline_algorithm` | operation-specific | — | Common outline selector, independent of detail algorithm. Omission means `hlr-close` for model HLR and `fast-mesh-shadow` for indexed-mesh HLR. |
+| `outline_algorithm` | `fast-mesh-shadow` | — | Common outline selector, independent of detail algorithm. Omission selects Fast Mesh Shadow for both HLR operations. |
 | `hlr_angle_tolerance` | `0.0174533` | radians | Exact HLR angular tolerance and delegated HLR outline behavior. |
 | `fast` | focused Fast defaults | — | Fast detail and `fast-mesh-shadow` only. Never changes exact/poly OCCT edge semantics. |
 

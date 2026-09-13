@@ -1,6 +1,6 @@
 //! cargo run --example mesh_illustration -- GEOMETER_EXE INPUT.step OUTPUT.svg
+use geometer_client::GeometerClient;
 use geometer_client::contracts::*;
-use geometer_client::{GeometerClient, ModelHlrProjectionRequest, ModelTessellationRequest};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -10,34 +10,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let client = GeometerClient::spawn(&args[0], "native-illustration-example", "a0").await?;
     let step = std::fs::read(&args[1])?;
-    let meshes = client
-        .model_tessellation(ModelTessellationRequest::step(step.clone()))
-        .await?;
     let view = MeshIllustrationView {
         direction: [0.4, 0.7, 1.0],
         up: [0.0, 1.0, 0.0],
         mirror_x: None,
     };
-    let mut options = decode_hlr_projection_options_a0_json(
-        br#"{
-        "projection_algorithm":"fast", "outline_algorithm":"fast-mesh-shadow",
-        "curve_mode":"polyline", "strip_root_placement":true,
-        "output_outline":true, "output_detail":true, "output_bbox":false,
-        "fast":{"include_hidden":false,"crease_angle_rad":0.4363323129985824}
-    }"#,
-    )?;
-    options.views = Some(vec![HlrViewSpec {
-        id: "illustration".into(),
-        direction: view.direction,
-        up: view.up,
-    }]);
-    let hlr = client
-        .model_hlr_projection(ModelHlrProjectionRequest {
-            model: step,
-            media_type: "application/step".into(),
-            options,
-        })
-        .await?;
     let style = decode_mesh_illustration_style_a0_json(
         br#"{
         "show_outlines":false,"show_creases":false,
@@ -45,16 +22,44 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }"#,
     )?;
     let result = client
-        .mesh_illustration_with_hlr(
-            MeshIllustrationInputA0 {
-                schema: "geometry.mesh_illustration.input.a0".to_owned(),
-                meshes: meshes.mesh_collection.meshes,
+        .model_illustration(
+            ModelIllustrationRequestA0 {
+                schema: "geometry.model_illustration.request.a0".to_owned(),
+                source: ModelIllustrationSourceA0::ModelSource(
+                    ModelAttachmentIllustrationSourceA0 {
+                        kind: "model".to_owned(),
+                        attachment: "model".to_owned(),
+                        transform: None,
+                        material_override: None,
+                        tessellation: None,
+                    },
+                ),
                 view,
                 prepare: None,
+                linework: Some(ModelIllustrationLineworkOptionsA0 {
+                    fast: Some(FastHlrOptionsA0 {
+                        include_boundaries: None,
+                        include_creases: None,
+                        include_silhouettes: None,
+                        include_hidden: None,
+                        suppress_coplanar_seams: None,
+                        crease_angle_rad: Some(0.4363323129985824),
+                        weld_tolerance: None,
+                        projected_tolerance: None,
+                        depth_tolerance: None,
+                        coplanar_seam_angle_rad: None,
+                        coplanar_seam_depth_tolerance: None,
+                        coplanar_seam_lateral_tolerance: None,
+                        limits: None,
+                    }),
+                    outline_width_mm: None,
+                    detail_width_mm: None,
+                }),
                 style: Some(style),
                 svg: None,
+                work_limits: None,
             },
-            hlr,
+            Some(step),
         )
         .await?;
     client.close().await?;

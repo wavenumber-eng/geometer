@@ -5,7 +5,7 @@
 namespace geometer::illustration_detail
 {
 void append_hlr(const IllustrationInputView& input, const contracts::HlrProjectionResultA0& hlr,
-                const Scene& scene, const Style& style, Commands& commands)
+                const Scene& scene, const Style& style, Commands& commands, WorkBudget& budget)
 {
     // Enforce the work limit before generated validation serializes large data.
     std::size_t count = 0;
@@ -44,6 +44,7 @@ void append_hlr(const IllustrationInputView& input, const contracts::HlrProjecti
     {
         for (const auto& segment : layer.segments)
         {
+            budget.consume_commands();
             commands.lines.push_back(
                 {{{{mirror * segment[0], segment[1]}, {mirror * segment[2], segment[3]}}},
                  color,

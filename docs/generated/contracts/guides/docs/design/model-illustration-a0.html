@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d">
+  <title>Model illustration A0 — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/model-illustration-a0.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="model-illustration-a0">Model illustration A0</h1></header>
+<p>Model illustration completes import or analytic lowering, Fast vector linework,
+technical shading, surface fusion, and output construction in one Geometer
+operation. Consumers do not transfer an intermediate triangle-mesh JSON value.</p>
+<p>The TypeSpec authority is
+<a href="../../../../../../src/tsp/geometer/operations/model-illustration-a0.tsp"><code>model-illustration-a0.tsp</code></a>.
+The operation and attachment projections are declared in
+<a href="../../../../../../src/tsp/geometer/operations/model-illustration-operation-a0.tsp"><code>model-illustration-operation-a0.tsp</code></a>.
+Generated schemas and styled contract pages are the field-level reference.</p>
+<h2 id="operations">Operations</h2>
+<p><code>geometry.model_illustration.a0</code> returns an inline deterministic SVG result.
+<code>geometry.model_illustration_geometry.a0</code> runs the same source preparation and
+rendering policy, then returns the existing renderer-neutral
+<code>geometry.mesh_illustration.geometry.a0</code> value in one governed JSON attachment.
+Use the latter when a Canvas, PDF, editor, or application renderer owns final
+drawing serialization.</p>
+<p>Both operations accept one of two source variants:</p>
+<ul>
+<li><code>kind: &quot;model&quot;</code> requires exactly one attachment named <code>model</code>, with media
+type <code>application/step</code> or <code>model/step</code>. STEP is the only model format in A0.</li>
+<li><code>kind: &quot;analytic&quot;</code> accepts no attachment. Definitions contain reusable
+extrusion, vertical cylinder, and sphere primitives; occurrences place those
+definitions with column-major affine transforms.</li>
+</ul>
+<p>File paths, PCB meaning, component placement, and format fallback remain in
+application adapters. The operation never reads a path or resolves an external
+model reference. External STEP references fail with
+<code>geometer.contract.external_model_reference</code>.</p>
+<h2 id="model-preparation">Model preparation</h2>
+<p>The model source reuses the colored tessellation controls. Root placement is
+normalized first, followed by the optional source transform. Geometer validates
+that transform as finite, affine, nonsingular, and adequately conditioned. It
+applies inverse-transpose normal transformation and reverses triangle winding
+for reflections. A material override, when present, replaces imported surface
+materials after placement.</p>
+<p>Partial tessellation defaults to enabled. Recoverable failed faces produce
+warnings and usable faces continue. When OCCT reports an outdated triangulation,
+Geometer retries once after cleaning the model; any faces still marked outdated
+are omitted under the same partial-result policy. A model with no usable
+prepared geometry fails the operation.</p>
+<h2 id="analytic-25d-source">Analytic 2.5D source</h2>
+<p>Each reached definition is validated and lowered once per request. Every
+definition must be referenced, definition and occurrence IDs must be unique,
+and an occurrence must reference a known definition. The native implementation
+then copies the lowered local meshes and applies occurrence transforms. This
+keeps authored geometry compact and leaves a clean definition/occurrence seam
+for future persistent caching.</p>
+<p>Extrusions use one or more planar regions. A region has an outer ring and
+optional holes. Ring points and segments have equal counts; segment <code>i</code> joins
+point <code>i</code> to the next point, including the closing segment. Lines remain exact.
+Circular arcs use an explicit center and clockwise/counterclockwise sweep, then
+sample against bounded linear and angular deflection. Caps use the maintained
+planar triangulator and walls are emitted directly between <code>z_min_mm</code> and
+<code>z_max_mm</code>.</p>
+<p>Cylinders are vertical with a 2D center, radius, and Z interval. Spheres use a
+3D center and radius. Both are sampled in native code from the same bounded
+deflection settings. Their source contract remains analytic; sampled meshes are
+private working data and never cross IPC.</p>
+<p>Authored, generated, definition-local, occurrence-expanded, and drawing work
+all have explicit limits. Limit failures return
+<code>geometer.operation.resource_limit_exceeded</code> before an unbounded result is
+allocated or serialized. The analytic broad phase also has a bounded topology
+candidate-pair budget (<code>max_topology_candidate_pairs</code>) so complex region
+validation cannot grow without a caller-visible limit.</p>
+<h2 id="illustration-policy">Illustration policy</h2>
+<p>The combined operation always uses Fast vector detail and Fast Mesh Shadow.
+Hidden lines are not part of a finished illustration and <code>include_hidden: true</code>
+is rejected. <code>show_hlr_outline</code> and <code>show_hlr_detail</code> select the visible Fast
+layers; fill styling and same-color fusion reuse the mesh illustration A0
+contract. One normalized view governs fills and linework.</p>
+<p>Successful results include the prepared source bounds in millimeters. The raw
+drawing geometry also carries physical line widths in projected millimeters;
+SVG and custom renderers therefore receive the same lineweight intent without
+recovering it from a normalized style fraction.</p>
+<p>The source is imported or lowered once into an in-memory mesh collection. Fast
+linework and illustration consume that same collection, although each engine
+may derive private view-specific acceleration data. Before flattening source
+faces for Fast linework, the implementation counts the complete vertex and
+triangle totals and reserves each contiguous array once; cost therefore remains
+linear for STEP files split into many face meshes. Phase timings therefore
+report source preparation, linework, illustration, and raw-attachment encoding
+without implying that OCCT import and tessellation are separately observable.</p>
+<p>See <a href="technical-illustration-algorithms.html">technical illustration algorithms</a>
+for the pipeline and determinism rules and <a href="mesh-illustration-geometry.html">illustration drawing geometry</a>
+for custom-renderer semantics.</p>
+<h2 id="python">Python</h2>
+<pre><code class="language-python">from pathlib import Path
+import geometer
+
+request = geometer.ModelIllustrationRequestA0(
+    schema=&quot;geometry.model_illustration.request.a0&quot;,
+    source=geometer.ModelAttachmentIllustrationSourceA0(
+        kind=&quot;model&quot;, attachment=&quot;model&quot;
+    ),
+    view=geometer.MeshIllustrationView(
+        direction=(0.4, 0.7, 1.0), up=(0.0, 1.0, 0.0)
+    ),
+    style=geometer.MeshIllustrationStyleA0(show_hlr_detail=True),
+)
+
+with geometer.GeometerClient() as client:
+    result = client.model_illustration(request, Path(&quot;package.step&quot;).read_bytes())
+Path(&quot;package.svg&quot;).write_text(result.svg, encoding=&quot;utf-8&quot;)
+</code></pre>
+<p><code>geometer.model_illustration(...)</code> owns a process for one call. The persistent
+client should be reused for batches. <code>model_illustration_geometry(...)</code> accepts
+the generated geometry request and returns a <code>ModelIllustrationGeometry</code>
+composite. Its <code>metadata</code> member preserves source summary, timings, statistics,
+and warnings; its <code>geometry</code> member contains the decoded
+<code>MeshIllustrationGeometryA0</code>. The helper validates the attachment media type,
+length, digest, schema, statistics, and warnings before returning either value.</p>
+<p>The asynchronous Rust client exposes methods with the same two names. Generated
+TypeScript DTOs/codecs and operation metadata work with the generic native,
+worker, or WASM operation transport. The generic C ABI accepts the same logical
+request plus optional model attachment.</p>
+<h2 id="examples">Examples</h2>
+<ul>
+<li><a href="../../../../../../examples/python/model_illustration_analytic.py"><code>model_illustration_analytic.py</code></a>
+illustrates repeated analytic bodies, a cylinder, and a sphere.</li>
+<li><a href="../../../../../../examples/python/illustration_geometry_canvas.py"><code>illustration_geometry_canvas.py</code></a>
+sends STEP once and draws returned raw geometry on Canvas.</li>
+<li><a href="../../../../../../src/rust/geometer-client/examples/mesh_illustration.rs"><code>mesh_illustration.rs</code></a>
+sends STEP once and writes the returned SVG.</li>
+</ul>
+
+</main>
+</body>
+</html>

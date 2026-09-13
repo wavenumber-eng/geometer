@@ -61,6 +61,9 @@ set(GEOMETER_LIB_SOURCES
     mesh_illustration_svg_lines.cpp
     mesh_illustration_visibility.cpp
     model_bounds.cpp
+    analytic_illustration_lowering.cpp
+    model_illustration_operation.cpp
+    model_illustration_transform.cpp
     model_tessellation.cpp
     model_tessellation_operation.cpp
     model_bounds_options_json.cpp

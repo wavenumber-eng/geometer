@@ -99,18 +99,28 @@ std::optional<Surface> layered_surface(const std::vector<TriangleCommand>& comma
     }
     if (areas.size() < 2)
         return {};
+    const auto base =
+        std::min_element(areas.begin(), areas.end(), [](const auto& a, const auto& b)
+                         { return a.area != b.area ? a.area > b.area : a.first < b.first; });
+    const auto components = style_components(members, adjacency);
+    const auto layer_count =
+        1 + static_cast<std::size_t>(
+                std::count_if(components.begin(), components.end(), [&](const auto& component)
+                              { return surface_style_key(commands[component[0]]) != base->key; }));
+    // If this layered representation cannot fit, let ordinary same-style
+    // fusion or triangle fallback try. Admit the exact successful layer count
+    // before allocating footprint edge maps and rings.
+    if (!budget.can_fit_commands(layer_count))
+        return {};
     auto footprint =
         fused_component(commands, members, coordinate_tolerance, depth_tolerance, budget);
     if (!footprint)
         return {};
-    const auto base =
-        std::min_element(areas.begin(), areas.end(), [](const auto& a, const auto& b)
-                         { return a.area != b.area ? a.area > b.area : a.first < b.first; });
     auto& base_layer = footprint->layers[0];
     base_layer.fill = commands[base->first].fill;
     base_layer.opacity = commands[base->first].opacity;
     footprint->layered = true;
-    for (const auto& component : style_components(members, adjacency))
+    for (const auto& component : components)
     {
         const auto& first = commands[component[0]];
         if (surface_style_key(first) == base->key)

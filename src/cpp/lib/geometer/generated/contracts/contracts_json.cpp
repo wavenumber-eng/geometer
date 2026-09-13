@@ -179,10 +179,106 @@ bool write_IpcProtocolErrorA0(rapidjson::Writer<rapidjson::StringBuffer>&,
 bool decode_IpcReasonA0(const rapidjson::Value&, IpcReasonA0*, const std::string&, ContractError*);
 bool write_IpcReasonA0(rapidjson::Writer<rapidjson::StringBuffer>&, const IpcReasonA0&,
                        ContractError*);
+bool decode_IllustrationMatrix4x4(const rapidjson::Value&, IllustrationMatrix4x4*,
+                                  const std::string&, ContractError*);
+bool write_IllustrationMatrix4x4(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                 const IllustrationMatrix4x4&, ContractError*);
 bool decode_IllustrationVector3(const rapidjson::Value&, IllustrationVector3*, const std::string&,
                                 ContractError*);
 bool write_IllustrationVector3(rapidjson::Writer<rapidjson::StringBuffer>&,
                                const IllustrationVector3&, ContractError*);
+bool decode_MeshIllustrationMaterial(const rapidjson::Value&, MeshIllustrationMaterial*,
+                                     const std::string&, ContractError*);
+bool write_MeshIllustrationMaterial(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                    const MeshIllustrationMaterial&, ContractError*);
+bool decode_ModelRootPlacement(const rapidjson::Value&, ModelRootPlacement*, const std::string&,
+                               ContractError*);
+bool write_ModelRootPlacement(rapidjson::Writer<rapidjson::StringBuffer>&,
+                              const ModelRootPlacement&, ContractError*);
+bool decode_ModelTessellationOptionsA0(const rapidjson::Value&, ModelTessellationOptionsA0*,
+                                       const std::string&, ContractError*);
+bool write_ModelTessellationOptionsA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                      const ModelTessellationOptionsA0&, ContractError*);
+bool decode_ModelAttachmentIllustrationSourceA0(const rapidjson::Value&,
+                                                ModelAttachmentIllustrationSourceA0*,
+                                                const std::string&, ContractError*);
+bool write_ModelAttachmentIllustrationSourceA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                               const ModelAttachmentIllustrationSourceA0&,
+                                               ContractError*);
+bool decode_IllustrationVector2Mm(const rapidjson::Value&, IllustrationVector2Mm*,
+                                  const std::string&, ContractError*);
+bool write_IllustrationVector2Mm(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                 const IllustrationVector2Mm&, ContractError*);
+bool decode_IllustrationProfileLineA0(const rapidjson::Value&, IllustrationProfileLineA0*,
+                                      const std::string&, ContractError*);
+bool write_IllustrationProfileLineA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                     const IllustrationProfileLineA0&, ContractError*);
+bool decode_PlanarArcSweep(const rapidjson::Value&, PlanarArcSweep*, const std::string&,
+                           ContractError*);
+bool write_PlanarArcSweep(rapidjson::Writer<rapidjson::StringBuffer>&, const PlanarArcSweep&,
+                          ContractError*);
+bool decode_IllustrationProfileCircularArcA0(const rapidjson::Value&,
+                                             IllustrationProfileCircularArcA0*, const std::string&,
+                                             ContractError*);
+bool write_IllustrationProfileCircularArcA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                            const IllustrationProfileCircularArcA0&,
+                                            ContractError*);
+bool decode_IllustrationProfileSegmentA0(const rapidjson::Value&, IllustrationProfileSegmentA0*,
+                                         const std::string&, ContractError*);
+bool write_IllustrationProfileSegmentA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                        const IllustrationProfileSegmentA0&, ContractError*);
+bool decode_IllustrationProfileRingA0(const rapidjson::Value&, IllustrationProfileRingA0*,
+                                      const std::string&, ContractError*);
+bool write_IllustrationProfileRingA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                     const IllustrationProfileRingA0&, ContractError*);
+bool decode_IllustrationProfileRegionA0(const rapidjson::Value&, IllustrationProfileRegionA0*,
+                                        const std::string&, ContractError*);
+bool write_IllustrationProfileRegionA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                       const IllustrationProfileRegionA0&, ContractError*);
+bool decode_AnalyticExtrusionA0(const rapidjson::Value&, AnalyticExtrusionA0*, const std::string&,
+                                ContractError*);
+bool write_AnalyticExtrusionA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                               const AnalyticExtrusionA0&, ContractError*);
+bool decode_AnalyticCylinderA0(const rapidjson::Value&, AnalyticCylinderA0*, const std::string&,
+                               ContractError*);
+bool write_AnalyticCylinderA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                              const AnalyticCylinderA0&, ContractError*);
+bool decode_AnalyticSphereA0(const rapidjson::Value&, AnalyticSphereA0*, const std::string&,
+                             ContractError*);
+bool write_AnalyticSphereA0(rapidjson::Writer<rapidjson::StringBuffer>&, const AnalyticSphereA0&,
+                            ContractError*);
+bool decode_AnalyticPrimitiveA0(const rapidjson::Value&, AnalyticPrimitiveA0*, const std::string&,
+                                ContractError*);
+bool write_AnalyticPrimitiveA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                               const AnalyticPrimitiveA0&, ContractError*);
+bool decode_AnalyticDefinitionA0(const rapidjson::Value&, AnalyticDefinitionA0*, const std::string&,
+                                 ContractError*);
+bool write_AnalyticDefinitionA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                const AnalyticDefinitionA0&, ContractError*);
+bool decode_AnalyticOccurrenceA0(const rapidjson::Value&, AnalyticOccurrenceA0*, const std::string&,
+                                 ContractError*);
+bool write_AnalyticOccurrenceA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                const AnalyticOccurrenceA0&, ContractError*);
+bool decode_AnalyticSceneA0(const rapidjson::Value&, AnalyticSceneA0*, const std::string&,
+                            ContractError*);
+bool write_AnalyticSceneA0(rapidjson::Writer<rapidjson::StringBuffer>&, const AnalyticSceneA0&,
+                           ContractError*);
+bool decode_AnalyticIllustrationLimitsA0(const rapidjson::Value&, AnalyticIllustrationLimitsA0*,
+                                         const std::string&, ContractError*);
+bool write_AnalyticIllustrationLimitsA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                        const AnalyticIllustrationLimitsA0&, ContractError*);
+bool decode_AnalyticLoweringOptionsA0(const rapidjson::Value&, AnalyticLoweringOptionsA0*,
+                                      const std::string&, ContractError*);
+bool write_AnalyticLoweringOptionsA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                     const AnalyticLoweringOptionsA0&, ContractError*);
+bool decode_AnalyticIllustrationSourceA0(const rapidjson::Value&, AnalyticIllustrationSourceA0*,
+                                         const std::string&, ContractError*);
+bool write_AnalyticIllustrationSourceA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                        const AnalyticIllustrationSourceA0&, ContractError*);
+bool decode_ModelIllustrationSourceA0(const rapidjson::Value&, ModelIllustrationSourceA0*,
+                                      const std::string&, ContractError*);
+bool write_ModelIllustrationSourceA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                     const ModelIllustrationSourceA0&, ContractError*);
 bool decode_MeshIllustrationView(const rapidjson::Value&, MeshIllustrationView*, const std::string&,
                                  ContractError*);
 bool write_MeshIllustrationView(rapidjson::Writer<rapidjson::StringBuffer>&,
@@ -191,6 +287,12 @@ bool decode_MeshIllustrationPrepareOptions(const rapidjson::Value&, MeshIllustra
                                            const std::string&, ContractError*);
 bool write_MeshIllustrationPrepareOptions(rapidjson::Writer<rapidjson::StringBuffer>&,
                                           const MeshIllustrationPrepareOptions&, ContractError*);
+bool decode_ModelIllustrationLineworkOptionsA0(const rapidjson::Value&,
+                                               ModelIllustrationLineworkOptionsA0*,
+                                               const std::string&, ContractError*);
+bool write_ModelIllustrationLineworkOptionsA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                              const ModelIllustrationLineworkOptionsA0&,
+                                              ContractError*);
 bool decode_MeshIllustrationShading(const rapidjson::Value&, MeshIllustrationShading*,
                                     const std::string&, ContractError*);
 bool write_MeshIllustrationShading(rapidjson::Writer<rapidjson::StringBuffer>&,
@@ -199,24 +301,34 @@ bool decode_MeshIllustrationStyleA0(const rapidjson::Value&, MeshIllustrationSty
                                     const std::string&, ContractError*);
 bool write_MeshIllustrationStyleA0(rapidjson::Writer<rapidjson::StringBuffer>&,
                                    const MeshIllustrationStyleA0&, ContractError*);
+bool decode_ModelIllustrationWorkLimitsA0(const rapidjson::Value&, ModelIllustrationWorkLimitsA0*,
+                                          const std::string&, ContractError*);
+bool write_ModelIllustrationWorkLimitsA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                         const ModelIllustrationWorkLimitsA0&, ContractError*);
+bool decode_ModelIllustrationGeometryRequestA0(const rapidjson::Value&,
+                                               ModelIllustrationGeometryRequestA0*,
+                                               const std::string&, ContractError*);
+bool write_ModelIllustrationGeometryRequestA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                              const ModelIllustrationGeometryRequestA0&,
+                                              ContractError*);
+bool decode_MeshIllustrationSvgOptions(const rapidjson::Value&, MeshIllustrationSvgOptions*,
+                                       const std::string&, ContractError*);
+bool write_MeshIllustrationSvgOptions(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                      const MeshIllustrationSvgOptions&, ContractError*);
+bool decode_ModelIllustrationRequestA0(const rapidjson::Value&, ModelIllustrationRequestA0*,
+                                       const std::string&, ContractError*);
+bool write_ModelIllustrationRequestA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                      const ModelIllustrationRequestA0&, ContractError*);
 bool decode_MeshIllustrationGeometryRequestA0(const rapidjson::Value&,
                                               MeshIllustrationGeometryRequestA0*,
                                               const std::string&, ContractError*);
 bool write_MeshIllustrationGeometryRequestA0(rapidjson::Writer<rapidjson::StringBuffer>&,
                                              const MeshIllustrationGeometryRequestA0&,
                                              ContractError*);
-bool decode_MeshIllustrationSvgOptions(const rapidjson::Value&, MeshIllustrationSvgOptions*,
-                                       const std::string&, ContractError*);
-bool write_MeshIllustrationSvgOptions(rapidjson::Writer<rapidjson::StringBuffer>&,
-                                      const MeshIllustrationSvgOptions&, ContractError*);
 bool decode_MeshIllustrationRequestA0(const rapidjson::Value&, MeshIllustrationRequestA0*,
                                       const std::string&, ContractError*);
 bool write_MeshIllustrationRequestA0(rapidjson::Writer<rapidjson::StringBuffer>&,
                                      const MeshIllustrationRequestA0&, ContractError*);
-bool decode_ModelRootPlacement(const rapidjson::Value&, ModelRootPlacement*, const std::string&,
-                               ContractError*);
-bool write_ModelRootPlacement(rapidjson::Writer<rapidjson::StringBuffer>&,
-                              const ModelRootPlacement&, ContractError*);
 bool decode_ModelTessellationRequestA0(const rapidjson::Value&, ModelTessellationRequestA0*,
                                        const std::string&, ContractError*);
 bool write_ModelTessellationRequestA0(rapidjson::Writer<rapidjson::StringBuffer>&,
@@ -494,14 +606,6 @@ bool decode_IpcWelcomeA0(const rapidjson::Value&, IpcWelcomeA0*, const std::stri
                          ContractError*);
 bool write_IpcWelcomeA0(rapidjson::Writer<rapidjson::StringBuffer>&, const IpcWelcomeA0&,
                         ContractError*);
-bool decode_IllustrationMatrix4x4(const rapidjson::Value&, IllustrationMatrix4x4*,
-                                  const std::string&, ContractError*);
-bool write_IllustrationMatrix4x4(rapidjson::Writer<rapidjson::StringBuffer>&,
-                                 const IllustrationMatrix4x4&, ContractError*);
-bool decode_MeshIllustrationMaterial(const rapidjson::Value&, MeshIllustrationMaterial*,
-                                     const std::string&, ContractError*);
-bool write_MeshIllustrationMaterial(rapidjson::Writer<rapidjson::StringBuffer>&,
-                                    const MeshIllustrationMaterial&, ContractError*);
 bool decode_MeshIllustrationMesh(const rapidjson::Value&, MeshIllustrationMesh*, const std::string&,
                                  ContractError*);
 bool write_MeshIllustrationMesh(rapidjson::Writer<rapidjson::StringBuffer>&,
@@ -589,6 +693,42 @@ bool decode_ModelBoundsResultA0(const rapidjson::Value&, ModelBoundsResultA0*, c
                                 ContractError*);
 bool write_ModelBoundsResultA0(rapidjson::Writer<rapidjson::StringBuffer>&,
                                const ModelBoundsResultA0&, ContractError*);
+bool decode_AnalyticSourceSummaryA0(const rapidjson::Value&, AnalyticSourceSummaryA0*,
+                                    const std::string&, ContractError*);
+bool write_AnalyticSourceSummaryA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                   const AnalyticSourceSummaryA0&, ContractError*);
+bool decode_ModelAttachmentMediaTypeA0(const rapidjson::Value&, ModelAttachmentMediaTypeA0*,
+                                       const std::string&, ContractError*);
+bool write_ModelAttachmentMediaTypeA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                      const ModelAttachmentMediaTypeA0&, ContractError*);
+bool decode_ModelAttachmentSourceSummaryA0(const rapidjson::Value&, ModelAttachmentSourceSummaryA0*,
+                                           const std::string&, ContractError*);
+bool write_ModelAttachmentSourceSummaryA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                          const ModelAttachmentSourceSummaryA0&, ContractError*);
+bool decode_ModelIllustrationBounds3MmA0(const rapidjson::Value&, ModelIllustrationBounds3MmA0*,
+                                         const std::string&, ContractError*);
+bool write_ModelIllustrationBounds3MmA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                        const ModelIllustrationBounds3MmA0&, ContractError*);
+bool decode_ModelIllustrationSourceSummaryA0(const rapidjson::Value&,
+                                             ModelIllustrationSourceSummaryA0*, const std::string&,
+                                             ContractError*);
+bool write_ModelIllustrationSourceSummaryA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                            const ModelIllustrationSourceSummaryA0&,
+                                            ContractError*);
+bool decode_ModelIllustrationTimingsA0(const rapidjson::Value&, ModelIllustrationTimingsA0*,
+                                       const std::string&, ContractError*);
+bool write_ModelIllustrationTimingsA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                      const ModelIllustrationTimingsA0&, ContractError*);
+bool decode_ModelIllustrationGeometryResultA0(const rapidjson::Value&,
+                                              ModelIllustrationGeometryResultA0*,
+                                              const std::string&, ContractError*);
+bool write_ModelIllustrationGeometryResultA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                             const ModelIllustrationGeometryResultA0&,
+                                             ContractError*);
+bool decode_ModelIllustrationResultA0(const rapidjson::Value&, ModelIllustrationResultA0*,
+                                      const std::string&, ContractError*);
+bool write_ModelIllustrationResultA0(rapidjson::Writer<rapidjson::StringBuffer>&,
+                                     const ModelIllustrationResultA0&, ContractError*);
 bool decode_MeshCollectionA0(const rapidjson::Value&, MeshCollectionA0*, const std::string&,
                              ContractError*);
 bool write_MeshCollectionA0(rapidjson::Writer<rapidjson::StringBuffer>&, const MeshCollectionA0&,
@@ -4662,6 +4802,41 @@ bool write_IpcReasonA0(rapidjson::Writer<rapidjson::StringBuffer>& writer, const
     return true;
 }
 
+bool decode_IllustrationMatrix4x4(const rapidjson::Value& value, IllustrationMatrix4x4* out,
+                                  const std::string& path, ContractError* error)
+{
+    if (!value.IsArray() || value.Size() < 16U || value.Size() > 16U)
+        return fail(error, "geometer.contract.array_size", path,
+                    "Array length is outside its contract bounds.");
+    out->clear();
+    out->reserve(value.Size());
+    for (rapidjson::SizeType i = 0; i < value.Size(); ++i)
+    {
+        double item_value{};
+        if (!decode_double(value[i], &item_value, path + "/" + std::to_string(i), error,
+                           -std::numeric_limits<double>::infinity(),
+                           std::numeric_limits<double>::infinity(), false, false))
+            return false;
+        out->push_back(std::move(item_value));
+    }
+    return true;
+}
+
+bool write_IllustrationMatrix4x4(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                 const IllustrationMatrix4x4& value, ContractError* error)
+{
+    if (value.size() < 16U || value.size() > 16U)
+        return fail(error, "geometer.contract.array_size", "",
+                    "Array length is outside its contract bounds.");
+    writer.StartArray();
+    for (const auto& item_value : value)
+        if (!write_double(writer, item_value, error, -std::numeric_limits<double>::infinity(),
+                          std::numeric_limits<double>::infinity(), false, false))
+            return false;
+    writer.EndArray();
+    return true;
+}
+
 bool decode_IllustrationVector3(const rapidjson::Value& value, IllustrationVector3* out,
                                 const std::string& path, ContractError* error)
 {
@@ -4695,6 +4870,1439 @@ bool write_IllustrationVector3(rapidjson::Writer<rapidjson::StringBuffer>& write
             return false;
     writer.EndArray();
     return true;
+}
+
+bool decode_MeshIllustrationMaterial(const rapidjson::Value& value, MeshIllustrationMaterial* out,
+                                     const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"color", "opacity", "name"};
+    if (!validate_object(value, names, 3U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("color");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "color"),
+                        "Required field is missing.");
+        if (!decode_IllustrationVector3(member->value, &out->color, child_path(path, "color"),
+                                        error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("opacity");
+        if (member != value.MemberEnd())
+        {
+            double decoded{};
+            if (!decode_double(member->value, &decoded, child_path(path, "opacity"), error, 0, 1,
+                               false, false))
+                return false;
+            out->opacity = std::move(decoded);
+        }
+        else
+            out->opacity.reset();
+    }
+    {
+        const auto member = value.FindMember("name");
+        if (member != value.MemberEnd())
+        {
+            std::string decoded{};
+            if (!decode_string(member->value, &decoded, child_path(path, "name"), error, 0U, 1024U))
+                return false;
+            out->name = std::move(decoded);
+        }
+        else
+            out->name.reset();
+    }
+    return true;
+}
+
+bool write_MeshIllustrationMaterial(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                    const MeshIllustrationMaterial& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("color");
+    if (!write_IllustrationVector3(writer, value.color, error))
+        return false;
+    if (value.opacity.has_value())
+    {
+        writer.Key("opacity");
+        if (!write_double(writer, *value.opacity, error, 0, 1, false, false))
+            return false;
+    }
+    if (value.name.has_value())
+    {
+        writer.Key("name");
+        if (!write_string(writer, *value.name, error, 0U, 1024U))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_ModelRootPlacement(const rapidjson::Value& value, ModelRootPlacement* out,
+                               const std::string& path, ContractError* error)
+{
+    if (!value.IsString())
+        return fail(error, "geometer.contract.type_mismatch", path, "Expected a string enum.");
+    const std::string text(value.GetString(), value.GetStringLength());
+    if (text == "strip")
+    {
+        *out = ModelRootPlacement::strip;
+        return true;
+    }
+    if (text == "preserve")
+    {
+        *out = ModelRootPlacement::preserve;
+        return true;
+    }
+    return fail(error, "geometer.contract.enum_mismatch", path, "Unknown enum value.");
+}
+
+bool write_ModelRootPlacement(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                              const ModelRootPlacement& value, ContractError* error)
+{
+    switch (value)
+    {
+    case ModelRootPlacement::strip:
+        writer.String("strip");
+        return true;
+    case ModelRootPlacement::preserve:
+        writer.String("preserve");
+        return true;
+    }
+    return fail(error, "geometer.contract.enum_mismatch", "", "Unknown enum value.");
+}
+
+bool decode_ModelTessellationOptionsA0(const rapidjson::Value& value,
+                                       ModelTessellationOptionsA0* out, const std::string& path,
+                                       ContractError* error)
+{
+    static const char* const names[] = {"linear_deflection_mm", "angular_deflection_rad",
+                                        "root_placement", "max_triangles", "allow_partial"};
+    if (!validate_object(value, names, 5U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("linear_deflection_mm");
+        if (member != value.MemberEnd())
+        {
+            double decoded{};
+            if (!decode_double(member->value, &decoded, child_path(path, "linear_deflection_mm"),
+                               error, 0.000001, 1000, false, false))
+                return false;
+            out->linear_deflection_mm = std::move(decoded);
+        }
+        else
+            out->linear_deflection_mm.reset();
+    }
+    {
+        const auto member = value.FindMember("angular_deflection_rad");
+        if (member != value.MemberEnd())
+        {
+            double decoded{};
+            if (!decode_double(member->value, &decoded, child_path(path, "angular_deflection_rad"),
+                               error, 0.000001, 3.141592653589793, false, false))
+                return false;
+            out->angular_deflection_rad = std::move(decoded);
+        }
+        else
+            out->angular_deflection_rad.reset();
+    }
+    {
+        const auto member = value.FindMember("root_placement");
+        if (member != value.MemberEnd())
+        {
+            ModelRootPlacement decoded{};
+            if (!decode_ModelRootPlacement(member->value, &decoded,
+                                           child_path(path, "root_placement"), error))
+                return false;
+            out->root_placement = std::move(decoded);
+        }
+        else
+            out->root_placement.reset();
+    }
+    {
+        const auto member = value.FindMember("max_triangles");
+        if (member != value.MemberEnd())
+        {
+            std::uint32_t decoded{};
+            if (!decode_uint32(member->value, &decoded, child_path(path, "max_triangles"), error,
+                               1ULL, 2000000ULL))
+                return false;
+            out->max_triangles = std::move(decoded);
+        }
+        else
+            out->max_triangles.reset();
+    }
+    {
+        const auto member = value.FindMember("allow_partial");
+        if (member != value.MemberEnd())
+        {
+            bool decoded{};
+            if (!decode_boolean(member->value, &decoded, child_path(path, "allow_partial"), error))
+                return false;
+            out->allow_partial = std::move(decoded);
+        }
+        else
+            out->allow_partial.reset();
+    }
+    return true;
+}
+
+bool write_ModelTessellationOptionsA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                      const ModelTessellationOptionsA0& value, ContractError* error)
+{
+    writer.StartObject();
+    if (value.linear_deflection_mm.has_value())
+    {
+        writer.Key("linear_deflection_mm");
+        if (!write_double(writer, *value.linear_deflection_mm, error, 0.000001, 1000, false, false))
+            return false;
+    }
+    if (value.angular_deflection_rad.has_value())
+    {
+        writer.Key("angular_deflection_rad");
+        if (!write_double(writer, *value.angular_deflection_rad, error, 0.000001, 3.141592653589793,
+                          false, false))
+            return false;
+    }
+    if (value.root_placement.has_value())
+    {
+        writer.Key("root_placement");
+        if (!write_ModelRootPlacement(writer, *value.root_placement, error))
+            return false;
+    }
+    if (value.max_triangles.has_value())
+    {
+        writer.Key("max_triangles");
+        if (!write_uint32(writer, *value.max_triangles, error, 1ULL, 2000000ULL))
+            return false;
+    }
+    if (value.allow_partial.has_value())
+    {
+        writer.Key("allow_partial");
+        if (!(writer.Bool(*value.allow_partial), true))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_ModelAttachmentIllustrationSourceA0(const rapidjson::Value& value,
+                                                ModelAttachmentIllustrationSourceA0* out,
+                                                const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"kind", "attachment", "transform", "material_override",
+                                        "tessellation"};
+    if (!validate_object(value, names, 5U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("kind");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "kind"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->kind, child_path(path, "kind"), error,
+                                   "model"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("attachment");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "attachment"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->attachment, child_path(path, "attachment"),
+                                   error, "model"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("transform");
+        if (member != value.MemberEnd())
+        {
+            IllustrationMatrix4x4 decoded{};
+            if (!decode_IllustrationMatrix4x4(member->value, &decoded,
+                                              child_path(path, "transform"), error))
+                return false;
+            out->transform = std::move(decoded);
+        }
+        else
+            out->transform.reset();
+    }
+    {
+        const auto member = value.FindMember("material_override");
+        if (member != value.MemberEnd())
+        {
+            MeshIllustrationMaterial decoded{};
+            if (!decode_MeshIllustrationMaterial(member->value, &decoded,
+                                                 child_path(path, "material_override"), error))
+                return false;
+            out->material_override = std::move(decoded);
+        }
+        else
+            out->material_override.reset();
+    }
+    {
+        const auto member = value.FindMember("tessellation");
+        if (member != value.MemberEnd())
+        {
+            ModelTessellationOptionsA0 decoded{};
+            if (!decode_ModelTessellationOptionsA0(member->value, &decoded,
+                                                   child_path(path, "tessellation"), error))
+                return false;
+            out->tessellation = std::move(decoded);
+        }
+        else
+            out->tessellation.reset();
+    }
+    return true;
+}
+
+bool write_ModelAttachmentIllustrationSourceA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                               const ModelAttachmentIllustrationSourceA0& value,
+                                               ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("kind");
+    if (!write_literal_string(writer, value.kind, error, "model"))
+        return false;
+    writer.Key("attachment");
+    if (!write_literal_string(writer, value.attachment, error, "model"))
+        return false;
+    if (value.transform.has_value())
+    {
+        writer.Key("transform");
+        if (!write_IllustrationMatrix4x4(writer, *value.transform, error))
+            return false;
+    }
+    if (value.material_override.has_value())
+    {
+        writer.Key("material_override");
+        if (!write_MeshIllustrationMaterial(writer, *value.material_override, error))
+            return false;
+    }
+    if (value.tessellation.has_value())
+    {
+        writer.Key("tessellation");
+        if (!write_ModelTessellationOptionsA0(writer, *value.tessellation, error))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_IllustrationVector2Mm(const rapidjson::Value& value, IllustrationVector2Mm* out,
+                                  const std::string& path, ContractError* error)
+{
+    if (!value.IsArray() || value.Size() < 2U || value.Size() > 2U)
+        return fail(error, "geometer.contract.array_size", path,
+                    "Array length is outside its contract bounds.");
+    out->clear();
+    out->reserve(value.Size());
+    for (rapidjson::SizeType i = 0; i < value.Size(); ++i)
+    {
+        double item_value{};
+        if (!decode_double(value[i], &item_value, path + "/" + std::to_string(i), error,
+                           -std::numeric_limits<double>::infinity(),
+                           std::numeric_limits<double>::infinity(), false, false))
+            return false;
+        out->push_back(std::move(item_value));
+    }
+    return true;
+}
+
+bool write_IllustrationVector2Mm(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                 const IllustrationVector2Mm& value, ContractError* error)
+{
+    if (value.size() < 2U || value.size() > 2U)
+        return fail(error, "geometer.contract.array_size", "",
+                    "Array length is outside its contract bounds.");
+    writer.StartArray();
+    for (const auto& item_value : value)
+        if (!write_double(writer, item_value, error, -std::numeric_limits<double>::infinity(),
+                          std::numeric_limits<double>::infinity(), false, false))
+            return false;
+    writer.EndArray();
+    return true;
+}
+
+bool decode_IllustrationProfileLineA0(const rapidjson::Value& value, IllustrationProfileLineA0* out,
+                                      const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"kind"};
+    if (!validate_object(value, names, 1U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("kind");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "kind"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->kind, child_path(path, "kind"), error,
+                                   "line"))
+            return false;
+    }
+    return true;
+}
+
+bool write_IllustrationProfileLineA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                     const IllustrationProfileLineA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("kind");
+    if (!write_literal_string(writer, value.kind, error, "line"))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_PlanarArcSweep(const rapidjson::Value& value, PlanarArcSweep* out,
+                           const std::string& path, ContractError* error)
+{
+    if (!value.IsString())
+        return fail(error, "geometer.contract.type_mismatch", path, "Expected a string enum.");
+    const std::string text(value.GetString(), value.GetStringLength());
+    if (text == "cw")
+    {
+        *out = PlanarArcSweep::cw;
+        return true;
+    }
+    if (text == "ccw")
+    {
+        *out = PlanarArcSweep::ccw;
+        return true;
+    }
+    return fail(error, "geometer.contract.enum_mismatch", path, "Unknown enum value.");
+}
+
+bool write_PlanarArcSweep(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                          const PlanarArcSweep& value, ContractError* error)
+{
+    switch (value)
+    {
+    case PlanarArcSweep::cw:
+        writer.String("cw");
+        return true;
+    case PlanarArcSweep::ccw:
+        writer.String("ccw");
+        return true;
+    }
+    return fail(error, "geometer.contract.enum_mismatch", "", "Unknown enum value.");
+}
+
+bool decode_IllustrationProfileCircularArcA0(const rapidjson::Value& value,
+                                             IllustrationProfileCircularArcA0* out,
+                                             const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"kind", "center_mm", "sweep"};
+    if (!validate_object(value, names, 3U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("kind");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "kind"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->kind, child_path(path, "kind"), error,
+                                   "circular_arc"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("center_mm");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "center_mm"),
+                        "Required field is missing.");
+        if (!decode_IllustrationVector2Mm(member->value, &out->center_mm,
+                                          child_path(path, "center_mm"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("sweep");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "sweep"),
+                        "Required field is missing.");
+        if (!decode_PlanarArcSweep(member->value, &out->sweep, child_path(path, "sweep"), error))
+            return false;
+    }
+    return true;
+}
+
+bool write_IllustrationProfileCircularArcA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                            const IllustrationProfileCircularArcA0& value,
+                                            ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("kind");
+    if (!write_literal_string(writer, value.kind, error, "circular_arc"))
+        return false;
+    writer.Key("center_mm");
+    if (!write_IllustrationVector2Mm(writer, value.center_mm, error))
+        return false;
+    writer.Key("sweep");
+    if (!write_PlanarArcSweep(writer, value.sweep, error))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_IllustrationProfileSegmentA0(const rapidjson::Value& value,
+                                         IllustrationProfileSegmentA0* out, const std::string& path,
+                                         ContractError* error)
+{
+    int matches = 0;
+    IllustrationProfileSegmentA0 selected{};
+    {
+        IllustrationProfileLineA0 candidate{};
+        ContractError ignored;
+        if (decode_IllustrationProfileLineA0(value, &candidate, path, &ignored))
+        {
+            ++matches;
+            selected = IllustrationProfileSegmentA0(std::in_place_index<0>, std::move(candidate));
+        }
+    }
+    {
+        IllustrationProfileCircularArcA0 candidate{};
+        ContractError ignored;
+        if (decode_IllustrationProfileCircularArcA0(value, &candidate, path, &ignored))
+        {
+            ++matches;
+            selected = IllustrationProfileSegmentA0(std::in_place_index<1>, std::move(candidate));
+        }
+    }
+    if (matches != 1)
+        return fail(error, "geometer.contract.union_mismatch", path,
+                    "Expected exactly one union variant.");
+    *out = std::move(selected);
+    return true;
+}
+
+bool write_IllustrationProfileSegmentA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                        const IllustrationProfileSegmentA0& value,
+                                        ContractError* error)
+{
+    switch (value.index())
+    {
+    case 0:
+        return write_IllustrationProfileLineA0(writer, std::get<0>(value), error);
+    case 1:
+        return write_IllustrationProfileCircularArcA0(writer, std::get<1>(value), error);
+    default:
+        return fail(error, "geometer.contract.union_mismatch", "", "Unknown union variant.");
+    }
+}
+
+bool decode_IllustrationProfileRingA0(const rapidjson::Value& value, IllustrationProfileRingA0* out,
+                                      const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"points_mm", "segments"};
+    if (!validate_object(value, names, 2U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("points_mm");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "points_mm"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->points_mm, child_path(path, "points_mm"), error, 3U,
+                          131072U, decode_IllustrationVector2Mm))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("segments");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "segments"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->segments, child_path(path, "segments"), error, 3U,
+                          131072U, decode_IllustrationProfileSegmentA0))
+            return false;
+    }
+    return true;
+}
+
+bool write_IllustrationProfileRingA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                     const IllustrationProfileRingA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("points_mm");
+    if (!write_array(writer, value.points_mm, error, 3U, 131072U, write_IllustrationVector2Mm))
+        return false;
+    writer.Key("segments");
+    if (!write_array(writer, value.segments, error, 3U, 131072U,
+                     write_IllustrationProfileSegmentA0))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_IllustrationProfileRegionA0(const rapidjson::Value& value,
+                                        IllustrationProfileRegionA0* out, const std::string& path,
+                                        ContractError* error)
+{
+    static const char* const names[] = {"outer", "holes"};
+    if (!validate_object(value, names, 2U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("outer");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "outer"),
+                        "Required field is missing.");
+        if (!decode_IllustrationProfileRingA0(member->value, &out->outer, child_path(path, "outer"),
+                                              error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("holes");
+        if (member != value.MemberEnd())
+        {
+            std::vector<IllustrationProfileRingA0> decoded{};
+            if (!decode_array(member->value, &decoded, child_path(path, "holes"), error, 0U,
+                              131071U, decode_IllustrationProfileRingA0))
+                return false;
+            out->holes = std::move(decoded);
+        }
+        else
+            out->holes.reset();
+    }
+    return true;
+}
+
+bool write_IllustrationProfileRegionA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                       const IllustrationProfileRegionA0& value,
+                                       ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("outer");
+    if (!write_IllustrationProfileRingA0(writer, value.outer, error))
+        return false;
+    if (value.holes.has_value())
+    {
+        writer.Key("holes");
+        if (!write_array(writer, *value.holes, error, 0U, 131071U, write_IllustrationProfileRingA0))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_AnalyticExtrusionA0(const rapidjson::Value& value, AnalyticExtrusionA0* out,
+                                const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"kind",     "id",       "regions",
+                                        "z_min_mm", "z_max_mm", "material"};
+    if (!validate_object(value, names, 6U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("kind");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "kind"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->kind, child_path(path, "kind"), error,
+                                   "extrusion"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("id");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "id"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->id, child_path(path, "id"), error, 1U, 1024U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("regions");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "regions"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->regions, child_path(path, "regions"), error, 1U,
+                          65536U, decode_IllustrationProfileRegionA0))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("z_min_mm");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "z_min_mm"),
+                        "Required field is missing.");
+        if (!decode_double(member->value, &out->z_min_mm, child_path(path, "z_min_mm"), error,
+                           -std::numeric_limits<double>::infinity(),
+                           std::numeric_limits<double>::infinity(), false, false))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("z_max_mm");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "z_max_mm"),
+                        "Required field is missing.");
+        if (!decode_double(member->value, &out->z_max_mm, child_path(path, "z_max_mm"), error,
+                           -std::numeric_limits<double>::infinity(),
+                           std::numeric_limits<double>::infinity(), false, false))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("material");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "material"),
+                        "Required field is missing.");
+        if (!decode_MeshIllustrationMaterial(member->value, &out->material,
+                                             child_path(path, "material"), error))
+            return false;
+    }
+    return true;
+}
+
+bool write_AnalyticExtrusionA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                               const AnalyticExtrusionA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("kind");
+    if (!write_literal_string(writer, value.kind, error, "extrusion"))
+        return false;
+    writer.Key("id");
+    if (!write_string(writer, value.id, error, 1U, 1024U))
+        return false;
+    writer.Key("regions");
+    if (!write_array(writer, value.regions, error, 1U, 65536U, write_IllustrationProfileRegionA0))
+        return false;
+    writer.Key("z_min_mm");
+    if (!write_double(writer, value.z_min_mm, error, -std::numeric_limits<double>::infinity(),
+                      std::numeric_limits<double>::infinity(), false, false))
+        return false;
+    writer.Key("z_max_mm");
+    if (!write_double(writer, value.z_max_mm, error, -std::numeric_limits<double>::infinity(),
+                      std::numeric_limits<double>::infinity(), false, false))
+        return false;
+    writer.Key("material");
+    if (!write_MeshIllustrationMaterial(writer, value.material, error))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_AnalyticCylinderA0(const rapidjson::Value& value, AnalyticCylinderA0* out,
+                               const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"kind",     "id",       "center_mm", "radius_mm",
+                                        "z_min_mm", "z_max_mm", "material"};
+    if (!validate_object(value, names, 7U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("kind");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "kind"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->kind, child_path(path, "kind"), error,
+                                   "cylinder"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("id");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "id"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->id, child_path(path, "id"), error, 1U, 1024U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("center_mm");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "center_mm"),
+                        "Required field is missing.");
+        if (!decode_IllustrationVector2Mm(member->value, &out->center_mm,
+                                          child_path(path, "center_mm"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("radius_mm");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "radius_mm"),
+                        "Required field is missing.");
+        if (!decode_double(member->value, &out->radius_mm, child_path(path, "radius_mm"), error, 0,
+                           std::numeric_limits<double>::infinity(), true, false))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("z_min_mm");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "z_min_mm"),
+                        "Required field is missing.");
+        if (!decode_double(member->value, &out->z_min_mm, child_path(path, "z_min_mm"), error,
+                           -std::numeric_limits<double>::infinity(),
+                           std::numeric_limits<double>::infinity(), false, false))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("z_max_mm");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "z_max_mm"),
+                        "Required field is missing.");
+        if (!decode_double(member->value, &out->z_max_mm, child_path(path, "z_max_mm"), error,
+                           -std::numeric_limits<double>::infinity(),
+                           std::numeric_limits<double>::infinity(), false, false))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("material");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "material"),
+                        "Required field is missing.");
+        if (!decode_MeshIllustrationMaterial(member->value, &out->material,
+                                             child_path(path, "material"), error))
+            return false;
+    }
+    return true;
+}
+
+bool write_AnalyticCylinderA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                              const AnalyticCylinderA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("kind");
+    if (!write_literal_string(writer, value.kind, error, "cylinder"))
+        return false;
+    writer.Key("id");
+    if (!write_string(writer, value.id, error, 1U, 1024U))
+        return false;
+    writer.Key("center_mm");
+    if (!write_IllustrationVector2Mm(writer, value.center_mm, error))
+        return false;
+    writer.Key("radius_mm");
+    if (!write_double(writer, value.radius_mm, error, 0, std::numeric_limits<double>::infinity(),
+                      true, false))
+        return false;
+    writer.Key("z_min_mm");
+    if (!write_double(writer, value.z_min_mm, error, -std::numeric_limits<double>::infinity(),
+                      std::numeric_limits<double>::infinity(), false, false))
+        return false;
+    writer.Key("z_max_mm");
+    if (!write_double(writer, value.z_max_mm, error, -std::numeric_limits<double>::infinity(),
+                      std::numeric_limits<double>::infinity(), false, false))
+        return false;
+    writer.Key("material");
+    if (!write_MeshIllustrationMaterial(writer, value.material, error))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_AnalyticSphereA0(const rapidjson::Value& value, AnalyticSphereA0* out,
+                             const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"kind", "id", "center_mm", "radius_mm", "material"};
+    if (!validate_object(value, names, 5U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("kind");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "kind"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->kind, child_path(path, "kind"), error,
+                                   "sphere"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("id");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "id"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->id, child_path(path, "id"), error, 1U, 1024U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("center_mm");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "center_mm"),
+                        "Required field is missing.");
+        if (!decode_IllustrationVector3(member->value, &out->center_mm,
+                                        child_path(path, "center_mm"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("radius_mm");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "radius_mm"),
+                        "Required field is missing.");
+        if (!decode_double(member->value, &out->radius_mm, child_path(path, "radius_mm"), error, 0,
+                           std::numeric_limits<double>::infinity(), true, false))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("material");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "material"),
+                        "Required field is missing.");
+        if (!decode_MeshIllustrationMaterial(member->value, &out->material,
+                                             child_path(path, "material"), error))
+            return false;
+    }
+    return true;
+}
+
+bool write_AnalyticSphereA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                            const AnalyticSphereA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("kind");
+    if (!write_literal_string(writer, value.kind, error, "sphere"))
+        return false;
+    writer.Key("id");
+    if (!write_string(writer, value.id, error, 1U, 1024U))
+        return false;
+    writer.Key("center_mm");
+    if (!write_IllustrationVector3(writer, value.center_mm, error))
+        return false;
+    writer.Key("radius_mm");
+    if (!write_double(writer, value.radius_mm, error, 0, std::numeric_limits<double>::infinity(),
+                      true, false))
+        return false;
+    writer.Key("material");
+    if (!write_MeshIllustrationMaterial(writer, value.material, error))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_AnalyticPrimitiveA0(const rapidjson::Value& value, AnalyticPrimitiveA0* out,
+                                const std::string& path, ContractError* error)
+{
+    int matches = 0;
+    AnalyticPrimitiveA0 selected{};
+    {
+        AnalyticExtrusionA0 candidate{};
+        ContractError ignored;
+        if (decode_AnalyticExtrusionA0(value, &candidate, path, &ignored))
+        {
+            ++matches;
+            selected = AnalyticPrimitiveA0(std::in_place_index<0>, std::move(candidate));
+        }
+    }
+    {
+        AnalyticCylinderA0 candidate{};
+        ContractError ignored;
+        if (decode_AnalyticCylinderA0(value, &candidate, path, &ignored))
+        {
+            ++matches;
+            selected = AnalyticPrimitiveA0(std::in_place_index<1>, std::move(candidate));
+        }
+    }
+    {
+        AnalyticSphereA0 candidate{};
+        ContractError ignored;
+        if (decode_AnalyticSphereA0(value, &candidate, path, &ignored))
+        {
+            ++matches;
+            selected = AnalyticPrimitiveA0(std::in_place_index<2>, std::move(candidate));
+        }
+    }
+    if (matches != 1)
+        return fail(error, "geometer.contract.union_mismatch", path,
+                    "Expected exactly one union variant.");
+    *out = std::move(selected);
+    return true;
+}
+
+bool write_AnalyticPrimitiveA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                               const AnalyticPrimitiveA0& value, ContractError* error)
+{
+    switch (value.index())
+    {
+    case 0:
+        return write_AnalyticExtrusionA0(writer, std::get<0>(value), error);
+    case 1:
+        return write_AnalyticCylinderA0(writer, std::get<1>(value), error);
+    case 2:
+        return write_AnalyticSphereA0(writer, std::get<2>(value), error);
+    default:
+        return fail(error, "geometer.contract.union_mismatch", "", "Unknown union variant.");
+    }
+}
+
+bool decode_AnalyticDefinitionA0(const rapidjson::Value& value, AnalyticDefinitionA0* out,
+                                 const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"id", "primitives"};
+    if (!validate_object(value, names, 2U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("id");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "id"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->id, child_path(path, "id"), error, 1U, 1024U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("primitives");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "primitives"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->primitives, child_path(path, "primitives"), error,
+                          1U, 65536U, decode_AnalyticPrimitiveA0))
+            return false;
+    }
+    return true;
+}
+
+bool write_AnalyticDefinitionA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                const AnalyticDefinitionA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("id");
+    if (!write_string(writer, value.id, error, 1U, 1024U))
+        return false;
+    writer.Key("primitives");
+    if (!write_array(writer, value.primitives, error, 1U, 65536U, write_AnalyticPrimitiveA0))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_AnalyticOccurrenceA0(const rapidjson::Value& value, AnalyticOccurrenceA0* out,
+                                 const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"id", "definition_id", "transform"};
+    if (!validate_object(value, names, 3U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("id");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "id"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->id, child_path(path, "id"), error, 1U, 1024U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("definition_id");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "definition_id"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->definition_id, child_path(path, "definition_id"),
+                           error, 1U, 1024U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("transform");
+        if (member != value.MemberEnd())
+        {
+            IllustrationMatrix4x4 decoded{};
+            if (!decode_IllustrationMatrix4x4(member->value, &decoded,
+                                              child_path(path, "transform"), error))
+                return false;
+            out->transform = std::move(decoded);
+        }
+        else
+            out->transform.reset();
+    }
+    return true;
+}
+
+bool write_AnalyticOccurrenceA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                const AnalyticOccurrenceA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("id");
+    if (!write_string(writer, value.id, error, 1U, 1024U))
+        return false;
+    writer.Key("definition_id");
+    if (!write_string(writer, value.definition_id, error, 1U, 1024U))
+        return false;
+    if (value.transform.has_value())
+    {
+        writer.Key("transform");
+        if (!write_IllustrationMatrix4x4(writer, *value.transform, error))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_AnalyticSceneA0(const rapidjson::Value& value, AnalyticSceneA0* out,
+                            const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"definitions", "occurrences"};
+    if (!validate_object(value, names, 2U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("definitions");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "definitions"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->definitions, child_path(path, "definitions"), error,
+                          1U, 65536U, decode_AnalyticDefinitionA0))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("occurrences");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "occurrences"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->occurrences, child_path(path, "occurrences"), error,
+                          1U, 65536U, decode_AnalyticOccurrenceA0))
+            return false;
+    }
+    return true;
+}
+
+bool write_AnalyticSceneA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                           const AnalyticSceneA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("definitions");
+    if (!write_array(writer, value.definitions, error, 1U, 65536U, write_AnalyticDefinitionA0))
+        return false;
+    writer.Key("occurrences");
+    if (!write_array(writer, value.occurrences, error, 1U, 65536U, write_AnalyticOccurrenceA0))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_AnalyticIllustrationLimitsA0(const rapidjson::Value& value,
+                                         AnalyticIllustrationLimitsA0* out, const std::string& path,
+                                         ContractError* error)
+{
+    static const char* const names[] = {"max_reached_definitions",  "max_reached_occurrences",
+                                        "max_reached_primitives",   "max_reached_rings",
+                                        "max_reached_points",       "max_generated_curve_samples",
+                                        "max_definition_triangles", "max_topology_candidate_pairs"};
+    if (!validate_object(value, names, 8U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("max_reached_definitions");
+        if (member != value.MemberEnd())
+        {
+            std::uint32_t decoded{};
+            if (!decode_uint32(member->value, &decoded, child_path(path, "max_reached_definitions"),
+                               error, 1ULL, 65536ULL))
+                return false;
+            out->max_reached_definitions = std::move(decoded);
+        }
+        else
+            out->max_reached_definitions.reset();
+    }
+    {
+        const auto member = value.FindMember("max_reached_occurrences");
+        if (member != value.MemberEnd())
+        {
+            std::uint32_t decoded{};
+            if (!decode_uint32(member->value, &decoded, child_path(path, "max_reached_occurrences"),
+                               error, 1ULL, 65536ULL))
+                return false;
+            out->max_reached_occurrences = std::move(decoded);
+        }
+        else
+            out->max_reached_occurrences.reset();
+    }
+    {
+        const auto member = value.FindMember("max_reached_primitives");
+        if (member != value.MemberEnd())
+        {
+            std::uint32_t decoded{};
+            if (!decode_uint32(member->value, &decoded, child_path(path, "max_reached_primitives"),
+                               error, 1ULL, 65536ULL))
+                return false;
+            out->max_reached_primitives = std::move(decoded);
+        }
+        else
+            out->max_reached_primitives.reset();
+    }
+    {
+        const auto member = value.FindMember("max_reached_rings");
+        if (member != value.MemberEnd())
+        {
+            std::uint32_t decoded{};
+            if (!decode_uint32(member->value, &decoded, child_path(path, "max_reached_rings"),
+                               error, 1ULL, 262144ULL))
+                return false;
+            out->max_reached_rings = std::move(decoded);
+        }
+        else
+            out->max_reached_rings.reset();
+    }
+    {
+        const auto member = value.FindMember("max_reached_points");
+        if (member != value.MemberEnd())
+        {
+            std::uint32_t decoded{};
+            if (!decode_uint32(member->value, &decoded, child_path(path, "max_reached_points"),
+                               error, 1ULL, 2000000ULL))
+                return false;
+            out->max_reached_points = std::move(decoded);
+        }
+        else
+            out->max_reached_points.reset();
+    }
+    {
+        const auto member = value.FindMember("max_generated_curve_samples");
+        if (member != value.MemberEnd())
+        {
+            std::uint32_t decoded{};
+            if (!decode_uint32(member->value, &decoded,
+                               child_path(path, "max_generated_curve_samples"), error, 1ULL,
+                               2000000ULL))
+                return false;
+            out->max_generated_curve_samples = std::move(decoded);
+        }
+        else
+            out->max_generated_curve_samples.reset();
+    }
+    {
+        const auto member = value.FindMember("max_definition_triangles");
+        if (member != value.MemberEnd())
+        {
+            std::uint32_t decoded{};
+            if (!decode_uint32(member->value, &decoded,
+                               child_path(path, "max_definition_triangles"), error, 1ULL,
+                               2000000ULL))
+                return false;
+            out->max_definition_triangles = std::move(decoded);
+        }
+        else
+            out->max_definition_triangles.reset();
+    }
+    {
+        const auto member = value.FindMember("max_topology_candidate_pairs");
+        if (member != value.MemberEnd())
+        {
+            std::uint32_t decoded{};
+            if (!decode_uint32(member->value, &decoded,
+                               child_path(path, "max_topology_candidate_pairs"), error, 1ULL,
+                               100000000ULL))
+                return false;
+            out->max_topology_candidate_pairs = std::move(decoded);
+        }
+        else
+            out->max_topology_candidate_pairs.reset();
+    }
+    return true;
+}
+
+bool write_AnalyticIllustrationLimitsA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                        const AnalyticIllustrationLimitsA0& value,
+                                        ContractError* error)
+{
+    writer.StartObject();
+    if (value.max_reached_definitions.has_value())
+    {
+        writer.Key("max_reached_definitions");
+        if (!write_uint32(writer, *value.max_reached_definitions, error, 1ULL, 65536ULL))
+            return false;
+    }
+    if (value.max_reached_occurrences.has_value())
+    {
+        writer.Key("max_reached_occurrences");
+        if (!write_uint32(writer, *value.max_reached_occurrences, error, 1ULL, 65536ULL))
+            return false;
+    }
+    if (value.max_reached_primitives.has_value())
+    {
+        writer.Key("max_reached_primitives");
+        if (!write_uint32(writer, *value.max_reached_primitives, error, 1ULL, 65536ULL))
+            return false;
+    }
+    if (value.max_reached_rings.has_value())
+    {
+        writer.Key("max_reached_rings");
+        if (!write_uint32(writer, *value.max_reached_rings, error, 1ULL, 262144ULL))
+            return false;
+    }
+    if (value.max_reached_points.has_value())
+    {
+        writer.Key("max_reached_points");
+        if (!write_uint32(writer, *value.max_reached_points, error, 1ULL, 2000000ULL))
+            return false;
+    }
+    if (value.max_generated_curve_samples.has_value())
+    {
+        writer.Key("max_generated_curve_samples");
+        if (!write_uint32(writer, *value.max_generated_curve_samples, error, 1ULL, 2000000ULL))
+            return false;
+    }
+    if (value.max_definition_triangles.has_value())
+    {
+        writer.Key("max_definition_triangles");
+        if (!write_uint32(writer, *value.max_definition_triangles, error, 1ULL, 2000000ULL))
+            return false;
+    }
+    if (value.max_topology_candidate_pairs.has_value())
+    {
+        writer.Key("max_topology_candidate_pairs");
+        if (!write_uint32(writer, *value.max_topology_candidate_pairs, error, 1ULL, 100000000ULL))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_AnalyticLoweringOptionsA0(const rapidjson::Value& value, AnalyticLoweringOptionsA0* out,
+                                      const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"linear_deflection_mm", "angular_deflection_rad", "limits"};
+    if (!validate_object(value, names, 3U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("linear_deflection_mm");
+        if (member != value.MemberEnd())
+        {
+            double decoded{};
+            if (!decode_double(member->value, &decoded, child_path(path, "linear_deflection_mm"),
+                               error, 0.000001, 1000, false, false))
+                return false;
+            out->linear_deflection_mm = std::move(decoded);
+        }
+        else
+            out->linear_deflection_mm.reset();
+    }
+    {
+        const auto member = value.FindMember("angular_deflection_rad");
+        if (member != value.MemberEnd())
+        {
+            double decoded{};
+            if (!decode_double(member->value, &decoded, child_path(path, "angular_deflection_rad"),
+                               error, 0.000001, 3.141592653589793, false, false))
+                return false;
+            out->angular_deflection_rad = std::move(decoded);
+        }
+        else
+            out->angular_deflection_rad.reset();
+    }
+    {
+        const auto member = value.FindMember("limits");
+        if (member != value.MemberEnd())
+        {
+            AnalyticIllustrationLimitsA0 decoded{};
+            if (!decode_AnalyticIllustrationLimitsA0(member->value, &decoded,
+                                                     child_path(path, "limits"), error))
+                return false;
+            out->limits = std::move(decoded);
+        }
+        else
+            out->limits.reset();
+    }
+    return true;
+}
+
+bool write_AnalyticLoweringOptionsA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                     const AnalyticLoweringOptionsA0& value, ContractError* error)
+{
+    writer.StartObject();
+    if (value.linear_deflection_mm.has_value())
+    {
+        writer.Key("linear_deflection_mm");
+        if (!write_double(writer, *value.linear_deflection_mm, error, 0.000001, 1000, false, false))
+            return false;
+    }
+    if (value.angular_deflection_rad.has_value())
+    {
+        writer.Key("angular_deflection_rad");
+        if (!write_double(writer, *value.angular_deflection_rad, error, 0.000001, 3.141592653589793,
+                          false, false))
+            return false;
+    }
+    if (value.limits.has_value())
+    {
+        writer.Key("limits");
+        if (!write_AnalyticIllustrationLimitsA0(writer, *value.limits, error))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_AnalyticIllustrationSourceA0(const rapidjson::Value& value,
+                                         AnalyticIllustrationSourceA0* out, const std::string& path,
+                                         ContractError* error)
+{
+    static const char* const names[] = {"kind", "scene", "lowering"};
+    if (!validate_object(value, names, 3U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("kind");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "kind"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->kind, child_path(path, "kind"), error,
+                                   "analytic"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("scene");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "scene"),
+                        "Required field is missing.");
+        if (!decode_AnalyticSceneA0(member->value, &out->scene, child_path(path, "scene"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("lowering");
+        if (member != value.MemberEnd())
+        {
+            AnalyticLoweringOptionsA0 decoded{};
+            if (!decode_AnalyticLoweringOptionsA0(member->value, &decoded,
+                                                  child_path(path, "lowering"), error))
+                return false;
+            out->lowering = std::move(decoded);
+        }
+        else
+            out->lowering.reset();
+    }
+    return true;
+}
+
+bool write_AnalyticIllustrationSourceA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                        const AnalyticIllustrationSourceA0& value,
+                                        ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("kind");
+    if (!write_literal_string(writer, value.kind, error, "analytic"))
+        return false;
+    writer.Key("scene");
+    if (!write_AnalyticSceneA0(writer, value.scene, error))
+        return false;
+    if (value.lowering.has_value())
+    {
+        writer.Key("lowering");
+        if (!write_AnalyticLoweringOptionsA0(writer, *value.lowering, error))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_ModelIllustrationSourceA0(const rapidjson::Value& value, ModelIllustrationSourceA0* out,
+                                      const std::string& path, ContractError* error)
+{
+    int matches = 0;
+    ModelIllustrationSourceA0 selected{};
+    {
+        ModelAttachmentIllustrationSourceA0 candidate{};
+        ContractError ignored;
+        if (decode_ModelAttachmentIllustrationSourceA0(value, &candidate, path, &ignored))
+        {
+            ++matches;
+            selected = ModelIllustrationSourceA0(std::in_place_index<0>, std::move(candidate));
+        }
+    }
+    {
+        AnalyticIllustrationSourceA0 candidate{};
+        ContractError ignored;
+        if (decode_AnalyticIllustrationSourceA0(value, &candidate, path, &ignored))
+        {
+            ++matches;
+            selected = ModelIllustrationSourceA0(std::in_place_index<1>, std::move(candidate));
+        }
+    }
+    if (matches != 1)
+        return fail(error, "geometer.contract.union_mismatch", path,
+                    "Expected exactly one union variant.");
+    *out = std::move(selected);
+    return true;
+}
+
+bool write_ModelIllustrationSourceA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                     const ModelIllustrationSourceA0& value, ContractError* error)
+{
+    switch (value.index())
+    {
+    case 0:
+        return write_ModelAttachmentIllustrationSourceA0(writer, std::get<0>(value), error);
+    case 1:
+        return write_AnalyticIllustrationSourceA0(writer, std::get<1>(value), error);
+    default:
+        return fail(error, "geometer.contract.union_mismatch", "", "Unknown union variant.");
+    }
 }
 
 bool decode_MeshIllustrationView(const rapidjson::Value& value, MeshIllustrationView* out,
@@ -4807,6 +6415,81 @@ bool write_MeshIllustrationPrepareOptions(rapidjson::Writer<rapidjson::StringBuf
         writer.Key("weld_tolerance");
         if (!write_double(writer, *value.weld_tolerance, error, 0,
                           std::numeric_limits<double>::infinity(), true, false))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_ModelIllustrationLineworkOptionsA0(const rapidjson::Value& value,
+                                               ModelIllustrationLineworkOptionsA0* out,
+                                               const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"fast", "outline_width_mm", "detail_width_mm"};
+    if (!validate_object(value, names, 3U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("fast");
+        if (member != value.MemberEnd())
+        {
+            FastHlrOptionsA0 decoded{};
+            if (!decode_FastHlrOptionsA0(member->value, &decoded, child_path(path, "fast"), error))
+                return false;
+            out->fast = std::move(decoded);
+        }
+        else
+            out->fast.reset();
+    }
+    {
+        const auto member = value.FindMember("outline_width_mm");
+        if (member != value.MemberEnd())
+        {
+            double decoded{};
+            if (!decode_double(member->value, &decoded, child_path(path, "outline_width_mm"), error,
+                               0, 1000, true, false))
+                return false;
+            out->outline_width_mm = std::move(decoded);
+        }
+        else
+            out->outline_width_mm.reset();
+    }
+    {
+        const auto member = value.FindMember("detail_width_mm");
+        if (member != value.MemberEnd())
+        {
+            double decoded{};
+            if (!decode_double(member->value, &decoded, child_path(path, "detail_width_mm"), error,
+                               0, 1000, true, false))
+                return false;
+            out->detail_width_mm = std::move(decoded);
+        }
+        else
+            out->detail_width_mm.reset();
+    }
+    return true;
+}
+
+bool write_ModelIllustrationLineworkOptionsA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                              const ModelIllustrationLineworkOptionsA0& value,
+                                              ContractError* error)
+{
+    writer.StartObject();
+    if (value.fast.has_value())
+    {
+        writer.Key("fast");
+        if (!write_FastHlrOptionsA0(writer, *value.fast, error))
+            return false;
+    }
+    if (value.outline_width_mm.has_value())
+    {
+        writer.Key("outline_width_mm");
+        if (!write_double(writer, *value.outline_width_mm, error, 0, 1000, true, false))
+            return false;
+    }
+    if (value.detail_width_mm.has_value())
+    {
+        writer.Key("detail_width_mm");
+        if (!write_double(writer, *value.detail_width_mm, error, 0, 1000, true, false))
             return false;
     }
     writer.EndObject();
@@ -5324,6 +7007,404 @@ bool write_MeshIllustrationStyleA0(rapidjson::Writer<rapidjson::StringBuffer>& w
     return true;
 }
 
+bool decode_ModelIllustrationWorkLimitsA0(const rapidjson::Value& value,
+                                          ModelIllustrationWorkLimitsA0* out,
+                                          const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"max_visibility_candidate_pairs", "max_drawing_commands"};
+    if (!validate_object(value, names, 2U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("max_visibility_candidate_pairs");
+        if (member != value.MemberEnd())
+        {
+            std::uint32_t decoded{};
+            if (!decode_uint32(member->value, &decoded,
+                               child_path(path, "max_visibility_candidate_pairs"), error, 1ULL,
+                               100000000ULL))
+                return false;
+            out->max_visibility_candidate_pairs = std::move(decoded);
+        }
+        else
+            out->max_visibility_candidate_pairs.reset();
+    }
+    {
+        const auto member = value.FindMember("max_drawing_commands");
+        if (member != value.MemberEnd())
+        {
+            std::uint32_t decoded{};
+            if (!decode_uint32(member->value, &decoded, child_path(path, "max_drawing_commands"),
+                               error, 1ULL, 2000000ULL))
+                return false;
+            out->max_drawing_commands = std::move(decoded);
+        }
+        else
+            out->max_drawing_commands.reset();
+    }
+    return true;
+}
+
+bool write_ModelIllustrationWorkLimitsA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                         const ModelIllustrationWorkLimitsA0& value,
+                                         ContractError* error)
+{
+    writer.StartObject();
+    if (value.max_visibility_candidate_pairs.has_value())
+    {
+        writer.Key("max_visibility_candidate_pairs");
+        if (!write_uint32(writer, *value.max_visibility_candidate_pairs, error, 1ULL, 100000000ULL))
+            return false;
+    }
+    if (value.max_drawing_commands.has_value())
+    {
+        writer.Key("max_drawing_commands");
+        if (!write_uint32(writer, *value.max_drawing_commands, error, 1ULL, 2000000ULL))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_ModelIllustrationGeometryRequestA0(const rapidjson::Value& value,
+                                               ModelIllustrationGeometryRequestA0* out,
+                                               const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"schema",   "source", "view",       "prepare",
+                                        "linework", "style",  "work_limits"};
+    if (!validate_object(value, names, 7U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("schema");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "schema"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->schema, child_path(path, "schema"), error,
+                                   "geometry.model_illustration_geometry.request.a0"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("source");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "source"),
+                        "Required field is missing.");
+        if (!decode_ModelIllustrationSourceA0(member->value, &out->source,
+                                              child_path(path, "source"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("view");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "view"),
+                        "Required field is missing.");
+        if (!decode_MeshIllustrationView(member->value, &out->view, child_path(path, "view"),
+                                         error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("prepare");
+        if (member != value.MemberEnd())
+        {
+            MeshIllustrationPrepareOptions decoded{};
+            if (!decode_MeshIllustrationPrepareOptions(member->value, &decoded,
+                                                       child_path(path, "prepare"), error))
+                return false;
+            out->prepare = std::move(decoded);
+        }
+        else
+            out->prepare.reset();
+    }
+    {
+        const auto member = value.FindMember("linework");
+        if (member != value.MemberEnd())
+        {
+            ModelIllustrationLineworkOptionsA0 decoded{};
+            if (!decode_ModelIllustrationLineworkOptionsA0(member->value, &decoded,
+                                                           child_path(path, "linework"), error))
+                return false;
+            out->linework = std::move(decoded);
+        }
+        else
+            out->linework.reset();
+    }
+    {
+        const auto member = value.FindMember("style");
+        if (member != value.MemberEnd())
+        {
+            MeshIllustrationStyleA0 decoded{};
+            if (!decode_MeshIllustrationStyleA0(member->value, &decoded, child_path(path, "style"),
+                                                error))
+                return false;
+            out->style = std::move(decoded);
+        }
+        else
+            out->style.reset();
+    }
+    {
+        const auto member = value.FindMember("work_limits");
+        if (member != value.MemberEnd())
+        {
+            ModelIllustrationWorkLimitsA0 decoded{};
+            if (!decode_ModelIllustrationWorkLimitsA0(member->value, &decoded,
+                                                      child_path(path, "work_limits"), error))
+                return false;
+            out->work_limits = std::move(decoded);
+        }
+        else
+            out->work_limits.reset();
+    }
+    return true;
+}
+
+bool write_ModelIllustrationGeometryRequestA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                              const ModelIllustrationGeometryRequestA0& value,
+                                              ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("schema");
+    if (!write_literal_string(writer, value.schema, error,
+                              "geometry.model_illustration_geometry.request.a0"))
+        return false;
+    writer.Key("source");
+    if (!write_ModelIllustrationSourceA0(writer, value.source, error))
+        return false;
+    writer.Key("view");
+    if (!write_MeshIllustrationView(writer, value.view, error))
+        return false;
+    if (value.prepare.has_value())
+    {
+        writer.Key("prepare");
+        if (!write_MeshIllustrationPrepareOptions(writer, *value.prepare, error))
+            return false;
+    }
+    if (value.linework.has_value())
+    {
+        writer.Key("linework");
+        if (!write_ModelIllustrationLineworkOptionsA0(writer, *value.linework, error))
+            return false;
+    }
+    if (value.style.has_value())
+    {
+        writer.Key("style");
+        if (!write_MeshIllustrationStyleA0(writer, *value.style, error))
+            return false;
+    }
+    if (value.work_limits.has_value())
+    {
+        writer.Key("work_limits");
+        if (!write_ModelIllustrationWorkLimitsA0(writer, *value.work_limits, error))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_MeshIllustrationSvgOptions(const rapidjson::Value& value,
+                                       MeshIllustrationSvgOptions* out, const std::string& path,
+                                       ContractError* error)
+{
+    static const char* const names[] = {"coordinate_span", "title"};
+    if (!validate_object(value, names, 2U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("coordinate_span");
+        if (member != value.MemberEnd())
+        {
+            std::uint32_t decoded{};
+            if (!decode_uint32(member->value, &decoded, child_path(path, "coordinate_span"), error,
+                               10000ULL, 1000000000ULL))
+                return false;
+            out->coordinate_span = std::move(decoded);
+        }
+        else
+            out->coordinate_span.reset();
+    }
+    {
+        const auto member = value.FindMember("title");
+        if (member != value.MemberEnd())
+        {
+            std::string decoded{};
+            if (!decode_string(member->value, &decoded, child_path(path, "title"), error, 1U,
+                               1024U))
+                return false;
+            out->title = std::move(decoded);
+        }
+        else
+            out->title.reset();
+    }
+    return true;
+}
+
+bool write_MeshIllustrationSvgOptions(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                      const MeshIllustrationSvgOptions& value, ContractError* error)
+{
+    writer.StartObject();
+    if (value.coordinate_span.has_value())
+    {
+        writer.Key("coordinate_span");
+        if (!write_uint32(writer, *value.coordinate_span, error, 10000ULL, 1000000000ULL))
+            return false;
+    }
+    if (value.title.has_value())
+    {
+        writer.Key("title");
+        if (!write_string(writer, *value.title, error, 1U, 1024U))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
+bool decode_ModelIllustrationRequestA0(const rapidjson::Value& value,
+                                       ModelIllustrationRequestA0* out, const std::string& path,
+                                       ContractError* error)
+{
+    static const char* const names[] = {"schema",   "source", "view", "prepare",
+                                        "linework", "style",  "svg",  "work_limits"};
+    if (!validate_object(value, names, 8U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("schema");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "schema"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->schema, child_path(path, "schema"), error,
+                                   "geometry.model_illustration.request.a0"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("source");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "source"),
+                        "Required field is missing.");
+        if (!decode_ModelIllustrationSourceA0(member->value, &out->source,
+                                              child_path(path, "source"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("view");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "view"),
+                        "Required field is missing.");
+        if (!decode_MeshIllustrationView(member->value, &out->view, child_path(path, "view"),
+                                         error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("prepare");
+        if (member != value.MemberEnd())
+        {
+            MeshIllustrationPrepareOptions decoded{};
+            if (!decode_MeshIllustrationPrepareOptions(member->value, &decoded,
+                                                       child_path(path, "prepare"), error))
+                return false;
+            out->prepare = std::move(decoded);
+        }
+        else
+            out->prepare.reset();
+    }
+    {
+        const auto member = value.FindMember("linework");
+        if (member != value.MemberEnd())
+        {
+            ModelIllustrationLineworkOptionsA0 decoded{};
+            if (!decode_ModelIllustrationLineworkOptionsA0(member->value, &decoded,
+                                                           child_path(path, "linework"), error))
+                return false;
+            out->linework = std::move(decoded);
+        }
+        else
+            out->linework.reset();
+    }
+    {
+        const auto member = value.FindMember("style");
+        if (member != value.MemberEnd())
+        {
+            MeshIllustrationStyleA0 decoded{};
+            if (!decode_MeshIllustrationStyleA0(member->value, &decoded, child_path(path, "style"),
+                                                error))
+                return false;
+            out->style = std::move(decoded);
+        }
+        else
+            out->style.reset();
+    }
+    {
+        const auto member = value.FindMember("svg");
+        if (member != value.MemberEnd())
+        {
+            MeshIllustrationSvgOptions decoded{};
+            if (!decode_MeshIllustrationSvgOptions(member->value, &decoded, child_path(path, "svg"),
+                                                   error))
+                return false;
+            out->svg = std::move(decoded);
+        }
+        else
+            out->svg.reset();
+    }
+    {
+        const auto member = value.FindMember("work_limits");
+        if (member != value.MemberEnd())
+        {
+            ModelIllustrationWorkLimitsA0 decoded{};
+            if (!decode_ModelIllustrationWorkLimitsA0(member->value, &decoded,
+                                                      child_path(path, "work_limits"), error))
+                return false;
+            out->work_limits = std::move(decoded);
+        }
+        else
+            out->work_limits.reset();
+    }
+    return true;
+}
+
+bool write_ModelIllustrationRequestA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                      const ModelIllustrationRequestA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("schema");
+    if (!write_literal_string(writer, value.schema, error,
+                              "geometry.model_illustration.request.a0"))
+        return false;
+    writer.Key("source");
+    if (!write_ModelIllustrationSourceA0(writer, value.source, error))
+        return false;
+    writer.Key("view");
+    if (!write_MeshIllustrationView(writer, value.view, error))
+        return false;
+    if (value.prepare.has_value())
+    {
+        writer.Key("prepare");
+        if (!write_MeshIllustrationPrepareOptions(writer, *value.prepare, error))
+            return false;
+    }
+    if (value.linework.has_value())
+    {
+        writer.Key("linework");
+        if (!write_ModelIllustrationLineworkOptionsA0(writer, *value.linework, error))
+            return false;
+    }
+    if (value.style.has_value())
+    {
+        writer.Key("style");
+        if (!write_MeshIllustrationStyleA0(writer, *value.style, error))
+            return false;
+    }
+    if (value.svg.has_value())
+    {
+        writer.Key("svg");
+        if (!write_MeshIllustrationSvgOptions(writer, *value.svg, error))
+            return false;
+    }
+    if (value.work_limits.has_value())
+    {
+        writer.Key("work_limits");
+        if (!write_ModelIllustrationWorkLimitsA0(writer, *value.work_limits, error))
+            return false;
+    }
+    writer.EndObject();
+    return true;
+}
+
 bool decode_MeshIllustrationGeometryRequestA0(const rapidjson::Value& value,
                                               MeshIllustrationGeometryRequestA0* out,
                                               const std::string& path, ContractError* error)
@@ -5400,62 +7481,6 @@ bool write_MeshIllustrationGeometryRequestA0(rapidjson::Writer<rapidjson::String
     {
         writer.Key("style");
         if (!write_MeshIllustrationStyleA0(writer, *value.style, error))
-            return false;
-    }
-    writer.EndObject();
-    return true;
-}
-
-bool decode_MeshIllustrationSvgOptions(const rapidjson::Value& value,
-                                       MeshIllustrationSvgOptions* out, const std::string& path,
-                                       ContractError* error)
-{
-    static const char* const names[] = {"coordinate_span", "title"};
-    if (!validate_object(value, names, 2U, path, error))
-        return false;
-    {
-        const auto member = value.FindMember("coordinate_span");
-        if (member != value.MemberEnd())
-        {
-            std::uint32_t decoded{};
-            if (!decode_uint32(member->value, &decoded, child_path(path, "coordinate_span"), error,
-                               10000ULL, 1000000000ULL))
-                return false;
-            out->coordinate_span = std::move(decoded);
-        }
-        else
-            out->coordinate_span.reset();
-    }
-    {
-        const auto member = value.FindMember("title");
-        if (member != value.MemberEnd())
-        {
-            std::string decoded{};
-            if (!decode_string(member->value, &decoded, child_path(path, "title"), error, 1U,
-                               1024U))
-                return false;
-            out->title = std::move(decoded);
-        }
-        else
-            out->title.reset();
-    }
-    return true;
-}
-
-bool write_MeshIllustrationSvgOptions(rapidjson::Writer<rapidjson::StringBuffer>& writer,
-                                      const MeshIllustrationSvgOptions& value, ContractError* error)
-{
-    writer.StartObject();
-    if (value.coordinate_span.has_value())
-    {
-        writer.Key("coordinate_span");
-        if (!write_uint32(writer, *value.coordinate_span, error, 10000ULL, 1000000000ULL))
-            return false;
-    }
-    if (value.title.has_value())
-    {
-        writer.Key("title");
-        if (!write_string(writer, *value.title, error, 1U, 1024U))
             return false;
     }
     writer.EndObject();
@@ -5558,40 +7583,6 @@ bool write_MeshIllustrationRequestA0(rapidjson::Writer<rapidjson::StringBuffer>&
     }
     writer.EndObject();
     return true;
-}
-
-bool decode_ModelRootPlacement(const rapidjson::Value& value, ModelRootPlacement* out,
-                               const std::string& path, ContractError* error)
-{
-    if (!value.IsString())
-        return fail(error, "geometer.contract.type_mismatch", path, "Expected a string enum.");
-    const std::string text(value.GetString(), value.GetStringLength());
-    if (text == "strip")
-    {
-        *out = ModelRootPlacement::strip;
-        return true;
-    }
-    if (text == "preserve")
-    {
-        *out = ModelRootPlacement::preserve;
-        return true;
-    }
-    return fail(error, "geometer.contract.enum_mismatch", path, "Unknown enum value.");
-}
-
-bool write_ModelRootPlacement(rapidjson::Writer<rapidjson::StringBuffer>& writer,
-                              const ModelRootPlacement& value, ContractError* error)
-{
-    switch (value)
-    {
-    case ModelRootPlacement::strip:
-        writer.String("strip");
-        return true;
-    case ModelRootPlacement::preserve:
-        writer.String("preserve");
-        return true;
-    }
-    return fail(error, "geometer.contract.enum_mismatch", "", "Unknown enum value.");
 }
 
 bool decode_ModelTessellationRequestA0(const rapidjson::Value& value,
@@ -9831,11 +11822,29 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
                               const std::string& path, ContractError* error)
 {
     {
+        ModelIllustrationGeometryRequestA0 candidate{};
+        ContractError ignored;
+        if (decode_ModelIllustrationGeometryRequestA0(value, &candidate, path, &ignored))
+        {
+            *out = IpcRequestValueA0(std::in_place_index<0>, std::move(candidate));
+            return true;
+        }
+    }
+    {
+        ModelIllustrationRequestA0 candidate{};
+        ContractError ignored;
+        if (decode_ModelIllustrationRequestA0(value, &candidate, path, &ignored))
+        {
+            *out = IpcRequestValueA0(std::in_place_index<1>, std::move(candidate));
+            return true;
+        }
+    }
+    {
         MeshIllustrationGeometryRequestA0 candidate{};
         ContractError ignored;
         if (decode_MeshIllustrationGeometryRequestA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<0>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<2>, std::move(candidate));
             return true;
         }
     }
@@ -9844,7 +11853,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_MeshIllustrationRequestA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<1>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<3>, std::move(candidate));
             return true;
         }
     }
@@ -9853,7 +11862,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_ModelTessellationRequestA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<2>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<4>, std::move(candidate));
             return true;
         }
     }
@@ -9862,7 +11871,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_ModelBoundsOptionsA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<3>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<5>, std::move(candidate));
             return true;
         }
     }
@@ -9871,7 +11880,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_HlrProjectionOptionsA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<4>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<6>, std::move(candidate));
             return true;
         }
     }
@@ -9880,7 +11889,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_PackedAttachmentProjectionA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<5>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<7>, std::move(candidate));
             return true;
         }
     }
@@ -9889,7 +11898,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyOpenRequestA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<6>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<8>, std::move(candidate));
             return true;
         }
     }
@@ -9898,7 +11907,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyCloseRequestA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<7>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<9>, std::move(candidate));
             return true;
         }
     }
@@ -9907,7 +11916,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyInspectRequestA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<8>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<10>, std::move(candidate));
             return true;
         }
     }
@@ -9916,7 +11925,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyRenderRequestA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<9>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<11>, std::move(candidate));
             return true;
         }
     }
@@ -9925,7 +11934,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyResolveHitRequestA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<10>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<12>, std::move(candidate));
             return true;
         }
     }
@@ -9934,7 +11943,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyApplyLogicalGroupsRequestA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<11>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<13>, std::move(candidate));
             return true;
         }
     }
@@ -9943,7 +11952,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyApplyMetadataProbesRequestA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<12>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<14>, std::move(candidate));
             return true;
         }
     }
@@ -9952,7 +11961,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyCheckpointEditJournalRequestA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<13>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<15>, std::move(candidate));
             return true;
         }
     }
@@ -9961,7 +11970,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyApplyHierarchyRequestA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<14>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<16>, std::move(candidate));
             return true;
         }
     }
@@ -9970,7 +11979,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologySaveRequestA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<15>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<17>, std::move(candidate));
             return true;
         }
     }
@@ -9979,7 +11988,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyRestoreRequestA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<16>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<18>, std::move(candidate));
             return true;
         }
     }
@@ -9988,7 +11997,7 @@ bool decode_IpcRequestValueA0(const rapidjson::Value& value, IpcRequestValueA0* 
         ContractError ignored;
         if (decode_StepTopologyAnalyzeRecoveryRequestA0(value, &candidate, path, &ignored))
         {
-            *out = IpcRequestValueA0(std::in_place_index<17>, std::move(candidate));
+            *out = IpcRequestValueA0(std::in_place_index<19>, std::move(candidate));
             return true;
         }
     }
@@ -10002,41 +12011,45 @@ bool write_IpcRequestValueA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
     switch (value.index())
     {
     case 0:
-        return write_MeshIllustrationGeometryRequestA0(writer, std::get<0>(value), error);
+        return write_ModelIllustrationGeometryRequestA0(writer, std::get<0>(value), error);
     case 1:
-        return write_MeshIllustrationRequestA0(writer, std::get<1>(value), error);
+        return write_ModelIllustrationRequestA0(writer, std::get<1>(value), error);
     case 2:
-        return write_ModelTessellationRequestA0(writer, std::get<2>(value), error);
+        return write_MeshIllustrationGeometryRequestA0(writer, std::get<2>(value), error);
     case 3:
-        return write_ModelBoundsOptionsA0(writer, std::get<3>(value), error);
+        return write_MeshIllustrationRequestA0(writer, std::get<3>(value), error);
     case 4:
-        return write_HlrProjectionOptionsA0(writer, std::get<4>(value), error);
+        return write_ModelTessellationRequestA0(writer, std::get<4>(value), error);
     case 5:
-        return write_PackedAttachmentProjectionA0(writer, std::get<5>(value), error);
+        return write_ModelBoundsOptionsA0(writer, std::get<5>(value), error);
     case 6:
-        return write_StepTopologyOpenRequestA0(writer, std::get<6>(value), error);
+        return write_HlrProjectionOptionsA0(writer, std::get<6>(value), error);
     case 7:
-        return write_StepTopologyCloseRequestA0(writer, std::get<7>(value), error);
+        return write_PackedAttachmentProjectionA0(writer, std::get<7>(value), error);
     case 8:
-        return write_StepTopologyInspectRequestA0(writer, std::get<8>(value), error);
+        return write_StepTopologyOpenRequestA0(writer, std::get<8>(value), error);
     case 9:
-        return write_StepTopologyRenderRequestA0(writer, std::get<9>(value), error);
+        return write_StepTopologyCloseRequestA0(writer, std::get<9>(value), error);
     case 10:
-        return write_StepTopologyResolveHitRequestA0(writer, std::get<10>(value), error);
+        return write_StepTopologyInspectRequestA0(writer, std::get<10>(value), error);
     case 11:
-        return write_StepTopologyApplyLogicalGroupsRequestA0(writer, std::get<11>(value), error);
+        return write_StepTopologyRenderRequestA0(writer, std::get<11>(value), error);
     case 12:
-        return write_StepTopologyApplyMetadataProbesRequestA0(writer, std::get<12>(value), error);
+        return write_StepTopologyResolveHitRequestA0(writer, std::get<12>(value), error);
     case 13:
-        return write_StepTopologyCheckpointEditJournalRequestA0(writer, std::get<13>(value), error);
+        return write_StepTopologyApplyLogicalGroupsRequestA0(writer, std::get<13>(value), error);
     case 14:
-        return write_StepTopologyApplyHierarchyRequestA0(writer, std::get<14>(value), error);
+        return write_StepTopologyApplyMetadataProbesRequestA0(writer, std::get<14>(value), error);
     case 15:
-        return write_StepTopologySaveRequestA0(writer, std::get<15>(value), error);
+        return write_StepTopologyCheckpointEditJournalRequestA0(writer, std::get<15>(value), error);
     case 16:
-        return write_StepTopologyRestoreRequestA0(writer, std::get<16>(value), error);
+        return write_StepTopologyApplyHierarchyRequestA0(writer, std::get<16>(value), error);
     case 17:
-        return write_StepTopologyAnalyzeRecoveryRequestA0(writer, std::get<17>(value), error);
+        return write_StepTopologySaveRequestA0(writer, std::get<17>(value), error);
+    case 18:
+        return write_StepTopologyRestoreRequestA0(writer, std::get<18>(value), error);
+    case 19:
+        return write_StepTopologyAnalyzeRecoveryRequestA0(writer, std::get<19>(value), error);
     default:
         return fail(error, "geometer.contract.union_mismatch", "", "Unknown union variant.");
     }
@@ -10240,107 +12253,6 @@ bool write_IpcWelcomeA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
     writer.Key("capabilities");
     if (!write_array(writer, value.capabilities, error, 0U, 64U, write_string_item))
         return false;
-    writer.EndObject();
-    return true;
-}
-
-bool decode_IllustrationMatrix4x4(const rapidjson::Value& value, IllustrationMatrix4x4* out,
-                                  const std::string& path, ContractError* error)
-{
-    if (!value.IsArray() || value.Size() < 16U || value.Size() > 16U)
-        return fail(error, "geometer.contract.array_size", path,
-                    "Array length is outside its contract bounds.");
-    out->clear();
-    out->reserve(value.Size());
-    for (rapidjson::SizeType i = 0; i < value.Size(); ++i)
-    {
-        double item_value{};
-        if (!decode_double(value[i], &item_value, path + "/" + std::to_string(i), error,
-                           -std::numeric_limits<double>::infinity(),
-                           std::numeric_limits<double>::infinity(), false, false))
-            return false;
-        out->push_back(std::move(item_value));
-    }
-    return true;
-}
-
-bool write_IllustrationMatrix4x4(rapidjson::Writer<rapidjson::StringBuffer>& writer,
-                                 const IllustrationMatrix4x4& value, ContractError* error)
-{
-    if (value.size() < 16U || value.size() > 16U)
-        return fail(error, "geometer.contract.array_size", "",
-                    "Array length is outside its contract bounds.");
-    writer.StartArray();
-    for (const auto& item_value : value)
-        if (!write_double(writer, item_value, error, -std::numeric_limits<double>::infinity(),
-                          std::numeric_limits<double>::infinity(), false, false))
-            return false;
-    writer.EndArray();
-    return true;
-}
-
-bool decode_MeshIllustrationMaterial(const rapidjson::Value& value, MeshIllustrationMaterial* out,
-                                     const std::string& path, ContractError* error)
-{
-    static const char* const names[] = {"color", "opacity", "name"};
-    if (!validate_object(value, names, 3U, path, error))
-        return false;
-    {
-        const auto member = value.FindMember("color");
-        if (member == value.MemberEnd())
-            return fail(error, "geometer.contract.missing_field", child_path(path, "color"),
-                        "Required field is missing.");
-        if (!decode_IllustrationVector3(member->value, &out->color, child_path(path, "color"),
-                                        error))
-            return false;
-    }
-    {
-        const auto member = value.FindMember("opacity");
-        if (member != value.MemberEnd())
-        {
-            double decoded{};
-            if (!decode_double(member->value, &decoded, child_path(path, "opacity"), error, 0, 1,
-                               false, false))
-                return false;
-            out->opacity = std::move(decoded);
-        }
-        else
-            out->opacity.reset();
-    }
-    {
-        const auto member = value.FindMember("name");
-        if (member != value.MemberEnd())
-        {
-            std::string decoded{};
-            if (!decode_string(member->value, &decoded, child_path(path, "name"), error, 0U, 1024U))
-                return false;
-            out->name = std::move(decoded);
-        }
-        else
-            out->name.reset();
-    }
-    return true;
-}
-
-bool write_MeshIllustrationMaterial(rapidjson::Writer<rapidjson::StringBuffer>& writer,
-                                    const MeshIllustrationMaterial& value, ContractError* error)
-{
-    writer.StartObject();
-    writer.Key("color");
-    if (!write_IllustrationVector3(writer, value.color, error))
-        return false;
-    if (value.opacity.has_value())
-    {
-        writer.Key("opacity");
-        if (!write_double(writer, *value.opacity, error, 0, 1, false, false))
-            return false;
-    }
-    if (value.name.has_value())
-    {
-        writer.Key("name");
-        if (!write_string(writer, *value.name, error, 0U, 1024U))
-            return false;
-    }
     writer.EndObject();
     return true;
 }
@@ -11823,6 +13735,565 @@ bool write_ModelBoundsResultA0(rapidjson::Writer<rapidjson::StringBuffer>& write
         return false;
     writer.Key("timings");
     if (!write_ModelBoundsTimings(writer, value.timings, error))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_AnalyticSourceSummaryA0(const rapidjson::Value& value, AnalyticSourceSummaryA0* out,
+                                    const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"kind", "definitions", "occurrences", "primitives",
+                                        "triangles"};
+    if (!validate_object(value, names, 5U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("kind");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "kind"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->kind, child_path(path, "kind"), error,
+                                   "analytic"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("definitions");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "definitions"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->definitions, child_path(path, "definitions"), error,
+                           0ULL, 65536ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("occurrences");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "occurrences"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->occurrences, child_path(path, "occurrences"), error,
+                           0ULL, 65536ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("primitives");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "primitives"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->primitives, child_path(path, "primitives"), error,
+                           0ULL, 65536ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("triangles");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "triangles"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->triangles, child_path(path, "triangles"), error,
+                           0ULL, 2000000ULL))
+            return false;
+    }
+    return true;
+}
+
+bool write_AnalyticSourceSummaryA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                   const AnalyticSourceSummaryA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("kind");
+    if (!write_literal_string(writer, value.kind, error, "analytic"))
+        return false;
+    writer.Key("definitions");
+    if (!write_uint32(writer, value.definitions, error, 0ULL, 65536ULL))
+        return false;
+    writer.Key("occurrences");
+    if (!write_uint32(writer, value.occurrences, error, 0ULL, 65536ULL))
+        return false;
+    writer.Key("primitives");
+    if (!write_uint32(writer, value.primitives, error, 0ULL, 65536ULL))
+        return false;
+    writer.Key("triangles");
+    if (!write_uint32(writer, value.triangles, error, 0ULL, 2000000ULL))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_ModelAttachmentMediaTypeA0(const rapidjson::Value& value,
+                                       ModelAttachmentMediaTypeA0* out, const std::string& path,
+                                       ContractError* error)
+{
+    if (!value.IsString())
+        return fail(error, "geometer.contract.type_mismatch", path, "Expected a string enum.");
+    const std::string text(value.GetString(), value.GetStringLength());
+    if (text == "application/step")
+    {
+        *out = ModelAttachmentMediaTypeA0::application_step;
+        return true;
+    }
+    if (text == "model/step")
+    {
+        *out = ModelAttachmentMediaTypeA0::model_step;
+        return true;
+    }
+    return fail(error, "geometer.contract.enum_mismatch", path, "Unknown enum value.");
+}
+
+bool write_ModelAttachmentMediaTypeA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                      const ModelAttachmentMediaTypeA0& value, ContractError* error)
+{
+    switch (value)
+    {
+    case ModelAttachmentMediaTypeA0::application_step:
+        writer.String("application/step");
+        return true;
+    case ModelAttachmentMediaTypeA0::model_step:
+        writer.String("model/step");
+        return true;
+    }
+    return fail(error, "geometer.contract.enum_mismatch", "", "Unknown enum value.");
+}
+
+bool decode_ModelAttachmentSourceSummaryA0(const rapidjson::Value& value,
+                                           ModelAttachmentSourceSummaryA0* out,
+                                           const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"kind", "media_type", "source_sha256", "meshes",
+                                        "triangles"};
+    if (!validate_object(value, names, 5U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("kind");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "kind"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->kind, child_path(path, "kind"), error,
+                                   "model"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("media_type");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "media_type"),
+                        "Required field is missing.");
+        if (!decode_ModelAttachmentMediaTypeA0(member->value, &out->media_type,
+                                               child_path(path, "media_type"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("source_sha256");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "source_sha256"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->source_sha256, child_path(path, "source_sha256"),
+                           error, 64U, 64U))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("meshes");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "meshes"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->meshes, child_path(path, "meshes"), error, 0ULL,
+                           65536ULL))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("triangles");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "triangles"),
+                        "Required field is missing.");
+        if (!decode_uint32(member->value, &out->triangles, child_path(path, "triangles"), error,
+                           0ULL, 2000000ULL))
+            return false;
+    }
+    return true;
+}
+
+bool write_ModelAttachmentSourceSummaryA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                          const ModelAttachmentSourceSummaryA0& value,
+                                          ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("kind");
+    if (!write_literal_string(writer, value.kind, error, "model"))
+        return false;
+    writer.Key("media_type");
+    if (!write_ModelAttachmentMediaTypeA0(writer, value.media_type, error))
+        return false;
+    writer.Key("source_sha256");
+    if (!write_string(writer, value.source_sha256, error, 64U, 64U))
+        return false;
+    writer.Key("meshes");
+    if (!write_uint32(writer, value.meshes, error, 0ULL, 65536ULL))
+        return false;
+    writer.Key("triangles");
+    if (!write_uint32(writer, value.triangles, error, 0ULL, 2000000ULL))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_ModelIllustrationBounds3MmA0(const rapidjson::Value& value,
+                                         ModelIllustrationBounds3MmA0* out, const std::string& path,
+                                         ContractError* error)
+{
+    if (!value.IsArray() || value.Size() < 6U || value.Size() > 6U)
+        return fail(error, "geometer.contract.array_size", path,
+                    "Array length is outside its contract bounds.");
+    out->clear();
+    out->reserve(value.Size());
+    for (rapidjson::SizeType i = 0; i < value.Size(); ++i)
+    {
+        double item_value{};
+        if (!decode_double(value[i], &item_value, path + "/" + std::to_string(i), error,
+                           -std::numeric_limits<double>::infinity(),
+                           std::numeric_limits<double>::infinity(), false, false))
+            return false;
+        out->push_back(std::move(item_value));
+    }
+    return true;
+}
+
+bool write_ModelIllustrationBounds3MmA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                        const ModelIllustrationBounds3MmA0& value,
+                                        ContractError* error)
+{
+    if (value.size() < 6U || value.size() > 6U)
+        return fail(error, "geometer.contract.array_size", "",
+                    "Array length is outside its contract bounds.");
+    writer.StartArray();
+    for (const auto& item_value : value)
+        if (!write_double(writer, item_value, error, -std::numeric_limits<double>::infinity(),
+                          std::numeric_limits<double>::infinity(), false, false))
+            return false;
+    writer.EndArray();
+    return true;
+}
+
+bool decode_ModelIllustrationSourceSummaryA0(const rapidjson::Value& value,
+                                             ModelIllustrationSourceSummaryA0* out,
+                                             const std::string& path, ContractError* error)
+{
+    int matches = 0;
+    ModelIllustrationSourceSummaryA0 selected{};
+    {
+        ModelAttachmentSourceSummaryA0 candidate{};
+        ContractError ignored;
+        if (decode_ModelAttachmentSourceSummaryA0(value, &candidate, path, &ignored))
+        {
+            ++matches;
+            selected =
+                ModelIllustrationSourceSummaryA0(std::in_place_index<0>, std::move(candidate));
+        }
+    }
+    {
+        AnalyticSourceSummaryA0 candidate{};
+        ContractError ignored;
+        if (decode_AnalyticSourceSummaryA0(value, &candidate, path, &ignored))
+        {
+            ++matches;
+            selected =
+                ModelIllustrationSourceSummaryA0(std::in_place_index<1>, std::move(candidate));
+        }
+    }
+    if (matches != 1)
+        return fail(error, "geometer.contract.union_mismatch", path,
+                    "Expected exactly one union variant.");
+    *out = std::move(selected);
+    return true;
+}
+
+bool write_ModelIllustrationSourceSummaryA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                            const ModelIllustrationSourceSummaryA0& value,
+                                            ContractError* error)
+{
+    switch (value.index())
+    {
+    case 0:
+        return write_ModelAttachmentSourceSummaryA0(writer, std::get<0>(value), error);
+    case 1:
+        return write_AnalyticSourceSummaryA0(writer, std::get<1>(value), error);
+    default:
+        return fail(error, "geometer.contract.union_mismatch", "", "Unknown union variant.");
+    }
+}
+
+bool decode_ModelIllustrationTimingsA0(const rapidjson::Value& value,
+                                       ModelIllustrationTimingsA0* out, const std::string& path,
+                                       ContractError* error)
+{
+    static const char* const names[] = {"source_preparation_ms", "linework_ms", "illustration_ms",
+                                        "attachment_encoding_ms"};
+    if (!validate_object(value, names, 4U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("source_preparation_ms");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "source_preparation_ms"), "Required field is missing.");
+        if (!decode_double(member->value, &out->source_preparation_ms,
+                           child_path(path, "source_preparation_ms"), error, 0,
+                           std::numeric_limits<double>::infinity(), false, false))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("linework_ms");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "linework_ms"),
+                        "Required field is missing.");
+        if (!decode_double(member->value, &out->linework_ms, child_path(path, "linework_ms"), error,
+                           0, std::numeric_limits<double>::infinity(), false, false))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("illustration_ms");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "illustration_ms"), "Required field is missing.");
+        if (!decode_double(member->value, &out->illustration_ms,
+                           child_path(path, "illustration_ms"), error, 0,
+                           std::numeric_limits<double>::infinity(), false, false))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("attachment_encoding_ms");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field",
+                        child_path(path, "attachment_encoding_ms"), "Required field is missing.");
+        if (!decode_double(member->value, &out->attachment_encoding_ms,
+                           child_path(path, "attachment_encoding_ms"), error, 0,
+                           std::numeric_limits<double>::infinity(), false, false))
+            return false;
+    }
+    return true;
+}
+
+bool write_ModelIllustrationTimingsA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                      const ModelIllustrationTimingsA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("source_preparation_ms");
+    if (!write_double(writer, value.source_preparation_ms, error, 0,
+                      std::numeric_limits<double>::infinity(), false, false))
+        return false;
+    writer.Key("linework_ms");
+    if (!write_double(writer, value.linework_ms, error, 0, std::numeric_limits<double>::infinity(),
+                      false, false))
+        return false;
+    writer.Key("illustration_ms");
+    if (!write_double(writer, value.illustration_ms, error, 0,
+                      std::numeric_limits<double>::infinity(), false, false))
+        return false;
+    writer.Key("attachment_encoding_ms");
+    if (!write_double(writer, value.attachment_encoding_ms, error, 0,
+                      std::numeric_limits<double>::infinity(), false, false))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_ModelIllustrationGeometryResultA0(const rapidjson::Value& value,
+                                              ModelIllustrationGeometryResultA0* out,
+                                              const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"schema", "geometry", "bounds_mm", "source",
+                                        "stats",  "timings",  "warnings"};
+    if (!validate_object(value, names, 7U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("schema");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "schema"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->schema, child_path(path, "schema"), error,
+                                   "geometry.model_illustration_geometry.result.a0"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("geometry");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "geometry"),
+                        "Required field is missing.");
+        if (!decode_IllustrationGeometryAttachment(member->value, &out->geometry,
+                                                   child_path(path, "geometry"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("bounds_mm");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "bounds_mm"),
+                        "Required field is missing.");
+        if (!decode_ModelIllustrationBounds3MmA0(member->value, &out->bounds_mm,
+                                                 child_path(path, "bounds_mm"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("source");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "source"),
+                        "Required field is missing.");
+        if (!decode_ModelIllustrationSourceSummaryA0(member->value, &out->source,
+                                                     child_path(path, "source"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("stats");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "stats"),
+                        "Required field is missing.");
+        if (!decode_MeshIllustrationRenderStats(member->value, &out->stats,
+                                                child_path(path, "stats"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("timings");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "timings"),
+                        "Required field is missing.");
+        if (!decode_ModelIllustrationTimingsA0(member->value, &out->timings,
+                                               child_path(path, "timings"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("warnings");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "warnings"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->warnings, child_path(path, "warnings"), error, 0U,
+                          256U, decode_string_item))
+            return false;
+    }
+    return true;
+}
+
+bool write_ModelIllustrationGeometryResultA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                             const ModelIllustrationGeometryResultA0& value,
+                                             ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("schema");
+    if (!write_literal_string(writer, value.schema, error,
+                              "geometry.model_illustration_geometry.result.a0"))
+        return false;
+    writer.Key("geometry");
+    if (!write_IllustrationGeometryAttachment(writer, value.geometry, error))
+        return false;
+    writer.Key("bounds_mm");
+    if (!write_ModelIllustrationBounds3MmA0(writer, value.bounds_mm, error))
+        return false;
+    writer.Key("source");
+    if (!write_ModelIllustrationSourceSummaryA0(writer, value.source, error))
+        return false;
+    writer.Key("stats");
+    if (!write_MeshIllustrationRenderStats(writer, value.stats, error))
+        return false;
+    writer.Key("timings");
+    if (!write_ModelIllustrationTimingsA0(writer, value.timings, error))
+        return false;
+    writer.Key("warnings");
+    if (!write_array(writer, value.warnings, error, 0U, 256U, write_string_item))
+        return false;
+    writer.EndObject();
+    return true;
+}
+
+bool decode_ModelIllustrationResultA0(const rapidjson::Value& value, ModelIllustrationResultA0* out,
+                                      const std::string& path, ContractError* error)
+{
+    static const char* const names[] = {"schema", "svg",     "bounds_mm", "source",
+                                        "stats",  "timings", "warnings"};
+    if (!validate_object(value, names, 7U, path, error))
+        return false;
+    {
+        const auto member = value.FindMember("schema");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "schema"),
+                        "Required field is missing.");
+        if (!decode_literal_string(member->value, &out->schema, child_path(path, "schema"), error,
+                                   "geometry.model_illustration.result.a0"))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("svg");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "svg"),
+                        "Required field is missing.");
+        if (!decode_string(member->value, &out->svg, child_path(path, "svg"), error, 0U,
+                           std::numeric_limits<std::size_t>::max()))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("bounds_mm");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "bounds_mm"),
+                        "Required field is missing.");
+        if (!decode_ModelIllustrationBounds3MmA0(member->value, &out->bounds_mm,
+                                                 child_path(path, "bounds_mm"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("source");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "source"),
+                        "Required field is missing.");
+        if (!decode_ModelIllustrationSourceSummaryA0(member->value, &out->source,
+                                                     child_path(path, "source"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("stats");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "stats"),
+                        "Required field is missing.");
+        if (!decode_MeshIllustrationRenderStats(member->value, &out->stats,
+                                                child_path(path, "stats"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("timings");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "timings"),
+                        "Required field is missing.");
+        if (!decode_ModelIllustrationTimingsA0(member->value, &out->timings,
+                                               child_path(path, "timings"), error))
+            return false;
+    }
+    {
+        const auto member = value.FindMember("warnings");
+        if (member == value.MemberEnd())
+            return fail(error, "geometer.contract.missing_field", child_path(path, "warnings"),
+                        "Required field is missing.");
+        if (!decode_array(member->value, &out->warnings, child_path(path, "warnings"), error, 0U,
+                          256U, decode_string_item))
+            return false;
+    }
+    return true;
+}
+
+bool write_ModelIllustrationResultA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                                     const ModelIllustrationResultA0& value, ContractError* error)
+{
+    writer.StartObject();
+    writer.Key("schema");
+    if (!write_literal_string(writer, value.schema, error, "geometry.model_illustration.result.a0"))
+        return false;
+    writer.Key("svg");
+    if (!write_string(writer, value.svg, error, 0U, std::numeric_limits<std::size_t>::max()))
+        return false;
+    writer.Key("bounds_mm");
+    if (!write_ModelIllustrationBounds3MmA0(writer, value.bounds_mm, error))
+        return false;
+    writer.Key("source");
+    if (!write_ModelIllustrationSourceSummaryA0(writer, value.source, error))
+        return false;
+    writer.Key("stats");
+    if (!write_MeshIllustrationRenderStats(writer, value.stats, error))
+        return false;
+    writer.Key("timings");
+    if (!write_ModelIllustrationTimingsA0(writer, value.timings, error))
+        return false;
+    writer.Key("warnings");
+    if (!write_array(writer, value.warnings, error, 0U, 256U, write_string_item))
         return false;
     writer.EndObject();
     return true;
@@ -16338,12 +18809,30 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
     int matches = 0;
     OperationResultValueA0 selected{};
     {
+        ModelIllustrationGeometryResultA0 candidate{};
+        ContractError ignored;
+        if (decode_ModelIllustrationGeometryResultA0(value, &candidate, path, &ignored))
+        {
+            ++matches;
+            selected = OperationResultValueA0(std::in_place_index<0>, std::move(candidate));
+        }
+    }
+    {
+        ModelIllustrationResultA0 candidate{};
+        ContractError ignored;
+        if (decode_ModelIllustrationResultA0(value, &candidate, path, &ignored))
+        {
+            ++matches;
+            selected = OperationResultValueA0(std::in_place_index<1>, std::move(candidate));
+        }
+    }
+    {
         MeshIllustrationGeometryResultA0 candidate{};
         ContractError ignored;
         if (decode_MeshIllustrationGeometryResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<0>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<2>, std::move(candidate));
         }
     }
     {
@@ -16352,7 +18841,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_MeshIllustrationResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<1>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<3>, std::move(candidate));
         }
     }
     {
@@ -16361,7 +18850,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_ModelTessellationResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<2>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<4>, std::move(candidate));
         }
     }
     {
@@ -16370,7 +18859,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_ModelBoundsResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<3>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<5>, std::move(candidate));
         }
     }
     {
@@ -16379,7 +18868,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_HlrProjectionResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<4>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<6>, std::move(candidate));
         }
     }
     {
@@ -16388,7 +18877,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_PackedAttachmentProjectionA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<5>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<7>, std::move(candidate));
         }
     }
     {
@@ -16397,7 +18886,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyOpenResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<6>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<8>, std::move(candidate));
         }
     }
     {
@@ -16406,7 +18895,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyCloseResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<7>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<9>, std::move(candidate));
         }
     }
     {
@@ -16415,7 +18904,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyInspectResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<8>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<10>, std::move(candidate));
         }
     }
     {
@@ -16424,7 +18913,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyRenderResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<9>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<11>, std::move(candidate));
         }
     }
     {
@@ -16433,7 +18922,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyResolveHitResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<10>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<12>, std::move(candidate));
         }
     }
     {
@@ -16442,7 +18931,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyApplyLogicalGroupsResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<11>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<13>, std::move(candidate));
         }
     }
     {
@@ -16451,7 +18940,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyApplyMetadataProbesResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<12>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<14>, std::move(candidate));
         }
     }
     {
@@ -16460,7 +18949,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyCheckpointEditJournalResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<13>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<15>, std::move(candidate));
         }
     }
     {
@@ -16469,7 +18958,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyApplyHierarchyResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<14>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<16>, std::move(candidate));
         }
     }
     {
@@ -16478,7 +18967,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologySaveResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<15>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<17>, std::move(candidate));
         }
     }
     {
@@ -16487,7 +18976,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyRestoreResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<16>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<18>, std::move(candidate));
         }
     }
     {
@@ -16496,7 +18985,7 @@ bool decode_OperationResultValueA0(const rapidjson::Value& value, OperationResul
         if (decode_StepTopologyAnalyzeRecoveryResultA0(value, &candidate, path, &ignored))
         {
             ++matches;
-            selected = OperationResultValueA0(std::in_place_index<17>, std::move(candidate));
+            selected = OperationResultValueA0(std::in_place_index<19>, std::move(candidate));
         }
     }
     if (matches != 1)
@@ -16512,41 +19001,45 @@ bool write_OperationResultValueA0(rapidjson::Writer<rapidjson::StringBuffer>& wr
     switch (value.index())
     {
     case 0:
-        return write_MeshIllustrationGeometryResultA0(writer, std::get<0>(value), error);
+        return write_ModelIllustrationGeometryResultA0(writer, std::get<0>(value), error);
     case 1:
-        return write_MeshIllustrationResultA0(writer, std::get<1>(value), error);
+        return write_ModelIllustrationResultA0(writer, std::get<1>(value), error);
     case 2:
-        return write_ModelTessellationResultA0(writer, std::get<2>(value), error);
+        return write_MeshIllustrationGeometryResultA0(writer, std::get<2>(value), error);
     case 3:
-        return write_ModelBoundsResultA0(writer, std::get<3>(value), error);
+        return write_MeshIllustrationResultA0(writer, std::get<3>(value), error);
     case 4:
-        return write_HlrProjectionResultA0(writer, std::get<4>(value), error);
+        return write_ModelTessellationResultA0(writer, std::get<4>(value), error);
     case 5:
-        return write_PackedAttachmentProjectionA0(writer, std::get<5>(value), error);
+        return write_ModelBoundsResultA0(writer, std::get<5>(value), error);
     case 6:
-        return write_StepTopologyOpenResultA0(writer, std::get<6>(value), error);
+        return write_HlrProjectionResultA0(writer, std::get<6>(value), error);
     case 7:
-        return write_StepTopologyCloseResultA0(writer, std::get<7>(value), error);
+        return write_PackedAttachmentProjectionA0(writer, std::get<7>(value), error);
     case 8:
-        return write_StepTopologyInspectResultA0(writer, std::get<8>(value), error);
+        return write_StepTopologyOpenResultA0(writer, std::get<8>(value), error);
     case 9:
-        return write_StepTopologyRenderResultA0(writer, std::get<9>(value), error);
+        return write_StepTopologyCloseResultA0(writer, std::get<9>(value), error);
     case 10:
-        return write_StepTopologyResolveHitResultA0(writer, std::get<10>(value), error);
+        return write_StepTopologyInspectResultA0(writer, std::get<10>(value), error);
     case 11:
-        return write_StepTopologyApplyLogicalGroupsResultA0(writer, std::get<11>(value), error);
+        return write_StepTopologyRenderResultA0(writer, std::get<11>(value), error);
     case 12:
-        return write_StepTopologyApplyMetadataProbesResultA0(writer, std::get<12>(value), error);
+        return write_StepTopologyResolveHitResultA0(writer, std::get<12>(value), error);
     case 13:
-        return write_StepTopologyCheckpointEditJournalResultA0(writer, std::get<13>(value), error);
+        return write_StepTopologyApplyLogicalGroupsResultA0(writer, std::get<13>(value), error);
     case 14:
-        return write_StepTopologyApplyHierarchyResultA0(writer, std::get<14>(value), error);
+        return write_StepTopologyApplyMetadataProbesResultA0(writer, std::get<14>(value), error);
     case 15:
-        return write_StepTopologySaveResultA0(writer, std::get<15>(value), error);
+        return write_StepTopologyCheckpointEditJournalResultA0(writer, std::get<15>(value), error);
     case 16:
-        return write_StepTopologyRestoreResultA0(writer, std::get<16>(value), error);
+        return write_StepTopologyApplyHierarchyResultA0(writer, std::get<16>(value), error);
     case 17:
-        return write_StepTopologyAnalyzeRecoveryResultA0(writer, std::get<17>(value), error);
+        return write_StepTopologySaveResultA0(writer, std::get<17>(value), error);
+    case 18:
+        return write_StepTopologyRestoreResultA0(writer, std::get<18>(value), error);
+    case 19:
+        return write_StepTopologyAnalyzeRecoveryResultA0(writer, std::get<19>(value), error);
     default:
         return fail(error, "geometer.contract.union_mismatch", "", "Unknown union variant.");
     }
@@ -17155,6 +19648,98 @@ bool decode_json(const unsigned char* data, std::size_t size, ModelBoundsResultA
 bool encode_json(const ModelBoundsResultA0& value, std::string* json, ContractError* error)
 {
     return encode_root<ModelBoundsResultA0>(value, write_ModelBoundsResultA0, json, error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size,
+                 ModelIllustrationGeometryRequestA0* value, ContractError* error,
+                 std::size_t max_json_bytes)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, max_json_bytes, &document, error))
+        return false;
+    ModelIllustrationGeometryRequestA0 decoded{};
+    if (!decode_ModelIllustrationGeometryRequestA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const ModelIllustrationGeometryRequestA0& value, std::string* json,
+                 ContractError* error)
+{
+    return encode_root<ModelIllustrationGeometryRequestA0>(
+        value, write_ModelIllustrationGeometryRequestA0, json, error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size,
+                 ModelIllustrationGeometryResultA0* value, ContractError* error,
+                 std::size_t max_json_bytes)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, max_json_bytes, &document, error))
+        return false;
+    ModelIllustrationGeometryResultA0 decoded{};
+    if (!decode_ModelIllustrationGeometryResultA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const ModelIllustrationGeometryResultA0& value, std::string* json,
+                 ContractError* error)
+{
+    return encode_root<ModelIllustrationGeometryResultA0>(
+        value, write_ModelIllustrationGeometryResultA0, json, error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size, ModelIllustrationRequestA0* value,
+                 ContractError* error, std::size_t max_json_bytes)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, max_json_bytes, &document, error))
+        return false;
+    ModelIllustrationRequestA0 decoded{};
+    if (!decode_ModelIllustrationRequestA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const ModelIllustrationRequestA0& value, std::string* json, ContractError* error)
+{
+    return encode_root<ModelIllustrationRequestA0>(value, write_ModelIllustrationRequestA0, json,
+                                                   error);
+}
+
+bool decode_json(const unsigned char* data, std::size_t size, ModelIllustrationResultA0* value,
+                 ContractError* error, std::size_t max_json_bytes)
+{
+    if (value == nullptr)
+        return fail(error, "geometer.contract.invalid_argument", "",
+                    "Output value pointer is null.");
+    rapidjson::Document document;
+    if (!parse_document(data, size, max_json_bytes, &document, error))
+        return false;
+    ModelIllustrationResultA0 decoded{};
+    if (!decode_ModelIllustrationResultA0(document, &decoded, "", error))
+        return false;
+    *value = std::move(decoded);
+    return true;
+}
+
+bool encode_json(const ModelIllustrationResultA0& value, std::string* json, ContractError* error)
+{
+    return encode_root<ModelIllustrationResultA0>(value, write_ModelIllustrationResultA0, json,
+                                                  error);
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, MeshCollectionA0* value,

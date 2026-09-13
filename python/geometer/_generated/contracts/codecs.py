@@ -1588,7 +1588,7 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
                 },
                 "optional": False,
                 "constraints": {
-                    "max_value": 8388608,
+                    "max_value": 33554432,
                 },
                 "field": "json_bytes",
             },
@@ -1714,7 +1714,7 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
                 },
                 "optional": False,
                 "constraints": {
-                    "max_value": 8388608,
+                    "max_value": 33554432,
                 },
                 "field": "request_json_bytes",
             },
@@ -1725,7 +1725,7 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
                 },
                 "optional": False,
                 "constraints": {
-                    "max_value": 8388608,
+                    "max_value": 33554432,
                 },
                 "field": "response_json_bytes",
             },

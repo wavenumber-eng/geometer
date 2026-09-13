@@ -94,13 +94,13 @@ local_ctest_count = 10
 local_rack_passed = 66
 catalog_sha256 = "c93e41a3aa0d64ab4dab905cea82aaeb3b3792155d1f5b2850673567a699d59c"
 vector_manifest_sha256 = "30f697bf63e6ca1ba28e0b9617a061b59a90115ea4ef06a06761d09ea68301a5"
-# Current distributable lock, refreshed from the local 2026.9.11 release build.
+# Current distributable lock, refreshed from the local 2026.9.12 release build.
 # Build provenance is recorded alongside the grouped WASM artifacts.
 # The original model-bounds promotion and historical review evidence above/below remain unchanged.
-browser_js_sha256 = "8ad3a07cc7c0de578ca0428eb4ea9c13e985c14caaa4edc086e10559685cc2e4"
+browser_js_sha256 = "da8c64a3138c5a7f70559012c707220eac31a156689f2571aade03eac3873b47"
 historical_reviewed_browser_js_sha256 = "5c9f0594465cdb5732911777e2ca38cc2814c1ef9cb52b7672022df6a50bf937"
 browser_js_lock_remediation = "historical_worktree_bytes_unretained_relocked_to_committed_distributable"
-browser_wasm_sha256 = "6cc08d0d16b7f20c7789075c4717831385f34e8d388aee83244bf4892a43807f"
+browser_wasm_sha256 = "bb3ff38829dc05fbad15dd938c0b6322031bdcbabc64c0678c0aec1fd0739603"
 independent_review = "accepted"
 acceptance_packet = "reviewer-019ffcd8-e5bb-7531-934f-b9e50e73d2b2ab7"
 review_packet = "reviewer-019ffcc0-0b9f-73e9-85e9-928e32f54cfd"
@@ -533,8 +533,8 @@ packet = "docs/research/history/transport-design-review.md"
 packet_sha256 = "865964402ff6258151b199f748ae0754c9fc4908021af01ffc6abdb47f2013ea"
 reviewed_adr_sha256 = "d4905bda88727fadeb221a3b6c5bfb392f5e062bb6033b0cded29f59fb492de0"
 adr_sha256 = "2a69d9e05baa7894be3677d2a9c250098bd45915a7cc9d083639650d3151d7d8"
-generic_c_abi_sha256 = "1b9d02d310110530cb62c82125613865a90bcb2f9da49397ae61dbc61abcd861"
-executable_ipc_sha256 = "06d845025d79908f0c4a092a615e1040b9e7e7672a475e26564f10f2e53af871"
+generic_c_abi_sha256 = "0a2f4b83e3e7ca473c0c0e73911bcd12e11121e3f19aa7b752ed73ee80bc4fa6"
+executable_ipc_sha256 = "ff537447705d8bd7d54347c2bb5627f15729faa848e3e733dac5ba9ae336643e"
 reviewer = "independent-reviewer"
 review_date = "2026-08-12"
 reviewed_revision = "529c768e559b4c88874264748d4186e775c8a4dd"
@@ -601,7 +601,7 @@ sha256 = "87e16b5b2453ad1f9263d92953d5741a30780db02eeea0d59d61f10967c4537b"
 status = "vendored"
 
 [c_abi]
-generation = 20260911
+generation = 20260912
 source = "src/cpp/lib/geometer/c_api.h"
 symbols = [
   "geometer_operation_catalog_json",
@@ -1698,10 +1698,10 @@ font_license = "docs/design/assets/fonts/JetBrainsMono/OFL.txt"
 font_license_sha256 = "60d55f23c6ce05a81099a762cb67ca2c9b6ea251c7912720998b4c89ebfd4faa"
 distribution = "dist/wasm/demos/analytic-polygon-pour/index.html"
 asset_manifest = "dist/wasm/demos/analytic-polygon-pour/asset-manifest.json"
-distribution_sha256 = "e4bafa21b8b155306930b6c7ae014b336f763761c53509561a63899c2f49ed47"
+distribution_sha256 = "1537d5039dbbff4a9af88bc0f0fdb492e6c9e2ad9b9b812b79d36f21d3a190e7"
 headers = "dist/wasm/demos/analytic-polygon-pour/_headers"
 standalone_distribution = "dist/wasm/demos/analytic_polygon_pour_demo.html"
-standalone_sha256 = "eb9ac9606bcad96cee959653b860dc1779d156c1a490b064d51bf16761c63c8e"
+standalone_sha256 = "603d7764d604a844e3e752b13f489e45eb1814d093a15530a805baeef0275973"
 owning_operation = "geometry.analytic_planar_boolean_batch.a0"
 status = "generated_typescript_worker_client_static_and_single_html_file_url_validated_local"
 
@@ -1720,10 +1720,10 @@ font_license = "docs/design/assets/fonts/JetBrainsMono/OFL.txt"
 font_license_sha256 = "60d55f23c6ce05a81099a762cb67ca2c9b6ea251c7912720998b4c89ebfd4faa"
 distribution = "dist/wasm/demos/pcb-polygon-pour/index.html"
 asset_manifest = "dist/wasm/demos/pcb-polygon-pour/asset-manifest.json"
-distribution_sha256 = "fc7da20c84564fbe90b55b3ec234faff1ae711c0345ebe074ad6f11f9496c132"
+distribution_sha256 = "380a3d683042078b13abdb8a7a45b71a518cb4801f78b7a21547d76a1343001f"
 headers = "dist/wasm/demos/pcb-polygon-pour/_headers"
 standalone_distribution = "dist/wasm/demos/pcb_polygon_pour_demo.html"
-standalone_sha256 = "3c95b979cc0843f5f33a17644fa43153c7e8c3d63768b6fe6cfd6c8e442efa93"
+standalone_sha256 = "bc021b76f905aac32abbda708eba1de3a11435e863800c2449d0a8c701c12874"
 owning_operation = "geometry.analytic_planar_boolean_batch.a0"
 status = "generated_typescript_worker_client_static_and_single_html_file_url_validated_local"
 

@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56">
+  <meta name="wn-catalog-sha256" content="e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd">
   <title>geometer.ipc.welcome.a0 — Geometer</title>
   <link rel="stylesheet" href="../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56" data-page-kind="contract" data-contract-identity="geometer.ipc.welcome.a0" data-promotion-status="pilot_candidate">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd" data-page-kind="contract" data-contract-identity="geometer.ipc.welcome.a0" data-promotion-status="pilot_candidate">
 <main>
 <header>
   <p class="page-type">Contract root</p>
@@ -61,7 +61,7 @@
 <tr><td><code>data</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=24</code> <code>max_value=24</code></td><td></td></tr>
 <tr><td><code>data_size</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=28</code> <code>max_value=28</code></td><td></td></tr>
 <tr><td><code>reserved0</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=32</code> <code>max_value=32</code></td><td></td></tr></tbody></table></details>
-<details open id="declaration-wavenumber-geometer-contracts-ipca0-ipceffectivelimitsa0"><summary><h2><code>IpcEffectiveLimitsA0</code> <span class="tag">model</span></h2></summary><p>Effective executable IPC A0 limits selected by the server.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>json_bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=8388608</code></td><td></td></tr>
+<details open id="declaration-wavenumber-geometer-contracts-ipca0-ipceffectivelimitsa0"><summary><h2><code>IpcEffectiveLimitsA0</code> <span class="tag">model</span></h2></summary><p>Effective executable IPC A0 limits selected by the server.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>json_bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=33554432</code></td><td></td></tr>
 <tr><td><code>attachment_count</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=16</code></td><td></td></tr>
 <tr><td><code>attachment_name_bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=128</code></td><td></td></tr>
 <tr><td><code>attachment_media_type_bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=128</code></td><td></td></tr>
@@ -72,8 +72,8 @@
 <tr><td><code>resident_request_bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=536870912</code></td><td></td></tr>
 <tr><td><code>pending_writer_bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=536870912</code></td><td></td></tr></tbody></table></details>
 <details open id="declaration-wavenumber-geometer-contracts-ipca0-ipcgenericabilimitsa0"><summary><h2><code>IpcGenericAbiLimitsA0</code> <span class="tag">model</span></h2></summary><p>Bounds shared by the generic C ABI operation catalog.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>operation_id_bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=128</code></td><td></td></tr>
-<tr><td><code>request_json_bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=8388608</code></td><td></td></tr>
-<tr><td><code>response_json_bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=8388608</code></td><td></td></tr>
+<tr><td><code>request_json_bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=33554432</code></td><td></td></tr>
+<tr><td><code>response_json_bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=33554432</code></td><td></td></tr>
 <tr><td><code>attachment_count</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=16</code></td><td></td></tr>
 <tr><td><code>attachment_name_bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=128</code></td><td></td></tr>
 <tr><td><code>attachment_media_type_bytes</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=128</code></td><td></td></tr>

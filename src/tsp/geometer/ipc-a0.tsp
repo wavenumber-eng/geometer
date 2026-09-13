@@ -176,9 +176,9 @@ model IpcAttachmentDescriptorA0 {
 model IpcGenericAbiLimitsA0 {
   @maxValue(128)
   operation_id_bytes: uint32;
-  @maxValue(8388608)
+  @maxValue(33554432)
   request_json_bytes: uint32;
-  @maxValue(8388608)
+  @maxValue(33554432)
   response_json_bytes: uint32;
   @maxValue(16)
   attachment_count: uint32;
@@ -216,7 +216,7 @@ model IpcOperationCatalogA0 {
 
 /** Effective executable IPC A0 limits selected by the server. */
 model IpcEffectiveLimitsA0 {
-  @maxValue(8388608)
+  @maxValue(33554432)
   json_bytes: uint32;
   @maxValue(16)
   attachment_count: uint32;

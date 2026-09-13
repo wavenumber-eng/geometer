@@ -4,7 +4,7 @@ use std::convert::TryFrom;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 pub const HEADER_SIZE: usize = 48;
-pub const MAX_JSON_BYTES: usize = 8 * 1024 * 1024;
+pub const MAX_JSON_BYTES: usize = 32 * 1024 * 1024;
 pub const MAX_ATTACHMENT_COUNT: usize = 16;
 pub const MAX_ATTACHMENT_TEXT_BYTES: usize = 128;
 pub const MAX_ATTACHMENT_BYTES: usize = 256 * 1024 * 1024;

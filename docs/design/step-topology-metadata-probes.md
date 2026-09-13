@@ -32,7 +32,7 @@ handles. A logical group with an attached probe cannot be erased. Any command,
 refresh, remap, allocation, or publication failure restores the prior probes,
 snapshot, handle registry, generation, journal, and accounting and clears the
 result. Native IPC encodes and validates the exact generated success outcome
-against the 8 MiB JSON ceiling before committing, so an oversized complete-state
+against the 32 MiB JSON ceiling before committing, so an oversized complete-state
 response cannot turn a successful mutation into a transport failure.
 
 ## Identity And Replay

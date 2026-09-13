@@ -174,7 +174,7 @@ def test_oversized_inline_svg_returns_failure_without_killing_the_server() -> No
     # actual encoded response cap, not the separate triangle/complexity limits.
     positions = tuple(
         value
-        for index in range(128000)
+        for index in range(500000)
         for value in (
             float(index % 320),
             float(index // 320),

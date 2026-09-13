@@ -581,11 +581,11 @@ void response_limits_fail_closed_before_accessor_narrowing()
                 geometer::OperationResponseValidationStatus::invalid,
             "undeclared output attachments should fail response validation");
 
-    const std::string oversized_json(8U * 1024U * 1024U + 1U, 'x');
+    const std::string oversized_json(32U * 1024U * 1024U + 1U, 'x');
     require(geometer::validate_operation_response("geometry.model_bounds.a0", oversized_json, {},
                                                   &message) ==
                 geometer::OperationResponseValidationStatus::limit_exceeded,
-            "response JSON over 8 MiB should fail before accessor exposure");
+            "response JSON over 32 MiB should fail before accessor exposure");
 
     geometer::contracts::StepTopologyApplyLogicalGroupsResultA0 mutation_result;
     mutation_result.state.session.session_handle = "gts_" + std::string(64U, '1');
@@ -639,12 +639,12 @@ void response_limits_fail_closed_before_accessor_narrowing()
                 geometer::validate_operation_response(
                     "geometry.step_topology.apply_logical_groups.a0", exact_json, {}, &message) ==
                     geometer::OperationResponseValidationStatus::ok,
-            "an exact 8 MiB mutation result should remain publishable");
+            "an exact 8 MiB mutation result should remain publishable with the expanded limit");
     exact_json.push_back(' ');
     require(geometer::validate_operation_response("geometry.step_topology.apply_logical_groups.a0",
                                                   exact_json, {}, &message) ==
-                geometer::OperationResponseValidationStatus::limit_exceeded,
-            "a mutation result one byte over 8 MiB must fail before publication");
+                geometer::OperationResponseValidationStatus::ok,
+            "a mutation result one byte over the former limit should remain publishable");
 
     require(geometer::validate_operation_response("geometry.analytic_planar_boolean_batch.a0",
                                                   R"({"ok":true})", {}, &message) ==
@@ -704,6 +704,35 @@ void response_limits_fail_closed_before_accessor_narrowing()
             "packed result operation must match its request");
 }
 
+void attachment_json_decoder_honors_declared_limit()
+{
+    geometer::contracts::MeshIllustrationMaterial material;
+    material.color = {0.2, 0.4, 0.6};
+    geometer::contracts::MeshIllustrationMesh mesh;
+    mesh.id = "large-attachment-boundary";
+    mesh.positions = {0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0};
+    mesh.indices = std::vector<std::uint32_t>{0U, 1U, 2U};
+    mesh.materials.push_back(std::move(material));
+    geometer::contracts::MeshCollectionA0 source;
+    source.meshes.push_back(std::move(mesh));
+    std::string json;
+    geometer::contracts::ContractError error;
+    require(geometer::contracts::encode_json(source, &json, &error),
+            "mesh collection should encode: " + error.message);
+    json.resize(32U * 1024U * 1024U + 1U, ' ');
+    geometer::contracts::MeshCollectionA0 decoded;
+    require(!geometer::contracts::decode_json(reinterpret_cast<const unsigned char*>(json.data()),
+                                              json.size(), &decoded, &error),
+            "ordinary JSON decoding should retain the 32 MiB envelope limit");
+    require(error.code == "geometer.contract.limit_exceeded",
+            "oversized ordinary JSON should report the stable limit diagnostic");
+    require(geometer::contracts::decode_json(reinterpret_cast<const unsigned char*>(json.data()),
+                                             json.size(), &decoded, &error, 256U * 1024U * 1024U),
+            "JSON attachment decoding should honor its larger declared limit: " + error.message);
+    require(decoded.meshes.size() == 1U && decoded.meshes.front().id == "large-attachment-boundary",
+            "large attachment decoding should preserve the governed payload");
+}
+
 void maximum_native_inspection_page_fits_response_limit()
 {
     geometer::contracts::StepTopologyInspectResultA0 result;
@@ -724,7 +753,7 @@ void maximum_native_inspection_page_fits_response_limit()
     geometer::contracts::ContractError error;
     require(geometer::contracts::encode_json(result, &json, &error),
             "maximum native inspection page should encode: " + error.message);
-    require(json.size() < 8U * 1024U * 1024U,
+    require(json.size() < 32U * 1024U * 1024U,
             "maximum native inspection page must fit the negotiated JSON response limit");
 }
 
@@ -767,7 +796,7 @@ void generic_c_abi_catalog_and_typed_failures()
                 catalog_text.find("\"runtime_dispatch\":\"packed_attachment\"") !=
                     std::string::npos,
             "catalog should advertise packed analytic runtime dispatch");
-    require(catalog_document["limits"]["response_json_bytes"].GetUint() == 8388608U,
+    require(catalog_document["limits"]["response_json_bytes"].GetUint() == 33554432U,
             "runtime catalog should publish the response JSON limit");
     require(catalog_document["limits"]["attachment_count"].GetUint() == 16U,
             "runtime catalog should publish the attachment count limit");
@@ -1164,6 +1193,7 @@ int main()
         generated_cpp_replays_governed_operation_vectors();
         generated_encoder_rejects_invalid_utf8();
         generated_ipc_control_codecs_are_strict();
+        attachment_json_decoder_honors_declared_limit();
         response_limits_fail_closed_before_accessor_narrowing();
         maximum_native_inspection_page_fits_response_limit();
         generic_c_abi_catalog_and_typed_failures();

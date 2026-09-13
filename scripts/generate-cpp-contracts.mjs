@@ -95,7 +95,8 @@ function generateHeader() {
     const type = shortName(rootRecord.name);
     lines.push(
       `bool decode_json(const unsigned char* data, std::size_t size, ${type}* value,`,
-      "                 ContractError* error = nullptr);",
+      "                 ContractError* error = nullptr,",
+      "                 std::size_t max_json_bytes = 32U * 1024U * 1024U);",
       `bool encode_json(const ${type}& value, std::string* json, ContractError* error = nullptr);`,
       "",
     );
@@ -160,7 +161,7 @@ function generateSource() {
       `bool write_${shortName(item.name)}(rapidjson::Writer<rapidjson::StringBuffer>&, const ${shortName(item.name)}&, ContractError*);`,
     ]),
     "",
-    "constexpr std::size_t kMaxJsonBytes = 8U * 1024U * 1024U;",
+    "constexpr std::size_t kMaxJsonBytes = 32U * 1024U * 1024U;",
     "",
     "bool fail(ContractError* error, const char* code, const std::string& path, const std::string& message)",
     "{",
@@ -326,10 +327,10 @@ function generateSource() {
   ];
   for (const item of codecOrdered) lines.push(...decoder(item), "", ...writer(item), "");
   lines.push(
-    "bool parse_document(const unsigned char* data, std::size_t size, rapidjson::Document* document, ContractError* error)",
+    "bool parse_document(const unsigned char* data, std::size_t size, std::size_t max_json_bytes, rapidjson::Document* document, ContractError* error)",
     "{",
     '    if (document == nullptr || (data == nullptr && size != 0)) return fail(error, "geometer.contract.invalid_argument", "", "Invalid JSON buffer.");',
-    '    if (size > kMaxJsonBytes) return fail(error, "geometer.contract.limit_exceeded", "", "JSON exceeds the 8 MiB contract limit.");',
+    '    if (size > max_json_bytes) return fail(error, "geometer.contract.limit_exceeded", "", "JSON exceeds the decoder byte limit.");',
     "    document->Parse<rapidjson::kParseValidateEncodingFlag>(reinterpret_cast<const char*>(data), size);",
     '    if (document->HasParseError()) return fail(error, "geometer.contract.invalid_json", "", rapidjson::GetParseError_En(document->GetParseError()));',
     "    return true;",
@@ -350,10 +351,10 @@ function generateSource() {
   for (const rootRecord of jsonCodecRoots) {
     const type = shortName(rootRecord.name);
     lines.push(
-      `bool decode_json(const unsigned char* data, std::size_t size, ${type}* value, ContractError* error)`,
+      `bool decode_json(const unsigned char* data, std::size_t size, ${type}* value, ContractError* error, std::size_t max_json_bytes)`,
       "{",
       '    if (value == nullptr) return fail(error, "geometer.contract.invalid_argument", "", "Output value pointer is null.");',
-      "    rapidjson::Document document; if (!parse_document(data, size, &document, error)) return false;",
+      "    rapidjson::Document document; if (!parse_document(data, size, max_json_bytes, &document, error)) return false;",
       `    ${type} decoded{}; if (!decode_${type}(document, &decoded, "", error)) return false;`,
       "    *value = std::move(decoded); return true;",
       "}",
@@ -423,8 +424,8 @@ function generateOperationCatalogSource() {
     },
     limits: {
       operation_id_bytes: 128,
-      request_json_bytes: 8 * 1024 * 1024,
-      response_json_bytes: 8 * 1024 * 1024,
+      request_json_bytes: 32 * 1024 * 1024,
+      response_json_bytes: 32 * 1024 * 1024,
       attachment_count: 16,
       attachment_name_bytes: 128,
       attachment_media_type_bytes: 128,

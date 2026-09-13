@@ -9,7 +9,7 @@ namespace geometer
 namespace
 {
 
-constexpr std::size_t kMaxJsonBytes = 8U * 1024U * 1024U;
+constexpr std::size_t kMaxJsonBytes = 32U * 1024U * 1024U;
 constexpr std::size_t kMaxAttachmentCount = 16U;
 constexpr std::size_t kMaxAttachmentTextBytes = 128U;
 constexpr std::size_t kMaxAttachmentBytes = 256U * 1024U * 1024U;
@@ -97,7 +97,7 @@ validate_operation_response(const std::string& operation_id, const std::string& 
     if (json.empty() || json.size() > kMaxJsonBytes)
     {
         return fail(OperationResponseValidationStatus::limit_exceeded, message,
-                    "Operation response JSON is empty or exceeds 8 MiB.");
+                    "Operation response JSON is empty or exceeds 32 MiB.");
     }
     if (!valid_utf8(json))
     {

@@ -20,7 +20,7 @@
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 pub const NORMALIZED_CATALOG_SHA256: &str =
-    "2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56";
+    "e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd";
 
 #[derive(Debug, thiserror::Error)]
 pub enum ContractError {
@@ -3356,7 +3356,7 @@ impl Validate for IpcEffectiveLimitsA0 {
     fn validate_at(&self, path: &str) -> Result<(), ContractError> {
         let field_path = child_path(path, "json_bytes");
         let value = &self.json_bytes;
-        if *value > 8388608 {
+        if *value > 33554432 {
             return Err(invalid(&field_path, "number exceeds its maximum"));
         }
         let field_path = child_path(path, "attachment_count");
@@ -3431,12 +3431,12 @@ impl Validate for IpcGenericAbiLimitsA0 {
         }
         let field_path = child_path(path, "request_json_bytes");
         let value = &self.request_json_bytes;
-        if *value > 8388608 {
+        if *value > 33554432 {
             return Err(invalid(&field_path, "number exceeds its maximum"));
         }
         let field_path = child_path(path, "response_json_bytes");
         let value = &self.response_json_bytes;
-        if *value > 8388608 {
+        if *value > 33554432 {
             return Err(invalid(&field_path, "number exceeds its maximum"));
         }
         let field_path = child_path(path, "attachment_count");

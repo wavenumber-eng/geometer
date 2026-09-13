@@ -36,7 +36,7 @@ The small IPC result contains statistics, warnings and a descriptor with name,
 schema, byte length and SHA-256. One required `illustration_geometry` attachment
 contains UTF-8 `geometry.mesh_illustration.geometry.a0` JSON, media type
 `application/vnd.wavenumber.geometer.illustration-geometry+json`, maximum 256 MiB.
-This uses existing attachments, outside the 8 MiB inline envelope; platform
+This uses existing attachments, outside the 32 MiB inline envelope; platform
 aggregate budgets still apply. Typed Python/Rust helpers validate integrity and
 draw counts, then return the owning geometry DTO. Generic execute returns the
 descriptor and bytes.

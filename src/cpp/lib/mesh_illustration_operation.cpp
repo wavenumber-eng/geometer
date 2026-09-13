@@ -10,6 +10,8 @@ void execute_mesh_illustration(const unsigned char* request, std::size_t size,
 {
     const char* operation =
         geometry_only ? "geometry.mesh_illustration_geometry.a0" : "geometry.mesh_illustration.a0";
+    const auto mesh_limit = operation_input_attachment_max_bytes(operation, "mesh_collection");
+    const auto linework_limit = operation_input_attachment_max_bytes(operation, "hlr_projection");
     const auto fail = [&](const std::string& code, const std::string& message,
                           contracts::DiagnosticCategory category)
     {
@@ -49,12 +51,12 @@ void execute_mesh_illustration(const unsigned char* request, std::size_t size,
     {
         if (attachment.name == "mesh_collection" && !meshes &&
             attachment.media_type == "application/vnd.wavenumber.geometer.mesh-collection+json" &&
-            attachment.size <= 268435456)
+            attachment.size <= mesh_limit)
             meshes = &attachment;
         else if (attachment.name == "hlr_projection" && !linework &&
                  attachment.media_type ==
                      "application/vnd.wavenumber.geometer.hlr-projection+json" &&
-                 attachment.size <= 67108864)
+                 attachment.size <= linework_limit)
             linework = &attachment;
         else
         {
@@ -72,7 +74,7 @@ void execute_mesh_illustration(const unsigned char* request, std::size_t size,
         return;
     }
     contracts::MeshCollectionA0 collection;
-    if (!contracts::decode_json(meshes->data, meshes->size, &collection, &error))
+    if (!contracts::decode_json(meshes->data, meshes->size, &collection, &error, mesh_limit))
     {
         fail(error.code, error.message, contracts::DiagnosticCategory::contract);
         return;
@@ -86,7 +88,8 @@ void execute_mesh_illustration(const unsigned char* request, std::size_t size,
     contracts::MeshIllustrationResultA0 result;
     Status status;
     contracts::HlrProjectionResultA0 hlr;
-    if (linework && !contracts::decode_json(linework->data, linework->size, &hlr, &error))
+    if (linework &&
+        !contracts::decode_json(linework->data, linework->size, &hlr, &error, linework_limit))
     {
         fail(error.code, error.message, contracts::DiagnosticCategory::contract);
         return;
@@ -123,7 +126,9 @@ void execute_mesh_illustration(const unsigned char* request, std::size_t size,
             fail(error.code, error.message, contracts::DiagnosticCategory::operation);
             return;
         }
-        if (json.size() > 268435456)
+        const auto geometry_limit =
+            operation_output_attachment_max_bytes(operation, "illustration_geometry");
+        if (json.size() > geometry_limit)
         {
             fail("geometer.operation.resource_limit_exceeded",
                  "Illustration geometry JSON exceeds 256 MiB.",

@@ -851,7 +851,7 @@ bool decode_OperationOutcomeA0(const rapidjson::Value&, OperationOutcomeA0*, con
 bool write_OperationOutcomeA0(rapidjson::Writer<rapidjson::StringBuffer>&,
                               const OperationOutcomeA0&, ContractError*);
 
-constexpr std::size_t kMaxJsonBytes = 8U * 1024U * 1024U;
+constexpr std::size_t kMaxJsonBytes = 32U * 1024U * 1024U;
 
 bool fail(ContractError* error, const char* code, const std::string& path,
           const std::string& message)
@@ -3921,7 +3921,7 @@ bool decode_IpcEffectiveLimitsA0(const rapidjson::Value& value, IpcEffectiveLimi
             return fail(error, "geometer.contract.missing_field", child_path(path, "json_bytes"),
                         "Required field is missing.");
         if (!decode_uint32(member->value, &out->json_bytes, child_path(path, "json_bytes"), error,
-                           0ULL, 8388608ULL))
+                           0ULL, 33554432ULL))
             return false;
     }
     {
@@ -4014,7 +4014,7 @@ bool write_IpcEffectiveLimitsA0(rapidjson::Writer<rapidjson::StringBuffer>& writ
 {
     writer.StartObject();
     writer.Key("json_bytes");
-    if (!write_uint32(writer, value.json_bytes, error, 0ULL, 8388608ULL))
+    if (!write_uint32(writer, value.json_bytes, error, 0ULL, 33554432ULL))
         return false;
     writer.Key("attachment_count");
     if (!write_uint32(writer, value.attachment_count, error, 0ULL, 16ULL))
@@ -4076,7 +4076,7 @@ bool decode_IpcGenericAbiLimitsA0(const rapidjson::Value& value, IpcGenericAbiLi
             return fail(error, "geometer.contract.missing_field",
                         child_path(path, "request_json_bytes"), "Required field is missing.");
         if (!decode_uint32(member->value, &out->request_json_bytes,
-                           child_path(path, "request_json_bytes"), error, 0ULL, 8388608ULL))
+                           child_path(path, "request_json_bytes"), error, 0ULL, 33554432ULL))
             return false;
     }
     {
@@ -4085,7 +4085,7 @@ bool decode_IpcGenericAbiLimitsA0(const rapidjson::Value& value, IpcGenericAbiLi
             return fail(error, "geometer.contract.missing_field",
                         child_path(path, "response_json_bytes"), "Required field is missing.");
         if (!decode_uint32(member->value, &out->response_json_bytes,
-                           child_path(path, "response_json_bytes"), error, 0ULL, 8388608ULL))
+                           child_path(path, "response_json_bytes"), error, 0ULL, 33554432ULL))
             return false;
     }
     {
@@ -4158,10 +4158,10 @@ bool write_IpcGenericAbiLimitsA0(rapidjson::Writer<rapidjson::StringBuffer>& wri
     if (!write_uint32(writer, value.operation_id_bytes, error, 0ULL, 128ULL))
         return false;
     writer.Key("request_json_bytes");
-    if (!write_uint32(writer, value.request_json_bytes, error, 0ULL, 8388608ULL))
+    if (!write_uint32(writer, value.request_json_bytes, error, 0ULL, 33554432ULL))
         return false;
     writer.Key("response_json_bytes");
-    if (!write_uint32(writer, value.response_json_bytes, error, 0ULL, 8388608ULL))
+    if (!write_uint32(writer, value.response_json_bytes, error, 0ULL, 33554432ULL))
         return false;
     writer.Key("attachment_count");
     if (!write_uint32(writer, value.attachment_count, error, 0ULL, 16ULL))
@@ -16648,14 +16648,14 @@ bool write_OperationOutcomeA0(rapidjson::Writer<rapidjson::StringBuffer>& writer
     }
 }
 
-bool parse_document(const unsigned char* data, std::size_t size, rapidjson::Document* document,
-                    ContractError* error)
+bool parse_document(const unsigned char* data, std::size_t size, std::size_t max_json_bytes,
+                    rapidjson::Document* document, ContractError* error)
 {
     if (document == nullptr || (data == nullptr && size != 0))
         return fail(error, "geometer.contract.invalid_argument", "", "Invalid JSON buffer.");
-    if (size > kMaxJsonBytes)
+    if (size > max_json_bytes)
         return fail(error, "geometer.contract.limit_exceeded", "",
-                    "JSON exceeds the 8 MiB contract limit.");
+                    "JSON exceeds the decoder byte limit.");
     document->Parse<rapidjson::kParseValidateEncodingFlag>(reinterpret_cast<const char*>(data),
                                                            size);
     if (document->HasParseError())
@@ -16684,13 +16684,13 @@ bool encode_root(const T& value,
 } // namespace
 
 bool decode_json(const unsigned char* data, std::size_t size, DiagnosticA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     DiagnosticA0 decoded{};
     if (!decode_DiagnosticA0(document, &decoded, "", error))
@@ -16705,13 +16705,13 @@ bool encode_json(const DiagnosticA0& value, std::string* json, ContractError* er
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, HlrProjectionOptionsA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     HlrProjectionOptionsA0 decoded{};
     if (!decode_HlrProjectionOptionsA0(document, &decoded, "", error))
@@ -16726,13 +16726,13 @@ bool encode_json(const HlrProjectionOptionsA0& value, std::string* json, Contrac
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, HlrProjectionResultA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     HlrProjectionResultA0 decoded{};
     if (!decode_HlrProjectionResultA0(document, &decoded, "", error))
@@ -16747,13 +16747,13 @@ bool encode_json(const HlrProjectionResultA0& value, std::string* json, Contract
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, IpcCancelledA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     IpcCancelledA0 decoded{};
     if (!decode_IpcCancelledA0(document, &decoded, "", error))
@@ -16768,13 +16768,13 @@ bool encode_json(const IpcCancelledA0& value, std::string* json, ContractError* 
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, IpcCancelRejectedA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     IpcCancelRejectedA0 decoded{};
     if (!decode_IpcCancelRejectedA0(document, &decoded, "", error))
@@ -16789,13 +16789,13 @@ bool encode_json(const IpcCancelRejectedA0& value, std::string* json, ContractEr
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, IpcHelloA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     IpcHelloA0 decoded{};
     if (!decode_IpcHelloA0(document, &decoded, "", error))
@@ -16810,13 +16810,13 @@ bool encode_json(const IpcHelloA0& value, std::string* json, ContractError* erro
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, IpcOperationCatalogA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     IpcOperationCatalogA0 decoded{};
     if (!decode_IpcOperationCatalogA0(document, &decoded, "", error))
@@ -16831,13 +16831,13 @@ bool encode_json(const IpcOperationCatalogA0& value, std::string* json, Contract
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, IpcProtocolErrorA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     IpcProtocolErrorA0 decoded{};
     if (!decode_IpcProtocolErrorA0(document, &decoded, "", error))
@@ -16852,13 +16852,13 @@ bool encode_json(const IpcProtocolErrorA0& value, std::string* json, ContractErr
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, IpcReasonA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     IpcReasonA0 decoded{};
     if (!decode_IpcReasonA0(document, &decoded, "", error))
@@ -16873,13 +16873,13 @@ bool encode_json(const IpcReasonA0& value, std::string* json, ContractError* err
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, IpcRequestA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     IpcRequestA0 decoded{};
     if (!decode_IpcRequestA0(document, &decoded, "", error))
@@ -16894,13 +16894,13 @@ bool encode_json(const IpcRequestA0& value, std::string* json, ContractError* er
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, IpcShutdownAckA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     IpcShutdownAckA0 decoded{};
     if (!decode_IpcShutdownAckA0(document, &decoded, "", error))
@@ -16915,13 +16915,13 @@ bool encode_json(const IpcShutdownAckA0& value, std::string* json, ContractError
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, IpcWelcomeA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     IpcWelcomeA0 decoded{};
     if (!decode_IpcWelcomeA0(document, &decoded, "", error))
@@ -16936,13 +16936,13 @@ bool encode_json(const IpcWelcomeA0& value, std::string* json, ContractError* er
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, MeshIllustrationInputA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     MeshIllustrationInputA0 decoded{};
     if (!decode_MeshIllustrationInputA0(document, &decoded, "", error))
@@ -16957,13 +16957,13 @@ bool encode_json(const MeshIllustrationInputA0& value, std::string* json, Contra
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, MeshIllustrationResultA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     MeshIllustrationResultA0 decoded{};
     if (!decode_MeshIllustrationResultA0(document, &decoded, "", error))
@@ -16979,13 +16979,13 @@ bool encode_json(const MeshIllustrationResultA0& value, std::string* json, Contr
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, MeshIllustrationStyleA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     MeshIllustrationStyleA0 decoded{};
     if (!decode_MeshIllustrationStyleA0(document, &decoded, "", error))
@@ -17000,13 +17000,13 @@ bool encode_json(const MeshIllustrationStyleA0& value, std::string* json, Contra
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, MeshIllustrationGeometryA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     MeshIllustrationGeometryA0 decoded{};
     if (!decode_MeshIllustrationGeometryA0(document, &decoded, "", error))
@@ -17022,13 +17022,14 @@ bool encode_json(const MeshIllustrationGeometryA0& value, std::string* json, Con
 }
 
 bool decode_json(const unsigned char* data, std::size_t size,
-                 MeshIllustrationGeometryInputA0* value, ContractError* error)
+                 MeshIllustrationGeometryInputA0* value, ContractError* error,
+                 std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     MeshIllustrationGeometryInputA0 decoded{};
     if (!decode_MeshIllustrationGeometryInputA0(document, &decoded, "", error))
@@ -17045,13 +17046,14 @@ bool encode_json(const MeshIllustrationGeometryInputA0& value, std::string* json
 }
 
 bool decode_json(const unsigned char* data, std::size_t size,
-                 MeshIllustrationGeometryRequestA0* value, ContractError* error)
+                 MeshIllustrationGeometryRequestA0* value, ContractError* error,
+                 std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     MeshIllustrationGeometryRequestA0 decoded{};
     if (!decode_MeshIllustrationGeometryRequestA0(document, &decoded, "", error))
@@ -17068,13 +17070,14 @@ bool encode_json(const MeshIllustrationGeometryRequestA0& value, std::string* js
 }
 
 bool decode_json(const unsigned char* data, std::size_t size,
-                 MeshIllustrationGeometryResultA0* value, ContractError* error)
+                 MeshIllustrationGeometryResultA0* value, ContractError* error,
+                 std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     MeshIllustrationGeometryResultA0 decoded{};
     if (!decode_MeshIllustrationGeometryResultA0(document, &decoded, "", error))
@@ -17091,13 +17094,13 @@ bool encode_json(const MeshIllustrationGeometryResultA0& value, std::string* jso
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, MeshIllustrationRequestA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     MeshIllustrationRequestA0 decoded{};
     if (!decode_MeshIllustrationRequestA0(document, &decoded, "", error))
@@ -17113,13 +17116,13 @@ bool encode_json(const MeshIllustrationRequestA0& value, std::string* json, Cont
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, ModelBoundsOptionsA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     ModelBoundsOptionsA0 decoded{};
     if (!decode_ModelBoundsOptionsA0(document, &decoded, "", error))
@@ -17134,13 +17137,13 @@ bool encode_json(const ModelBoundsOptionsA0& value, std::string* json, ContractE
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, ModelBoundsResultA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     ModelBoundsResultA0 decoded{};
     if (!decode_ModelBoundsResultA0(document, &decoded, "", error))
@@ -17155,13 +17158,13 @@ bool encode_json(const ModelBoundsResultA0& value, std::string* json, ContractEr
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, MeshCollectionA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     MeshCollectionA0 decoded{};
     if (!decode_MeshCollectionA0(document, &decoded, "", error))
@@ -17176,13 +17179,13 @@ bool encode_json(const MeshCollectionA0& value, std::string* json, ContractError
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, ModelTessellationRequestA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     ModelTessellationRequestA0 decoded{};
     if (!decode_ModelTessellationRequestA0(document, &decoded, "", error))
@@ -17198,13 +17201,13 @@ bool encode_json(const ModelTessellationRequestA0& value, std::string* json, Con
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, ModelTessellationResultA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     ModelTessellationResultA0 decoded{};
     if (!decode_ModelTessellationResultA0(document, &decoded, "", error))
@@ -17220,13 +17223,13 @@ bool encode_json(const ModelTessellationResultA0& value, std::string* json, Cont
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, OperationOutcomeA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     OperationOutcomeA0 decoded{};
     if (!decode_OperationOutcomeA0(document, &decoded, "", error))
@@ -17241,13 +17244,14 @@ bool encode_json(const OperationOutcomeA0& value, std::string* json, ContractErr
 }
 
 bool decode_json(const unsigned char* data, std::size_t size,
-                 StepTopologyAnalyzeRecoveryRequestA0* value, ContractError* error)
+                 StepTopologyAnalyzeRecoveryRequestA0* value, ContractError* error,
+                 std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     StepTopologyAnalyzeRecoveryRequestA0 decoded{};
     if (!decode_StepTopologyAnalyzeRecoveryRequestA0(document, &decoded, "", error))
@@ -17264,13 +17268,14 @@ bool encode_json(const StepTopologyAnalyzeRecoveryRequestA0& value, std::string*
 }
 
 bool decode_json(const unsigned char* data, std::size_t size,
-                 StepTopologyAnalyzeRecoveryResultA0* value, ContractError* error)
+                 StepTopologyAnalyzeRecoveryResultA0* value, ContractError* error,
+                 std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     StepTopologyAnalyzeRecoveryResultA0 decoded{};
     if (!decode_StepTopologyAnalyzeRecoveryResultA0(document, &decoded, "", error))
@@ -17287,13 +17292,14 @@ bool encode_json(const StepTopologyAnalyzeRecoveryResultA0& value, std::string* 
 }
 
 bool decode_json(const unsigned char* data, std::size_t size,
-                 StepTopologyApplyHierarchyRequestA0* value, ContractError* error)
+                 StepTopologyApplyHierarchyRequestA0* value, ContractError* error,
+                 std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     StepTopologyApplyHierarchyRequestA0 decoded{};
     if (!decode_StepTopologyApplyHierarchyRequestA0(document, &decoded, "", error))
@@ -17310,13 +17316,14 @@ bool encode_json(const StepTopologyApplyHierarchyRequestA0& value, std::string* 
 }
 
 bool decode_json(const unsigned char* data, std::size_t size,
-                 StepTopologyApplyHierarchyResultA0* value, ContractError* error)
+                 StepTopologyApplyHierarchyResultA0* value, ContractError* error,
+                 std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     StepTopologyApplyHierarchyResultA0 decoded{};
     if (!decode_StepTopologyApplyHierarchyResultA0(document, &decoded, "", error))
@@ -17333,13 +17340,14 @@ bool encode_json(const StepTopologyApplyHierarchyResultA0& value, std::string* j
 }
 
 bool decode_json(const unsigned char* data, std::size_t size,
-                 StepTopologyApplyLogicalGroupsRequestA0* value, ContractError* error)
+                 StepTopologyApplyLogicalGroupsRequestA0* value, ContractError* error,
+                 std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     StepTopologyApplyLogicalGroupsRequestA0 decoded{};
     if (!decode_StepTopologyApplyLogicalGroupsRequestA0(document, &decoded, "", error))
@@ -17356,13 +17364,14 @@ bool encode_json(const StepTopologyApplyLogicalGroupsRequestA0& value, std::stri
 }
 
 bool decode_json(const unsigned char* data, std::size_t size,
-                 StepTopologyApplyLogicalGroupsResultA0* value, ContractError* error)
+                 StepTopologyApplyLogicalGroupsResultA0* value, ContractError* error,
+                 std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     StepTopologyApplyLogicalGroupsResultA0 decoded{};
     if (!decode_StepTopologyApplyLogicalGroupsResultA0(document, &decoded, "", error))
@@ -17379,13 +17388,14 @@ bool encode_json(const StepTopologyApplyLogicalGroupsResultA0& value, std::strin
 }
 
 bool decode_json(const unsigned char* data, std::size_t size,
-                 StepTopologyApplyMetadataProbesRequestA0* value, ContractError* error)
+                 StepTopologyApplyMetadataProbesRequestA0* value, ContractError* error,
+                 std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     StepTopologyApplyMetadataProbesRequestA0 decoded{};
     if (!decode_StepTopologyApplyMetadataProbesRequestA0(document, &decoded, "", error))
@@ -17402,13 +17412,14 @@ bool encode_json(const StepTopologyApplyMetadataProbesRequestA0& value, std::str
 }
 
 bool decode_json(const unsigned char* data, std::size_t size,
-                 StepTopologyApplyMetadataProbesResultA0* value, ContractError* error)
+                 StepTopologyApplyMetadataProbesResultA0* value, ContractError* error,
+                 std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     StepTopologyApplyMetadataProbesResultA0 decoded{};
     if (!decode_StepTopologyApplyMetadataProbesResultA0(document, &decoded, "", error))
@@ -17425,13 +17436,14 @@ bool encode_json(const StepTopologyApplyMetadataProbesResultA0& value, std::stri
 }
 
 bool decode_json(const unsigned char* data, std::size_t size,
-                 StepTopologyCheckpointEditJournalRequestA0* value, ContractError* error)
+                 StepTopologyCheckpointEditJournalRequestA0* value, ContractError* error,
+                 std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     StepTopologyCheckpointEditJournalRequestA0 decoded{};
     if (!decode_StepTopologyCheckpointEditJournalRequestA0(document, &decoded, "", error))
@@ -17448,13 +17460,14 @@ bool encode_json(const StepTopologyCheckpointEditJournalRequestA0& value, std::s
 }
 
 bool decode_json(const unsigned char* data, std::size_t size,
-                 StepTopologyCheckpointEditJournalResultA0* value, ContractError* error)
+                 StepTopologyCheckpointEditJournalResultA0* value, ContractError* error,
+                 std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     StepTopologyCheckpointEditJournalResultA0 decoded{};
     if (!decode_StepTopologyCheckpointEditJournalResultA0(document, &decoded, "", error))
@@ -17471,13 +17484,13 @@ bool encode_json(const StepTopologyCheckpointEditJournalResultA0& value, std::st
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, StepTopologyCloseRequestA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     StepTopologyCloseRequestA0 decoded{};
     if (!decode_StepTopologyCloseRequestA0(document, &decoded, "", error))
@@ -17493,13 +17506,13 @@ bool encode_json(const StepTopologyCloseRequestA0& value, std::string* json, Con
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, StepTopologyCloseResultA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     StepTopologyCloseResultA0 decoded{};
     if (!decode_StepTopologyCloseResultA0(document, &decoded, "", error))
@@ -17515,13 +17528,13 @@ bool encode_json(const StepTopologyCloseResultA0& value, std::string* json, Cont
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, StepTopologyInspectRequestA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     StepTopologyInspectRequestA0 decoded{};
     if (!decode_StepTopologyInspectRequestA0(document, &decoded, "", error))
@@ -17537,13 +17550,13 @@ bool encode_json(const StepTopologyInspectRequestA0& value, std::string* json, C
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, StepTopologyInspectResultA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     StepTopologyInspectResultA0 decoded{};
     if (!decode_StepTopologyInspectResultA0(document, &decoded, "", error))
@@ -17559,13 +17572,13 @@ bool encode_json(const StepTopologyInspectResultA0& value, std::string* json, Co
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, StepTopologyOpenRequestA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     StepTopologyOpenRequestA0 decoded{};
     if (!decode_StepTopologyOpenRequestA0(document, &decoded, "", error))
@@ -17581,13 +17594,13 @@ bool encode_json(const StepTopologyOpenRequestA0& value, std::string* json, Cont
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, StepTopologyOpenResultA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     StepTopologyOpenResultA0 decoded{};
     if (!decode_StepTopologyOpenResultA0(document, &decoded, "", error))
@@ -17603,13 +17616,13 @@ bool encode_json(const StepTopologyOpenResultA0& value, std::string* json, Contr
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, StepTopologyRenderRequestA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     StepTopologyRenderRequestA0 decoded{};
     if (!decode_StepTopologyRenderRequestA0(document, &decoded, "", error))
@@ -17625,13 +17638,13 @@ bool encode_json(const StepTopologyRenderRequestA0& value, std::string* json, Co
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, StepTopologyRenderResultA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     StepTopologyRenderResultA0 decoded{};
     if (!decode_StepTopologyRenderResultA0(document, &decoded, "", error))
@@ -17647,13 +17660,14 @@ bool encode_json(const StepTopologyRenderResultA0& value, std::string* json, Con
 }
 
 bool decode_json(const unsigned char* data, std::size_t size,
-                 StepTopologyResolveHitRequestA0* value, ContractError* error)
+                 StepTopologyResolveHitRequestA0* value, ContractError* error,
+                 std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     StepTopologyResolveHitRequestA0 decoded{};
     if (!decode_StepTopologyResolveHitRequestA0(document, &decoded, "", error))
@@ -17670,13 +17684,13 @@ bool encode_json(const StepTopologyResolveHitRequestA0& value, std::string* json
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, StepTopologyResolveHitResultA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     StepTopologyResolveHitResultA0 decoded{};
     if (!decode_StepTopologyResolveHitResultA0(document, &decoded, "", error))
@@ -17693,13 +17707,13 @@ bool encode_json(const StepTopologyResolveHitResultA0& value, std::string* json,
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, StepTopologyRestoreRequestA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     StepTopologyRestoreRequestA0 decoded{};
     if (!decode_StepTopologyRestoreRequestA0(document, &decoded, "", error))
@@ -17715,13 +17729,13 @@ bool encode_json(const StepTopologyRestoreRequestA0& value, std::string* json, C
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, StepTopologyRestoreResultA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     StepTopologyRestoreResultA0 decoded{};
     if (!decode_StepTopologyRestoreResultA0(document, &decoded, "", error))
@@ -17737,13 +17751,13 @@ bool encode_json(const StepTopologyRestoreResultA0& value, std::string* json, Co
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, StepTopologySaveRequestA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     StepTopologySaveRequestA0 decoded{};
     if (!decode_StepTopologySaveRequestA0(document, &decoded, "", error))
@@ -17759,13 +17773,13 @@ bool encode_json(const StepTopologySaveRequestA0& value, std::string* json, Cont
 }
 
 bool decode_json(const unsigned char* data, std::size_t size, StepTopologySaveResultA0* value,
-                 ContractError* error)
+                 ContractError* error, std::size_t max_json_bytes)
 {
     if (value == nullptr)
         return fail(error, "geometer.contract.invalid_argument", "",
                     "Output value pointer is null.");
     rapidjson::Document document;
-    if (!parse_document(data, size, &document, error))
+    if (!parse_document(data, size, max_json_bytes, &document, error))
         return false;
     StepTopologySaveResultA0 decoded{};
     if (!decode_StepTopologySaveResultA0(document, &decoded, "", error))

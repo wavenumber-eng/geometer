@@ -70,8 +70,8 @@ const char* operation_catalog_json()
         "\"media_type_size\":20,\"data\":24,\"data_size\":28,\"reserved0\":32}},\"pointer64\":{"
         "\"size\":56,\"offsets\":{\"struct_size\":0,\"flags\":4,\"name\":8,\"name_size\":16,"
         "\"media_type\":24,\"media_type_size\":32,\"data\":40,\"data_size\":48,\"reserved0\":52}}},"
-        "\"limits\":{\"operation_id_bytes\":128,\"request_json_bytes\":8388608,\"response_json_"
-        "bytes\":8388608,\"attachment_count\":16,\"attachment_name_bytes\":128,\"attachment_media_"
+        "\"limits\":{\"operation_id_bytes\":128,\"request_json_bytes\":33554432,\"response_json_"
+        "bytes\":33554432,\"attachment_count\":16,\"attachment_name_bytes\":128,\"attachment_media_"
         "type_bytes\":128,\"attachment_bytes\":268435456,\"aggregate_attachment_bytes_native\":"
         "536870912,\"aggregate_attachment_bytes_wasm\":268435456}}";
     return catalog.c_str();
@@ -186,8 +186,8 @@ const char* native_operation_catalog_json()
         "\"reserved0\":32}},\"pointer64\":{\"size\":56,\"offsets\":{\"struct_size\":0,\"flags\":4,"
         "\"name\":8,\"name_size\":16,\"media_type\":24,\"media_type_size\":32,\"data\":40,\"data_"
         "size\":48,\"reserved0\":52}}},\"limits\":{\"operation_id_bytes\":128,\"request_json_"
-        "bytes\":8388608,\"response_json_bytes\":8388608,\"attachment_count\":16,\"attachment_name_"
-        "bytes\":128,\"attachment_media_type_bytes\":128,\"attachment_bytes\":268435456,"
+        "bytes\":33554432,\"response_json_bytes\":33554432,\"attachment_count\":16,\"attachment_"
+        "name_bytes\":128,\"attachment_media_type_bytes\":128,\"attachment_bytes\":268435456,"
         "\"aggregate_attachment_bytes_native\":536870912,\"aggregate_attachment_bytes_wasm\":"
         "268435456}}";
     return catalog.c_str();
@@ -195,7 +195,7 @@ const char* native_operation_catalog_json()
 
 const char* normalized_contract_catalog_sha256()
 {
-    return "2498c5fa9827b38b32285aa04d360236a239f2fd4feb678c1506f2210b4e0e56";
+    return "e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd";
 }
 
 bool operation_output_attachment_declared(const std::string& operation_id,

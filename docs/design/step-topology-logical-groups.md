@@ -40,7 +40,7 @@ invalidating prior topology handles and render artifacts. Stored member shapes
 must resolve uniquely to new body/face handles before the staged groups are
 committed. Publication is built into a separate result before a no-throw swap.
 For native IPC, that exact generated success outcome is encoded and validated
-against the 8 MiB response ceiling while the old state is still available for
+against the 32 MiB response ceiling while the old state is still available for
 rollback. Any command, allocation/OCCT exception, refresh, remapping, or
 response-publication failure clears the output and restores the prior snapshot,
 handle registry, generation, journal, accounting, handle counter, and group

@@ -8,9 +8,21 @@ import sys
 import tarfile
 from pathlib import Path
 
+import pytest
+
 
 ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "src" / "rust" / "geometer-client" / "Cargo.toml"
+TEST_PROFILE = os.environ.get("GEOMETER_TEST_PROFILE", "all")
+PRODUCTION_TEST_TARGETS = (
+    "contract_vectors",
+    "external_process",
+    "failure_paths",
+    "frame_and_process",
+    "generated_dispatch",
+    "illustration_composition",
+    "logical_dtos",
+)
 
 
 def run(*args: str, cwd: Path = ROOT) -> None:
@@ -33,10 +45,15 @@ def test_rust_format_lint_and_live_conformance() -> None:
         "-D",
         "warnings",
     )
-    run("cargo", "test", "--manifest-path", str(MANIFEST), "--locked")
+    if TEST_PROFILE == "production":
+        for target in PRODUCTION_TEST_TARGETS:
+            run("cargo", "test", "--manifest-path", str(MANIFEST), "--locked", "--test", target)
+    else:
+        run("cargo", "test", "--manifest-path", str(MANIFEST), "--locked")
     run("wn-dev-std", "audit", str(MANIFEST.parent), "--scope", "language")
 
 
+@pytest.mark.skipif(TEST_PROFILE == "production", reason="combined analytic consumer is experimental")
 def test_clean_external_consumer_runs_analytic_and_illustration_ipc(tmp_path: Path) -> None:
     crate = MANIFEST.parent
     package_dir = tmp_path / "package"

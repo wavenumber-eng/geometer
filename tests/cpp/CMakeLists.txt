@@ -915,3 +915,16 @@ if(WIN32 AND OpenCASCADE_BINARY_DIR)
             ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:${OpenCASCADE_BINARY_DIR}"
     )
 endif()
+
+# Normal product validation builds and runs only the promoted geometry, HLR,
+# illustration, transport, and packaging surface. Retained research suites stay
+# registered for explicit qualification runs.
+get_property(_geometer_registered_tests DIRECTORY PROPERTY TESTS)
+foreach(_geometer_test IN LISTS _geometer_registered_tests)
+    if(_geometer_test MATCHES
+       "^geometer_(analytic_|exact_|step_topology_)")
+        set_tests_properties(${_geometer_test} PROPERTIES LABELS "experimental")
+    else()
+        set_tests_properties(${_geometer_test} PROPERTIES LABELS "production")
+    endif()
+endforeach()

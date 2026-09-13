@@ -33,6 +33,8 @@ see [documentation maintenance](documentation.md). The [demo audit](demo-status.
 records current runtime evidence and remaining verification gaps.
 The [native illustration API readiness handoff](native-api-readiness.md)
 separates implemented surfaces and package evidence from remaining release gates.
+The [CI strategy](ci-strategy.md) defines change routing, production and
+experimental boundaries, release coverage, and canonical OCCT cache keys.
 
 ## Repository Layout
 

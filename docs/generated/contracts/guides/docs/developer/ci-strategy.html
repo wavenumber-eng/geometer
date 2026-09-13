@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d">
+  <title>CI Strategy — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/developer/ci-strategy.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="ci-strategy">CI Strategy</h1></header>
+<p>Geometer CI validates the code that a change can affect. Cross-platform package
+production remains a release responsibility, while experimental geometry is
+qualified on an explicit or scheduled workflow.</p>
+<h2 id="pull-requests">Pull requests</h2>
+<p>The <code>CI</code> workflow first classifies the exact base-to-head pull-request diff. Its stable
+<code>CI policy</code> job is the branch-protection boundary; it succeeds only when every
+selected lane succeeds or is intentionally skipped.</p>
+<table>
+<thead>
+<tr>
+<th>Change</th>
+<th>Pull-request validation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Markdown, documentation assets, demo HTML/CSS</td>
+<td>Scope and policy only</td>
+</tr>
+<tr>
+<td>Python package or Python tests</td>
+<td>Standards, production Python tests, wheel validation</td>
+</tr>
+<tr>
+<td>Rust client</td>
+<td>Standards and production Rust validation</td>
+</tr>
+<tr>
+<td>TypeScript, TypeSpec, contracts</td>
+<td>Standards and production TypeScript validation</td>
+</tr>
+<tr>
+<td>C++ or native build code</td>
+<td>Standards, Linux x64 production native/client validation, production WASM</td>
+</tr>
+<tr>
+<td>WASM build/runtime code</td>
+<td>Standards and production WASM</td>
+</tr>
+<tr>
+<td>CI or release workflow</td>
+<td>All production lanes</td>
+</tr>
+</tbody>
+</table>
+<p>Normal CI has no <code>push</code> trigger. Merging an already validated pull request does
+not repeat the same build on <code>main</code>. A manual CI dispatch selects all production
+lanes.</p>
+<p>The production native lane builds explicitly promoted targets and runs CTest's
+<code>production</code> label. The Python, Rust, and TypeScript strata use
+<code>GEOMETER_TEST_PROFILE=production</code> to omit retained analytic-solver and STEP
+topology research suites.</p>
+<h2 id="experimental-qualification">Experimental qualification</h2>
+<p>The <code>Experimental qualification</code> workflow runs monthly or by manual dispatch.
+It owns the analytic solver, STEP topology research, seeded synthetic
+qualification, and executable/WASM analytic cross-transport parity. These tests
+do not block ordinary pull requests or releases.</p>
+<p>Run all native research tests locally with:</p>
+<pre><code class="language-powershell">uv run python scripts/validate_native.py --include-experimental-tests
+</code></pre>
+<h2 id="releases">Releases</h2>
+<p>Publishing a GitHub release builds and packages Windows x64, Linux x64, Linux
+arm64, macOS arm64, and WASM. Each native platform runs the production C++
+suite. Python, Rust, and TypeScript integration runs once against Linux x64;
+the other platforms concentrate on native and wheel packaging. Experimental
+qualification is independent of publishing.</p>
+<h2 id="dependency-caches">Dependency caches</h2>
+<p>Every native OCCT consumer and producer uses this key family:</p>
+<pre><code class="language-text">occt-v2-native-&lt;platform&gt;-&lt;compiler&gt;-&lt;occt-tag&gt;-&lt;recipe-hash&gt;
+</code></pre>
+<p>Every WASM OCCT consumer and producer uses:</p>
+<pre><code class="language-text">occt-v2-wasm-linux-x64-emscripten-&lt;occt-tag&gt;-&lt;emsdk-version&gt;-&lt;recipe-hash&gt;
+</code></pre>
+<p>The platform values are the repository's canonical package tags:
+<code>windows-x64</code>, <code>linux-x64</code>, <code>linux-arm64</code>, and <code>macos-arm64</code>. Cache paths always
+include the source, build, and install trees. The dependency-cache workflow is
+the authenticated R2 producer; ordinary workflows consume GitHub cache or the
+public binary cache without R2 credentials.</p>
+<p>Legacy restore prefixes remain temporarily below the primary <code>v2</code> prefix. On
+the first run they avoid a cold OCCT compile and cause <code>actions/cache</code> to save
+the restored content under the new exact key. New caches are always written
+with the canonical key.</p>
+<h2 id="measured-baseline">Measured baseline</h2>
+<p>Before this split, a production C++ pull request ran four native matrices plus
+WASM, standards, and experimental cross-transport qualification. The observed
+job times on issue #34 were:</p>
+<table>
+<thead>
+<tr>
+<th>Job</th>
+<th style="text-align:right">Time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Windows x64 native</td>
+<td style="text-align:right">19m 56s</td>
+</tr>
+<tr>
+<td>Linux x64 native</td>
+<td style="text-align:right">13m 35s</td>
+</tr>
+<tr>
+<td>Linux arm64 native</td>
+<td style="text-align:right">12m 16s</td>
+</tr>
+<tr>
+<td>macOS arm64 native</td>
+<td style="text-align:right">11m 45s</td>
+</tr>
+<tr>
+<td>WASM</td>
+<td style="text-align:right">9m 57s</td>
+</tr>
+<tr>
+<td>Experimental cross-transport</td>
+<td style="text-align:right">34m 22s</td>
+</tr>
+<tr>
+<td>Standards</td>
+<td style="text-align:right">1m 24s</td>
+</tr>
+</tbody>
+</table>
+<p>The cross-transport job missed its distinct GitHub cache prefix and rebuilt
+OCCT from source. The new pull-request topology runs Linux production native and
+production WASM in parallel and leaves the four-platform matrix to publishing.
+Record post-change timings on issue #34 after the first canonical-cache run.</p>
+
+</main>
+</body>
+</html>

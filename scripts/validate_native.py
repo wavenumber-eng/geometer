@@ -16,6 +16,28 @@ from native_build_attestation import BuildAttestationError, load_and_validate_at
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_STEP = ROOT / "tests" / "fixtures" / "step" / "embedded_models" / "SOT-23.STEP"
 DEFAULT_MACOS_DEPLOYMENT_TARGET = "11.0"
+PRODUCTION_VALIDATION_TARGETS = (
+    "geometer_native_distribution",
+    "geometer_preview_depth_buffer_test",
+    "geometer_planar_contours_test",
+    "geometer_fast_hlr_test",
+    "geometer_indexed_mesh_packet_test",
+    "geometer_planar_solve_test",
+    "geometer_planar_step_test",
+    "geometer_model_bounds_test",
+    "geometer_model_tessellation_test",
+    "geometer_model_illustration_native_test",
+    "geometer_mesh_illustration_geometry_test",
+    "geometer_mesh_illustration_test",
+    "geometer_operation_contract_test",
+    "geometer_ipc_a0_frame_test",
+    "geometer_ipc_a0_deadline_test_server",
+    "geometer_ipc_a0_unexpected_exit_test_server",
+    "geometer_ipc_a0_writer_failure_test_server",
+    "geometer_projection_options_json_test",
+    "geometer_projection_model_transform_test",
+    "geometer_projection_outline_test",
+)
 
 
 def build_parallel_jobs() -> str:
@@ -42,6 +64,11 @@ def main() -> int:
     parser.add_argument("--skip-examples", action="store_true")
     parser.add_argument("--skip-python", action="store_true")
     parser.add_argument("--skip-ldd", action="store_true")
+    parser.add_argument(
+        "--include-experimental-tests",
+        action="store_true",
+        help="Build and run retained analytic-solver and STEP-topology research tests.",
+    )
     args = parser.parse_args()
 
     step_path = args.step.resolve()
@@ -64,18 +91,13 @@ def main() -> int:
         ),
         env=env,
     )
-    run(
-        [
-            "cmake",
-            "--build",
-            str(build_dir),
-            "--config",
-            args.config,
-            "--parallel",
-            build_parallel_jobs(),
-        ],
-        env=env,
-    )
+    build_command = ["cmake", "--build", str(build_dir), "--config", args.config]
+    if not args.include_experimental_tests:
+        build_command.extend(["--target", *PRODUCTION_VALIDATION_TARGETS])
+        if not args.skip_examples:
+            build_command.append("geometer_hlr_preview")
+    build_command.extend(["--parallel", build_parallel_jobs()])
+    run(build_command, env=env)
 
     exe = dist_root / "native" / tag / executable_name()
     if not exe.exists():
@@ -98,7 +120,10 @@ def main() -> int:
         validate_python_source_wrapper(exe, step_path)
 
     if not args.skip_ctest:
-        run(["ctest", "--test-dir", str(build_dir), "-C", args.config, "--output-on-failure"])
+        ctest_command = ["ctest", "--test-dir", str(build_dir), "-C", args.config, "--output-on-failure"]
+        if not args.include_experimental_tests:
+            ctest_command.extend(["-L", "production"])
+        run(ctest_command)
 
     print(f"Native validation complete for {tag}")
     return 0

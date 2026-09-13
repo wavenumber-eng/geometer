@@ -133,6 +133,7 @@
     "guides/docs/design/wasm.html",
     "guides/docs/developer/README.html",
     "guides/docs/developer/browser-demos.html",
+    "guides/docs/developer/ci-strategy.html",
     "guides/docs/developer/demo-status.html",
     "guides/docs/developer/dependency-cache.html",
     "guides/docs/developer/documentation.html",

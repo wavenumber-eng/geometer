@@ -1,6 +1,6 @@
 ---
 # yamllint disable rule:line-length
-name: WASM
+name: Experimental qualification
 
 "on":
   workflow_dispatch:
@@ -10,38 +10,6 @@ name: WASM
         required: false
         default: false
         type: boolean
-  pull_request:
-    paths:
-      - ".github/workflows/wasm.yml"
-      - "CMakeLists.txt"
-      - "CMakePresets.json"
-      - "scripts/build_wasm.py"
-      - "scripts/write_analytic_packet_vectors.py"
-      - "scripts/build_analytic_polygon_pour_site.py"
-      - "scripts/build_pcb_polygon_pour_site.py"
-      - "scripts/build_hlr_site.py"
-      - "scripts/build_illustration_site.py"
-      - "scripts/package_single_html_site.py"
-      - "scripts/build_standalone_demos.py"
-      - "scripts/build_self_contained_analytic_polygon_pour_demo.py"
-      - "scripts/build_self_contained_hlr_demo.py"
-      - "scripts/build_self_contained_illustration_demo.py"
-      - "scripts/build_self_contained_planar_ring_solver_demo.py"
-      - "scripts/standalone_html.py"
-      - "package.json"
-      - "package-lock.json"
-      - "pyproject.toml"
-      - "uv.lock"
-      - "src/cpp/**"
-      - "python/geometer/**"
-      - "tests/wasm/**"
-      - "tests/typescript/**"
-      - "tests/contracts/vectors/analytic/**"
-      - "tests/fixtures/analytic_planar_boolean/**"
-      - "examples/wasm/**"
-      - "docs/design/assets/**"
-      - "docs/contracts/promotion-manifest.toml"
-      - "third_party/**"
   schedule:
     - cron: "18 8 1 * *"
 
@@ -94,25 +62,30 @@ jobs:
         uses: actions/cache@v5
         with:
           path: .deps/emsdk
-          key: emsdk-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency_versions.outputs.emsdk_version }}
+          key: emsdk-v2-linux-x64-${{ steps.dependency_versions.outputs.emsdk_version }}
           restore-keys: |
-            emsdk-${{ runner.os }}-${{ runner.arch }}-
+            emsdk-Linux-X64-${{ steps.dependency_versions.outputs.emsdk_version }}
 
       - name: Cache WASM OCCT install
         uses: actions/cache@v5
         with:
-          path: .deps/occt-wasm-install
-          key: wasm-occt-install-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-${{ hashFiles('scripts/build_wasm.py', 'scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
+          path: |
+            .deps/occt-src
+            .deps/occt-wasm-build
+            .deps/occt-wasm-install
+          key: occt-v2-wasm-linux-x64-emscripten-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-${{ hashFiles('scripts/build_wasm.py', 'scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
           restore-keys: |
-            wasm-occt-install-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-
+            occt-v2-wasm-linux-x64-emscripten-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-
+            wasm-occt-install-Linux-X64-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-
 
       - name: Cache Geometer WASM build
         uses: actions/cache@v5
         with:
           path: build-wasm
-          key: geometer-wasm-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('CMakeLists.txt', 'CMakePresets.json', 'src/cpp/**', 'tests/cpp/**', 'third_party/clipper2/**') }}
+          key: geometer-wasm-v2-linux-x64-${{ hashFiles('CMakeLists.txt', 'CMakePresets.json', 'src/cpp/**', 'third_party/clipper2/**') }}
           restore-keys: |
-            geometer-wasm-build-${{ runner.os }}-${{ runner.arch }}-
+            geometer-wasm-v2-linux-x64-
+            geometer-wasm-build-Linux-X64-
 
       - name: Build WASM artifacts
         run: uv run python scripts/build_wasm.py
@@ -145,6 +118,10 @@ jobs:
 
       - name: Upload extended synthetic-correctness harness
         if: github.event_name == 'schedule' || inputs.extended_synthetic
+        run: cmake --build build-wasm --config Release --target geometer_exact_boolean_seeded_property_test --parallel 2
+
+      - name: Upload extended synthetic-correctness harness artifact
+        if: github.event_name == 'schedule' || inputs.extended_synthetic
         uses: actions/upload-artifact@v7
         with:
           name: analytic-synthetic-wasm
@@ -162,7 +139,7 @@ jobs:
     name: Extended exact synthetic correctness
     if: github.event_name == 'schedule' || inputs.extended_synthetic
     needs: wasm
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
@@ -193,9 +170,10 @@ jobs:
             .deps/occt-src
             .deps/native/linux-x64/occt-build
             .deps/native/linux-x64/occt-install
-          key: occt-nightly-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency_versions.outputs.occt_tag }}-${{ hashFiles('scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
+          key: occt-v2-native-linux-x64-gcc-${{ steps.dependency_versions.outputs.occt_tag }}-${{ hashFiles('scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
           restore-keys: |
-            occt-nightly-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency_versions.outputs.occt_tag }}-
+            occt-v2-native-linux-x64-gcc-${{ steps.dependency_versions.outputs.occt_tag }}-
+            occt-ubuntu-22.04-X64-gcc-${{ steps.dependency_versions.outputs.occt_tag }}-
 
       - name: Download Emscripten harness
         uses: actions/download-artifact@v8
@@ -204,7 +182,7 @@ jobs:
           path: out/analytic-synthetic-wasm
 
       - name: Build and test native code
-        run: uv run --group dev python scripts/validate_native.py --skip-examples --skip-python --skip-ldd
+        run: uv run --group dev python scripts/validate_native.py --skip-examples --skip-python --skip-ldd --include-experimental-tests
 
       - name: Run extended native/WASM seeded properties
         run: uv run python scripts/validate_exact_boolean_seeded_property_parity.py --profile nightly --wasm out/analytic-synthetic-wasm/geometer_exact_boolean_seeded_property_test.cjs
@@ -215,7 +193,7 @@ jobs:
   cross-transport:
     name: Analytic executable IPC/browser WASM parity
     needs: wasm
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
@@ -246,10 +224,10 @@ jobs:
             .deps/occt-src
             .deps/native/linux-x64/occt-build
             .deps/native/linux-x64/occt-install
-          key: occt-cross-transport-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency_versions.outputs.occt_tag }}-${{ hashFiles('scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
+          key: occt-v2-native-linux-x64-gcc-${{ steps.dependency_versions.outputs.occt_tag }}-${{ hashFiles('scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
           restore-keys: |
-            occt-cross-transport-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency_versions.outputs.occt_tag }}-
-            occt-${{ runner.os }}-${{ runner.arch }}-gcc-${{ steps.dependency_versions.outputs.occt_tag }}-
+            occt-v2-native-linux-x64-gcc-${{ steps.dependency_versions.outputs.occt_tag }}-
+            occt-ubuntu-22.04-X64-gcc-${{ steps.dependency_versions.outputs.occt_tag }}-
 
       - name: Download current browser WASM artifacts
         uses: actions/download-artifact@v8

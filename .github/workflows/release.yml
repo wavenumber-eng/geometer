@@ -76,11 +76,13 @@ jobs:
         run: uv python install 3.12
 
       - name: Set up Node
+        if: matrix.platform == 'linux-x64'
         uses: actions/setup-node@v6
         with:
           node-version: "24"
 
       - name: Restore pinned browser-test dependencies
+        if: matrix.platform == 'linux-x64'
         run: |
           npm install --global npm@11.16.0
           npm ci
@@ -111,16 +113,19 @@ jobs:
             .deps/occt-src
             .deps/native/${{ matrix.platform }}/occt-build
             .deps/native/${{ matrix.platform }}/occt-install
-          key: occt-${{ matrix.os }}-${{ runner.arch }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-${{ hashFiles('scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
+          key: occt-v2-native-${{ matrix.platform }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-${{ hashFiles('scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
           restore-keys: |
+            occt-v2-native-${{ matrix.platform }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-
             occt-${{ matrix.os }}-${{ runner.arch }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-
 
-      - name: Build and test native code
+      - name: Build and test production native code
         run: uv run --group dev python scripts/validate_native.py
 
-      - name: Run Python, Rust, and TypeScript Rack strata against the native build
+      - name: Run production client strata against the Linux native build
+        if: matrix.platform == 'linux-x64'
         env:
           GEOMETER_REQUIRE_NATIVE_TEST_SERVERS: "1"
+          GEOMETER_TEST_PROFILE: production
         run: |
           uv tool install git+https://github.com/wavenumber-eng/wn-dev-std
           uv run --group dev rack run python
@@ -187,43 +192,46 @@ jobs:
         uses: actions/cache@v5
         with:
           path: .deps/emsdk
-          key: emsdk-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency_versions.outputs.emsdk_version }}
+          key: emsdk-v2-linux-x64-${{ steps.dependency_versions.outputs.emsdk_version }}
           restore-keys: |
-            emsdk-${{ runner.os }}-${{ runner.arch }}-
+            emsdk-Linux-X64-${{ steps.dependency_versions.outputs.emsdk_version }}
 
       - name: Cache WASM OCCT install
         uses: actions/cache@v5
         with:
-          path: .deps/occt-wasm-install
-          key: wasm-occt-install-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-${{ hashFiles('scripts/build_wasm.py', 'scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
+          path: |
+            .deps/occt-src
+            .deps/occt-wasm-build
+            .deps/occt-wasm-install
+          key: occt-v2-wasm-linux-x64-emscripten-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-${{ hashFiles('scripts/build_wasm.py', 'scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
           restore-keys: |
-            wasm-occt-install-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-
+            occt-v2-wasm-linux-x64-emscripten-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-
+            wasm-occt-install-Linux-X64-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-
 
       - name: Cache Geometer WASM build
         uses: actions/cache@v5
         with:
           path: build-wasm
-          key: geometer-wasm-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('CMakeLists.txt', 'CMakePresets.json', 'src/cpp/**', 'tests/cpp/**', 'third_party/clipper2/**') }}
+          key: geometer-wasm-v2-linux-x64-${{ hashFiles('CMakeLists.txt', 'CMakePresets.json', 'src/cpp/**', 'third_party/clipper2/**') }}
           restore-keys: |
-            geometer-wasm-build-${{ runner.os }}-${{ runner.arch }}-
+            geometer-wasm-v2-linux-x64-
+            geometer-wasm-build-Linux-X64-
 
       - name: Build WASM artifacts
         run: uv run python scripts/build_wasm.py
 
-      - name: Build browser demos
+      - name: Build production browser demos
         run: |
           google-chrome --version
           npm run check:typescript
-          uv run python scripts/build_analytic_polygon_pour_site.py
-          uv run python scripts/build_pcb_polygon_pour_site.py
           uv run python scripts/build_hlr_site.py
           uv run python scripts/build_illustration_site.py
-          uv run python scripts/build_standalone_demos.py all
-          node tests/typescript/analytic_static_site_validation.mjs
-          node tests/typescript/analytic_self_contained_demo_validation.mjs
-          uv run pytest tests/wasm/test_analytic_standalone_demo.py -q
-          uv run pytest tests/wasm/test_pcb_standalone_demo.py tests/wasm/test_hlr_static_site.py tests/wasm/test_illustration_static_site.py -q
-          uv run pytest tests/python/test_contract_promotion_manifest.py -q
+          uv run python scripts/build_standalone_demos.py hlr
+          uv run python scripts/build_standalone_demos.py illustration
+          node tests/typescript/hlr_static_site_validation.mjs
+          node tests/typescript/illustration_static_site_validation.mjs
+          uv run pytest tests/wasm/test_hlr_static_site.py tests/wasm/test_illustration_static_site.py -q
+          uv run pytest tests/python/test_package_single_html_site.py -q
 
       - name: Run WASM validation tests
         run: |
@@ -241,51 +249,9 @@ jobs:
           path: out/wasm-dist.zip
           if-no-files-found: error
 
-  cross-transport:
-    name: Analytic executable IPC/browser WASM parity
-    needs: [build, wasm]
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v6
-
-      - uses: astral-sh/setup-uv@v8.2.0
-
-      - name: Set up Python
-        run: uv python install 3.12
-
-      - name: Set up Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: "24"
-
-      - name: Download current Linux native artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: native-dist-linux-x64
-          path: out/native-artifact
-
-      - name: Download current browser WASM artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: wasm-dist
-          path: out/wasm-artifact
-
-      - name: Extract current transport artifacts
-        run: |
-          unzip out/native-artifact/native-linux-x64.zip -d out/native-dist
-          unzip out/wasm-artifact/wasm-dist.zip -d out/wasm-dist
-          chmod +x out/native-dist/geometer
-
-      - name: Require canonical executable IPC/browser WASM parity
-        env:
-          GEOMETER_EXE: out/native-dist/geometer
-          GEOMETER_WASM_BROWSER_DIST: out/wasm-dist/browser
-        run: uv run pytest tests/wasm/test_analytic_cross_transport_parity.py -q
-
   github-assets:
     name: GitHub release assets
-    needs: [build, wasm, cross-transport]
+    needs: [build, wasm]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -304,7 +270,7 @@ jobs:
 
   pypi:
     name: PyPI trusted publish
-    needs: [build, wasm, cross-transport]
+    needs: [build, wasm]
     runs-on: ubuntu-24.04
     environment:
       name: pypi

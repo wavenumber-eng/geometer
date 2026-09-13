@@ -190,3 +190,10 @@ file = "test_model_illustration.py"
 name = "Direct Model Illustration"
 description = "Checks direct STEP and analytic illustration, raw geometry output, fast-HLR defaults, attachments, warnings, and recoverable failures."
 test_case_type = "integration"
+
+[[subtests]]
+id = "PY_025"
+file = "test_ci_scope.py"
+name = "Selective CI Scope"
+description = "Checks that documentation skips expensive lanes and material changes select only affected production subsystems."
+test_case_type = "unit"

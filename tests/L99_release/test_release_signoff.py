@@ -132,11 +132,15 @@ def test_code_hygiene_exempts_only_generated_contract_sources_from_line_limit() 
 
 
 def test_linux_wheel_builds_use_glibc_235_baseline() -> None:
-    for workflow_name in ("ci.yml", "release.yml", "occt-deps.yml"):
+    ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    assert "runs-on: ubuntu-22.04" in ci
+    assert "occt-v2-native-linux-x64-gcc-" in ci
+
+    for workflow_name in ("release.yml", "occt-deps.yml"):
         workflow = (ROOT / ".github" / "workflows" / workflow_name).read_text(encoding="utf-8")
         assert "os: ubuntu-22.04\n            platform: linux-x64" in workflow
         assert "os: ubuntu-22.04-arm\n            platform: linux-arm64" in workflow
-        assert "occt-${{ matrix.os }}-${{ runner.arch }}" in workflow
+        assert "occt-v2-native-${{ matrix.platform }}-${{ matrix.compiler }}" in workflow
 
     build_occt = (ROOT / "scripts" / "build_occt.py").read_text(encoding="utf-8")
     assert '"linux_glibc_baseline": resolved_linux_glibc' in build_occt
@@ -157,63 +161,63 @@ def test_normal_builds_use_public_dependency_cache_without_r2_secrets() -> None:
     assert "R2_SECRET_ACCESS_KEY" in producer_workflow
 
 
-def test_ci_and_release_run_candidate_client_rack_strata_with_bounded_parallelism() -> None:
-    for workflow_name in ("ci.yml", "release.yml"):
-        workflow = (ROOT / ".github" / "workflows" / workflow_name).read_text(encoding="utf-8")
-        assert 'CARGO_BUILD_JOBS: "1"' in workflow
-        assert 'CMAKE_BUILD_PARALLEL_LEVEL: "2"' in workflow
-        assert workflow.count("uv run --group dev rack run python") == 1
-        assert workflow.count("uv run --group dev rack run typescript") == 1
-        assert workflow.count("uv run --group dev rack run rust") == 1
-        assert workflow.count('GEOMETER_REQUIRE_NATIVE_TEST_SERVERS: "1"') == 1
-        assert "cargo test --locked" not in workflow
-        native_validation = workflow.index("scripts/validate_native.py")
-        python_rack = workflow.index("uv run --group dev rack run python")
-        rust_rack = workflow.index("uv run --group dev rack run rust")
-        typescript_rack = workflow.index("uv run --group dev rack run typescript")
-        wheel_validation = workflow.index("scripts/validate_python_package.py")
-        assert native_validation < python_rack < rust_rack < typescript_rack < wheel_validation
-        validated_wheel_command = (
-            "scripts/validate_python_package.py --skip-native-validation --wheelhouse out/wheelhouse"
-        )
-        assert workflow.count(validated_wheel_command) == 1
-        assert "python -m build --wheel --outdir out/wheelhouse" not in workflow
-        assert "twine check out/wheelhouse/*.whl" in workflow
-        assert "path: out/wheelhouse/*.whl" in workflow
-
-
-def test_required_workflows_gate_current_native_browser_wasm_cross_transport_parity() -> None:
-    command = "uv run pytest tests/wasm/test_analytic_cross_transport_parity.py -q"
-    wasm = (ROOT / ".github/workflows/wasm.yml").read_text(encoding="utf-8")
+def test_ci_routes_languages_independently_and_release_integrates_once() -> None:
+    ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
     release = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
 
-    assert wasm.count(command) == 1
-    for required_trigger in (
-        '      - "python/geometer/**"',
-        '      - "scripts/write_analytic_packet_vectors.py"',
-        '      - "tests/contracts/vectors/analytic/**"',
-        '      - "tests/wasm/**"',
-    ):
-        assert wasm.count(required_trigger) == 1
-    wasm_job = wasm[wasm.index("  cross-transport:") :]
-    assert "needs: wasm" in wasm_job
-    assert "actions/setup-node@v6" in wasm_job
-    assert 'node-version: "24"' in wasm_job
-    assert "scripts/validate_native.py" in wasm_job
-    assert "name: wasm-dist" in wasm_job
-    assert "GEOMETER_EXE: dist/native/linux-x64/geometer" in wasm_job
-    assert "GEOMETER_WASM_BROWSER_DIST: out/wasm-dist/browser" in wasm_job
-    assert wasm_job.index("scripts/validate_native.py") < wasm_job.index(command)
+    for workflow in (ci, release):
+        assert 'CARGO_BUILD_JOBS: "1"' in workflow
+        assert 'CMAKE_BUILD_PARALLEL_LEVEL: "2"' in workflow
+        assert 'GEOMETER_REQUIRE_NATIVE_TEST_SERVERS: "1"' in workflow
+        assert "cargo test --locked" not in workflow
 
-    assert release.count(command) == 1
-    release_job = release[release.index("  cross-transport:") : release.index("  github-assets:")]
-    assert "needs: [build, wasm]" in release_job
-    assert "actions/setup-node@v6" in release_job
-    assert 'node-version: "24"' in release_job
-    assert "name: native-dist-linux-x64" in release_job
-    assert "name: wasm-dist" in release_job
-    assert "GEOMETER_EXE: out/native-dist/geometer" in release_job
-    assert "GEOMETER_WASM_BROWSER_DIST: out/wasm-dist/browser" in release_job
-    assert release_job.index("name: native-dist-linux-x64") < release_job.index(command)
-    assert release_job.index("name: wasm-dist") < release_job.index(command)
-    assert release.count("needs: [build, wasm, cross-transport]") == 2
+    assert "name: Change scope" in ci
+    assert "python scripts/ci_scope.py" in ci
+    assert "name: CI policy" in ci
+    assert ci.count("GEOMETER_TEST_PROFILE: production") == 4
+    assert "push:" not in ci
+
+    assert release.count("uv run --group dev rack run python") == 1
+    assert release.count("uv run --group dev rack run typescript") == 1
+    assert release.count("uv run --group dev rack run rust") == 1
+    assert "if: matrix.platform == 'linux-x64'" in release
+    assert "GEOMETER_TEST_PROFILE: production" in release
+    assert release.count("scripts/validate_python_package.py --skip-native-validation --wheelhouse out/wheelhouse") == 1
+    assert "python -m build --wheel --outdir out/wheelhouse" not in release
+    assert "twine check out/wheelhouse/*.whl" in release
+    assert "path: out/wheelhouse/*.whl" in release
+
+
+def test_experimental_qualification_is_outside_normal_ci_and_release() -> None:
+    command = "uv run pytest tests/wasm/test_analytic_cross_transport_parity.py -q"
+    ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    experimental = (ROOT / ".github/workflows/wasm.yml").read_text(encoding="utf-8")
+    release = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
+
+    assert command not in ci
+    assert command not in release
+    assert experimental.count(command) == 1
+    assert "pull_request:" not in experimental
+    assert "schedule:" in experimental
+    assert "--include-experimental-tests" in experimental
+    assert "--include-experimental-tests" not in ci
+    assert "--include-experimental-tests" not in release
+    assert "  cross-transport:" not in release
+    assert release.count("needs: [build, wasm]") == 2
+
+
+def test_occt_cache_consumers_share_platform_keys() -> None:
+    workflows = {
+        name: (ROOT / ".github" / "workflows" / name).read_text(encoding="utf-8")
+        for name in ("ci.yml", "release.yml", "wasm.yml", "macos-wheel.yml", "occt-deps.yml")
+    }
+    matrix_native_key = "occt-v2-native-${{ matrix.platform }}-${{ matrix.compiler }}"
+    assert matrix_native_key in workflows["release.yml"]
+    assert matrix_native_key in workflows["occt-deps.yml"]
+    assert "occt-v2-native-linux-x64-gcc-" in workflows["ci.yml"]
+    assert "occt-v2-native-linux-x64-gcc-" in workflows["wasm.yml"]
+    assert "occt-v2-native-macos-arm64-apple-clang-" in workflows["macos-wheel.yml"]
+
+    wasm_key = "occt-v2-wasm-linux-x64-emscripten-"
+    for name in ("ci.yml", "release.yml", "wasm.yml", "occt-deps.yml"):
+        assert wasm_key in workflows[name]

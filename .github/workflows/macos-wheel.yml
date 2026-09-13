@@ -32,9 +32,11 @@ jobs:
             .deps/occt-src
             .deps/native/macos-arm64/occt-build
             .deps/native/macos-arm64/occt-install
-          key: occt-${{ runner.os }}-${{ runner.arch }}-apple-clang-${{ steps.dependency_versions.outputs.occt_tag }}-${{ hashFiles('scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
+          key: occt-v2-native-macos-arm64-apple-clang-${{ steps.dependency_versions.outputs.occt_tag }}-${{ hashFiles('scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
           restore-keys: |
-            occt-${{ runner.os }}-${{ runner.arch }}-apple-clang-${{ steps.dependency_versions.outputs.occt_tag }}-
+            occt-v2-native-macos-arm64-apple-clang-${{ steps.dependency_versions.outputs.occt_tag }}-
+            occt-macOS-ARM64-apple-clang-${{ steps.dependency_versions.outputs.occt_tag }}-
+            occt-macos-15-ARM64-apple-clang-${{ steps.dependency_versions.outputs.occt_tag }}-
       - name: Validate native build
         run: uv run python scripts/validate_native.py
       - name: Validate Python package

@@ -83,8 +83,9 @@ jobs:
             .deps/occt-src
             .deps/native/${{ matrix.platform }}/occt-build
             .deps/native/${{ matrix.platform }}/occt-install
-          key: occt-${{ matrix.os }}-${{ runner.arch }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-${{ hashFiles('scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
+          key: occt-v2-native-${{ matrix.platform }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-${{ hashFiles('scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
           restore-keys: |
+            occt-v2-native-${{ matrix.platform }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-
             occt-${{ matrix.os }}-${{ runner.arch }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-
       - name: Build or restore OCCT and upload to R2
         shell: pwsh
@@ -118,9 +119,9 @@ jobs:
         uses: actions/cache@v5
         with:
           path: .deps/emsdk
-          key: emsdk-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency_versions.outputs.emsdk_version }}
+          key: emsdk-v2-linux-x64-${{ steps.dependency_versions.outputs.emsdk_version }}
           restore-keys: |
-            emsdk-${{ runner.os }}-${{ runner.arch }}-
+            emsdk-Linux-X64-${{ steps.dependency_versions.outputs.emsdk_version }}
       - name: Restore GitHub WASM OCCT cache
         uses: actions/cache@v5
         with:
@@ -128,9 +129,10 @@ jobs:
             .deps/occt-src
             .deps/occt-wasm-build
             .deps/occt-wasm-install
-          key: wasm-occt-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-${{ hashFiles('scripts/build_wasm.py', 'scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
+          key: occt-v2-wasm-linux-x64-emscripten-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-${{ hashFiles('scripts/build_wasm.py', 'scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
           restore-keys: |
-            wasm-occt-${{ runner.os }}-${{ runner.arch }}-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-
+            occt-v2-wasm-linux-x64-emscripten-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-
+            wasm-occt-Linux-X64-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-
       - name: Build or restore WASM OCCT and upload to R2
         shell: pwsh
         run: |

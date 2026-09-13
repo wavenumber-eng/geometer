@@ -15,6 +15,16 @@ ROOT = Path(__file__).resolve().parents[2]
 NODE = shutil.which("node")
 REQUIRE_NATIVE_TEST_SERVERS = os.environ.get("GEOMETER_REQUIRE_NATIVE_TEST_SERVERS") == "1"
 NATIVE_PROCESS_SCRIPTS = frozenset({"node_process_a0_validation.mjs", "native_illustration_parity.mjs"})
+TEST_PROFILE = os.environ.get("GEOMETER_TEST_PROFILE", "all")
+EXPERIMENTAL_SCRIPTS = frozenset(
+    {
+        "analytic_arc_render_validation.mjs",
+        "analytic_cpp_vector_validation.mjs",
+        "analytic_packet_codec_validation.mjs",
+        "analytic_self_contained_demo_validation.mjs",
+        "analytic_static_site_validation.mjs",
+    }
+)
 
 
 def _native_platform_directory(system: str, machine: str) -> str | None:
@@ -61,6 +71,8 @@ def _native_platform_directory(system: str, machine: str) -> str | None:
 )
 def test_generated_typescript_package(script: str) -> None:
     assert NODE is not None, "Node 24 is required for TypeScript validation."
+    if TEST_PROFILE == "production" and script in EXPERIMENTAL_SCRIPTS:
+        pytest.skip("experimental analytic validation is opt-in")
     if script in NATIVE_PROCESS_SCRIPTS and not REQUIRE_NATIVE_TEST_SERVERS:
         pytest.skip("native-process validation runs after the current platform executable is built")
     completed = subprocess.run(
@@ -76,6 +88,8 @@ def test_generated_typescript_package(script: str) -> None:
 
 def test_step_topology_annotation_reference_restarts_native_process() -> None:
     assert NODE is not None, "Node 24 is required for the native reference example."
+    if TEST_PROFILE == "production":
+        pytest.skip("experimental STEP-topology validation is opt-in")
     if not REQUIRE_NATIVE_TEST_SERVERS:
         pytest.skip("native reference validation runs after the current platform executable is built")
     platform_directory = _native_platform_directory(sys.platform, platform.machine())

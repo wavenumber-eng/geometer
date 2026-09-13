@@ -11,9 +11,37 @@ from ._generated.contracts.models import (
     MeshIllustrationGeometryA0,
     MeshIllustrationResultA0,
     ModelTessellationRequestA0,
+    ModelIllustrationGeometryRequestA0,
+    ModelIllustrationRequestA0,
+    ModelIllustrationResultA0,
 )
 from ._ipc_client import GeometerIpcClient
+from ._model_illustration import ModelIllustrationGeometry
 from ._tessellation import ModelTessellation
+
+
+def model_illustration(
+    request: ModelIllustrationRequestA0,
+    model: bytes | None = None,
+    *,
+    executable: str | Path | None = None,
+    timeout: float | None = None,
+) -> ModelIllustrationResultA0:
+    """Illustrate one STEP model or analytic scene with one managed process."""
+    with GeometerIpcClient(executable) as client:
+        return client.model_illustration(request, model, timeout=timeout)
+
+
+def model_illustration_geometry(
+    request: ModelIllustrationGeometryRequestA0,
+    model: bytes | None = None,
+    *,
+    executable: str | Path | None = None,
+    timeout: float | None = None,
+) -> ModelIllustrationGeometry:
+    """Return renderer-neutral model illustration geometry with one managed process."""
+    with GeometerIpcClient(executable) as client:
+        return client.model_illustration_geometry(request, model, timeout=timeout)
 
 
 def model_tessellation(

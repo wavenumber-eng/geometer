@@ -469,6 +469,8 @@ def _assert_contract_and_operation_inventory(manifest: dict[str, Any]) -> None:
         "geometry.model_hlr_projection.a0",
         "geometry.mesh_hlr_projection.a0",
         "geometry.model_tessellation.a0",
+        "geometry.model_illustration.a0",
+        "geometry.model_illustration_geometry.a0",
     }
     assert {item["id"] for item in operations if item["status"] == "promoted"} == {"geometry.model_bounds.a0"}
     assert_step_topology_inventory(manifest, contracts, operations)

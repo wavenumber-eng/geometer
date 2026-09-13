@@ -76,7 +76,8 @@ def _assert_catalog_lineage(path: Path, historical_hash: str) -> None:
     prefix = "Wavenumber.Geometer.Contracts.ModelTessellationA0."
     illustration_prefix = "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0."
     geometry_prefix = "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0."
-    prefixes = (prefix, illustration_prefix, geometry_prefix)
+    model_illustration_prefix = "Wavenumber.Geometer.Contracts.ModelIllustrationA0."
+    prefixes = (prefix, illustration_prefix, geometry_prefix, model_illustration_prefix)
     catalog["declarations"] = [item for item in catalog["declarations"] if not item["name"].startswith(prefixes)]
     catalog["roots"] = [item for item in catalog["roots"] if not item["name"].startswith(prefixes)]
     catalog["operations"] = [
@@ -87,6 +88,8 @@ def _assert_catalog_lineage(path: Path, historical_hash: str) -> None:
             "geometry.model_tessellation.a0",
             "geometry.mesh_illustration.a0",
             "geometry.mesh_illustration_geometry.a0",
+            "geometry.model_illustration.a0",
+            "geometry.model_illustration_geometry.a0",
         }
     ]
     additions = {
@@ -94,11 +97,21 @@ def _assert_catalog_lineage(path: Path, historical_hash: str) -> None:
             ("model_tessellation", prefix + "ModelTessellationRequestA0"),
             ("mesh_illustration", illustration_prefix + "MeshIllustrationRequestA0"),
             ("mesh_illustration_geometry", geometry_prefix + "MeshIllustrationGeometryRequestA0"),
+            ("model_illustration", model_illustration_prefix + "ModelIllustrationRequestA0"),
+            (
+                "model_illustration_geometry",
+                model_illustration_prefix + "ModelIllustrationGeometryRequestA0",
+            ),
         ],
         "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationResultValueA0": [
             ("model_tessellation", prefix + "ModelTessellationResultA0"),
             ("mesh_illustration", "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationResultA0"),
             ("mesh_illustration_geometry", geometry_prefix + "MeshIllustrationGeometryResultA0"),
+            ("model_illustration", model_illustration_prefix + "ModelIllustrationResultA0"),
+            (
+                "model_illustration_geometry",
+                model_illustration_prefix + "ModelIllustrationGeometryResultA0",
+            ),
         ],
     }
     for union, variants in additions.items():
@@ -107,6 +120,29 @@ def _assert_catalog_lineage(path: Path, historical_hash: str) -> None:
             expected = {"name": name, "type": {"kind": "reference", "target": target}, "doc": "", "annotations": {}}
             assert [item for item in declaration["variants"] if item["name"] == name] == [expected]
             declaration["variants"].remove(expected)
+    # Fast detail and Fast Mesh Shadow became the common omitted defaults after
+    # the topology slices were reviewed. Restore the earlier property metadata
+    # before checking their historical catalog digest.
+    hlr_options = next(
+        item
+        for item in catalog["declarations"]
+        if item["name"]
+        == "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionOptionsA0"
+    )
+    historical_hlr_properties = {
+        "projection_algorithm": (
+            "Omission selects the operation-specific default: poly for model HLR and Fast for mesh HLR."
+        ),
+        "outline_algorithm": (
+            "Omission selects the operation-specific default: HLR-close for model HLR and Fast mesh-shadow for mesh HLR."
+        ),
+    }
+    for property_name, doc in historical_hlr_properties.items():
+        property_model = next(
+            item for item in hlr_options["properties"] if item["name"] == property_name
+        )
+        property_model["doc"] = doc
+        property_model.pop("default", None)
     # The executable and generic-operation JSON envelopes were increased after
     # the topology slices were reviewed. Restore their former values before
     # checking the historical catalog digest so that unrelated topology

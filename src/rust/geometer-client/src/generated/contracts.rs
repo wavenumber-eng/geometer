@@ -20,7 +20,7 @@
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 pub const NORMALIZED_CATALOG_SHA256: &str =
-    "e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd";
+    "0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d";
 
 #[derive(Debug, thiserror::Error)]
 pub enum ContractError {
@@ -3758,7 +3758,950 @@ impl Validate for IpcReasonA0 {
     }
 }
 
+pub type IllustrationMatrix4x4 = [f64; 16];
+
 pub type IllustrationVector3 = [f64; 3];
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct MeshIllustrationMaterial {
+    pub color: IllustrationVector3,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub opacity: Option<f64>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub name: Option<String>,
+}
+
+impl Validate for MeshIllustrationMaterial {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "color");
+        let value = &self.color;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "opacity");
+        if let Some(value) = &self.opacity {
+            if !value.is_finite() {
+                return Err(invalid(&field_path, "number must be finite"));
+            }
+            if *value < 0_f64 {
+                return Err(invalid(&field_path, "number is below its minimum"));
+            }
+            if *value > 1_f64 {
+                return Err(invalid(&field_path, "number exceeds its maximum"));
+            }
+        }
+        let field_path = child_path(path, "name");
+        if let Some(value) = &self.name {
+            if value.len() > 1024 {
+                return Err(invalid(&field_path, "string exceeds its maximum"));
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub enum ModelRootPlacement {
+    #[serde(rename = "strip")]
+    Strip,
+    #[serde(rename = "preserve")]
+    Preserve,
+}
+
+impl Validate for ModelRootPlacement {
+    fn validate_at(&self, _path: &str) -> Result<(), ContractError> {
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ModelTessellationOptionsA0 {
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub linear_deflection_mm: Option<f64>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub angular_deflection_rad: Option<f64>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub root_placement: Option<ModelRootPlacement>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub max_triangles: Option<u32>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub allow_partial: Option<bool>,
+}
+
+impl Validate for ModelTessellationOptionsA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "linear_deflection_mm");
+        if let Some(value) = &self.linear_deflection_mm {
+            if !value.is_finite() {
+                return Err(invalid(&field_path, "number must be finite"));
+            }
+            if *value < 0.000001_f64 {
+                return Err(invalid(&field_path, "number is below its minimum"));
+            }
+            if *value > 1000_f64 {
+                return Err(invalid(&field_path, "number exceeds its maximum"));
+            }
+        }
+        let field_path = child_path(path, "angular_deflection_rad");
+        if let Some(value) = &self.angular_deflection_rad {
+            if !value.is_finite() {
+                return Err(invalid(&field_path, "number must be finite"));
+            }
+            if *value < 0.000001_f64 {
+                return Err(invalid(&field_path, "number is below its minimum"));
+            }
+            if *value > 3.141592653589793_f64 {
+                return Err(invalid(&field_path, "number exceeds its maximum"));
+            }
+        }
+        let field_path = child_path(path, "root_placement");
+        if let Some(value) = &self.root_placement {
+            value.validate_at(&field_path)?;
+        }
+        let field_path = child_path(path, "max_triangles");
+        if let Some(value) = &self.max_triangles {
+            if *value < 1 {
+                return Err(invalid(&field_path, "number is below its minimum"));
+            }
+            if *value > 2000000 {
+                return Err(invalid(&field_path, "number exceeds its maximum"));
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ModelAttachmentIllustrationSourceA0 {
+    pub kind: String,
+    pub attachment: String,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub transform: Option<IllustrationMatrix4x4>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub material_override: Option<MeshIllustrationMaterial>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub tessellation: Option<ModelTessellationOptionsA0>,
+}
+
+impl Validate for ModelAttachmentIllustrationSourceA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "model" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "attachment");
+        let value = &self.attachment;
+        if value != "model" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "transform");
+        if let Some(value) = &self.transform {
+            value.validate_at(&field_path)?;
+        }
+        let field_path = child_path(path, "material_override");
+        if let Some(value) = &self.material_override {
+            value.validate_at(&field_path)?;
+        }
+        let field_path = child_path(path, "tessellation");
+        if let Some(value) = &self.tessellation {
+            value.validate_at(&field_path)?;
+        }
+        Ok(())
+    }
+}
+
+pub type IllustrationVector2Mm = [f64; 2];
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct IllustrationProfileLineA0 {
+    pub kind: String,
+}
+
+impl Validate for IllustrationProfileLineA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "line" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub enum PlanarArcSweep {
+    #[serde(rename = "cw")]
+    Cw,
+    #[serde(rename = "ccw")]
+    Ccw,
+}
+
+impl Validate for PlanarArcSweep {
+    fn validate_at(&self, _path: &str) -> Result<(), ContractError> {
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct IllustrationProfileCircularArcA0 {
+    pub kind: String,
+    pub center_mm: IllustrationVector2Mm,
+    pub sweep: PlanarArcSweep,
+}
+
+impl Validate for IllustrationProfileCircularArcA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "circular_arc" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "center_mm");
+        let value = &self.center_mm;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "sweep");
+        let value = &self.sweep;
+        value.validate_at(&field_path)?;
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(untagged)]
+pub enum IllustrationProfileSegmentA0 {
+    Line(IllustrationProfileLineA0),
+    CircularArc(IllustrationProfileCircularArcA0),
+}
+
+impl<'de> Deserialize<'de> for IllustrationProfileSegmentA0 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw = Box::<serde_json::value::RawValue>::deserialize(deserializer)?;
+        if let Ok(value) = serde_json::from_str::<IllustrationProfileLineA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::Line(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<IllustrationProfileCircularArcA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::CircularArc(value));
+            }
+        }
+        Err(serde::de::Error::custom(
+            "value does not match any IllustrationProfileSegmentA0 variant",
+        ))
+    }
+}
+
+impl Validate for IllustrationProfileSegmentA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        match self {
+            Self::Line(value) => value.validate_at(path),
+            Self::CircularArc(value) => value.validate_at(path),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct IllustrationProfileRingA0 {
+    pub points_mm: Vec<IllustrationVector2Mm>,
+    pub segments: Vec<IllustrationProfileSegmentA0>,
+}
+
+impl Validate for IllustrationProfileRingA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "points_mm");
+        let value = &self.points_mm;
+        if value.len() < 3 {
+            return Err(invalid(&field_path, "array is shorter than its minimum"));
+        }
+        if value.len() > 131072 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        let field_path = child_path(path, "segments");
+        let value = &self.segments;
+        if value.len() < 3 {
+            return Err(invalid(&field_path, "array is shorter than its minimum"));
+        }
+        if value.len() > 131072 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct IllustrationProfileRegionA0 {
+    pub outer: IllustrationProfileRingA0,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub holes: Option<Vec<IllustrationProfileRingA0>>,
+}
+
+impl Validate for IllustrationProfileRegionA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "outer");
+        let value = &self.outer;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "holes");
+        if let Some(value) = &self.holes {
+            if value.len() > 131071 {
+                return Err(invalid(&field_path, "array exceeds its maximum"));
+            }
+            for (index, item) in value.iter().enumerate() {
+                item.validate_at(&child_path(&field_path, &index.to_string()))?;
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AnalyticExtrusionA0 {
+    pub kind: String,
+    pub id: String,
+    pub regions: Vec<IllustrationProfileRegionA0>,
+    pub z_min_mm: f64,
+    pub z_max_mm: f64,
+    pub material: MeshIllustrationMaterial,
+}
+
+impl Validate for AnalyticExtrusionA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "extrusion" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "id");
+        let value = &self.id;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 1024 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "regions");
+        let value = &self.regions;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "array is shorter than its minimum"));
+        }
+        if value.len() > 65536 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        let field_path = child_path(path, "z_min_mm");
+        let value = &self.z_min_mm;
+        if !value.is_finite() {
+            return Err(invalid(&field_path, "number must be finite"));
+        }
+        let field_path = child_path(path, "z_max_mm");
+        let value = &self.z_max_mm;
+        if !value.is_finite() {
+            return Err(invalid(&field_path, "number must be finite"));
+        }
+        let field_path = child_path(path, "material");
+        let value = &self.material;
+        value.validate_at(&field_path)?;
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AnalyticCylinderA0 {
+    pub kind: String,
+    pub id: String,
+    pub center_mm: IllustrationVector2Mm,
+    pub radius_mm: f64,
+    pub z_min_mm: f64,
+    pub z_max_mm: f64,
+    pub material: MeshIllustrationMaterial,
+}
+
+impl Validate for AnalyticCylinderA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "cylinder" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "id");
+        let value = &self.id;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 1024 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "center_mm");
+        let value = &self.center_mm;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "radius_mm");
+        let value = &self.radius_mm;
+        if !value.is_finite() {
+            return Err(invalid(&field_path, "number must be finite"));
+        }
+        if *value <= 0_f64 {
+            return Err(invalid(
+                &field_path,
+                "number is not above its exclusive minimum",
+            ));
+        }
+        let field_path = child_path(path, "z_min_mm");
+        let value = &self.z_min_mm;
+        if !value.is_finite() {
+            return Err(invalid(&field_path, "number must be finite"));
+        }
+        let field_path = child_path(path, "z_max_mm");
+        let value = &self.z_max_mm;
+        if !value.is_finite() {
+            return Err(invalid(&field_path, "number must be finite"));
+        }
+        let field_path = child_path(path, "material");
+        let value = &self.material;
+        value.validate_at(&field_path)?;
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AnalyticSphereA0 {
+    pub kind: String,
+    pub id: String,
+    pub center_mm: IllustrationVector3,
+    pub radius_mm: f64,
+    pub material: MeshIllustrationMaterial,
+}
+
+impl Validate for AnalyticSphereA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "sphere" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "id");
+        let value = &self.id;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 1024 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "center_mm");
+        let value = &self.center_mm;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "radius_mm");
+        let value = &self.radius_mm;
+        if !value.is_finite() {
+            return Err(invalid(&field_path, "number must be finite"));
+        }
+        if *value <= 0_f64 {
+            return Err(invalid(
+                &field_path,
+                "number is not above its exclusive minimum",
+            ));
+        }
+        let field_path = child_path(path, "material");
+        let value = &self.material;
+        value.validate_at(&field_path)?;
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(untagged)]
+pub enum AnalyticPrimitiveA0 {
+    Extrusion(AnalyticExtrusionA0),
+    Cylinder(AnalyticCylinderA0),
+    Sphere(AnalyticSphereA0),
+}
+
+impl<'de> Deserialize<'de> for AnalyticPrimitiveA0 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw = Box::<serde_json::value::RawValue>::deserialize(deserializer)?;
+        if let Ok(value) = serde_json::from_str::<AnalyticExtrusionA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::Extrusion(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<AnalyticCylinderA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::Cylinder(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<AnalyticSphereA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::Sphere(value));
+            }
+        }
+        Err(serde::de::Error::custom(
+            "value does not match any AnalyticPrimitiveA0 variant",
+        ))
+    }
+}
+
+impl Validate for AnalyticPrimitiveA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        match self {
+            Self::Extrusion(value) => value.validate_at(path),
+            Self::Cylinder(value) => value.validate_at(path),
+            Self::Sphere(value) => value.validate_at(path),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AnalyticDefinitionA0 {
+    pub id: String,
+    pub primitives: Vec<AnalyticPrimitiveA0>,
+}
+
+impl Validate for AnalyticDefinitionA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "id");
+        let value = &self.id;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 1024 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "primitives");
+        let value = &self.primitives;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "array is shorter than its minimum"));
+        }
+        if value.len() > 65536 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AnalyticOccurrenceA0 {
+    pub id: String,
+    pub definition_id: String,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub transform: Option<IllustrationMatrix4x4>,
+}
+
+impl Validate for AnalyticOccurrenceA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "id");
+        let value = &self.id;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 1024 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "definition_id");
+        let value = &self.definition_id;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 1024 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "transform");
+        if let Some(value) = &self.transform {
+            value.validate_at(&field_path)?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AnalyticSceneA0 {
+    pub definitions: Vec<AnalyticDefinitionA0>,
+    pub occurrences: Vec<AnalyticOccurrenceA0>,
+}
+
+impl Validate for AnalyticSceneA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "definitions");
+        let value = &self.definitions;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "array is shorter than its minimum"));
+        }
+        if value.len() > 65536 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        let field_path = child_path(path, "occurrences");
+        let value = &self.occurrences;
+        if value.is_empty() {
+            return Err(invalid(&field_path, "array is shorter than its minimum"));
+        }
+        if value.len() > 65536 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        for (index, item) in value.iter().enumerate() {
+            item.validate_at(&child_path(&field_path, &index.to_string()))?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AnalyticIllustrationLimitsA0 {
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub max_reached_definitions: Option<u32>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub max_reached_occurrences: Option<u32>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub max_reached_primitives: Option<u32>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub max_reached_rings: Option<u32>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub max_reached_points: Option<u32>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub max_generated_curve_samples: Option<u32>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub max_definition_triangles: Option<u32>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub max_topology_candidate_pairs: Option<u32>,
+}
+
+impl Validate for AnalyticIllustrationLimitsA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "max_reached_definitions");
+        if let Some(value) = &self.max_reached_definitions {
+            if *value < 1 {
+                return Err(invalid(&field_path, "number is below its minimum"));
+            }
+            if *value > 65536 {
+                return Err(invalid(&field_path, "number exceeds its maximum"));
+            }
+        }
+        let field_path = child_path(path, "max_reached_occurrences");
+        if let Some(value) = &self.max_reached_occurrences {
+            if *value < 1 {
+                return Err(invalid(&field_path, "number is below its minimum"));
+            }
+            if *value > 65536 {
+                return Err(invalid(&field_path, "number exceeds its maximum"));
+            }
+        }
+        let field_path = child_path(path, "max_reached_primitives");
+        if let Some(value) = &self.max_reached_primitives {
+            if *value < 1 {
+                return Err(invalid(&field_path, "number is below its minimum"));
+            }
+            if *value > 65536 {
+                return Err(invalid(&field_path, "number exceeds its maximum"));
+            }
+        }
+        let field_path = child_path(path, "max_reached_rings");
+        if let Some(value) = &self.max_reached_rings {
+            if *value < 1 {
+                return Err(invalid(&field_path, "number is below its minimum"));
+            }
+            if *value > 262144 {
+                return Err(invalid(&field_path, "number exceeds its maximum"));
+            }
+        }
+        let field_path = child_path(path, "max_reached_points");
+        if let Some(value) = &self.max_reached_points {
+            if *value < 1 {
+                return Err(invalid(&field_path, "number is below its minimum"));
+            }
+            if *value > 2000000 {
+                return Err(invalid(&field_path, "number exceeds its maximum"));
+            }
+        }
+        let field_path = child_path(path, "max_generated_curve_samples");
+        if let Some(value) = &self.max_generated_curve_samples {
+            if *value < 1 {
+                return Err(invalid(&field_path, "number is below its minimum"));
+            }
+            if *value > 2000000 {
+                return Err(invalid(&field_path, "number exceeds its maximum"));
+            }
+        }
+        let field_path = child_path(path, "max_definition_triangles");
+        if let Some(value) = &self.max_definition_triangles {
+            if *value < 1 {
+                return Err(invalid(&field_path, "number is below its minimum"));
+            }
+            if *value > 2000000 {
+                return Err(invalid(&field_path, "number exceeds its maximum"));
+            }
+        }
+        let field_path = child_path(path, "max_topology_candidate_pairs");
+        if let Some(value) = &self.max_topology_candidate_pairs {
+            if *value < 1 {
+                return Err(invalid(&field_path, "number is below its minimum"));
+            }
+            if *value > 100000000 {
+                return Err(invalid(&field_path, "number exceeds its maximum"));
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AnalyticLoweringOptionsA0 {
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub linear_deflection_mm: Option<f64>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub angular_deflection_rad: Option<f64>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub limits: Option<AnalyticIllustrationLimitsA0>,
+}
+
+impl Validate for AnalyticLoweringOptionsA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "linear_deflection_mm");
+        if let Some(value) = &self.linear_deflection_mm {
+            if !value.is_finite() {
+                return Err(invalid(&field_path, "number must be finite"));
+            }
+            if *value < 0.000001_f64 {
+                return Err(invalid(&field_path, "number is below its minimum"));
+            }
+            if *value > 1000_f64 {
+                return Err(invalid(&field_path, "number exceeds its maximum"));
+            }
+        }
+        let field_path = child_path(path, "angular_deflection_rad");
+        if let Some(value) = &self.angular_deflection_rad {
+            if !value.is_finite() {
+                return Err(invalid(&field_path, "number must be finite"));
+            }
+            if *value < 0.000001_f64 {
+                return Err(invalid(&field_path, "number is below its minimum"));
+            }
+            if *value > 3.141592653589793_f64 {
+                return Err(invalid(&field_path, "number exceeds its maximum"));
+            }
+        }
+        let field_path = child_path(path, "limits");
+        if let Some(value) = &self.limits {
+            value.validate_at(&field_path)?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AnalyticIllustrationSourceA0 {
+    pub kind: String,
+    pub scene: AnalyticSceneA0,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub lowering: Option<AnalyticLoweringOptionsA0>,
+}
+
+impl Validate for AnalyticIllustrationSourceA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "analytic" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "scene");
+        let value = &self.scene;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "lowering");
+        if let Some(value) = &self.lowering {
+            value.validate_at(&field_path)?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(untagged)]
+pub enum ModelIllustrationSourceA0 {
+    ModelSource(ModelAttachmentIllustrationSourceA0),
+    AnalyticSource(AnalyticIllustrationSourceA0),
+}
+
+impl<'de> Deserialize<'de> for ModelIllustrationSourceA0 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw = Box::<serde_json::value::RawValue>::deserialize(deserializer)?;
+        if let Ok(value) = serde_json::from_str::<ModelAttachmentIllustrationSourceA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::ModelSource(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<AnalyticIllustrationSourceA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::AnalyticSource(value));
+            }
+        }
+        Err(serde::de::Error::custom(
+            "value does not match any ModelIllustrationSourceA0 variant",
+        ))
+    }
+}
+
+impl Validate for ModelIllustrationSourceA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        match self {
+            Self::ModelSource(value) => value.validate_at(path),
+            Self::AnalyticSource(value) => value.validate_at(path),
+        }
+    }
+}
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -3823,6 +4766,69 @@ impl Validate for MeshIllustrationPrepareOptions {
                     &field_path,
                     "number is not above its exclusive minimum",
                 ));
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ModelIllustrationLineworkOptionsA0 {
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub fast: Option<FastHlrOptionsA0>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub outline_width_mm: Option<f64>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub detail_width_mm: Option<f64>,
+}
+
+impl Validate for ModelIllustrationLineworkOptionsA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "fast");
+        if let Some(value) = &self.fast {
+            value.validate_at(&field_path)?;
+        }
+        let field_path = child_path(path, "outline_width_mm");
+        if let Some(value) = &self.outline_width_mm {
+            if !value.is_finite() {
+                return Err(invalid(&field_path, "number must be finite"));
+            }
+            if *value <= 0_f64 {
+                return Err(invalid(
+                    &field_path,
+                    "number is not above its exclusive minimum",
+                ));
+            }
+            if *value > 1000_f64 {
+                return Err(invalid(&field_path, "number exceeds its maximum"));
+            }
+        }
+        let field_path = child_path(path, "detail_width_mm");
+        if let Some(value) = &self.detail_width_mm {
+            if !value.is_finite() {
+                return Err(invalid(&field_path, "number must be finite"));
+            }
+            if *value <= 0_f64 {
+                return Err(invalid(
+                    &field_path,
+                    "number is not above its exclusive minimum",
+                ));
+            }
+            if *value > 1000_f64 {
+                return Err(invalid(&field_path, "number exceeds its maximum"));
             }
         }
         Ok(())
@@ -4108,8 +5114,50 @@ impl Validate for MeshIllustrationStyleA0 {
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
-pub struct MeshIllustrationGeometryRequestA0 {
+pub struct ModelIllustrationWorkLimitsA0 {
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub max_visibility_candidate_pairs: Option<u32>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub max_drawing_commands: Option<u32>,
+}
+
+impl Validate for ModelIllustrationWorkLimitsA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "max_visibility_candidate_pairs");
+        if let Some(value) = &self.max_visibility_candidate_pairs {
+            if *value < 1 {
+                return Err(invalid(&field_path, "number is below its minimum"));
+            }
+            if *value > 100000000 {
+                return Err(invalid(&field_path, "number exceeds its maximum"));
+            }
+        }
+        let field_path = child_path(path, "max_drawing_commands");
+        if let Some(value) = &self.max_drawing_commands {
+            if *value < 1 {
+                return Err(invalid(&field_path, "number is below its minimum"));
+            }
+            if *value > 2000000 {
+                return Err(invalid(&field_path, "number exceeds its maximum"));
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ModelIllustrationGeometryRequestA0 {
     pub schema: String,
+    pub source: ModelIllustrationSourceA0,
     pub view: MeshIllustrationView,
     #[serde(
         default,
@@ -4122,19 +5170,34 @@ pub struct MeshIllustrationGeometryRequestA0 {
         deserialize_with = "deserialize_optional_non_null",
         skip_serializing_if = "Option::is_none"
     )]
+    pub linework: Option<ModelIllustrationLineworkOptionsA0>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub style: Option<MeshIllustrationStyleA0>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub work_limits: Option<ModelIllustrationWorkLimitsA0>,
 }
 
-impl Validate for MeshIllustrationGeometryRequestA0 {
+impl Validate for ModelIllustrationGeometryRequestA0 {
     fn validate_at(&self, path: &str) -> Result<(), ContractError> {
         let field_path = child_path(path, "schema");
         let value = &self.schema;
-        if value != "geometry.mesh_illustration_geometry.request.a0" {
+        if value != "geometry.model_illustration_geometry.request.a0" {
             return Err(invalid(
                 &field_path,
                 "literal value does not match the contract",
             ));
         }
+        let field_path = child_path(path, "source");
+        let value = &self.source;
+        value.validate_at(&field_path)?;
         let field_path = child_path(path, "view");
         let value = &self.view;
         value.validate_at(&field_path)?;
@@ -4142,8 +5205,16 @@ impl Validate for MeshIllustrationGeometryRequestA0 {
         if let Some(value) = &self.prepare {
             value.validate_at(&field_path)?;
         }
+        let field_path = child_path(path, "linework");
+        if let Some(value) = &self.linework {
+            value.validate_at(&field_path)?;
+        }
         let field_path = child_path(path, "style");
         if let Some(value) = &self.style {
+            value.validate_at(&field_path)?;
+        }
+        let field_path = child_path(path, "work_limits");
+        if let Some(value) = &self.work_limits {
             value.validate_at(&field_path)?;
         }
         Ok(())
@@ -4186,6 +5257,128 @@ impl Validate for MeshIllustrationSvgOptions {
             if value.len() > 1024 {
                 return Err(invalid(&field_path, "string exceeds its maximum"));
             }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ModelIllustrationRequestA0 {
+    pub schema: String,
+    pub source: ModelIllustrationSourceA0,
+    pub view: MeshIllustrationView,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub prepare: Option<MeshIllustrationPrepareOptions>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub linework: Option<ModelIllustrationLineworkOptionsA0>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub style: Option<MeshIllustrationStyleA0>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub svg: Option<MeshIllustrationSvgOptions>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub work_limits: Option<ModelIllustrationWorkLimitsA0>,
+}
+
+impl Validate for ModelIllustrationRequestA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "schema");
+        let value = &self.schema;
+        if value != "geometry.model_illustration.request.a0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "source");
+        let value = &self.source;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "view");
+        let value = &self.view;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "prepare");
+        if let Some(value) = &self.prepare {
+            value.validate_at(&field_path)?;
+        }
+        let field_path = child_path(path, "linework");
+        if let Some(value) = &self.linework {
+            value.validate_at(&field_path)?;
+        }
+        let field_path = child_path(path, "style");
+        if let Some(value) = &self.style {
+            value.validate_at(&field_path)?;
+        }
+        let field_path = child_path(path, "svg");
+        if let Some(value) = &self.svg {
+            value.validate_at(&field_path)?;
+        }
+        let field_path = child_path(path, "work_limits");
+        if let Some(value) = &self.work_limits {
+            value.validate_at(&field_path)?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct MeshIllustrationGeometryRequestA0 {
+    pub schema: String,
+    pub view: MeshIllustrationView,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub prepare: Option<MeshIllustrationPrepareOptions>,
+    #[serde(
+        default,
+        deserialize_with = "deserialize_optional_non_null",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub style: Option<MeshIllustrationStyleA0>,
+}
+
+impl Validate for MeshIllustrationGeometryRequestA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "schema");
+        let value = &self.schema;
+        if value != "geometry.mesh_illustration_geometry.request.a0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "view");
+        let value = &self.view;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "prepare");
+        if let Some(value) = &self.prepare {
+            value.validate_at(&field_path)?;
+        }
+        let field_path = child_path(path, "style");
+        if let Some(value) = &self.style {
+            value.validate_at(&field_path)?;
         }
         Ok(())
     }
@@ -4241,20 +5434,6 @@ impl Validate for MeshIllustrationRequestA0 {
         if let Some(value) = &self.svg {
             value.validate_at(&field_path)?;
         }
-        Ok(())
-    }
-}
-
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-pub enum ModelRootPlacement {
-    #[serde(rename = "strip")]
-    Strip,
-    #[serde(rename = "preserve")]
-    Preserve,
-}
-
-impl Validate for ModelRootPlacement {
-    fn validate_at(&self, _path: &str) -> Result<(), ContractError> {
         Ok(())
     }
 }
@@ -6921,6 +8100,8 @@ impl Validate for StepTopologyAnalyzeRecoveryRequestA0 {
 #[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(untagged)]
 pub enum IpcRequestValueA0 {
+    ModelIllustrationGeometry(ModelIllustrationGeometryRequestA0),
+    ModelIllustration(ModelIllustrationRequestA0),
     MeshIllustrationGeometry(MeshIllustrationGeometryRequestA0),
     MeshIllustration(MeshIllustrationRequestA0),
     ModelTessellation(ModelTessellationRequestA0),
@@ -6947,6 +8128,16 @@ impl<'de> Deserialize<'de> for IpcRequestValueA0 {
         D: serde::Deserializer<'de>,
     {
         let raw = Box::<serde_json::value::RawValue>::deserialize(deserializer)?;
+        if let Ok(value) = serde_json::from_str::<ModelIllustrationGeometryRequestA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::ModelIllustrationGeometry(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<ModelIllustrationRequestA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::ModelIllustration(value));
+            }
+        }
         if let Ok(value) = serde_json::from_str::<MeshIllustrationGeometryRequestA0>(raw.get()) {
             if value.validate_at("").is_ok() {
                 return Ok(Self::MeshIllustrationGeometry(value));
@@ -7052,6 +8243,8 @@ impl<'de> Deserialize<'de> for IpcRequestValueA0 {
 impl Validate for IpcRequestValueA0 {
     fn validate_at(&self, path: &str) -> Result<(), ContractError> {
         match self {
+            Self::ModelIllustrationGeometry(value) => value.validate_at(path),
+            Self::ModelIllustration(value) => value.validate_at(path),
             Self::MeshIllustrationGeometry(value) => value.validate_at(path),
             Self::MeshIllustration(value) => value.validate_at(path),
             Self::ModelTessellation(value) => value.validate_at(path),
@@ -7170,53 +8363,6 @@ impl Validate for IpcWelcomeA0 {
         let value = &self.capabilities;
         if value.len() > 64 {
             return Err(invalid(&field_path, "array exceeds its maximum"));
-        }
-        Ok(())
-    }
-}
-
-pub type IllustrationMatrix4x4 = [f64; 16];
-
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct MeshIllustrationMaterial {
-    pub color: IllustrationVector3,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_optional_non_null",
-        skip_serializing_if = "Option::is_none"
-    )]
-    pub opacity: Option<f64>,
-    #[serde(
-        default,
-        deserialize_with = "deserialize_optional_non_null",
-        skip_serializing_if = "Option::is_none"
-    )]
-    pub name: Option<String>,
-}
-
-impl Validate for MeshIllustrationMaterial {
-    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
-        let field_path = child_path(path, "color");
-        let value = &self.color;
-        value.validate_at(&field_path)?;
-        let field_path = child_path(path, "opacity");
-        if let Some(value) = &self.opacity {
-            if !value.is_finite() {
-                return Err(invalid(&field_path, "number must be finite"));
-            }
-            if *value < 0_f64 {
-                return Err(invalid(&field_path, "number is below its minimum"));
-            }
-            if *value > 1_f64 {
-                return Err(invalid(&field_path, "number exceeds its maximum"));
-            }
-        }
-        let field_path = child_path(path, "name");
-        if let Some(value) = &self.name {
-            if value.len() > 1024 {
-                return Err(invalid(&field_path, "string exceeds its maximum"));
-            }
         }
         Ok(())
     }
@@ -7991,6 +9137,297 @@ impl Validate for ModelBoundsResultA0 {
         let field_path = child_path(path, "timings");
         let value = &self.timings;
         value.validate_at(&field_path)?;
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AnalyticSourceSummaryA0 {
+    pub kind: String,
+    pub definitions: u32,
+    pub occurrences: u32,
+    pub primitives: u32,
+    pub triangles: u32,
+}
+
+impl Validate for AnalyticSourceSummaryA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "analytic" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "definitions");
+        let value = &self.definitions;
+        if *value > 65536 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "occurrences");
+        let value = &self.occurrences;
+        if *value > 65536 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "primitives");
+        let value = &self.primitives;
+        if *value > 65536 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "triangles");
+        let value = &self.triangles;
+        if *value > 2000000 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub enum ModelAttachmentMediaTypeA0 {
+    #[serde(rename = "application/step")]
+    ApplicationStep,
+    #[serde(rename = "model/step")]
+    ModelStep,
+}
+
+impl Validate for ModelAttachmentMediaTypeA0 {
+    fn validate_at(&self, _path: &str) -> Result<(), ContractError> {
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ModelAttachmentSourceSummaryA0 {
+    pub kind: String,
+    pub media_type: ModelAttachmentMediaTypeA0,
+    pub source_sha256: String,
+    pub meshes: u32,
+    pub triangles: u32,
+}
+
+impl Validate for ModelAttachmentSourceSummaryA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "kind");
+        let value = &self.kind;
+        if value != "model" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "media_type");
+        let value = &self.media_type;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "source_sha256");
+        let value = &self.source_sha256;
+        if value.len() < 64 {
+            return Err(invalid(&field_path, "string is shorter than its minimum"));
+        }
+        if value.len() > 64 {
+            return Err(invalid(&field_path, "string exceeds its maximum"));
+        }
+        let field_path = child_path(path, "meshes");
+        let value = &self.meshes;
+        if *value > 65536 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        let field_path = child_path(path, "triangles");
+        let value = &self.triangles;
+        if *value > 2000000 {
+            return Err(invalid(&field_path, "number exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+pub type ModelIllustrationBounds3MmA0 = [f64; 6];
+
+impl Validate for ModelIllustrationBounds3MmA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        for (index, item) in self.iter().enumerate() {
+            let item_path = child_path(path, &index.to_string());
+            if !item.is_finite() {
+                return Err(invalid(&item_path, "number must be finite"));
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(untagged)]
+pub enum ModelIllustrationSourceSummaryA0 {
+    ModelSource(ModelAttachmentSourceSummaryA0),
+    AnalyticSource(AnalyticSourceSummaryA0),
+}
+
+impl<'de> Deserialize<'de> for ModelIllustrationSourceSummaryA0 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw = Box::<serde_json::value::RawValue>::deserialize(deserializer)?;
+        if let Ok(value) = serde_json::from_str::<ModelAttachmentSourceSummaryA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::ModelSource(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<AnalyticSourceSummaryA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::AnalyticSource(value));
+            }
+        }
+        Err(serde::de::Error::custom(
+            "value does not match any ModelIllustrationSourceSummaryA0 variant",
+        ))
+    }
+}
+
+impl Validate for ModelIllustrationSourceSummaryA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        match self {
+            Self::ModelSource(value) => value.validate_at(path),
+            Self::AnalyticSource(value) => value.validate_at(path),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ModelIllustrationTimingsA0 {
+    pub source_preparation_ms: f64,
+    pub linework_ms: f64,
+    pub illustration_ms: f64,
+    pub attachment_encoding_ms: f64,
+}
+
+impl Validate for ModelIllustrationTimingsA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "source_preparation_ms");
+        let value = &self.source_preparation_ms;
+        if !value.is_finite() {
+            return Err(invalid(&field_path, "number must be finite"));
+        }
+        if *value < 0_f64 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        let field_path = child_path(path, "linework_ms");
+        let value = &self.linework_ms;
+        if !value.is_finite() {
+            return Err(invalid(&field_path, "number must be finite"));
+        }
+        if *value < 0_f64 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        let field_path = child_path(path, "illustration_ms");
+        let value = &self.illustration_ms;
+        if !value.is_finite() {
+            return Err(invalid(&field_path, "number must be finite"));
+        }
+        if *value < 0_f64 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        let field_path = child_path(path, "attachment_encoding_ms");
+        let value = &self.attachment_encoding_ms;
+        if !value.is_finite() {
+            return Err(invalid(&field_path, "number must be finite"));
+        }
+        if *value < 0_f64 {
+            return Err(invalid(&field_path, "number is below its minimum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ModelIllustrationGeometryResultA0 {
+    pub schema: String,
+    pub geometry: IllustrationGeometryAttachment,
+    pub bounds_mm: ModelIllustrationBounds3MmA0,
+    pub source: ModelIllustrationSourceSummaryA0,
+    pub stats: MeshIllustrationRenderStats,
+    pub timings: ModelIllustrationTimingsA0,
+    pub warnings: Vec<String>,
+}
+
+impl Validate for ModelIllustrationGeometryResultA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "schema");
+        let value = &self.schema;
+        if value != "geometry.model_illustration_geometry.result.a0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "geometry");
+        let value = &self.geometry;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "bounds_mm");
+        let value = &self.bounds_mm;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "source");
+        let value = &self.source;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "stats");
+        let value = &self.stats;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "timings");
+        let value = &self.timings;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "warnings");
+        let value = &self.warnings;
+        if value.len() > 256 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ModelIllustrationResultA0 {
+    pub schema: String,
+    pub svg: String,
+    pub bounds_mm: ModelIllustrationBounds3MmA0,
+    pub source: ModelIllustrationSourceSummaryA0,
+    pub stats: MeshIllustrationRenderStats,
+    pub timings: ModelIllustrationTimingsA0,
+    pub warnings: Vec<String>,
+}
+
+impl Validate for ModelIllustrationResultA0 {
+    fn validate_at(&self, path: &str) -> Result<(), ContractError> {
+        let field_path = child_path(path, "schema");
+        let value = &self.schema;
+        if value != "geometry.model_illustration.result.a0" {
+            return Err(invalid(
+                &field_path,
+                "literal value does not match the contract",
+            ));
+        }
+        let field_path = child_path(path, "bounds_mm");
+        let value = &self.bounds_mm;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "source");
+        let value = &self.source;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "stats");
+        let value = &self.stats;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "timings");
+        let value = &self.timings;
+        value.validate_at(&field_path)?;
+        let field_path = child_path(path, "warnings");
+        let value = &self.warnings;
+        if value.len() > 256 {
+            return Err(invalid(&field_path, "array exceeds its maximum"));
+        }
         Ok(())
     }
 }
@@ -10650,6 +12087,8 @@ impl Validate for StepTopologyAnalyzeRecoveryResultA0 {
 #[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(untagged)]
 pub enum OperationResultValueA0 {
+    ModelIllustrationGeometry(ModelIllustrationGeometryResultA0),
+    ModelIllustration(ModelIllustrationResultA0),
     MeshIllustrationGeometry(MeshIllustrationGeometryResultA0),
     MeshIllustration(MeshIllustrationResultA0),
     ModelTessellation(ModelTessellationResultA0),
@@ -10676,6 +12115,16 @@ impl<'de> Deserialize<'de> for OperationResultValueA0 {
         D: serde::Deserializer<'de>,
     {
         let raw = Box::<serde_json::value::RawValue>::deserialize(deserializer)?;
+        if let Ok(value) = serde_json::from_str::<ModelIllustrationGeometryResultA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::ModelIllustrationGeometry(value));
+            }
+        }
+        if let Ok(value) = serde_json::from_str::<ModelIllustrationResultA0>(raw.get()) {
+            if value.validate_at("").is_ok() {
+                return Ok(Self::ModelIllustration(value));
+            }
+        }
         if let Ok(value) = serde_json::from_str::<MeshIllustrationGeometryResultA0>(raw.get()) {
             if value.validate_at("").is_ok() {
                 return Ok(Self::MeshIllustrationGeometry(value));
@@ -10780,6 +12229,8 @@ impl<'de> Deserialize<'de> for OperationResultValueA0 {
 impl Validate for OperationResultValueA0 {
     fn validate_at(&self, path: &str) -> Result<(), ContractError> {
         match self {
+            Self::ModelIllustrationGeometry(value) => value.validate_at(path),
+            Self::ModelIllustration(value) => value.validate_at(path),
             Self::MeshIllustrationGeometry(value) => value.validate_at(path),
             Self::MeshIllustration(value) => value.validate_at(path),
             Self::ModelTessellation(value) => value.validate_at(path),
@@ -11103,6 +12554,54 @@ pub fn decode_model_bounds_result_a0_json(
 
 pub fn encode_model_bounds_result_a0_json(
     value: &ModelBoundsResultA0,
+) -> Result<Vec<u8>, ContractError> {
+    encode_json(value)
+}
+
+pub fn decode_model_illustration_geometry_request_a0_json(
+    data: &[u8],
+) -> Result<ModelIllustrationGeometryRequestA0, ContractError> {
+    decode_json(data)
+}
+
+pub fn encode_model_illustration_geometry_request_a0_json(
+    value: &ModelIllustrationGeometryRequestA0,
+) -> Result<Vec<u8>, ContractError> {
+    encode_json(value)
+}
+
+pub fn decode_model_illustration_geometry_result_a0_json(
+    data: &[u8],
+) -> Result<ModelIllustrationGeometryResultA0, ContractError> {
+    decode_json(data)
+}
+
+pub fn encode_model_illustration_geometry_result_a0_json(
+    value: &ModelIllustrationGeometryResultA0,
+) -> Result<Vec<u8>, ContractError> {
+    encode_json(value)
+}
+
+pub fn decode_model_illustration_request_a0_json(
+    data: &[u8],
+) -> Result<ModelIllustrationRequestA0, ContractError> {
+    decode_json(data)
+}
+
+pub fn encode_model_illustration_request_a0_json(
+    value: &ModelIllustrationRequestA0,
+) -> Result<Vec<u8>, ContractError> {
+    encode_json(value)
+}
+
+pub fn decode_model_illustration_result_a0_json(
+    data: &[u8],
+) -> Result<ModelIllustrationResultA0, ContractError> {
+    decode_json(data)
+}
+
+pub fn encode_model_illustration_result_a0_json(
+    value: &ModelIllustrationResultA0,
 ) -> Result<Vec<u8>, ContractError> {
     encode_json(value)
 }

@@ -4,15 +4,19 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd">
+  <meta name="wn-catalog-sha256" content="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d">
   <title>Native mesh illustration — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/mesh-illustration-native.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="native-mesh-illustration">Native mesh illustration</h1></header>
 <p>For custom renderers, the additive <a href="mesh-illustration-geometry.html">illustration geometry API</a>
 returns ordered shaded surfaces and linework without generating SVG.</p>
+<p>Consumers starting from STEP or analytic 2.5D bodies should normally use the
+<a href="model-illustration-a0.html">one-pass model illustration API</a>. This document
+describes the lower-level boundary for consumers that already own meshes or
+need to compose independently produced linework.</p>
 <p>The Python facade validates the complete input once and serializes its validated
 mesh subtree as the governed collection attachment. Both illustration facades
 share this adaptation; root validation, error order and attachment bytes are
@@ -66,9 +70,8 @@ and closes one maintained IPC client; no additional wire implementation exists.
 They accept optional <code>executable=</code> and <code>timeout=</code> keywords. Prefer the persistent
 client in the complete workflow below so all stages reuse one process.</p>
 <p>The complete <a href="../../../../../../src/rust/geometer-client/examples/mesh_illustration.rs">Rust example</a>
-spawns the executable, tessellates STEP bytes, computes visible Fast HLR,
-renders the combined illustration through the typed client,
-closes the process and writes SVG:</p>
+now uses the one-pass model operation, closes the process, and writes SVG. See
+<a href="model-illustration-a0.html">model illustration A0</a> for that preferred workflow:</p>
 <pre><code class="language-powershell">cargo run --manifest-path src/rust/geometer-client/Cargo.toml --example mesh_illustration -- PATH_TO_MATCHING_GEOMETER INPUT.step OUTPUT.svg
 </code></pre>
 <p>Equivalent Python:</p>

@@ -143,6 +143,11 @@ void smoke()
     geometer::Status status;
     require(geometer::illustrate_mesh(input, &result, &status) == 0, status.message.c_str());
     require(result.stats.triangles == 2 && result.stats.surface_draws == 1, "square fusion failed");
+    geometer::MeshIllustrationExecutionLimits exact_limit;
+    exact_limit.max_drawing_commands = 1;
+    require(geometer::illustrate_mesh(input, nullptr, exact_limit, &repeated, &status) == 0 &&
+                repeated.stats.surface_draws == 1,
+            "same-color fusion rejected its exact one-command limit");
     require(result.stats.outlines == 0 && result.stats.creases == 0, "open edges became outlines");
     require(result.svg.find("<path") != std::string::npos, "missing fused SVG path");
     require(geometer::illustrate_mesh(input, &repeated, &status) == 0 && result.svg == repeated.svg,

@@ -147,7 +147,7 @@ struct Fusion
                         std::min(high, static_cast<std::size_t>(js_round(sum / members.size()))));
     }
 
-    std::vector<bool> place_layers()
+    std::vector<bool> place_layers(WorkBudget& budget)
     {
         std::vector<std::vector<std::size_t>> adjacency(commands.size());
         for (auto pair : candidates)
@@ -181,14 +181,15 @@ struct Fusion
                 continue;
             for (auto member : members)
                 consumed[member] = true;
+            budget.consume_commands(surface->layers.size());
             placements.push_back({placement(members, low, high), members[0], std::move(*surface)});
         }
         return consumed;
     }
 
-    std::vector<Surface> finish()
+    std::vector<Surface> finish(WorkBudget& budget)
     {
-        const auto consumed = place_layers();
+        const auto consumed = place_layers(budget);
         OrderedGroups<std::size_t, std::size_t> components;
         for (std::size_t i = 0; i < commands.size(); ++i)
             components.add(groups.find(i), i);
@@ -207,21 +208,34 @@ struct Fusion
                 continue;
             std::optional<Surface> fused;
             if (available.size() > 1 && unsafe.find(root) == unsafe.end())
+            {
+                // Fusion emits one command when successful. Admit that minimum
+                // before constructing edge maps and boundary rings.
+                budget.require_commands();
                 fused = fused_component(commands, available, coordinate_tolerance, depth_tolerance,
                                         budget);
+            }
             if (fused)
+            {
+                budget.consume_commands(fused->layers.size());
                 placements.push_back({placement(available, group_low[root], group_high[root]),
                                       available[0], std::move(*fused)});
+            }
             else
                 for (auto member : available)
+                {
+                    budget.consume_commands();
                     placements.push_back({member, member, triangle_surface(commands[member])});
+                }
         }
         std::stable_sort(
             placements.begin(), placements.end(), [](const auto& a, const auto& b)
             { return a.position != b.position ? a.position < b.position : a.order < b.order; });
         std::vector<Surface> result;
         for (auto& placement : placements)
+        {
             result.push_back(std::move(placement.surface));
+        }
         return result;
     }
 };
@@ -234,11 +248,14 @@ std::vector<Surface> fuse_triangles(const std::vector<TriangleCommand>& commands
     {
         std::vector<Surface> result;
         for (const auto& command : commands)
+        {
+            budget.consume_commands();
             result.push_back(triangle_surface(command));
+        }
         return result;
     }
     Fusion fusion(commands, bounds, budget);
     fusion.find_candidates(layer_materials);
-    return fusion.finish();
+    return fusion.finish(budget);
 }
 } // namespace geometer::illustration_detail

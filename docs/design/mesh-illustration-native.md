@@ -3,6 +3,11 @@
 For custom renderers, the additive [illustration geometry API](mesh-illustration-geometry.md)
 returns ordered shaded surfaces and linework without generating SVG.
 
+Consumers starting from STEP or analytic 2.5D bodies should normally use the
+[one-pass model illustration API](model-illustration-a0.md). This document
+describes the lower-level boundary for consumers that already own meshes or
+need to compose independently produced linework.
+
 The Python facade validates the complete input once and serializes its validated
 mesh subtree as the governed collection attachment. Both illustration facades
 share this adaptation; root validation, error order and attachment bytes are
@@ -66,9 +71,8 @@ They accept optional `executable=` and `timeout=` keywords. Prefer the persisten
 client in the complete workflow below so all stages reuse one process.
 
 The complete [Rust example](../../src/rust/geometer-client/examples/mesh_illustration.rs)
-spawns the executable, tessellates STEP bytes, computes visible Fast HLR,
-renders the combined illustration through the typed client,
-closes the process and writes SVG:
+now uses the one-pass model operation, closes the process, and writes SVG. See
+[model illustration A0](model-illustration-a0.md) for that preferred workflow:
 
 ```powershell
 cargo run --manifest-path src/rust/geometer-client/Cargo.toml --example mesh_illustration -- PATH_TO_MATCHING_GEOMETER INPUT.step OUTPUT.svg

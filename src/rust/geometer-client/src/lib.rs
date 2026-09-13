@@ -11,6 +11,7 @@ mod illustration_geometry;
 pub mod indexed_mesh_packet_a0;
 pub mod ipc;
 mod model_bounds;
+mod model_illustration;
 mod operation_validation;
 mod process;
 mod session_validation;
@@ -30,6 +31,7 @@ pub use indexed_mesh_packet_a0::{
     IndexedTriangleMeshA0, encode_indexed_triangle_mesh_a0_packet,
 };
 pub use model_bounds::ModelBoundsRequest;
+pub use model_illustration::ModelIllustrationGeometry;
 pub use process::{
     GeometerClientOptions, GeometerProcess, GeometerProcessController, GeometerProcessExit,
 };

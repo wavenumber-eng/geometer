@@ -3,6 +3,10 @@
 Release history is maintained in `CHANGELOG.md`. Per-release notes can be added
 under this directory when a release needs extra migration or validation detail.
 
+- [2026-09-13](2026-09-13.md)
+- [2026-09-12](2026-09-12.md)
+- [2026-09-11](2026-09-11.md)
+- [2026-09-10](2026-09-10.md)
 - [2026-09-07](2026-09-07.md)
 - [2026-09-06](2026-09-06.md)
 - [2026-09-04](2026-09-04.md)

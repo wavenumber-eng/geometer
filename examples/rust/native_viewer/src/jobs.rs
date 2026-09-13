@@ -18,14 +18,13 @@ use tokio::runtime::Runtime;
 
 pub struct Model {
     pub path: PathBuf,
-    pub collection: MeshCollectionA0,
     pub geometry_json: Vec<u8>,
     pub step: Vec<u8>,
     pub mesh_options: ModelTessellationRequestA0,
 }
 
 pub struct Solution {
-    pub result: MeshIllustrationResultA0,
+    pub result: ModelIllustrationResultA0,
     pub result_json: Vec<u8>,
     pub style_json: Vec<u8>,
     pub image: egui::ColorImage,
@@ -163,7 +162,6 @@ impl Jobs {
                     Ok((
                         Arc::new(Model {
                             path,
-                            collection,
                             geometry_json,
                             step: bytes,
                             mesh_options: options,
@@ -193,6 +191,11 @@ impl Jobs {
             let result = async {
                 options.output_outline = Some(style.show_hlr_outline.unwrap_or(true));
                 options.output_detail = Some(style.show_hlr_detail.unwrap_or(false));
+                let linework = ModelIllustrationLineworkOptionsA0 {
+                    fast: options.fast.clone(),
+                    outline_width_mm: None,
+                    detail_width_mm: None,
+                };
                 let hlr = if options.output_outline == Some(true)
                     || options.output_detail == Some(true)
                 {
@@ -212,24 +215,38 @@ impl Jobs {
                 };
                 emit(Event::Phase("Geometer: native illustration"));
                 let mirror_x = view.mirror_x.unwrap_or(false);
-                let input = MeshIllustrationInputA0 {
-                    schema: "geometry.mesh_illustration.input.a0".into(),
-                    meshes: model.collection.meshes.clone(),
+                let request = ModelIllustrationRequestA0 {
+                    schema: "geometry.model_illustration.request.a0".into(),
+                    source: ModelIllustrationSourceA0::ModelSource(
+                        ModelAttachmentIllustrationSourceA0 {
+                            kind: "model".into(),
+                            attachment: "model".into(),
+                            transform: None,
+                            material_override: None,
+                            tessellation: Some(ModelTessellationOptionsA0 {
+                                linear_deflection_mm: model.mesh_options.linear_deflection_mm,
+                                angular_deflection_rad: model.mesh_options.angular_deflection_rad,
+                                root_placement: model.mesh_options.root_placement.clone(),
+                                max_triangles: model.mesh_options.max_triangles,
+                                allow_partial: model.mesh_options.allow_partial,
+                            }),
+                        },
+                    ),
                     view,
                     prepare: None,
+                    linework: Some(linework),
                     style: Some(style.clone()),
                     svg: None,
+                    work_limits: None,
                 };
-                let result = if let Some(hlr) = &hlr {
-                    client.mesh_illustration_with_hlr(input, hlr.clone()).await
-                } else {
-                    client.mesh_illustration(input).await
-                }
-                .map_err(error)?;
+                let result = client
+                    .model_illustration(request, Some(model.step.clone()))
+                    .await
+                    .map_err(error)?;
                 emit(Event::Phase("Rasterizing SVG preview"));
                 tokio::task::spawn_blocking(move || {
                     let image = raster::rasterize(&result.svg)?;
-                    let result_json = encode_mesh_illustration_result_a0_json(&result)
+                    let result_json = encode_model_illustration_result_a0_json(&result)
                         .map_err(|e| e.to_string())?;
                     let style_json = encode_mesh_illustration_style_a0_json(&style)
                         .map_err(|e| e.to_string())?;

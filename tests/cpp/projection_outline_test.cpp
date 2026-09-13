@@ -78,6 +78,7 @@ geometer::HlrProjectionOptions projection_options(std::vector<geometer::Projecti
     options.views = std::move(views);
     options.curve_mode = geometer::ProjectionCurveMode::Polyline;
     options.projection_algorithm = geometer::ProjectionAlgorithm::Poly;
+    options.outline_algorithm = geometer::ProjectionOutlineAlgorithm::HlrClosedEdges;
     options.round_digits = 3;
     return options;
 }

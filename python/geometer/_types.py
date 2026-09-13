@@ -63,7 +63,7 @@ class ProjectionView:
 
 @dataclass
 class HlrOptions:
-    projection_algorithm: str = "poly"
+    projection_algorithm: str = "fast"
     fast: dict[str, Any] = field(default_factory=dict)
     output_outline: bool = True
     output_detail: bool = True
@@ -77,7 +77,7 @@ class HlrOptions:
     mesh_relative: bool = False
     mesh_deflection_mode: str = "bbox-relative"
     mesh_deflection_coefficient: float = 0.004
-    outline_algorithm: str = "hlr-close"
+    outline_algorithm: str = "fast-mesh-shadow"
     hlr_angle_tolerance: float = 0.0174533
     edge_v_sharp: bool = True
     edge_v_outline: bool = True
@@ -92,7 +92,7 @@ class HlrOptions:
 
     @classmethod
     def assembly_outline(cls) -> "HlrOptions":
-        return cls(outline_algorithm="mesh-shadow")
+        return cls(outline_algorithm="fast-mesh-shadow")
 
     @classmethod
     def fast_assembly_outline(cls) -> "HlrOptions":

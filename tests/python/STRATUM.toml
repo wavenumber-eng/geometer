@@ -20,6 +20,7 @@ objectives = [
     "Verify the fast-HLR baseline harness records reproducible statistics over the governed fixture subset.",
     "Verify canonical indexed-mesh packets and the typed Fast HLR IPC path.",
     "Verify colored native STEP tessellation through generated mesh attachments and typed clients.",
+    "Verify direct file-backed and analytic model illustration through the governed one-pass boundary.",
 ]
 
 [[subtests]]
@@ -182,3 +183,10 @@ file = "test_numeric_array_runtime.py"
 name = "Numeric Array Codec Parity"
 description = "Checks specialized numeric arrays against scalar normalization and exact error semantics, including duplicate-field traversal."
 test_case_type = "unit"
+
+[[subtests]]
+id = "PY_024"
+file = "test_model_illustration.py"
+name = "Direct Model Illustration"
+description = "Checks direct STEP and analytic illustration, raw geometry output, fast-HLR defaults, attachments, warnings, and recoverable failures."
+test_case_type = "integration"

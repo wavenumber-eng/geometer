@@ -631,6 +631,11 @@ add_test(NAME geometer_model_tessellation_test COMMAND geometer_model_tessellati
 
 add_executable(geometer_mesh_illustration_test mesh_illustration_test.cpp)
 add_executable(geometer_mesh_illustration_geometry_test mesh_illustration_geometry_test.cpp)
+add_executable(geometer_model_illustration_native_test model_illustration_native_test.cpp)
+target_include_directories(geometer_model_illustration_native_test PRIVATE
+                           ${PROJECT_SOURCE_DIR}/src/cpp/lib)
+target_link_libraries(geometer_model_illustration_native_test PRIVATE geometer_lib)
+add_test(NAME geometer_model_illustration_native_test COMMAND geometer_model_illustration_native_test)
 target_link_libraries(geometer_mesh_illustration_geometry_test PRIVATE geometer_lib)
 add_test(NAME geometer_mesh_illustration_geometry_test COMMAND geometer_mesh_illustration_geometry_test)
 target_link_libraries(geometer_mesh_illustration_test PRIVATE geometer_lib)
@@ -871,6 +876,7 @@ if(EMSCRIPTEN)
         geometer_model_bounds_test
         geometer_mesh_illustration_test
         geometer_mesh_illustration_geometry_test
+        geometer_model_illustration_native_test
         geometer_operation_contract_test
         geometer_projection_options_json_test
         geometer_projection_model_transform_test
@@ -887,6 +893,7 @@ if(WIN32 AND OpenCASCADE_BINARY_DIR)
         geometer_exact_rational_test
         geometer_exact_polynomial_test
         geometer_model_bounds_test
+        geometer_model_illustration_native_test
         geometer_operation_contract_test
         geometer_ipc_a0_frame_test
         geometer_projection_options_json_test

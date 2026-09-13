@@ -29,6 +29,10 @@ target = "tests/cpp/mesh_illustration_geometry_test.cpp"
 [[verification_refs]]
 kind = "local_file"
 target = "tests/python/test_illustration_geometry.py"
+
+[[verification_refs]]
+kind = "local_file"
+target = "tests/python/test_model_illustration.py"
 +++
 
 # REQ-010: Fast HLR And Illustration Interfaces
@@ -41,10 +45,10 @@ exact or polygonal behavior.
 
 ## Requirements
 
-1. Keep `poly` as the model/STEP default projection algorithm, use `fast` as
-   the indexed-mesh default, and retain all documented exact/poly options,
+1. Use `fast` detail and `fast-mesh-shadow` as the model/STEP and indexed-mesh
+   defaults, and retain all documented exact/poly and older outline options,
    aliases, output layers, CLI calls, Python calls, and focused C ABI
-   compatibility functions.
+   compatibility functions as explicit selections.
 2. Publish `geometry.model_hlr_projection.a0` and
    `geometry.mesh_hlr_projection.a0` through the generic C ABI, executable IPC,
    full browser WASM, Python, TypeScript, and Rust support lanes.
@@ -83,3 +87,14 @@ exact or polygonal behavior.
     integer formatting. Qualify native and TypeScript geometry consumers, typed
     Python/Rust IPC helpers and full WASM dispatch; do not advertise this operation
     for the planar-only WASM target.
+16. Provide a one-pass model-illustration boundary that accepts one attached
+    STEP model or one bounded analytic 2.5D scene and returns SVG or existing
+    renderer-neutral illustration geometry without exposing an intermediate
+    mesh collection.
+17. Lower analytic definitions once and place repeated occurrences with finite,
+    well-conditioned affine transforms. Support planar extrusions with holes
+    and circular arcs, vertical cylinders, and spheres under explicit authored,
+    sampling, expanded-triangle, visibility, and drawing-command limits.
+18. The combined operation must use Fast detail and Fast Mesh Shadow, reject
+    hidden linework, preserve partial STEP warnings, and expose truthful phase
+    timings through TypeSpec-governed generated clients.

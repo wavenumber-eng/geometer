@@ -7,6 +7,7 @@ import "./operations/step-topology-a0.tsp";
 import "./operations/model-tessellation-a0.tsp";
 import "./operations/mesh-illustration-a0.tsp";
 import "./operations/mesh-illustration-geometry-a0.tsp";
+import "./operations/model-illustration-a0.tsp";
 
 using TypeSpec.JsonSchema;
 using Wavenumber.Geometer.ContractMetadata;
@@ -20,6 +21,8 @@ namespace Wavenumber.Geometer.Contracts.OperationOutcomeA0;
  */
 @oneOf
 union OperationResultValueA0 {
+  model_illustration_geometry: Wavenumber.Geometer.Contracts.ModelIllustrationA0.ModelIllustrationGeometryResultA0,
+  model_illustration: Wavenumber.Geometer.Contracts.ModelIllustrationA0.ModelIllustrationResultA0,
   mesh_illustration_geometry: Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryResultA0,
   mesh_illustration: Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationResultA0,
   model_tessellation: Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationResultA0,

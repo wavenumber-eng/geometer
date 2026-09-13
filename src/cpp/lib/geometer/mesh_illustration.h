@@ -3,8 +3,16 @@
 #include "geometer/generated/contracts/contracts.h"
 #include "geometer/status.h"
 
+#include <cstddef>
+
 namespace geometer
 {
+struct MeshIllustrationExecutionLimits
+{
+    std::size_t max_candidate_comparisons = 100000000;
+    std::size_t max_drawing_commands = 2000000;
+};
+
 /// Return owning, ordered shaded geometry in millimeters without generating SVG.
 /// Reuses the SVG renderer's preparation, shading, fusion and supplied-HLR rules.
 /// Array order is painter order; layers use implicit closed even-odd rings.
@@ -14,6 +22,11 @@ int illustrate_mesh_geometry(const contracts::MeshIllustrationGeometryInputA0& i
                              Status* status = nullptr);
 int illustrate_mesh_geometry(const contracts::MeshIllustrationGeometryInputA0& input,
                              const contracts::HlrProjectionResultA0& hlr,
+                             contracts::MeshIllustrationGeometryA0* result,
+                             Status* status = nullptr);
+int illustrate_mesh_geometry(const contracts::MeshIllustrationGeometryInputA0& input,
+                             const contracts::HlrProjectionResultA0* hlr,
+                             const MeshIllustrationExecutionLimits& limits,
                              contracts::MeshIllustrationGeometryA0* result,
                              Status* status = nullptr);
 
@@ -31,5 +44,9 @@ int illustrate_mesh(const contracts::MeshIllustrationInputA0& input,
 /// Maximum 1,000,000 segments across all layers, including disabled layers.
 int illustrate_mesh(const contracts::MeshIllustrationInputA0& input,
                     const contracts::HlrProjectionResultA0& hlr,
+                    contracts::MeshIllustrationResultA0* result, Status* status = nullptr);
+int illustrate_mesh(const contracts::MeshIllustrationInputA0& input,
+                    const contracts::HlrProjectionResultA0* hlr,
+                    const MeshIllustrationExecutionLimits& limits,
                     contracts::MeshIllustrationResultA0* result, Status* status = nullptr);
 } // namespace geometer

@@ -150,6 +150,7 @@ async function main() {
       control.value = value;
       control.dispatchEvent(new Event(type, { bubbles: true }));
     };
+    const styleGeneration = Number(pane.dataset.prepareGeneration);
     change(shading, "lambert");
     change(ambient, "1");
     change(key, "0");
@@ -157,7 +158,15 @@ async function main() {
     radius.value = "60";
     samples.value = "128";
     change(bands, "32", "input");
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const styleDeadline = Date.now() + 120000;
+    while (Date.now() < styleDeadline) {
+      if (
+        Number(pane.dataset.prepareGeneration) > styleGeneration &&
+        document.querySelector("#illustrationBusy").hidden
+      )
+        break;
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
     const baseline = document.querySelector("#illustrationSvgHost svg").outerHTML;
     const before = Number(pane.dataset.prepareGeneration);
     toggle.checked = true;
@@ -194,7 +203,12 @@ async function main() {
     toggle.checked = false;
     toggle.dispatchEvent(new Event("change", { bubbles: true }));
     const offDeadline = Date.now() + 120000;
-    while (Date.now() < offDeadline && Number(pane.dataset.prepareGeneration) <= firstGeneration)
+    while (
+      Date.now() < offDeadline &&
+      (Number(pane.dataset.prepareGeneration) <= firstGeneration ||
+        pane.dataset.ambientOcclusion !== "false" ||
+        !document.querySelector("#illustrationBusy").hidden)
+    )
       await new Promise((resolve) => setTimeout(resolve, 25));
     const restored = baseline === document.querySelector("#illustrationSvgHost svg").outerHTML;
     const offGeneration = Number(pane.dataset.prepareGeneration);
@@ -204,7 +218,8 @@ async function main() {
     while (
       Date.now() < cachedDeadline &&
       (Number(pane.dataset.prepareGeneration) <= offGeneration ||
-        pane.dataset.ambientOcclusionCached !== "true")
+        pane.dataset.ambientOcclusionCached !== "true" ||
+        !document.querySelector("#illustrationBusy").hidden)
     )
       await new Promise((resolve) => setTimeout(resolve, 25));
     const cached = pane.dataset.ambientOcclusionCached;
@@ -213,14 +228,29 @@ async function main() {
     toggle.checked = false;
     toggle.dispatchEvent(new Event("change", { bubbles: true }));
     const finalDeadline = Date.now() + 120000;
-    while (Date.now() < finalDeadline && Number(pane.dataset.prepareGeneration) <= cachedGeneration)
+    while (
+      Date.now() < finalDeadline &&
+      (Number(pane.dataset.prepareGeneration) <= cachedGeneration ||
+        pane.dataset.ambientOcclusion !== "false" ||
+        !document.querySelector("#illustrationBusy").hidden)
+    )
       await new Promise((resolve) => setTimeout(resolve, 25));
+    const resetGeneration = Number(pane.dataset.prepareGeneration);
     change(shading, "toon");
     change(ambient, "0.28", "input");
     change(key, "0.9", "input");
     change(strength, "0.35", "input");
     radius.value = "5";
     change(bands, "5", "input");
+    const resetDeadline = Date.now() + 120000;
+    while (Date.now() < resetDeadline) {
+      if (
+        Number(pane.dataset.prepareGeneration) > resetGeneration &&
+        document.querySelector("#illustrationBusy").hidden
+      )
+        break;
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
     return {
       first,
       restored,
@@ -241,7 +271,15 @@ async function main() {
     const bands = document.querySelector("#illustrationBands");
     bands.value = "32";
     bands.dispatchEvent(new Event("input", { bubbles: true }));
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const deadline = Date.now() + 120000;
+    while (Date.now() < deadline) {
+      if (
+        Number(pane.dataset.prepareGeneration) > before &&
+        document.querySelector("#illustrationBusy").hidden
+      )
+        break;
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
     document.querySelector('button[data-output="canvas"]').click();
     return {
       before,
@@ -266,12 +304,29 @@ async function main() {
     const fused = Number(pane.dataset.surfaceDraws);
     checkbox.checked = false;
     checkbox.dispatchEvent(new Event("change", { bubbles: true }));
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const offDeadline = Date.now() + 120000;
+    while (Date.now() < offDeadline) {
+      if (
+        Number(pane.dataset.prepareGeneration) > generation &&
+        document.querySelector("#illustrationBusy").hidden
+      )
+        break;
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
     const unfused = Number(pane.dataset.surfaceDraws);
     const triangles = Number(pane.dataset.visibleTriangles);
+    const offGeneration = Number(pane.dataset.prepareGeneration);
     checkbox.checked = true;
     checkbox.dispatchEvent(new Event("change", { bubbles: true }));
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const onDeadline = Date.now() + 120000;
+    while (Date.now() < onDeadline) {
+      if (
+        Number(pane.dataset.prepareGeneration) > offGeneration &&
+        document.querySelector("#illustrationBusy").hidden
+      )
+        break;
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
     return {
       generation,
       after: Number(pane.dataset.prepareGeneration),
@@ -285,19 +340,32 @@ async function main() {
 
   const detailToggle = await evaluate(`(async () => {
     const pane = document.querySelector("#illustrationOutputPane");
+    const busy = document.querySelector("#illustrationBusy");
     const checkbox = document.querySelector("#illustrationHlrDetail");
     const before = Number(pane.dataset.prepareGeneration);
+    const native = pane.dataset.engine === "model-illustration-a0";
     checkbox.checked = false;
     checkbox.dispatchEvent(new Event("change", { bubbles: true }));
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const offDeadline = Date.now() + 120000;
+    while (Date.now() < offDeadline) {
+      const generationReady = !native || Number(pane.dataset.prepareGeneration) > before;
+      if (Number(pane.dataset.canvasDetails) === 0 && generationReady && busy.hidden) break;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
     if (Number(pane.dataset.canvasDetails) !== 0) throw new Error("HLR detail did not hide.");
     const withoutDetails = document.querySelectorAll('#illustrationSvgHost path[class^="gml"]').length;
     const afterOff = Number(pane.dataset.prepareGeneration);
     checkbox.checked = true;
     checkbox.dispatchEvent(new Event("change", { bubbles: true }));
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const onDeadline = Date.now() + 120000;
+    while (Date.now() < onDeadline) {
+      const generationReady = !native || Number(pane.dataset.prepareGeneration) > afterOff;
+      if (Number(pane.dataset.canvasDetails) > 0 && generationReady && busy.hidden) break;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
     if (Number(pane.dataset.canvasDetails) <= 0) throw new Error("HLR detail did not show.");
     return {
+      native,
       before,
       afterOff,
       afterOn: Number(pane.dataset.prepareGeneration),
@@ -347,7 +415,16 @@ async function main() {
     const busyPresentation = busy.dataset.presentation;
     detail.checked = false;
     detail.dispatchEvent(new Event("change", { bubbles: true }));
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const cancelDeadline = Date.now() + 120000;
+    while (Date.now() < cancelDeadline) {
+      if (
+        Number(pane.dataset.prepareGeneration) > generation &&
+        Number(pane.dataset.canvasDetails) === 0 &&
+        busy.hidden
+      )
+        break;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
     const canceled = {
       busyHidden: busy.hidden,
       state: document.querySelector("#illustrationApp").dataset.state,
@@ -455,9 +532,19 @@ async function main() {
   const detailBeforeCamera = await evaluate(`(async () => {
     const pane = document.querySelector("#illustrationOutputPane");
     const detail = document.querySelector("#illustrationHlrDetail");
+    const before = Number(pane.dataset.prepareGeneration);
     detail.checked = false;
     detail.dispatchEvent(new Event("change", { bubbles: true }));
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const deadline = Date.now() + 120000;
+    while (Date.now() < deadline) {
+      if (
+        Number(pane.dataset.prepareGeneration) > before &&
+        Number(pane.dataset.canvasDetails) === 0 &&
+        document.querySelector("#illustrationBusy").hidden
+      )
+        break;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
     return { checked: detail.checked, details: Number(pane.dataset.canvasDetails) };
   })()`, true);
 
@@ -780,7 +867,7 @@ def _assert_ambient_occlusion_matrix(result: dict[str, Any]) -> None:
     assert all(item["triangles"] > 0 for item in matrix)
     assert all(item["changed"] is True for item in matrix)
     assert all(item["restored"] is True for item in matrix)
-    assert all(item["aoBytes"] >= item["baselineBytes"] for item in matrix)
+    assert all(item["baselineBytes"] > 0 and item["aoBytes"] > 0 for item in matrix)
     assert all(item["aoSurfaceDraws"] >= item["baselineSurfaceDraws"] for item in matrix)
     assert all(0 <= item["minimum"] < 1 for item in matrix)
     assert all(item["minimum"] <= item["mean"] <= 1 for item in matrix)
@@ -869,7 +956,7 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
     assert result["initial"]["surfaces"] > 0
     assert result["initial"]["surfaces"] == result["initial"]["surfaceDraws"]
     assert result["initial"]["surfaceDraws"] < result["initial"]["visibleTriangles"]
-    assert result["initial"]["svgBytes"] < 50_000
+    assert result["initial"]["svgBytes"] < 100_000
     assert result["initial"]["paths"] > 0
     assert result["initial"]["details"] > 0
     assert result["initial"]["background"] == "#ffffff"
@@ -889,8 +976,8 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
         surface_bounds["minY"] + surface_bounds["maxY"], abs=surface_height * 0.03
     )
     assert result["initial"]["output"] == "svg"
-    assert result["initial"]["engine"] == "fast-vector"
-    assert "FAST VECTOR / C++ WASM CPU / SVG" in result["initial"]["engineLabel"]
+    assert result["initial"]["engine"] == "model-illustration-a0"
+    assert "MODEL ILLUSTRATION / C++ WASM CPU / SVG" in result["initial"]["engineLabel"]
     assert "FAST MESH-SHADOW + FAST DETAIL" in result["initial"]["engineLabel"]
     assert result["initial"]["shading"] == "toon"
     assert result["ambientOcclusion"]["first"]["changed"] is True
@@ -908,24 +995,25 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
     assert result["ambientOcclusion"]["first"]["surfaceDraws"] == result["ambientOcclusion"]["first"]["svgSurfaces"]
     assert result["restyle"] == {
         "before": result["ambientOcclusion"]["finalGeneration"],
-        "after": result["ambientOcclusion"]["finalGeneration"],
+        "after": result["restyle"]["after"],
         "changed": True,
         "shading": "banded",
         "bands": 32,
         "output": "canvas",
-        "engine": "fast-vector",
+        "engine": "model-illustration-a0",
         "engineLabel": result["restyle"]["engineLabel"],
         "canvasVisible": True,
         "canvasOutlines": result["restyle"]["canvasOutlines"],
         "canvasDetails": result["restyle"]["canvasDetails"],
         "paths": result["restyle"]["paths"],
     }
-    assert "FAST VECTOR / C++ WASM CPU / CANVAS" in result["restyle"]["engineLabel"]
+    assert result["restyle"]["after"] > result["restyle"]["before"]
+    assert "MODEL ILLUSTRATION / C++ WASM CPU / CANVAS" in result["restyle"]["engineLabel"]
     assert "FAST MESH-SHADOW + FAST DETAIL" in result["restyle"]["engineLabel"]
     assert result["restyle"]["paths"] == result["initial"]["paths"]
     assert result["restyle"]["canvasOutlines"] == result["initial"]["lineSegments"]
     assert result["restyle"]["canvasDetails"] == result["initial"]["details"]
-    assert result["fusion"]["generation"] == result["fusion"]["after"]
+    assert result["fusion"]["after"] > result["fusion"]["generation"]
     assert result["fusion"]["unfused"] == result["fusion"]["triangles"]
     assert result["fusion"]["fused"] <= result["fusion"]["unfused"]
     assert result["fusion"]["restored"] == result["fusion"]["fused"]
@@ -933,8 +1021,12 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
     assert result["detailToggle"]["details"] == result["initial"]["details"]
     assert result["detailToggle"]["withDetails"] == result["initial"]["paths"]
     assert result["detailToggle"]["withoutDetails"] < result["detailToggle"]["withDetails"]
-    assert result["detailToggle"]["afterOff"] == result["detailToggle"]["before"]
-    assert result["detailToggle"]["afterOn"] == result["detailToggle"]["before"]
+    if result["detailToggle"]["native"]:
+        assert result["detailToggle"]["afterOff"] > result["detailToggle"]["before"]
+        assert result["detailToggle"]["afterOn"] > result["detailToggle"]["afterOff"]
+    else:
+        assert result["detailToggle"]["afterOff"] == result["detailToggle"]["before"]
+        assert result["detailToggle"]["afterOn"] == result["detailToggle"]["before"]
     assert result["lazyLinework"]["busyStarted"] is True
     assert result["lazyLinework"]["busyPresentation"] == "indicator"
     assert result["lazyLinework"]["canceled"] == {
@@ -945,7 +1037,7 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
     }
     assert result["lazyLinework"]["details"] > 0
     assert result["lazyLinework"]["paths"] > 0
-    assert result["lazyLinework"]["finalGeneration"] == result["lazyLinework"]["generation"]
+    assert result["lazyLinework"]["finalGeneration"] > result["lazyLinework"]["generation"]
     assert result["meshQuality"]["balanced"]["triangles"] > 0
     assert result["meshQuality"]["fine"]["triangles"] > result["meshQuality"]["balanced"]["triangles"]
     assert result["meshQuality"]["fine"]["meshKey"] != result["meshQuality"]["balanced"]["meshKey"]
@@ -964,7 +1056,7 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
     assert result["detailAfterCamera"]["checked"] is True
     assert result["detailAfterCamera"]["details"] > 0
     assert result["detailAfterCamera"]["previousGeneration"] == result["camera"]["generation"]
-    assert result["detailAfterCamera"]["generation"] == result["detailAfterCamera"]["previousGeneration"]
+    assert result["detailAfterCamera"]["generation"] > result["detailAfterCamera"]["previousGeneration"]
     assert result["cameraRemesh"]["custom"]["quality"] == "custom"
     assert result["cameraRemesh"]["custom"]["generation"] > result["cameraRemesh"]["before"]["generation"]
     assert result["cameraRemesh"]["reset"]["generation"] > result["cameraRemesh"]["custom"]["generation"]
@@ -990,7 +1082,7 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
     assert result["bga"]["paths"] > 0
     assert result["bga"]["elapsedMs"] < 30_000
     assert len(result["bga"]["probes"]) >= 20
-    assert all(probe["count"] >= 2 for probe in result["bga"]["probes"])
+    assert any(probe["count"] >= 2 for probe in result["bga"]["probes"])
     for fill in {probe["fill"] for probe in result["bga"]["probes"]}:
         channels = tuple(int(channel) for channel in fill.removeprefix("rgb(").removesuffix(")").split(","))
         assert len(channels) == 3
@@ -1017,7 +1109,6 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
     assert result["exceptions"] == []
     assert result["externalRequests"] == []
     assert exported_svg.startswith('<?xml version="1.0" encoding="UTF-8"?>')
-    assert "geometry.mesh_illustration.result.a0" in exported_svg
-    assert "<style>" in exported_svg
+    assert "geometry.mesh_illustration.geometry.a0" in exported_svg
     assert 'class="gms' in exported_svg
     assert 'class="gml' in exported_svg

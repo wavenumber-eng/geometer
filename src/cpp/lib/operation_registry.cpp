@@ -7,6 +7,7 @@
 #include "geometer/projection_options_json.h"
 #include "geometer/sha256.h"
 #include "mesh_illustration_operation.h"
+#include "model_illustration_operation.h"
 #include "model_tessellation_operation.h"
 
 #include <algorithm>
@@ -361,13 +362,10 @@ void execute_hlr_operation(const std::string& operation, const unsigned char* re
         return;
     }
     const bool mesh_operation = operation == kMeshHlrOperation;
-    if (mesh_operation)
-    {
-        if (!request.projection_algorithm.has_value())
-            options.projection_algorithm = ProjectionAlgorithm::Fast;
-        if (!request.outline_algorithm.has_value())
-            options.outline_algorithm = ProjectionOutlineAlgorithm::FastMeshShadow;
-    }
+    if (!request.projection_algorithm.has_value())
+        options.projection_algorithm = ProjectionAlgorithm::Fast;
+    if (!request.outline_algorithm.has_value())
+        options.outline_algorithm = ProjectionOutlineAlgorithm::FastMeshShadow;
     const OperationAttachmentView* attachment =
         find_hlr_attachment(operation, attachments, execution);
     if (attachment == nullptr)
@@ -440,6 +438,13 @@ void execute_operation(const std::string& operation_id, const unsigned char* req
     if (operation_id == "geometry.model_tessellation.a0")
     {
         execute_model_tessellation(request_json, request_json_size, attachments, execution);
+        return;
+    }
+    if (operation_id == "geometry.model_illustration.a0" ||
+        operation_id == "geometry.model_illustration_geometry.a0")
+    {
+        execute_model_illustration(request_json, request_json_size, attachments, execution,
+                                   operation_id == "geometry.model_illustration_geometry.a0");
         return;
     }
     if (operation_id == "geometry.mesh_illustration.a0" ||

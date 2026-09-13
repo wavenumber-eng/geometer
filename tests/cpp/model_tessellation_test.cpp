@@ -37,10 +37,10 @@ void check_status_policy()
                      IMeshData_UserBreak})
         require(!meshing_succeeded(true, flag | IMeshData_ReMesh), "meshing problem flag accepted");
     for (int flag : {IMeshData_OpenWire, IMeshData_SelfIntersectingWire, IMeshData_Failure,
-                     IMeshData_UnorientedWire, IMeshData_TooFewPoints})
+                     IMeshData_UnorientedWire, IMeshData_TooFewPoints, IMeshData_Outdated})
         require(meshing_succeeded(true, flag | IMeshData_ReMesh, true),
                 "partial face failure rejected");
-    for (int flag : std::vector<int>{IMeshData_Outdated, IMeshData_UserBreak, 0x200})
+    for (int flag : std::vector<int>{IMeshData_UserBreak, 0x200})
         require(!meshing_succeeded(true, flag | IMeshData_Failure, true),
                 "unsafe partial mesh accepted");
     require(!meshing_succeeded(false, IMeshData_Failure, true), "unfinished partial mesh accepted");

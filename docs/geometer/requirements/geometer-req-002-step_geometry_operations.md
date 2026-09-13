@@ -41,6 +41,6 @@ models into backend-neutral hidden-line geometry.
 11. Provide transformed source-model bounds as `geometry.model_bounds.a0` JSON.
 12. Prefer generic `model_*` source-model operation names while STEP remains the
     only supported source format.
-13. Keep polygonal projection as the default, exact projection explicit, and
-    Fast vector HLR additive under the option and operation boundaries in
+13. Keep polygonal and exact projection available explicitly, and use Fast
+    vector HLR as the default under the option and operation boundaries in
     REQ-010.

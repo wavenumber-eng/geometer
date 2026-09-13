@@ -20,7 +20,7 @@
     return pointer;
   }
 
-  function executeOneAttachment(module, operation, request, attachment) {
+  function execute(module, operation, request, attachment, includeOutputs) {
     const allocations = [];
     let resultPointer = 0;
     let errorPointer = 0;
@@ -34,23 +34,29 @@
       const namePointer = allocate(module, nameBytes, allocations);
       const mediaTypePointer = allocate(module, mediaTypeBytes, allocations);
       const dataPointer = allocate(module, attachment.data, allocations);
-      const descriptorPointer = module._malloc(36);
-      if (!descriptorPointer) throw new Error("Could not allocate the WASM attachment descriptor.");
-      allocations.push(descriptorPointer);
-      module.HEAPU32.set(
-        [
-          36,
-          0,
-          namePointer,
-          nameBytes.byteLength,
-          mediaTypePointer,
-          mediaTypeBytes.byteLength,
-          dataPointer,
-          attachment.data.byteLength,
-          0,
-        ],
-        descriptorPointer >>> 2,
-      );
+      let descriptorPointer = 0;
+      let attachmentCount = 0;
+      if (attachment) {
+        descriptorPointer = module._malloc(36);
+        if (!descriptorPointer)
+          throw new Error("Could not allocate the WASM attachment descriptor.");
+        allocations.push(descriptorPointer);
+        module.HEAPU32.set(
+          [
+            36,
+            0,
+            namePointer,
+            nameBytes.byteLength,
+            mediaTypePointer,
+            mediaTypeBytes.byteLength,
+            dataPointer,
+            attachment.data.byteLength,
+            0,
+          ],
+          descriptorPointer >>> 2,
+        );
+        attachmentCount = 1;
+      }
       const resultOut = allocateSlot(module, allocations);
       const errorOut = allocateSlot(module, allocations);
       const code = module._geometer_operation_execute(
@@ -59,7 +65,7 @@
         requestPointer,
         requestBytes.byteLength,
         descriptorPointer,
-        1,
+        attachmentCount,
         resultOut,
         errorOut,
       );
@@ -81,7 +87,42 @@
         throw new Error(detail || `Geometer operation ${operation} failed.`);
       }
       if (outcome.operation !== operation) throw new Error("Geometer operation identity mismatch.");
-      return outcome.result;
+      if (!includeOutputs) return outcome.result;
+      const outputs = [];
+      const sizeOut = allocateSlot(module, allocations);
+      const count = module._geometer_operation_result_attachment_count(resultPointer);
+      for (let index = 0; index < count; index += 1) {
+        const namePointer = module._geometer_operation_result_attachment_name(
+          resultPointer,
+          index,
+          sizeOut,
+        );
+        const nameSize = module.HEAPU32[sizeOut >>> 2];
+        const name = new TextDecoder().decode(
+          module.HEAPU8.slice(namePointer, namePointer + nameSize),
+        );
+        const mediaTypePointer = module._geometer_operation_result_attachment_media_type(
+          resultPointer,
+          index,
+          sizeOut,
+        );
+        const mediaTypeSize = module.HEAPU32[sizeOut >>> 2];
+        const mediaType = new TextDecoder().decode(
+          module.HEAPU8.slice(mediaTypePointer, mediaTypePointer + mediaTypeSize),
+        );
+        const dataPointer = module._geometer_operation_result_attachment_data(
+          resultPointer,
+          index,
+          sizeOut,
+        );
+        const dataSize = module.HEAPU32[sizeOut >>> 2];
+        outputs.push({
+          name,
+          mediaType,
+          data: module.HEAPU8.slice(dataPointer, dataPointer + dataSize).buffer,
+        });
+      }
+      return { result: outcome.result, attachments: outputs };
     } finally {
       if (errorPointer) module._geometer_free_string(errorPointer);
       if (resultPointer) module._geometer_operation_result_free(resultPointer);
@@ -89,5 +130,16 @@
     }
   }
 
-  global.GeometerOperationWorker = Object.freeze({ executeOneAttachment });
+  function executeOneAttachment(module, operation, request, attachment) {
+    return execute(module, operation, request, attachment, false);
+  }
+
+  function executeOneAttachmentWithOutputs(module, operation, request, attachment) {
+    return execute(module, operation, request, attachment, true);
+  }
+
+  global.GeometerOperationWorker = Object.freeze({
+    executeOneAttachment,
+    executeOneAttachmentWithOutputs,
+  });
 })(self);

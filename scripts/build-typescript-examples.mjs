@@ -25,6 +25,8 @@ const outputs = [
   "demo-tooling/panels.js",
   "demo-tooling/tool-controller.js",
   "illustration_demo.js",
+  "illustration_demo_support.js",
+  "illustration_geometry_renderers.js",
   "model_bounds_demo.js",
   "model_bounds_worker.js",
   "pcb_polygon_pour_demo.js",

@@ -128,6 +128,7 @@ def main() -> None:
         APP_BUNDLE,
         target="es2022",
         aliases={
+            "@wavenumber/geometer": ROOT / "src" / "ts" / "geometer" / "generated" / "index.ts",
             "@wavenumber/geometer/mesh-illustration": ROOT / "src" / "ts" / "geometer" / "mesh-illustration.ts",
             "@wavenumber/geometer/mesh-illustration-ao-experimental": ROOT / "src" / "ts" / "geometer" / "mesh-illustration-ao-experimental.ts",
         },

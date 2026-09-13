@@ -169,6 +169,32 @@ def test_typed_mesh_hlr_projection_round_trips_structured_mesh() -> None:
     assert result.views
 
 
+def test_hlr_ipc_omission_defaults_to_fast_detail_and_fast_mesh_shadow() -> None:
+    executable = executable_path()
+    if not executable.is_file():
+        pytest.skip("native Geometer executable is unavailable")
+    step = (ROOT / "tests/fixtures/step/embedded_models/SOT-23.STEP").read_bytes()
+    mesh = geometer.IndexedTriangleMeshA0(
+        positions=(0.0, 0.0, 0.0, 10.0, 0.0, 0.0, 0.0, 10.0, 0.0),
+        indices=(0, 1, 2),
+        source_faces=(1,),
+    )
+    explicit_fast = HlrProjectionOptionsA0(
+        projection_algorithm=geometer.HlrProjectionAlgorithm.FAST,
+        outline_algorithm=geometer.HlrOutlineAlgorithm.FAST_MESH_SHADOW,
+    )
+    with GeometerIpcClient(executable, client_name="python-hlr-default-test") as client:
+        model_default = client.model_hlr_projection(step, HlrProjectionOptionsA0())
+        model_explicit = client.model_hlr_projection(step, explicit_fast)
+        mesh_default = client.mesh_hlr_projection(mesh, HlrProjectionOptionsA0())
+        mesh_explicit = client.mesh_hlr_projection(mesh, explicit_fast)
+
+    assert model_default.source == model_explicit.source
+    assert model_default.views == model_explicit.views
+    assert mesh_default.source == mesh_explicit.source
+    assert mesh_default.views == mesh_explicit.views
+
+
 def test_generated_catalog_authority_rejects_mutated_welcome_order() -> None:
     executable = executable_path()
     if not executable.is_file():

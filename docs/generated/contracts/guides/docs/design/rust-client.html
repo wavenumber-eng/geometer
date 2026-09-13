@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd">
+  <meta name="wn-catalog-sha256" content="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d">
   <title>Rust Contracts And Executable IPC Client — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/rust-client.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="rust-contracts-and-executable-ipc-client">Rust Contracts And Executable IPC Client</h1></header>
 <h2 id="current-status">Current status</h2>
@@ -137,9 +137,9 @@ connection and resolve every pending call. Negotiated response frame limits are
 checked before payload allocation.</p>
 <p><code>GeometerClient::model_hlr_projection()</code> accepts STEP bytes and canonical HLR
 options. <code>mesh_hlr_projection()</code> accepts an indexed-mesh A0 packet;
-<code>MeshHlrProjectionRequest::from_mesh()</code> encodes a structured mesh. The model
-operation retains the <code>poly</code> default, while omitted mesh selectors choose the
-only applicable Fast detail and Fast mesh-shadow paths.</p>
+<code>MeshHlrProjectionRequest::from_mesh()</code> encodes a structured mesh. Omitted
+selectors choose Fast detail and Fast Mesh Shadow for both operations. The model
+operation also accepts the older algorithms when explicitly requested.</p>
 <p><code>OperationCall::cancel()</code> requests queue-only cancellation. <code>wait_timeout()</code> is
 a local timeout: it sends a cancellation request and reports whether the server
 removed queued work; it never claims an active OCCT operation stopped. The

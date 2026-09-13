@@ -95,6 +95,8 @@ ${variants.map((item) => `        contracts::${type}::${item.variant}(_) => ${it
 }`;
   return `// Generated from wn_geometer_contract_catalog.a0.json. Do not edit.
 
+#![allow(clippy::too_many_lines, reason = "generated dispatch enumerates governed contracts")]
+
 use super::contracts;
 
 /// Decode using the negotiated operation's exact contract, not union trial order.

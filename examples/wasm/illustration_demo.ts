@@ -1,4 +1,8 @@
 import {
+  decodeMeshIllustrationGeometryA0Json,
+  type MeshIllustrationGeometryA0,
+} from "@wavenumber/geometer";
+import {
   type MeshIllustrationInput,
   type MeshIllustrationMaterial,
   type MeshIllustrationMesh,
@@ -6,11 +10,9 @@ import {
   type MeshIllustrationStyle,
   type MeshIllustrationView,
   prepareMeshIllustration,
-  type Rgb,
   renderMeshIllustrationCanvas,
   renderMeshIllustrationSvg,
   toMeshIllustrationStyleA0,
-  type Vec3,
 } from "@wavenumber/geometer/mesh-illustration";
 import {
   applyExperimentalAmbientOcclusion,
@@ -20,105 +22,29 @@ import {
 import * as THREE from "three";
 import { TrackballControls } from "three/addons/controls/TrackballControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-
-interface DemoModel {
-  name: string;
-  step: string;
-  glb: string;
-  stepBytes: number;
-  glbBytes: number;
-  cacheKey?: string;
-  local?: boolean;
-  glbBuffer?: ArrayBuffer;
-  glbMeshKey?: string;
-  stepBuffer?: ArrayBuffer;
-}
-
-interface HlrProjection {
-  views?: Array<{
-    id?: string;
-    modes?: {
-      outline?: { segments?: Array<[number, number, number, number]> };
-      detail?: { segments?: Array<[number, number, number, number]> };
-    };
-  }>;
-}
-
-interface IllustrationWorkerResponse {
-  id: number;
-  ok: boolean;
-  operation?: "step-to-glb" | "mesh-shadow";
-  glbBuffer?: ArrayBuffer;
-  projection?: HlrProjection;
-  error?: string;
-  timings?: { glbMs?: number; hlrMs?: number };
-}
-
-interface EmbeddedDemoData {
-  models: DemoModel[];
-  workerSource: string;
-}
-
-declare global {
-  interface Window {
-    GeometerIllustrationEmbedded?: EmbeddedDemoData;
-  }
-}
-
-type ViewId = "top" | "front" | "right" | "iso" | "camera";
-type OutputId = "svg" | "canvas";
-type MeshQualityId = "draft" | "balanced" | "fine" | "extra-fine" | "custom";
-
-interface MeshSettings {
-  linearDeflectionMm: number;
-  angularDeflectionDegrees: number;
-  hlrDeflectionCoefficient: number;
-  hlrAngularDeflectionDegrees: number;
-}
-
-interface CameraViewState {
-  position: THREE.Vector3;
-  quaternion: THREE.Quaternion;
-  up: THREE.Vector3;
-  target: THREE.Vector3;
-  zoom: number;
-  halfHeight: number;
-}
-
-const MESH_QUALITY_PRESETS: Readonly<Record<Exclude<MeshQualityId, "custom">, MeshSettings>> = {
-  draft: {
-    linearDeflectionMm: 0.25,
-    angularDeflectionDegrees: 40,
-    hlrDeflectionCoefficient: 0.008,
-    hlrAngularDeflectionDegrees: 40,
-  },
-  balanced: {
-    linearDeflectionMm: 0.1,
-    angularDeflectionDegrees: (0.5 * 180) / Math.PI,
-    hlrDeflectionCoefficient: 0.004,
-    hlrAngularDeflectionDegrees: (0.5 * 180) / Math.PI,
-  },
-  fine: {
-    linearDeflectionMm: 0.03,
-    angularDeflectionDegrees: 15,
-    hlrDeflectionCoefficient: 0.002,
-    hlrAngularDeflectionDegrees: 15,
-  },
-  "extra-fine": {
-    linearDeflectionMm: 0.01,
-    angularDeflectionDegrees: 8,
-    hlrDeflectionCoefficient: 0.001,
-    hlrAngularDeflectionDegrees: 8,
-  },
-};
-
-const DEMO_MODEL_ORDER = [
-  "SOT-23.STEP",
-  "SOIC-8-W.step",
-  "sot223.stp",
-  "Cap_SMT_Aluminum_F.STEP",
-  "BGA90-8X13mm.step",
-] as const;
+import {
+  renderNativeGeometryCanvas,
+  renderNativeGeometrySvg,
+} from "./illustration_geometry_renderers.js";
+import {
+  colorFromHex,
+  DEFAULT_SURFACE_MESH_KEY,
+  DEMO_MODEL_ORDER,
+  formatBytes,
+  formatMs,
+  MESH_QUALITY_PRESETS,
+  normalizeTuple,
+  surfaceMeshKey,
+  type CameraViewState,
+  type DemoModel,
+  type EmbeddedDemoData,
+  type HlrProjection,
+  type IllustrationWorkerResponse,
+  type MeshQualityId,
+  type MeshSettings,
+  type OutputId,
+  type ViewId,
+} from "./illustration_demo_support.js";
 
 function required<T extends HTMLElement>(id: string): T {
   const value = document.getElementById(id);
@@ -196,6 +122,7 @@ const state: {
   model: DemoModel | null;
   root: THREE.Object3D | null;
   scene: MeshIllustrationScene | null;
+  nativeGeometry: MeshIllustrationGeometryA0 | null;
   style: MeshIllustrationStyle | null;
   svg: string;
   view: ViewId;
@@ -230,6 +157,7 @@ const state: {
   model: null,
   root: null,
   scene: null,
+  nativeGeometry: null,
   style: null,
   svg: "",
   view: "iso",
@@ -264,6 +192,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.setClearColor(0xffffff, 1);
 let fastCreaseLineworkTimer = 0;
+let styleIllustrationTimer = 0;
 
 const threeScene = new THREE.Scene();
 threeScene.background = new THREE.Color(0xffffff);
@@ -297,22 +226,6 @@ function setBusy(message: string | null, presentation: "overlay" | "indicator" =
 
 function setStatus(message: string): void {
   els.status.textContent = message;
-}
-
-function formatBytes(value: number): string {
-  return value >= 1024 * 1024
-    ? `${(value / (1024 * 1024)).toFixed(2)} MiB`
-    : `${Math.max(1, Math.round(value / 1024))} KiB`;
-}
-
-function formatMs(value: number): string {
-  return value >= 1000 ? `${(value / 1000).toFixed(2)} s` : `${Math.max(1, Math.round(value))} ms`;
-}
-
-function colorFromHex(value: string): Rgb {
-  const normalized = value.replace(/^#/u, "");
-  const numeric = Number.parseInt(normalized, 16);
-  return [((numeric >> 16) & 255) / 255, ((numeric >> 8) & 255) / 255, (numeric & 255) / 255];
 }
 
 function numberInput(input: HTMLInputElement, output: HTMLOutputElement, digits: number): number {
@@ -349,13 +262,6 @@ function currentMeshSettings(): MeshSettings {
     ),
   };
 }
-
-function surfaceMeshKey(settings: MeshSettings): string {
-  const angularRadians = (settings.angularDeflectionDegrees * Math.PI) / 180;
-  return `${settings.linearDeflectionMm.toPrecision(12)}|${angularRadians.toPrecision(12)}`;
-}
-
-const DEFAULT_SURFACE_MESH_KEY = surfaceMeshKey(MESH_QUALITY_PRESETS.balanced);
 
 function applyMeshSettings(settings: MeshSettings): void {
   els.linearDeflection.value = String(settings.linearDeflectionMm);
@@ -444,9 +350,25 @@ function scheduleFastVectorLineworkUpdate(): void {
   fastCreaseLineworkTimer = window.setTimeout(() => {
     fastCreaseLineworkTimer = 0;
     if (!state.scene || !state.showHlrDetail) return;
+    if (state.nativeGeometry) {
+      prepareIllustration("fast linework").catch(showError);
+      return;
+    }
     delete state.scene.detailSegments;
     updateHlrVisibility().catch(showError);
   }, 100);
+}
+
+function refreshStyle(): void {
+  window.clearTimeout(styleIllustrationTimer);
+  if (state.root && state.model && (state.model.step || state.model.stepBuffer) && !els.ambientOcclusion.checked) {
+    styleIllustrationTimer = window.setTimeout(() => {
+      styleIllustrationTimer = 0;
+      prepareIllustration("style").catch(showError);
+    }, 120);
+    return;
+  }
+  redrawStyle();
 }
 
 function activateButtons(container: HTMLElement, key: "view" | "output", value: string): void {
@@ -477,6 +399,7 @@ function clearModel(): void {
     });
   }
   state.root = null;
+  state.nativeGeometry = null;
 }
 
 function resize(): void {
@@ -545,11 +468,6 @@ function namedView(view: Exclude<ViewId, "camera">): MeshIllustrationView {
   return { direction: normalizeTuple([1, 1, 1]), up: [0, 1, 0] };
 }
 
-function normalizeTuple(value: Vec3): Vec3 {
-  const length = Math.hypot(value[0], value[1], value[2]) || 1;
-  return [value[0] / length, value[1] / length, value[2] / length];
-}
-
 function currentView(): MeshIllustrationView {
   if (state.view !== "camera") return namedView(state.view);
   const direction = new THREE.Vector3().subVectors(camera.position, controls.target).normalize();
@@ -582,6 +500,15 @@ function currentModelTransform(root: THREE.Object3D): number[] {
     at(11),
     at(15),
   ];
+}
+
+function currentModelIllustrationTransform(root: THREE.Object3D): number[] {
+  root.updateMatrixWorld(true);
+  const value = root.matrixWorld.elements.slice();
+  value[12] = (value[12] ?? 0) * 1000;
+  value[13] = (value[13] ?? 0) * 1000;
+  value[14] = (value[14] ?? 0) * 1000;
+  return value;
 }
 
 function moveCameraToView(viewId: Exclude<ViewId, "camera">): void {
@@ -688,6 +615,40 @@ function redrawStyle(): void {
   if (!state.scene) return;
   const style = currentStyle();
   state.style = style;
+  if (state.nativeGeometry) {
+    const renderedSvg = renderNativeGeometrySvg(
+      state.nativeGeometry,
+      `${state.model?.name ?? "model"} ${state.view} illustration`,
+    );
+    state.svg = renderedSvg;
+    const svgBytes = new TextEncoder().encode(renderedSvg).byteLength;
+    drawSvg(renderedSvg);
+    const context = els.illustrationCanvas.getContext("2d");
+    if (!context) throw new Error("Canvas2D is unavailable.");
+    const commands = renderNativeGeometryCanvas(context, state.nativeGeometry);
+    const stats = state.nativeGeometry.stats;
+    els.counts.textContent = `${stats.triangles.toLocaleString()} front-facing triangles → ${stats.surface_draws.toLocaleString()} polygon regions/draws / ${stats.layered_surfaces.toLocaleString()} coplanar layers / SVG ${formatBytes(svgBytes)} / ${stats.details.toLocaleString()} HLR detail / ${stats.outlines.toLocaleString()} HLR outline segments / ${state.nativeGeometry.warnings.length} warnings`;
+    els.downloadSvg.disabled = false;
+    els.downloadStyle.disabled = false;
+    els.svgHost.classList.toggle("hidden", state.output !== "svg");
+    els.illustrationCanvas.classList.toggle("hidden", state.output !== "canvas");
+    els.outputPane.dataset.engine = "model-illustration-a0";
+    els.outputLabel.textContent =
+      state.output === "svg"
+        ? `MODEL ILLUSTRATION / C++ WASM CPU / SVG / ${fastVectorLineworkLabel()} / ${formatBytes(svgBytes)}`
+        : `MODEL ILLUSTRATION / C++ WASM CPU / CANVAS / ${fastVectorLineworkLabel()} / ${commands.toLocaleString()} DRAWS`;
+    els.outputPane.dataset.output = state.output;
+    els.outputPane.dataset.shading = style.shading;
+    els.outputPane.dataset.canvasOutlines = String(stats.outlines + stats.details);
+    els.outputPane.dataset.canvasDetails = String(stats.details);
+    els.outputPane.dataset.visibleTriangles = String(stats.triangles);
+    els.outputPane.dataset.surfaceDraws = String(stats.surface_draws);
+    els.outputPane.dataset.layeredSurfaces = String(stats.layered_surfaces);
+    els.outputPane.dataset.svgBytes = String(svgBytes);
+    threeScene.background = new THREE.Color(style.background);
+    renderer.setClearColor(style.background, 1);
+    return;
+  }
   const rendered = renderMeshIllustrationSvg(
     state.scene,
     style,
@@ -749,6 +710,8 @@ async function prepareIllustration(reason: string): Promise<void> {
     const view = currentView();
     const meshSettings = currentMeshSettings();
     let prepared = prepareMeshIllustration(input, view, { weldTolerance: 1e-5 });
+    let nativeGeometry: MeshIllustrationGeometryA0 | null = null;
+    let nativeIllustrationMs = 0;
     let aoMs = 0;
     let aoCached = true;
     if (els.ambientOcclusion.checked && model) {
@@ -790,7 +753,18 @@ async function prepareIllustration(reason: string): Promise<void> {
       delete els.outputPane.dataset.ambientOcclusionCached;
     }
     let hlrMs = 0;
+    if (model && (model.step || model.stepBuffer) && !els.ambientOcclusion.checked) {
+      setBusy(`Illustrating ${model.name} with Geometer...`, "indicator");
+      const native = await loadModelIllustration(
+        model,
+        view,
+        currentModelIllustrationTransform(root),
+      );
+      nativeGeometry = native.geometry;
+      nativeIllustrationMs = native.illustrationMs;
+    }
     if (
+      !nativeGeometry &&
       (state.showHlrOutline || state.showHlrDetail) &&
       model &&
       (model.step || model.stepBuffer)
@@ -807,6 +781,7 @@ async function prepareIllustration(reason: string): Promise<void> {
     if (requestId !== state.prepareRequest || state.root !== root || state.model !== model) return;
     cancelLazyHlrLinework();
     state.scene = prepared;
+    state.nativeGeometry = nativeGeometry;
     state.prepareGeneration += 1;
     els.outputPane.dataset.view = state.view;
     els.outputPane.dataset.direction = state.scene.view.direction
@@ -834,7 +809,10 @@ async function prepareIllustration(reason: string): Promise<void> {
     const aoTiming = els.ambientOcclusion.checked
       ? ` / AO ${aoMs > 0 ? formatMs(aoMs) : "cached"}`
       : "";
-    els.timing.textContent = `prepare ${formatMs(elapsed)} / HLR ${formatMs(hlrMs)}${aoTiming} / ${state.scene.stats.sourceTriangles.toLocaleString()} triangles`;
+    const nativeTiming = nativeGeometry
+      ? ` / model illustration ${formatMs(nativeIllustrationMs)}`
+      : ` / HLR ${formatMs(hlrMs)}`;
+    els.timing.textContent = `prepare ${formatMs(elapsed)}${nativeTiming}${aoTiming} / ${state.scene.stats.sourceTriangles.toLocaleString()} triangles`;
     setStatus(
       `${state.model?.name ?? "Model"} / ${state.view} / ${state.output.toUpperCase()} ready`,
     );
@@ -852,6 +830,10 @@ async function updateHlrVisibility(): Promise<void> {
   const model = state.model;
   const root = state.root;
   if (!scene) return;
+  if (state.nativeGeometry && root) {
+    await prepareIllustration("linework");
+    return;
+  }
   if (!state.showHlrOutline && !state.showHlrDetail) {
     cancelLazyHlrLinework();
     redrawStyle();
@@ -988,6 +970,7 @@ async function selectModel(
   window.clearTimeout(state.renderTimer);
   state.model = model;
   state.scene = null;
+  state.nativeGeometry = null;
   cancelAmbientOcclusion();
   const stepBacked = Boolean(model.step || model.stepBuffer);
   for (const control of [
@@ -1108,6 +1091,42 @@ async function modelStepBuffer(model: DemoModel): Promise<ArrayBuffer> {
   if (!model.step) throw new Error(`${model.name} has no STEP source for HLR linework.`);
   model.stepBuffer = await fetchArrayBuffer(model.step);
   return model.stepBuffer;
+}
+
+async function loadModelIllustration(
+  model: DemoModel,
+  view: MeshIllustrationView,
+  modelTransform: number[],
+): Promise<{ geometry: MeshIllustrationGeometryA0; illustrationMs: number }> {
+  const source = await modelStepBuffer(model);
+  const settings = currentMeshSettings();
+  const result = await runStepWorker(
+    {
+      operation: "model-illustration",
+      view,
+      modelTransform,
+      meshOptions: {
+        linearDeflectionMm: settings.linearDeflectionMm,
+        angularDeflectionRad: (settings.angularDeflectionDegrees * Math.PI) / 180,
+      },
+      hlrOptions: {
+        creaseAngleRad: (Number.parseFloat(els.fastCrease.value) * Math.PI) / 180,
+        suppressCoplanarSeams: els.fastCoplanarSeams.checked,
+        coplanarSeamAngleRad: (Number.parseFloat(els.fastSeamAngle.value) * Math.PI) / 180,
+        coplanarSeamDepthTolerance: Number.parseFloat(els.fastSeamDepth.value),
+      },
+      style: currentStyle(),
+    },
+    source.slice(0),
+  );
+  if (!result.illustration)
+    throw new Error("Model illustration Worker returned no drawing geometry.");
+  return {
+    geometry: decodeMeshIllustrationGeometryA0Json(
+      JSON.stringify(result.illustration.geometry),
+    ),
+    illustrationMs: result.timings?.illustrationMs ?? 0,
+  };
 }
 
 function projectionCacheKey(
@@ -1280,14 +1299,15 @@ async function validateIfRequested(): Promise<void> {
   if (!state.validation || !state.scene) return;
   await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
   await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-  const svgTriangles = els.svgHost.querySelectorAll("polygon").length;
+  const svgDraws = els.svgHost.querySelectorAll("polygon, path").length;
+  const visibleTriangles = state.nativeGeometry?.stats.triangles ?? state.scene.stats.projectedTriangles;
   const pass =
-    state.scene.stats.projectedTriangles > 0 &&
-    svgTriangles > 0 &&
+    visibleTriangles > 0 &&
+    svgDraws > 0 &&
     canvasHasContent(els.modelCanvas) &&
     canvasHasContent(els.illustrationCanvas);
   const result = pass
-    ? `PASS triangles=${state.scene.stats.projectedTriangles} svg=${svgTriangles} view=${state.view}`
+    ? `PASS triangles=${visibleTriangles} svg=${svgDraws} view=${state.view}`
     : "FAIL nonblank illustration validation";
   els.validation.textContent = result;
   document.title = pass ? result : `FAIL ${result}`;
@@ -1392,7 +1412,7 @@ function wireEvents(): void {
     els.background,
     els.transparent,
   ]) {
-    control.addEventListener("change", redrawStyle);
+    control.addEventListener("change", refreshStyle);
   }
   els.hlrOutline.addEventListener("change", () => {
     state.showHlrOutline = els.hlrOutline.checked;
@@ -1415,7 +1435,7 @@ function wireEvents(): void {
   for (const control of [els.aoStrength, els.aoBands])
     control.addEventListener("input", redrawStyle);
   for (const control of [els.bands, els.ambient, els.key, els.rim, els.outlineWidth]) {
-    control.addEventListener("input", redrawStyle);
+    control.addEventListener("input", refreshStyle);
   }
   els.fastCrease.addEventListener("input", scheduleFastCreaseUpdate);
   els.fastCoplanarSeams.addEventListener("change", scheduleFastVectorLineworkUpdate);
@@ -1433,6 +1453,7 @@ function wireEvents(): void {
     for (const url of state.uploadedUrls) URL.revokeObjectURL(url);
     cancelAmbientOcclusion();
     window.clearTimeout(fastCreaseLineworkTimer);
+    window.clearTimeout(styleIllustrationTimer);
   });
 }
 

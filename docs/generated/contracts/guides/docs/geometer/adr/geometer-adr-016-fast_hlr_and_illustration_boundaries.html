@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd">
+  <meta name="wn-catalog-sha256" content="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d">
   <title>ADR 016: Fast HLR And Illustration Boundaries — Geometer</title>
   <link rel="stylesheet" href="../../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/geometer/adr/geometer-adr-016-fast_hlr_and_illustration_boundaries.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="adr-016-fast-hlr-and-illustration-boundaries">ADR 016: Fast HLR And Illustration Boundaries</h1></header>
 <h2 id="status">Status</h2>
@@ -42,12 +42,11 @@ product rather than a vector-projection backend and requires its own decision.</
 <li><code>geometry.model_hlr_projection.a0</code>, with a STEP/model attachment; and</li>
 <li><code>geometry.mesh_hlr_projection.a0</code>, with an indexed-triangle-mesh A0 packet.</li>
 </ul>
-<p>Both use <code>geometry.hlr_projection.options.a0</code>. <code>projection_algorithm</code> adds
-<code>fast</code>; model/STEP projection retains the <code>poly</code> default, while indexed-mesh
-projection defaults to <code>fast</code>. <code>outline_algorithm</code> adds <code>fast-mesh-shadow</code> as
-the indexed-mesh default without changing the model defaults or existing
-<code>hlr-close</code> and <code>mesh-shadow</code> selections. Fast-only controls are nested under
-<code>fast</code>; they do not reinterpret OCCT edge-category options.</p>
+<p>Both use <code>geometry.hlr_projection.options.a0</code>. Omitted selectors choose <code>fast</code>
+detail and <code>fast-mesh-shadow</code> for model/STEP and indexed-mesh projection.
+The existing <code>poly</code>, <code>exact</code>, <code>hlr-close</code>, and <code>mesh-shadow</code> selections remain
+available explicitly for compatible model sources. Fast-only controls are
+nested under <code>fast</code>; they do not reinterpret OCCT edge-category options.</p>
 <p>The TypeScript package may offer a convenience composition that combines Fast
 linework and illustration, but the underlying HLR and illustration contracts
 remain independently callable. Application-specific PCB, documentation, and
@@ -76,6 +75,29 @@ the illustration renderer to evolve without changing the portable HLR result.</p
 <p>Perspective vector guarantees, multithreaded WASM visibility, stable serialized
 prepared models, and changing the default HLR
 backend require later decisions.</p>
+<h3 id="combined-model-illustration-extension-2026-09-13">Combined model illustration extension (2026-09-13)</h3>
+<p>Geometer also publishes a combined model-illustration boundary for consumers
+that need a completed technical illustration rather than an intermediate mesh.
+It accepts either one attached model or a bounded generic analytic 2.5D scene,
+imports or lowers that source once into an in-memory mesh collection, and feeds
+the same collection to Fast vector detail, Fast Mesh Shadow, visibility,
+shading and same-color surface fusion. Each engine may derive its own private
+view-specific preparation from that collection. Its two portable operations
+return either deterministic SVG or the existing renderer-neutral
+illustration-geometry attachment.</p>
+<p>The combined boundary does not replace the independent model tessellation,
+Fast HLR, mesh HLR or mesh illustration operations. Consumers that own meshes,
+need interactive triangle data, select older projection algorithms, or compose
+multiple model attachments continue to use those surfaces. The A0 combined
+boundary accepts at most one model attachment; its analytic alternative uses
+definition-local extrusion, cylinder and sphere geometry with occurrence
+transforms. Application adapters resolve file paths, component composition and
+PCB-specific meaning before calling Geometer.</p>
+<p>STEP is the only attached model media type in A0. Analytic input stays analytic
+on the public boundary even when native code lowers it to a private prepared
+representation. Neither path serializes an intermediate mesh collection.
+TypeSpec owns the new request/result structures and operation declarations after
+their complete vertical is promoted under ADR 010.</p>
 
 </main>
 </body>

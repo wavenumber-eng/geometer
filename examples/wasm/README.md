@@ -313,7 +313,7 @@ layer's width so thick patterned lines remain legible in the page and SVG export
 Secondary display and geometry controls live in the resizable `Settings` dock,
 which uses the dependency-free TypeScript panel system in `demo-tooling`. The
 dock can be collapsed or hidden from its activity-rail tab. `Reset geometry
-defaults` restores the polygonal engine, mesh-shadow silhouette, model-relative
+defaults` restores Fast detail, Fast Mesh Shadow, model-relative
 tessellation coefficient, linear/angular tolerances, edge-angle tolerance, and
 the Sharp + silhouettes Detail edge set before recomputing the current view.
 

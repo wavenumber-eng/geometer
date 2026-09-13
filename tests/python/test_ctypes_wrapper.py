@@ -115,6 +115,9 @@ def test_hlr_options_preserve_independent_output_layers() -> None:
 
     fast_outline = geometer.HlrOptions.fast_assembly_outline().to_json_value()
     assert fast_outline["outline_algorithm"] == "fast-mesh-shadow"
+    assembly_outline = geometer.HlrOptions.assembly_outline().to_json_value()
+    assert assembly_outline["projection_algorithm"] == "fast"
+    assert assembly_outline["outline_algorithm"] == "fast-mesh-shadow"
 
 
 def test_model_bounds_returns_transformed_bounds() -> None:

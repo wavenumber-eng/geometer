@@ -19,15 +19,12 @@ fn fill_only_job_skips_hlr_and_exports_original_svg() {
             "a0",
         ))
         .unwrap();
-    let collection = decode_mesh_collection_a0_json(br#"{
-        "schema":"geometry.mesh_collection.a0","length_unit":"millimeter",
-        "meshes":[{"id":"triangle","positions":[0,0,0,1,0,0,0,1,0],"materials":[{"color":[0.5,0.5,0.5]}]}]
-    }"#).unwrap();
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    let step_path = root.join("tests/fixtures/step/embedded_models/SOT-23.STEP");
     let model = Arc::new(Model {
-        path: "invalid.step".into(),
-        collection,
+        path: step_path.clone(),
         geometry_json: Vec::new(),
-        step: b"deliberately invalid STEP; HLR must not be called".to_vec(),
+        step: std::fs::read(step_path).unwrap(),
         mesh_options: crate::settings::mesh_defaults(),
     });
     let view = MeshIllustrationView {
@@ -57,7 +54,7 @@ fn fill_only_job_skips_hlr_and_exports_original_svg() {
             Event::Phase(phase) => assert!(!phase.contains("HLR")),
             Event::Solved(7, result) => {
                 let solution = result.unwrap();
-                assert_eq!(solution.result.stats.triangles, 1);
+                assert!(solution.result.stats.triangles > 0);
                 assert_eq!(
                     solution.result.stats.outlines + solution.result.stats.details,
                     0

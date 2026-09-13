@@ -64,8 +64,14 @@ from ._generated.contracts.operations import expected_operation_catalog
 from ._paths import executable_path
 
 if TYPE_CHECKING:
+    from ._model_illustration import ModelIllustrationGeometry
     from ._tessellation import ModelTessellation
     from ._generated.contracts.models import ModelTessellationRequestA0
+    from ._generated.contracts.models import (
+        ModelIllustrationGeometryRequestA0,
+        ModelIllustrationRequestA0,
+        ModelIllustrationResultA0,
+    )
     from ._indexed_mesh_packet_a0 import IndexedTriangleMeshA0
     from ._generated.contracts.models import (
         AnalyticPlanarBooleanBatchRequestA0,
@@ -376,6 +382,30 @@ class _GeometerIpcExecution(_GeometerIpcSession):
                 raise
             self._pending = None
             return response
+
+    def model_illustration(
+        self,
+        request: ModelIllustrationRequestA0,
+        model: bytes | None = None,
+        *,
+        timeout: float | None = None,
+    ) -> ModelIllustrationResultA0:
+        """Illustrate one STEP model or analytic scene without a mesh round trip."""
+        from ._model_illustration import model_illustration
+
+        return model_illustration(cast("GeometerIpcClient", self), request, model, timeout)
+
+    def model_illustration_geometry(
+        self,
+        request: ModelIllustrationGeometryRequestA0,
+        model: bytes | None = None,
+        *,
+        timeout: float | None = None,
+    ) -> "ModelIllustrationGeometry":
+        """Return renderer-neutral drawing geometry for a model or analytic scene."""
+        from ._model_illustration import model_illustration_geometry
+
+        return model_illustration_geometry(cast("GeometerIpcClient", self), request, model, timeout)
 
     def analytic_planar_boolean_batch(
         self,

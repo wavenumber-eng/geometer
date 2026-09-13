@@ -83,35 +83,19 @@ def main() -> None:
     view = geometer.MeshIllustrationView(direction=(0.4, 0.7, 1), up=(0, 1, 0))
     with geometer.GeometerClient(executable=args.executable) as client:
         model = args.step.read_bytes()
-        print("Tessellating STEP and computing visible Fast HLR...", flush=True)
-        collection = client.model_tessellation(model).mesh_collection
-        hlr = client.model_hlr_projection(
-            model,
-            geometer.HlrProjectionOptionsA0(
-                views=(geometer.HlrViewSpec(id="illustration", direction=view.direction, up=view.up),),
-                projection_algorithm=geometer.HlrProjectionAlgorithm.FAST,
-                outline_algorithm=geometer.HlrOutlineAlgorithm.FAST_MESH_SHADOW,
-                curve_mode=geometer.HlrCurveMode.POLYLINE,
-                strip_root_placement=True,
-                output_detail=True,
-                output_outline=True,
-                output_bbox=False,
-                fast=geometer.FastHlrOptionsA0(include_hidden=False),
-            ),
-        )
-        print("Requesting drawing geometry (no SVG)...", flush=True)
-        geometry = client.mesh_illustration_geometry(
-            geometer.MeshIllustrationGeometryInputA0(
-                schema="geometry.mesh_illustration_geometry.input.a0",
-                length_unit="millimeter",
-                meshes=collection.meshes,
+        print("Requesting one-pass STEP illustration geometry (no SVG)...", flush=True)
+        geometry_response = client.model_illustration_geometry(
+            geometer.ModelIllustrationGeometryRequestA0(
+                schema="geometry.model_illustration_geometry.request.a0",
+                source=geometer.ModelAttachmentIllustrationSourceA0(kind="model", attachment="model"),
                 view=view,
                 style=geometer.MeshIllustrationStyleA0(
                     show_outlines=False, show_creases=False, show_hlr_outline=True, show_hlr_detail=True
                 ),
             ),
-            hlr_projection=hlr,
+            model,
         )
+        geometry = geometry_response.geometry
     write_canvas(geometry, args.output.resolve(), args.step.stem)
     print(args.output.resolve())
 

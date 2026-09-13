@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd">
+  <meta name="wn-catalog-sha256" content="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d">
   <title>Demo And Example Audit — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/developer/demo-status.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="demo-and-example-audit">Demo And Example Audit</h1></header>
 <p>Audited 2026-09-05 using committed <code>v2026-09-04</code> Windows x64/native and
@@ -28,6 +28,11 @@ against unchanged kernel sources using cached OCCT; no new kernel release is
 implied. Updated windows were launched for user recheck; visual acceptance of
 the repaired angle remains pending.</p>
 <h2 id="runtime-evidence-and-disposition">Runtime Evidence And Disposition</h2>
+<p>Release candidate refresh for 2026.9.13: the browser illustration demo and
+Native Rust API Lab use the governed one-pass model illustration boundary. The
+analytic Python example uses the same source union without STEP bytes. Native
+Windows, browser WASM, generated clients and all standalone browser demos are
+rebuilt from the candidate catalog before interactive signoff.</p>
 <p>Release refresh for 2026.9.12: native Windows and all three WASM targets were
 rebuilt using the cached OCCT dependency. Generated TypeScript/example bundles,
 all five standalone browser demos, all four hosted demo directories, the direct
@@ -52,6 +57,10 @@ geometry JSON, and passed native execution plus headless Chrome visual inspectio
 on Windows. This additive example does not replace either Lab. See the
 <a href="../../../../../research/illustration-performance.md">performance and qualification record</a>
 for test costs and release limitations.</p>
+<p>The <a href="../../../../../../examples/python/model_illustration_analytic.py">analytic model illustration example</a>
+exercises the combined A0 boundary with reusable definitions plus extrusion,
+cylinder, and sphere primitives. It writes native SVG directly without an IPC
+mesh round trip and is retained as the smallest analytic-source example.</p>
 <p>The optional <a href="../../../../../../examples/rust/native_viewer/README.md">Native Rust API Lab</a>
 is a twelfth entry added on the native API feature branch, not a replacement
 for the 11 retained demos. It uses the maintained Rust executable client and
@@ -133,6 +142,12 @@ browser AO remains explicitly unavailable, not a hidden fallback.</p>
 <td><a href="../../../../../../examples/python/step_hlr_svg.py">source</a></td>
 <td>Executed against committed binary; produced projection JSON, SVG and GLB.</td>
 <td>Keep primary Python example.</td>
+</tr>
+<tr>
+<td>Python analytic model illustration / combined-boundary consumers</td>
+<td><a href="../../../../../../examples/python/model_illustration_analytic.py">source</a></td>
+<td>Native SVG smoke covers reusable analytic definitions, occurrences, extrusion, cylinder, and sphere input.</td>
+<td>Keep minimal combined analytic-source example.</td>
 </tr>
 <tr>
 <td>Python PyVista/Qt viewer / optional GUI experiment</td>

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Literal, TypeAlias
 
-NORMALIZED_CATALOG_SHA256 = "e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd"
+NORMALIZED_CATALOG_SHA256 = "0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d"
 
 JobId: TypeAlias = int
 
@@ -601,14 +601,14 @@ class HlrProjectionOptionsA0:
     edge_h_sewn: bool | None = None
     edge_h_iso: bool | None = None
     union_outline_polygons: bool | None = None
-    # Omission selects the operation-specific default: poly for model HLR and Fast for mesh HLR.
+    # Omission selects Fast triangle detail. Older OCCT algorithms require explicit selection.
     projection_algorithm: HlrProjectionAlgorithm | None = None
     mesh_linear_deflection: float | None = None
     mesh_angular_deflection: float | None = None
     mesh_relative: bool | None = None
     mesh_deflection_mode: HlrMeshDeflectionMode | None = None
     mesh_deflection_coefficient: float | None = None
-    # Omission selects the operation-specific default: HLR-close for model HLR and Fast mesh-shadow for mesh HLR.
+    # Omission selects Fast Mesh Shadow. Older outline algorithms require explicit selection.
     outline_algorithm: HlrOutlineAlgorithm | None = None
     hlr_angle_tolerance: float | None = None
     fast: FastHlrOptionsA0 | None = None
@@ -799,7 +799,163 @@ class IpcReasonA0:
     reason: str | None = None
 
 
+IllustrationMatrix4x4: TypeAlias = tuple[
+    float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float
+]
+
 IllustrationVector3: TypeAlias = tuple[float, float, float]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshIllustrationMaterial:
+    # sRGB channels in the inclusive range [0, 1].
+    color: IllustrationVector3
+    opacity: float | None = None
+    name: str | None = None
+
+
+class ModelRootPlacement(str, Enum):
+    STRIP = "strip"
+    PRESERVE = "preserve"
+
+
+# Reusable bounded STEP tessellation controls.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ModelTessellationOptionsA0:
+    linear_deflection_mm: float | None = None
+    angular_deflection_rad: float | None = None
+    root_placement: ModelRootPlacement | None = None
+    max_triangles: int | None = None
+    # Return usable faces with warnings when completed meshing has local face failures.
+    allow_partial: bool | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ModelAttachmentIllustrationSourceA0:
+    kind: Literal["model"]
+    attachment: Literal["model"]
+    # Applied after root-placement normalization.
+    transform: IllustrationMatrix4x4 | None = None
+    material_override: MeshIllustrationMaterial | None = None
+    tessellation: ModelTessellationOptionsA0 | None = None
+
+
+IllustrationVector2Mm: TypeAlias = tuple[float, float]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class IllustrationProfileLineA0:
+    kind: Literal["line"]
+
+
+class PlanarArcSweep(str, Enum):
+    CW = "cw"
+    CCW = "ccw"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class IllustrationProfileCircularArcA0:
+    kind: Literal["circular_arc"]
+    center_mm: IllustrationVector2Mm
+    sweep: PlanarArcSweep
+
+
+IllustrationProfileSegmentA0: TypeAlias = IllustrationProfileLineA0 | IllustrationProfileCircularArcA0
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class IllustrationProfileRingA0:
+    # Segment i connects point i to point (i + 1) modulo point count.
+    points_mm: tuple[IllustrationVector2Mm, ...]
+    segments: tuple[IllustrationProfileSegmentA0, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class IllustrationProfileRegionA0:
+    outer: IllustrationProfileRingA0
+    holes: tuple[IllustrationProfileRingA0, ...] | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AnalyticExtrusionA0:
+    kind: Literal["extrusion"]
+    id: str
+    regions: tuple[IllustrationProfileRegionA0, ...]
+    z_min_mm: float
+    z_max_mm: float
+    material: MeshIllustrationMaterial
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AnalyticCylinderA0:
+    kind: Literal["cylinder"]
+    id: str
+    center_mm: IllustrationVector2Mm
+    radius_mm: float
+    z_min_mm: float
+    z_max_mm: float
+    material: MeshIllustrationMaterial
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AnalyticSphereA0:
+    kind: Literal["sphere"]
+    id: str
+    center_mm: IllustrationVector3
+    radius_mm: float
+    material: MeshIllustrationMaterial
+
+
+AnalyticPrimitiveA0: TypeAlias = AnalyticExtrusionA0 | AnalyticCylinderA0 | AnalyticSphereA0
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AnalyticDefinitionA0:
+    id: str
+    primitives: tuple[AnalyticPrimitiveA0, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AnalyticOccurrenceA0:
+    id: str
+    definition_id: str
+    # Omitted means identity. Column-major affine transform; translations are millimeters.
+    transform: IllustrationMatrix4x4 | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AnalyticSceneA0:
+    definitions: tuple[AnalyticDefinitionA0, ...]
+    occurrences: tuple[AnalyticOccurrenceA0, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AnalyticIllustrationLimitsA0:
+    max_reached_definitions: int | None = None
+    max_reached_occurrences: int | None = None
+    max_reached_primitives: int | None = None
+    max_reached_rings: int | None = None
+    max_reached_points: int | None = None
+    max_generated_curve_samples: int | None = None
+    max_definition_triangles: int | None = None
+    max_topology_candidate_pairs: int | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AnalyticLoweringOptionsA0:
+    linear_deflection_mm: float | None = None
+    angular_deflection_rad: float | None = None
+    limits: AnalyticIllustrationLimitsA0 | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AnalyticIllustrationSourceA0:
+    kind: Literal["analytic"]
+    scene: AnalyticSceneA0
+    lowering: AnalyticLoweringOptionsA0 | None = None
+
+
+ModelIllustrationSourceA0: TypeAlias = ModelAttachmentIllustrationSourceA0 | AnalyticIllustrationSourceA0
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -813,6 +969,15 @@ class MeshIllustrationView:
 class MeshIllustrationPrepareOptions:
     max_triangles: int | None = None
     weld_tolerance: float | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ModelIllustrationLineworkOptionsA0:
+    fast: FastHlrOptionsA0 | None = None
+    # Physical outline width applied after prepared source bounds are known.
+    outline_width_mm: float | None = None
+    # Physical detail width applied after prepared source bounds are known.
+    detail_width_mm: float | None = None
 
 
 class MeshIllustrationShading(str, Enum):
@@ -850,6 +1015,42 @@ class MeshIllustrationStyleA0:
     rim_amount: float | None = None
 
 
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ModelIllustrationWorkLimitsA0:
+    # Maximum candidate comparisons in each Fast linework and illustration visibility stage.
+    max_visibility_candidate_pairs: int | None = None
+    max_drawing_commands: int | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ModelIllustrationGeometryRequestA0:
+    schema: Literal["geometry.model_illustration_geometry.request.a0"]
+    source: ModelIllustrationSourceA0
+    view: MeshIllustrationView
+    prepare: MeshIllustrationPrepareOptions | None = None
+    linework: ModelIllustrationLineworkOptionsA0 | None = None
+    style: MeshIllustrationStyleA0 | None = None
+    work_limits: ModelIllustrationWorkLimitsA0 | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshIllustrationSvgOptions:
+    coordinate_span: int | None = None
+    title: str | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ModelIllustrationRequestA0:
+    schema: Literal["geometry.model_illustration.request.a0"]
+    source: ModelIllustrationSourceA0
+    view: MeshIllustrationView
+    prepare: MeshIllustrationPrepareOptions | None = None
+    linework: ModelIllustrationLineworkOptionsA0 | None = None
+    style: MeshIllustrationStyleA0 | None = None
+    svg: MeshIllustrationSvgOptions | None = None
+    work_limits: ModelIllustrationWorkLimitsA0 | None = None
+
+
 # Reuses bounded mesh_collection and optional matching visible HLR attachments.
 @dataclass(frozen=True, slots=True, kw_only=True)
 class MeshIllustrationGeometryRequestA0:
@@ -857,12 +1058,6 @@ class MeshIllustrationGeometryRequestA0:
     view: MeshIllustrationView
     prepare: MeshIllustrationPrepareOptions | None = None
     style: MeshIllustrationStyleA0 | None = None
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class MeshIllustrationSvgOptions:
-    coordinate_span: int | None = None
-    title: str | None = None
 
 
 # Native one-shot illustration settings. Meshes arrive in the required mesh_collection attachment governed by geometry.mesh_collection.a0. Reuses existing illustration A0 options and result; does not compute HLR. Optional hlr_projection attachment is geometry.hlr_projection.result.a0: exactly one matching view, millimeters, polyline outline/detail only. Supply visibility-filtered HLR from the same model, placement and transform as the meshes. The renderer mirrors and composes detail then outline over surfaces according to show_hlr_detail/show_hlr_outline; it does not infer visibility from arbitrary supplied segments. Maximum 1,000,000 segments.
@@ -873,11 +1068,6 @@ class MeshIllustrationRequestA0:
     prepare: MeshIllustrationPrepareOptions | None = None
     style: MeshIllustrationStyleA0 | None = None
     svg: MeshIllustrationSvgOptions | None = None
-
-
-class ModelRootPlacement(str, Enum):
-    STRIP = "strip"
-    PRESERVE = "preserve"
 
 
 # Stateless STEP tessellation; component placement is retained in either root mode.
@@ -1375,7 +1565,9 @@ class StepTopologyAnalyzeRecoveryRequestA0:
 
 # Structurally representable request payloads for executable IPC A0. A variant is callable only when the negotiated runtime catalog advertises its operation; structural presence does not imply runtime availability.
 IpcRequestValueA0: TypeAlias = (
-    MeshIllustrationGeometryRequestA0
+    ModelIllustrationGeometryRequestA0
+    | ModelIllustrationRequestA0
+    | MeshIllustrationGeometryRequestA0
     | MeshIllustrationRequestA0
     | ModelTessellationRequestA0
     | ModelBoundsOptionsA0
@@ -1420,19 +1612,6 @@ class IpcWelcomeA0:
     operation_catalog: IpcOperationCatalogA0
     limits: IpcEffectiveLimitsA0
     capabilities: tuple[str, ...]
-
-
-IllustrationMatrix4x4: TypeAlias = tuple[
-    float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float
-]
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class MeshIllustrationMaterial:
-    # sRGB channels in the inclusive range [0, 1].
-    color: IllustrationVector3
-    opacity: float | None = None
-    name: str | None = None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -1614,6 +1793,69 @@ class ModelBoundsResultA0:
     source: ModelBoundsSource
     bounds: ModelBoundsValues
     timings: ModelBoundsTimings
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AnalyticSourceSummaryA0:
+    kind: Literal["analytic"]
+    definitions: int
+    occurrences: int
+    primitives: int
+    triangles: int
+
+
+class ModelAttachmentMediaTypeA0(str, Enum):
+    APPLICATION_STEP = "application/step"
+    MODEL_STEP = "model/step"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ModelAttachmentSourceSummaryA0:
+    kind: Literal["model"]
+    media_type: ModelAttachmentMediaTypeA0
+    source_sha256: str
+    meshes: int
+    triangles: int
+
+
+ModelIllustrationBounds3MmA0: TypeAlias = tuple[float, float, float, float, float, float]
+
+ModelIllustrationSourceSummaryA0: TypeAlias = ModelAttachmentSourceSummaryA0 | AnalyticSourceSummaryA0
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ModelIllustrationTimingsA0:
+    # Model import+tessellation or analytic validation+lowering.
+    source_preparation_ms: float
+    linework_ms: float
+    # Shading, ordering, fusion, and SVG construction when applicable.
+    illustration_ms: float
+    # Encoding a returned attachment, zero for the inline SVG operation.
+    attachment_encoding_ms: float
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ModelIllustrationGeometryResultA0:
+    schema: Literal["geometry.model_illustration_geometry.result.a0"]
+    geometry: IllustrationGeometryAttachment
+    # Prepared source bounds [min_x, min_y, min_z, max_x, max_y, max_z].
+    bounds_mm: ModelIllustrationBounds3MmA0
+    source: ModelIllustrationSourceSummaryA0
+    stats: MeshIllustrationRenderStats
+    timings: ModelIllustrationTimingsA0
+    warnings: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ModelIllustrationResultA0:
+    schema: Literal["geometry.model_illustration.result.a0"]
+    svg: str
+    # Prepared source bounds [min_x, min_y, min_z, max_x, max_y, max_z].
+    bounds_mm: ModelIllustrationBounds3MmA0
+    source: ModelIllustrationSourceSummaryA0
+    stats: MeshIllustrationRenderStats
+    timings: ModelIllustrationTimingsA0
+    warnings: tuple[str, ...]
 
 
 # Shared colored indexed meshes. Coordinates and matrix translations are millimeters.
@@ -2128,7 +2370,9 @@ class StepTopologyAnalyzeRecoveryResultA0:
 
 # Structurally representable operation results. A result variant may belong to a runtime-unavailable experimental operation and is not an availability claim; the negotiated operation catalog remains authoritative.
 OperationResultValueA0: TypeAlias = (
-    MeshIllustrationGeometryResultA0
+    ModelIllustrationGeometryResultA0
+    | ModelIllustrationResultA0
+    | MeshIllustrationGeometryResultA0
     | MeshIllustrationResultA0
     | ModelTessellationResultA0
     | ModelBoundsResultA0
@@ -2221,8 +2465,32 @@ MODEL_TYPES = {
     "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsSource": ModelBoundsSource,
     "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsTimings": ModelBoundsTimings,
     "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsValues": ModelBoundsValues,
+    "Wavenumber.Geometer.Contracts.ModelIllustrationA0.AnalyticCylinderA0": AnalyticCylinderA0,
+    "Wavenumber.Geometer.Contracts.ModelIllustrationA0.AnalyticDefinitionA0": AnalyticDefinitionA0,
+    "Wavenumber.Geometer.Contracts.ModelIllustrationA0.AnalyticExtrusionA0": AnalyticExtrusionA0,
+    "Wavenumber.Geometer.Contracts.ModelIllustrationA0.AnalyticIllustrationLimitsA0": AnalyticIllustrationLimitsA0,
+    "Wavenumber.Geometer.Contracts.ModelIllustrationA0.AnalyticIllustrationSourceA0": AnalyticIllustrationSourceA0,
+    "Wavenumber.Geometer.Contracts.ModelIllustrationA0.AnalyticLoweringOptionsA0": AnalyticLoweringOptionsA0,
+    "Wavenumber.Geometer.Contracts.ModelIllustrationA0.AnalyticOccurrenceA0": AnalyticOccurrenceA0,
+    "Wavenumber.Geometer.Contracts.ModelIllustrationA0.AnalyticSceneA0": AnalyticSceneA0,
+    "Wavenumber.Geometer.Contracts.ModelIllustrationA0.AnalyticSourceSummaryA0": AnalyticSourceSummaryA0,
+    "Wavenumber.Geometer.Contracts.ModelIllustrationA0.AnalyticSphereA0": AnalyticSphereA0,
+    "Wavenumber.Geometer.Contracts.ModelIllustrationA0.IllustrationProfileCircularArcA0": IllustrationProfileCircularArcA0,
+    "Wavenumber.Geometer.Contracts.ModelIllustrationA0.IllustrationProfileLineA0": IllustrationProfileLineA0,
+    "Wavenumber.Geometer.Contracts.ModelIllustrationA0.IllustrationProfileRegionA0": IllustrationProfileRegionA0,
+    "Wavenumber.Geometer.Contracts.ModelIllustrationA0.IllustrationProfileRingA0": IllustrationProfileRingA0,
+    "Wavenumber.Geometer.Contracts.ModelIllustrationA0.ModelAttachmentIllustrationSourceA0": ModelAttachmentIllustrationSourceA0,
+    "Wavenumber.Geometer.Contracts.ModelIllustrationA0.ModelAttachmentSourceSummaryA0": ModelAttachmentSourceSummaryA0,
+    "Wavenumber.Geometer.Contracts.ModelIllustrationA0.ModelIllustrationGeometryRequestA0": ModelIllustrationGeometryRequestA0,
+    "Wavenumber.Geometer.Contracts.ModelIllustrationA0.ModelIllustrationGeometryResultA0": ModelIllustrationGeometryResultA0,
+    "Wavenumber.Geometer.Contracts.ModelIllustrationA0.ModelIllustrationLineworkOptionsA0": ModelIllustrationLineworkOptionsA0,
+    "Wavenumber.Geometer.Contracts.ModelIllustrationA0.ModelIllustrationRequestA0": ModelIllustrationRequestA0,
+    "Wavenumber.Geometer.Contracts.ModelIllustrationA0.ModelIllustrationResultA0": ModelIllustrationResultA0,
+    "Wavenumber.Geometer.Contracts.ModelIllustrationA0.ModelIllustrationTimingsA0": ModelIllustrationTimingsA0,
+    "Wavenumber.Geometer.Contracts.ModelIllustrationA0.ModelIllustrationWorkLimitsA0": ModelIllustrationWorkLimitsA0,
     "Wavenumber.Geometer.Contracts.ModelTessellationA0.MeshCollectionA0": MeshCollectionA0,
     "Wavenumber.Geometer.Contracts.ModelTessellationA0.MeshCollectionAttachment": MeshCollectionAttachment,
+    "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationOptionsA0": ModelTessellationOptionsA0,
     "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationRequestA0": ModelTessellationRequestA0,
     "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationResultA0": ModelTessellationResultA0,
     "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationFailureA0": OperationFailureA0,
@@ -2333,6 +2601,8 @@ ENUM_TYPES = {
     "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationShading": MeshIllustrationShading,
     "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationSurfaceKind": IllustrationSurfaceKind,
     "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelFormat": ModelFormat,
+    "Wavenumber.Geometer.Contracts.ModelIllustrationA0.ModelAttachmentMediaTypeA0": ModelAttachmentMediaTypeA0,
+    "Wavenumber.Geometer.Contracts.ModelIllustrationA0.PlanarArcSweep": PlanarArcSweep,
     "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelRootPlacement": ModelRootPlacement,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.CarrierSupportState": CarrierSupportState,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.HierarchyNodeKind": HierarchyNodeKind,

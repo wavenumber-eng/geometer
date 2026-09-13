@@ -1,4 +1,4 @@
-export declare const NORMALIZED_CONTRACT_CATALOG_SHA256: "e288a3ca7076b06d4c1b8beba52d250d2d457e4c6465721e9b7a0fcadc5872bd";
+export declare const NORMALIZED_CONTRACT_CATALOG_SHA256: "0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d";
 export declare const operationCatalog: {
     readonly "geometry.analytic_planar_boolean_batch.a0": {
         readonly identity: "geometry.analytic_planar_boolean_batch.a0";
@@ -125,6 +125,43 @@ export declare const operationCatalog: {
         }];
         readonly outputAttachments: readonly [];
         readonly documentation: "Project STEP model bytes through the selected polygonal, exact, or Fast HLR backend.";
+    };
+    readonly "geometry.model_illustration_geometry.a0": {
+        readonly identity: "geometry.model_illustration_geometry.a0";
+        readonly requestContract: "geometry.model_illustration_geometry.request.a0";
+        readonly resultContract: "geometry.model_illustration_geometry.result.a0";
+        readonly runtimeAvailable: true;
+        readonly nativeRuntimeAvailable: false;
+        readonly runtimeDispatch: "logical_dto";
+        readonly inputAttachments: readonly [{
+            readonly name: "model";
+            readonly required: false;
+            readonly media_types: readonly ["application/step", "model/step"];
+            readonly max_bytes: 268435456;
+        }];
+        readonly outputAttachments: readonly [{
+            readonly name: "illustration_geometry";
+            readonly required: true;
+            readonly media_types: readonly ["application/vnd.wavenumber.geometer.illustration-geometry+json"];
+            readonly max_bytes: 268435456;
+        }];
+        readonly documentation: "Import or lower one source and return renderer-neutral illustration geometry.";
+    };
+    readonly "geometry.model_illustration.a0": {
+        readonly identity: "geometry.model_illustration.a0";
+        readonly requestContract: "geometry.model_illustration.request.a0";
+        readonly resultContract: "geometry.model_illustration.result.a0";
+        readonly runtimeAvailable: true;
+        readonly nativeRuntimeAvailable: false;
+        readonly runtimeDispatch: "logical_dto";
+        readonly inputAttachments: readonly [{
+            readonly name: "model";
+            readonly required: false;
+            readonly media_types: readonly ["application/step", "model/step"];
+            readonly max_bytes: 268435456;
+        }];
+        readonly outputAttachments: readonly [];
+        readonly documentation: "Import or lower one source and return a complete deterministic SVG illustration.";
     };
     readonly "geometry.model_tessellation.a0": {
         readonly identity: "geometry.model_tessellation.a0";

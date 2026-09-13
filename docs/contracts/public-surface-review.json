@@ -4,7 +4,7 @@
   "files": [
     {
       "path": "python/geometer/__init__.py",
-      "sha256": "1d2e64051be0b62dcf0a55bb252ae9999123b1e9f715aa2d834cd0a6b0caa377"
+      "sha256": "6d0c162cac80a1f82bff97df9d9289fc5e108217fd949f28872e38fac6a7f85b"
     },
     {
       "path": "python/geometer/_analytic_packet_a0.py",
@@ -56,11 +56,15 @@
     },
     {
       "path": "python/geometer/_ipc_client.py",
-      "sha256": "b8c3b6982126cfa83b83b2f48d557210a3f7c748e0863f807373eb275d164458"
+      "sha256": "96332359aa60e0fc5684a2e72486a347439179cd8054be68ea65ff7ad6d95f60"
+    },
+    {
+      "path": "python/geometer/_model_illustration.py",
+      "sha256": "b1d0feee9ea6a808345aeac2b224a66933535f69643b206d501932dd3415a035"
     },
     {
       "path": "python/geometer/_native_helpers.py",
-      "sha256": "68625a8ddfccdd9a0568ba8d69c4b34928a0944a2461d28922ed1cd36570292f"
+      "sha256": "5afd76c10ea7bb6ecdf6862651d3664ba2954591fb6b84f8f71a663b4399f05a"
     },
     {
       "path": "python/geometer/_paths.py",
@@ -80,7 +84,7 @@
     },
     {
       "path": "python/geometer/_types.py",
-      "sha256": "9fde094a9c08525e2df5b19e26adc643cda31fd9a15b9f0893183561b522c1a4"
+      "sha256": "1adc35b999bd52e456db283cdee05698ca09672bd0e4e1645edf1892c61a84a3"
     },
     {
       "path": "src/cpp/cli/CMakeLists.txt",
@@ -88,7 +92,7 @@
     },
     {
       "path": "src/cpp/cli/cli_usage.cpp",
-      "sha256": "834a287ffb7e513c7451c9fe549c7c173136b5b100924d22a1b47eddb19e3457"
+      "sha256": "6e1e4b96e4c1d941156a065f6e03c786511ea91eeac08fb8581cecacd6eba7ce"
     },
     {
       "path": "src/cpp/cli/cli_usage.h",
@@ -116,7 +120,7 @@
     },
     {
       "path": "src/cpp/lib/CMakeLists.txt",
-      "sha256": "3e38a811aa841700ca67787dfa39bbe83a2e8e415e4a9409365d08b4b4e538ae"
+      "sha256": "c82a62f92050b34288dd60eb074fceb386c668d2c595e34d8506fa09598735b0"
     },
     {
       "path": "src/cpp/lib/geometer.h",
@@ -320,7 +324,7 @@
     },
     {
       "path": "src/cpp/lib/geometer/mesh_illustration.h",
-      "sha256": "b3a47629ff31693f85c6ca9b1e3de3ca8bddb2b6bfc4ec37e72a29c55f80f83d"
+      "sha256": "164003b6360bc511de9ebd4a9e13adb4c1dda3284de81be21ce7afcc8ce79fcf"
     },
     {
       "path": "src/cpp/lib/geometer/model.h",
@@ -333,6 +337,10 @@
     {
       "path": "src/cpp/lib/geometer/model_bounds_options_json.h",
       "sha256": "4df5a5a5414803d32be57073a4ff5c3f96639b99d9f24d4dbb0e1a911e7d3d46"
+    },
+    {
+      "path": "src/cpp/lib/geometer/model_illustration.h",
+      "sha256": "044e0a96c4e188af575c58f40a23f1e80781530f7b0670ebd7394872b9a3a13e"
     },
     {
       "path": "src/cpp/lib/geometer/model_tessellation.h",
@@ -364,7 +372,7 @@
     },
     {
       "path": "src/cpp/lib/geometer/projection.h",
-      "sha256": "c0961aa741679e1122807f7bd5457e52f0fa265f3243e040af4792982a27ef40"
+      "sha256": "07c033cfe9aa42391e88306ee200bb870a7f66043a5a908b9fd4d1db9e17f8c2"
     },
     {
       "path": "src/cpp/lib/geometer/projection_options_json.h",
@@ -412,7 +420,7 @@
     },
     {
       "path": "src/cpp/lib/operation_registry.cpp",
-      "sha256": "f3fc17873f92c57456e6c2727d09fbef6d71f1010efed85b2453628356803016"
+      "sha256": "5299b34fd17a6b46d46c56e2db69a20573a5192b0798f995b18fcbd7b4081d1b"
     },
     {
       "path": "src/cpp/lib/projection_options_json.cpp",
@@ -516,11 +524,15 @@
     },
     {
       "path": "src/rust/geometer-client/src/lib.rs",
-      "sha256": "ba097813ed63f16b27f4644a95e006fc353deba302457bb28ddf8f61c00dc6f8"
+      "sha256": "5eece75ef698edc4cd47066d5edbd560d2cc2bfe97df9b5fb8db8154911af193"
     },
     {
       "path": "src/rust/geometer-client/src/model_bounds.rs",
       "sha256": "a08d5dd441d5c83ece29f8ab16a9d8ca9fe04f4a05e4d9d4de12d2c54b5d917c"
+    },
+    {
+      "path": "src/rust/geometer-client/src/model_illustration.rs",
+      "sha256": "de1661a5c7cdea9a0d8ae87322d9e6c5849d95345d89757bbbb595e02a1443a0"
     },
     {
       "path": "src/rust/geometer-client/src/operation_validation.rs",
@@ -608,7 +620,7 @@
     },
     {
       "path": "src/ts/geometer/package.json",
-      "sha256": "30214a3874ef6dd0adfb26f618e8cc99bf3d6bfb2296196e87233fd429b7b17c"
+      "sha256": "35021f3c442ebba41c2a7d21c22f44f6cc91595b188ed75d054d4af7113eea74"
     },
     {
       "path": "src/ts/geometer/step-topology-validation.ts",

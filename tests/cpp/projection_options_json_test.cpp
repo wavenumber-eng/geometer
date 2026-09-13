@@ -37,10 +37,10 @@ void parse_defaults()
                 !options.edge_h_outline && !options.edge_h_smooth && !options.edge_h_sewn &&
                 !options.edge_h_iso,
             "historical edge-category defaults should remain unchanged");
-    require(options.projection_algorithm == geometer::ProjectionAlgorithm::Poly,
-            "poly should remain the default projection algorithm");
-    require(options.outline_algorithm == geometer::ProjectionOutlineAlgorithm::HlrClosedEdges,
-            "HLR close should remain the default outline algorithm");
+    require(options.projection_algorithm == geometer::ProjectionAlgorithm::Fast,
+            "Fast detail should be the default projection algorithm");
+    require(options.outline_algorithm == geometer::ProjectionOutlineAlgorithm::FastMeshShadow,
+            "Fast Mesh Shadow should be the default outline algorithm");
     require(options.fast.include_boundaries && options.fast.include_creases &&
                 options.fast.include_silhouettes && !options.fast.include_hidden &&
                 !options.fast.suppress_coplanar_seams,

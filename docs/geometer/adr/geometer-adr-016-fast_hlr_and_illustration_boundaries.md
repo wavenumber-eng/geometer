@@ -46,12 +46,11 @@ The governed portable operations are:
 - `geometry.model_hlr_projection.a0`, with a STEP/model attachment; and
 - `geometry.mesh_hlr_projection.a0`, with an indexed-triangle-mesh A0 packet.
 
-Both use `geometry.hlr_projection.options.a0`. `projection_algorithm` adds
-`fast`; model/STEP projection retains the `poly` default, while indexed-mesh
-projection defaults to `fast`. `outline_algorithm` adds `fast-mesh-shadow` as
-the indexed-mesh default without changing the model defaults or existing
-`hlr-close` and `mesh-shadow` selections. Fast-only controls are nested under
-`fast`; they do not reinterpret OCCT edge-category options.
+Both use `geometry.hlr_projection.options.a0`. Omitted selectors choose `fast`
+detail and `fast-mesh-shadow` for model/STEP and indexed-mesh projection.
+The existing `poly`, `exact`, `hlr-close`, and `mesh-shadow` selections remain
+available explicitly for compatible model sources. Fast-only controls are
+nested under `fast`; they do not reinterpret OCCT edge-category options.
 
 The TypeScript package may offer a convenience composition that combines Fast
 linework and illustration, but the underlying HLR and illustration contracts
@@ -88,3 +87,30 @@ the illustration renderer to evolve without changing the portable HLR result.
 Perspective vector guarantees, multithreaded WASM visibility, stable serialized
 prepared models, and changing the default HLR
 backend require later decisions.
+
+### Combined model illustration extension (2026-09-13)
+
+Geometer also publishes a combined model-illustration boundary for consumers
+that need a completed technical illustration rather than an intermediate mesh.
+It accepts either one attached model or a bounded generic analytic 2.5D scene,
+imports or lowers that source once into an in-memory mesh collection, and feeds
+the same collection to Fast vector detail, Fast Mesh Shadow, visibility,
+shading and same-color surface fusion. Each engine may derive its own private
+view-specific preparation from that collection. Its two portable operations
+return either deterministic SVG or the existing renderer-neutral
+illustration-geometry attachment.
+
+The combined boundary does not replace the independent model tessellation,
+Fast HLR, mesh HLR or mesh illustration operations. Consumers that own meshes,
+need interactive triangle data, select older projection algorithms, or compose
+multiple model attachments continue to use those surfaces. The A0 combined
+boundary accepts at most one model attachment; its analytic alternative uses
+definition-local extrusion, cylinder and sphere geometry with occurrence
+transforms. Application adapters resolve file paths, component composition and
+PCB-specific meaning before calling Geometer.
+
+STEP is the only attached model media type in A0. Analytic input stays analytic
+on the public boundary even when native code lowers it to a private prepared
+representation. Neither path serializes an intermediate mesh collection.
+TypeSpec owns the new request/result structures and operation declarations after
+their complete vertical is promoted under ADR 010.

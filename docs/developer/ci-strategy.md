@@ -92,6 +92,9 @@ job times on issue #34 were:
 | Standards | 1m 24s |
 
 The cross-transport job missed its distinct GitHub cache prefix and rebuilt
-OCCT from source. The new pull-request topology runs Linux production native and
-production WASM in parallel and leaves the four-platform matrix to publishing.
-Record post-change timings on issue #34 after the first canonical-cache run.
+OCCT from source. The first production run with this strategy completed in
+8m33s wall time: Linux native took 7m51s, WASM took 7m30s, and standards took
+1m21s in parallel. Linux migrated its legacy GitHub OCCT cache to the canonical
+key. WASM restored OCCT from the public binary cache and populated its canonical
+GitHub caches. The measured run and cache evidence are recorded on
+[issue #34](https://github.com/wavenumber-eng/geometer/issues/34).

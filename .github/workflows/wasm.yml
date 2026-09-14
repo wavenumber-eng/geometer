@@ -10,8 +10,6 @@ name: Experimental qualification
         required: false
         default: false
         type: boolean
-  schedule:
-    - cron: "18 8 1 * *"
 
 permissions:
   contents: read

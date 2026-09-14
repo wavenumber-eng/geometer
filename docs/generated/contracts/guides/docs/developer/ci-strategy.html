@@ -64,10 +64,11 @@ lanes.</p>
 <code>GEOMETER_TEST_PROFILE=production</code> to omit retained analytic-solver and STEP
 topology research suites.</p>
 <h2 id="experimental-qualification">Experimental qualification</h2>
-<p>The <code>Experimental qualification</code> workflow runs monthly or by manual dispatch.
-It owns the analytic solver, STEP topology research, seeded synthetic
-qualification, and executable/WASM analytic cross-transport parity. These tests
-do not block ordinary pull requests or releases.</p>
+<p>The <code>Experimental qualification</code> workflow runs only by manual dispatch when its
+research surfaces need qualification. It owns the analytic solver, STEP topology
+research, seeded synthetic qualification, and executable/WASM analytic
+cross-transport parity. These tests do not run on a schedule and do not block
+ordinary pull requests or releases.</p>
 <p>Run all native research tests locally with:</p>
 <pre><code class="language-powershell">uv run python scripts/validate_native.py --include-experimental-tests
 </code></pre>

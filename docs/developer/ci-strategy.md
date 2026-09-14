@@ -31,10 +31,11 @@ topology research suites.
 
 ## Experimental qualification
 
-The `Experimental qualification` workflow runs monthly or by manual dispatch.
-It owns the analytic solver, STEP topology research, seeded synthetic
-qualification, and executable/WASM analytic cross-transport parity. These tests
-do not block ordinary pull requests or releases.
+The `Experimental qualification` workflow runs only by manual dispatch when its
+research surfaces need qualification. It owns the analytic solver, STEP topology
+research, seeded synthetic qualification, and executable/WASM analytic
+cross-transport parity. These tests do not run on a schedule and do not block
+ordinary pull requests or releases.
 
 Run all native research tests locally with:
 

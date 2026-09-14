@@ -198,7 +198,8 @@ def test_experimental_qualification_is_outside_normal_ci_and_release() -> None:
     assert command not in release
     assert experimental.count(command) == 1
     assert "pull_request:" not in experimental
-    assert "schedule:" in experimental
+    assert "workflow_dispatch:" in experimental
+    assert "schedule:" not in experimental
     assert "--include-experimental-tests" in experimental
     assert "--include-experimental-tests" not in ci
     assert "--include-experimental-tests" not in release

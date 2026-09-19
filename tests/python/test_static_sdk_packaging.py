@@ -1,0 +1,140 @@
+from __future__ import annotations
+
+import hashlib
+import json
+import zipfile
+from pathlib import Path
+
+import package_static_sdk
+from build_static_sdk import validate_windows_static_runtime
+
+
+def _fake_build(tmp_path: Path) -> tuple[Path, Path, list[Path]]:
+    build = tmp_path / "build"
+    (build / "CMakeFiles/3.31.0").mkdir(parents=True)
+    (build / "CMakeCache.txt").write_text(
+        "CMAKE_BUILD_TYPE:STRING=Release\n"
+        "GEOMETER_OCCT_LIBRARY_TYPE:STRING=Static\n"
+        "GEOMETER_MSVC_RUNTIME:STRING=Static\n",
+        encoding="utf-8",
+    )
+    (build / "CMakeFiles/3.31.0/CMakeCXXCompiler.cmake").write_text(
+        'set(CMAKE_CXX_COMPILER_ID "MSVC")\nset(CMAKE_CXX_COMPILER_VERSION "19.44.35219.0")\n',
+        encoding="utf-8",
+    )
+    geometer = build / "src/cpp/lib/geometer.lib"
+    geometer.parent.mkdir(parents=True)
+    geometer.write_bytes(b"geometer-static-archive")
+    private = [tmp_path / "occt/TKernel.lib", tmp_path / "occt/TKMath.lib"]
+    for index, archive in enumerate(private):
+        archive.parent.mkdir(parents=True, exist_ok=True)
+        archive.write_bytes(f"private-{index}".encode())
+    return build, geometer, private
+
+
+def test_static_sdk_is_deterministic_complete_and_relocatable(tmp_path: Path, monkeypatch) -> None:
+    build, geometer, private = _fake_build(tmp_path)
+    license_file = tmp_path / "LICENSE.txt"
+    license_file.write_text("test license\n", encoding="utf-8")
+    command = (
+        f"link.exe {geometer} {private[0]} {private[1]} "
+        "windowscodecs.lib ws2_32.lib bcrypt.lib /out:geometer_sdk_link_probe.exe"
+    )
+    monkeypatch.setattr(package_static_sdk, "link_command", lambda _build: command)
+    monkeypatch.setattr(package_static_sdk, "git_revision", lambda _allow_dirty: "a" * 40)
+    monkeypatch.setattr(
+        package_static_sdk,
+        "release_license_sources",
+        lambda _root, _platform: {"TEST_LICENSE.txt": license_file},
+    )
+
+    first = tmp_path / "one/geometer-sdk.zip"
+    second = tmp_path / "two/geometer-sdk.zip"
+    package_static_sdk.package(build, "windows-x64", first, allow_dirty=True)
+    package_static_sdk.package(build, "windows-x64", second, allow_dirty=True)
+    assert first.read_bytes() == second.read_bytes()
+
+    with zipfile.ZipFile(first) as archive:
+        names = archive.namelist()
+        assert names == sorted(names)
+        assert "include/geometer/c_api.h" in names
+        assert "lib/geometer.lib" in names
+        assert {"lib/occt/TKernel.lib", "lib/occt/TKMath.lib"}.issubset(names)
+        assert "lib/cmake/Geometer/GeometerConfig.cmake" in names
+        assert "lib/cmake/Geometer/GeometerTargets.cmake" in names
+        assert "share/geometer/geometer-sdk.json" in names
+        assert "share/geometer/geometer-sdk-payload.json" in names
+        manifest = json.loads(archive.read("share/geometer/geometer-sdk.json"))
+        payload = json.loads(archive.read("share/geometer/geometer-sdk-payload.json"))
+        targets = archive.read("lib/cmake/Geometer/GeometerTargets.cmake").decode()
+
+        assert manifest["target_triple"] == "x86_64-pc-windows-msvc"
+        assert manifest["profile"]["msvc_runtime"] == "static"
+        assert manifest["archives"]["private"] == ["lib/occt/TKernel.lib", "lib/occt/TKMath.lib"]
+        assert manifest["link"]["system_libraries"] == ["windowscodecs", "ws2_32", "bcrypt"]
+        assert "Geometer::c_api_static" in targets
+        assert "${_GEOMETER_PREFIX}/lib/occt/TKernel.lib" in targets
+        assert str(tmp_path) not in targets
+
+        inventory = {entry["path"]: entry for entry in payload["entries"]}
+        assert "share/geometer/geometer-sdk-payload.json" not in inventory
+        assert set(inventory) == set(names) - {"share/geometer/geometer-sdk-payload.json"}
+        for name, entry in inventory.items():
+            value = archive.read(name)
+            assert entry["size"] == len(value)
+            assert entry["sha256"] == hashlib.sha256(value).hexdigest()
+
+    assert first.with_suffix(".zip.sha256").is_file()
+    provenance = json.loads(first.with_suffix(".zip.provenance.json").read_text(encoding="utf-8"))
+    assert provenance["archive"]["sha256"] == hashlib.sha256(first.read_bytes()).hexdigest()
+    assert provenance["source_revision"] == "a" * 40
+
+
+def test_linux_cmake_projection_preserves_rescan_group() -> None:
+    manifest = {
+        "archives": {
+            "geometer": "lib/libgeometer.a",
+            "private": ["lib/occt/libTKernel.a", "lib/occt/libTKMath.a"],
+        },
+        "link": {
+            "rescan_private_archives": True,
+            "system_libraries": ["stdc++", "pthread", "dl"],
+            "apple_frameworks": [],
+        },
+    }
+    targets = package_static_sdk.cmake_targets(manifest)
+    assert "$<LINK_GROUP:RESCAN,${_GEOMETER_PREFIX}/lib/occt/libTKernel.a," in targets
+    assert "${_GEOMETER_PREFIX}/lib/occt/libTKMath.a>" in targets
+    assert "stdc++;pthread;dl" in targets
+
+
+def test_windows_static_occt_recipe_is_isolated() -> None:
+    source = (package_static_sdk.ROOT / "scripts/build_occt.py").read_text(encoding="utf-8")
+    cmake = (package_static_sdk.ROOT / "CMakeLists.txt").read_text(encoding="utf-8")
+    assert "occt-static-crt-build" in source
+    assert "occt-static-crt-install" in source
+    assert 'definition("CMAKE_MSVC_RUNTIME_LIBRARY", "MultiThreaded")' in source
+    assert 'GEOMETER_MSVC_RUNTIME STREQUAL "Static"' in cmake
+    assert "occt-static-crt-install" in cmake
+
+
+def test_windows_sdk_rejects_dynamic_crt_compile_commands(tmp_path: Path) -> None:
+    build = tmp_path / "build"
+    build.mkdir()
+    compile_commands = build / "compile_commands.json"
+    compile_commands.write_text(
+        json.dumps([{"file": "C:\\work\\src\\cpp\\lib\\c_api.cpp", "command": "cl /MD /c c_api.cpp"}]),
+        encoding="utf-8",
+    )
+    try:
+        validate_windows_static_runtime(build)
+    except RuntimeError as error:
+        assert "/MD" in str(error)
+    else:
+        raise AssertionError("dynamic CRT compile command was accepted")
+
+    compile_commands.write_text(
+        json.dumps([{"file": "C:\\work\\src\\cpp\\lib\\c_api.cpp", "command": "cl /MT /c c_api.cpp"}]),
+        encoding="utf-8",
+    )
+    validate_windows_static_runtime(build)

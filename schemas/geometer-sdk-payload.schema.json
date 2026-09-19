@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wavenumber.com/schemas/geometer-sdk-payload.a0.json",
+  "title": "Geometer static SDK payload inventory",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["catalog_sha256", "entries", "manifest_sha256", "schema"],
+  "properties": {
+    "schema": { "const": "wn.geometer.static_sdk_payload.a0" },
+    "catalog_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "manifest_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "sha256", "size"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "size": { "type": "integer", "minimum": 0 }
+        }
+      }
+    }
+  }
+}

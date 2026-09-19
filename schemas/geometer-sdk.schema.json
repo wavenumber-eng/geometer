@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wavenumber.com/schemas/geometer-sdk.a0.json",
+  "title": "Geometer static SDK manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "archives",
+    "build_recipe",
+    "c_abi_generation",
+    "catalog",
+    "link",
+    "platform",
+    "profile",
+    "release_version",
+    "schema",
+    "target_triple"
+  ],
+  "properties": {
+    "schema": { "const": "wn.geometer.static_sdk.a0" },
+    "release_version": { "type": "string", "pattern": "^[0-9]{4}\\.[0-9]{1,2}\\.[0-9]{1,2}$" },
+    "c_abi_generation": { "type": "integer", "minimum": 20200101 },
+    "platform": { "enum": ["windows-x64", "linux-x64", "linux-arm64", "macos-arm64"] },
+    "target_triple": { "type": "string", "minLength": 1 },
+    "catalog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["projection", "sha256"],
+      "properties": {
+        "projection": { "const": "native" },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["architecture", "build_type", "compiler_family", "compiler_version", "cxx_runtime", "minimum_os", "msvc_runtime"],
+      "properties": {
+        "architecture": { "type": "string", "minLength": 1 },
+        "build_type": { "const": "Release" },
+        "compiler_family": { "type": "string", "minLength": 1 },
+        "compiler_version": { "type": "string", "minLength": 1 },
+        "cxx_runtime": { "type": "string", "minLength": 1 },
+        "minimum_os": { "type": ["string", "null"] },
+        "msvc_runtime": { "enum": ["static", "not-applicable"] }
+      }
+    },
+    "archives": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["geometer", "private"],
+      "properties": {
+        "geometer": { "type": "string", "pattern": "^lib/" },
+        "private": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^lib/occt/" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "link": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["apple_frameworks", "entries", "rescan_private_archives", "system_libraries"],
+      "properties": {
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "value"],
+            "properties": {
+              "kind": { "enum": ["archive", "system_library", "apple_framework"] },
+              "value": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "rescan_private_archives": { "type": "boolean" },
+        "system_libraries": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "apple_frameworks": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+      }
+    },
+    "build_recipe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "sha256"],
+      "properties": {
+        "identity": { "const": "wn.geometer.static_sdk_recipe.a0" },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    }
+  }
+}

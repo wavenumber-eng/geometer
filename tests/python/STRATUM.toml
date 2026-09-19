@@ -22,6 +22,7 @@ objectives = [
     "Verify colored native STEP tessellation through generated mesh attachments and typed clients.",
     "Verify direct file-backed and analytic model illustration through the governed one-pass boundary.",
     "Benchmark executable IPC startup, persistent operation latency, process-pool throughput, and memory before transport changes.",
+    "Verify deterministic relocatable static SDK packaging, exact link manifests, payload inventories, and isolated Windows CRT profiles.",
 ]
 
 [[subtests]]
@@ -197,4 +198,11 @@ id = "PY_025"
 file = "test_operation_transport_benchmark.py"
 name = "Operation Transport Baseline Harness"
 description = "Checks nearest-rank transport statistics and the representative governed native operation request used for standalone and embedded comparisons."
+test_case_type = "unit"
+
+[[subtests]]
+id = "PY_026"
+file = "test_static_sdk_packaging.py"
+name = "Static C ABI SDK Packaging"
+description = "Checks deterministic SDK archives, relocatable CMake metadata, authoritative link closure projection, payload integrity, provenance, and Windows static-CRT isolation."
 test_case_type = "unit"

@@ -242,6 +242,31 @@ uv run python scripts/validate_native.py
 Pass `--skip-ctest` to run only the build, CLI, source-checkout Python-wrapper,
 and dependency checks.
 
+### Static C ABI SDK candidate
+
+The supported static SDK is a separate, uncommitted release artifact; it is not
+the ordinary `geometer_lib` build output and is never placed under `dist/`.
+Build the current host profile with:
+
+```powershell
+uv run python scripts\build_static_sdk.py
+```
+
+This builds the `static-sdk` CMake preset, derives the exact private archive and
+system-library order from a CMake link probe, validates the platform ABI
+profile, and writes a deterministic archive plus checksum and external
+provenance sidecar under `out/sdk-candidate/`. On Windows it first restores or
+builds a separately keyed `/MT` OCCT install under
+`.deps/native/windows-x64/occt-static-crt-install/`; it never reuses the normal
+wheel/runtime `/MD` install.
+
+The archive exports only `include/geometer/c_api.h` and the relocatable
+`Geometer::c_api_static` CMake target. OCCT headers and the Geometer C++ ABI are
+not SDK interfaces. The SDK contains the private static archive closure,
+machine-readable ordered link manifest, schemas, licenses, internal payload
+inventory, and build attestation. Candidate archives remain generated state
+until the exact bytes pass external-consumer and downstream qualification.
+
 On first configure, CMake looks for OCCT at:
 
 ```text

@@ -21,6 +21,18 @@
                 "GEOMETER_COPY_OCCT_RUNTIME": "ON",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
             }
+        },
+        {
+            "name": "static-sdk",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build-static-sdk",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "BUILD_TESTING": "OFF",
+                "GEOMETER_OCCT_LIBRARY_TYPE": "Static",
+                "GEOMETER_MSVC_RUNTIME": "Static",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
         }
     ]
 }

@@ -176,10 +176,12 @@ def clone_occt() -> None:
     )
 
 
-def occt_paths(platform_name: str, library_type: str) -> tuple[Path, Path]:
+def occt_paths(platform_name: str, library_type: str, msvc_runtime: str = "Dynamic") -> tuple[Path, Path]:
     platform_dir = NATIVE_DEPS_DIR / platform_name
     if library_type == "Shared":
         return platform_dir / "occt-shared-build", platform_dir / "occt-shared-install"
+    if platform_name.startswith("windows-") and msvc_runtime == "Static":
+        return platform_dir / "occt-static-crt-build", platform_dir / "occt-static-crt-install"
     return platform_dir / "occt-build", platform_dir / "occt-install"
 
 
@@ -248,34 +250,42 @@ def occt_cache_profile(
     config: str,
     library_type: str,
     macos_deployment_target_value: str | None,
+    msvc_runtime: str = "Dynamic",
 ) -> occt_binary_cache.OcctCacheProfile:
     resolved_macos_target = None
     if platform_name.startswith("macos-"):
         resolved_macos_target = macos_deployment_target(macos_deployment_target_value)
     resolved_linux_glibc = linux_glibc_baseline(platform_name)
     toolchain_abi = native_toolchain_abi(platform_name)
+    static_msvc_runtime = platform_name.startswith("windows-") and msvc_runtime == "Static"
+    if static_msvc_runtime:
+        toolchain_abi = f"{toolchain_abi}-crt-static"
     definitions = native_occt_cmake_definitions(
         platform_name,
         config,
         library_type,
         macos_deployment_target_value,
+        msvc_runtime,
     )
+    recipe_inputs = {
+        "kind": "native",
+        "occt_repo": OCCT_REPO,
+        "occt_tag": OCCT_TAG,
+        "platform_tag": platform_name,
+        "config": config,
+        "library_type": library_type,
+        "toolchain_abi": toolchain_abi or "",
+        "macos_deployment_target": resolved_macos_target or "",
+        "linux_glibc_baseline": resolved_linux_glibc,
+        "rapidjson_patch": RAPIDJSON_PATCH_SENTINEL,
+        "rapidjson_content_sha256": occt_binary_cache.directory_content_hash(RAPIDJSON_SRC),
+    }
+    if static_msvc_runtime:
+        recipe_inputs["msvc_runtime"] = "Static"
     recipe = occt_binary_cache.semantic_recipe_hash(
-        "native-install-a2",
+        "native-install-a3" if static_msvc_runtime else "native-install-a2",
         definitions,
-        {
-            "kind": "native",
-            "occt_repo": OCCT_REPO,
-            "occt_tag": OCCT_TAG,
-            "platform_tag": platform_name,
-            "config": config,
-            "library_type": library_type,
-            "toolchain_abi": toolchain_abi or "",
-            "macos_deployment_target": resolved_macos_target or "",
-            "linux_glibc_baseline": resolved_linux_glibc,
-            "rapidjson_patch": RAPIDJSON_PATCH_SENTINEL,
-            "rapidjson_content_sha256": occt_binary_cache.directory_content_hash(RAPIDJSON_SRC),
-        },
+        recipe_inputs,
     )
     return occt_binary_cache.OcctCacheProfile(
         kind="native",
@@ -305,8 +315,9 @@ def native_occt_cmake_definitions(
     config: str,
     library_type: str,
     macos_deployment_target_value: str | None,
+    msvc_runtime: str = "Dynamic",
 ) -> tuple[occt_binary_cache.CMakeDefinition, ...]:
-    _, install_dir = occt_paths(platform_name, library_type)
+    _, install_dir = occt_paths(platform_name, library_type, msvc_runtime)
     definition = occt_binary_cache.CMakeDefinition
     definitions = [
         definition("CMAKE_INSTALL_PREFIX", str(install_dir), include_in_recipe=False),
@@ -325,6 +336,8 @@ def native_occt_cmake_definitions(
         definition("3RDPARTY_RAPIDJSON_DIR", str(RAPIDJSON_SRC), recipe_value="vendored-rapidjson"),
         definition("CMAKE_POLICY_VERSION_MINIMUM", "3.5"),
     ]
+    if platform_name.startswith("windows-") and msvc_runtime == "Static":
+        definitions.append(definition("CMAKE_MSVC_RUNTIME_LIBRARY", "MultiThreaded"))
     if platform_name.startswith("macos-"):
         target = macos_deployment_target(macos_deployment_target_value)
         definitions.append(definition("CMAKE_OSX_DEPLOYMENT_TARGET", target))
@@ -340,8 +353,9 @@ def configure_occt(
     config: str,
     library_type: str,
     macos_deployment_target: str | None,
+    msvc_runtime: str,
 ) -> None:
-    build_dir, _ = occt_paths(platform_name, library_type)
+    build_dir, _ = occt_paths(platform_name, library_type, msvc_runtime)
     print(f"Configuring OCCT ({config}, {library_type}) ...")
     build_dir.mkdir(parents=True, exist_ok=True)
     cmd = [
@@ -352,15 +366,15 @@ def configure_occt(
         "-B",
         str(build_dir),
         *occt_binary_cache.cmake_definition_args(
-            native_occt_cmake_definitions(platform_name, config, library_type, macos_deployment_target)
+            native_occt_cmake_definitions(platform_name, config, library_type, macos_deployment_target, msvc_runtime)
         ),
     ]
 
     run(cmd)
 
 
-def build_occt(platform_name: str, config: str, library_type: str) -> None:
-    build_dir, _ = occt_paths(platform_name, library_type)
+def build_occt(platform_name: str, config: str, library_type: str, msvc_runtime: str = "Dynamic") -> None:
+    build_dir, _ = occt_paths(platform_name, library_type, msvc_runtime)
     print(f"Building OCCT ({config}, {library_type}) ...")
     run(
         [
@@ -375,8 +389,8 @@ def build_occt(platform_name: str, config: str, library_type: str) -> None:
     )
 
 
-def install_occt(platform_name: str, config: str, library_type: str) -> None:
-    build_dir, install_dir = occt_paths(platform_name, library_type)
+def install_occt(platform_name: str, config: str, library_type: str, msvc_runtime: str = "Dynamic") -> None:
+    build_dir, install_dir = occt_paths(platform_name, library_type, msvc_runtime)
     print(f"Installing OCCT to {install_dir} ...")
     run(
         [
@@ -399,8 +413,8 @@ def clean(platform_name: str, *, include_source: bool) -> None:
             remove_tree(d)
 
 
-def prepare_source_build(platform_name: str, library_type: str) -> None:
-    build_dir, install_dir = occt_paths(platform_name, library_type)
+def prepare_source_build(platform_name: str, library_type: str, msvc_runtime: str = "Dynamic") -> None:
+    build_dir, install_dir = occt_paths(platform_name, library_type, msvc_runtime)
     for path in (build_dir, install_dir):
         if path.exists():
             print(f"Removing stale OCCT path {path}")
@@ -446,6 +460,12 @@ def main() -> None:
         default=None,
         help=f"Minimum macOS deployment target for native dependencies (default: {DEFAULT_MACOS_DEPLOYMENT_TARGET})",
     )
+    parser.add_argument(
+        "--msvc-runtime",
+        choices=["Dynamic", "Static"],
+        default="Dynamic",
+        help="MSVC runtime profile for Windows static libraries (default: Dynamic).",
+    )
     parser.add_argument("--clean", action="store_true", help="Remove all OCCT build artifacts")
     parser.add_argument(
         "--clean-source",
@@ -484,6 +504,7 @@ def main() -> None:
         args.config,
         args.library_type,
         args.macos_deployment_target,
+        args.msvc_runtime,
     )
     if args.print_binary_cache_key:
         print(profile.cache_key)
@@ -493,15 +514,21 @@ def main() -> None:
     if args.platform_tag.startswith("macos-"):
         print(f"Using macOS deployment target {macos_deployment_target(args.macos_deployment_target)}")
     verify_vendored_rapidjson()
-    _, install_dir = occt_paths(args.platform_tag, args.library_type)
+    _, install_dir = occt_paths(args.platform_tag, args.library_type, args.msvc_runtime)
     if occt_binary_cache.install_matches_or_migrates_profile(install_dir, profile):
         print(f"OCCT install already present at {install_dir}")
     elif not occt_binary_cache.restore_prebuilt_install(profile, install_dir, mode=args.binary_cache):
-        prepare_source_build(args.platform_tag, args.library_type)
+        prepare_source_build(args.platform_tag, args.library_type, args.msvc_runtime)
         clone_occt()
-        configure_occt(args.platform_tag, args.config, args.library_type, args.macos_deployment_target)
-        build_occt(args.platform_tag, args.config, args.library_type)
-        install_occt(args.platform_tag, args.config, args.library_type)
+        configure_occt(
+            args.platform_tag,
+            args.config,
+            args.library_type,
+            args.macos_deployment_target,
+            args.msvc_runtime,
+        )
+        build_occt(args.platform_tag, args.config, args.library_type, args.msvc_runtime)
+        install_occt(args.platform_tag, args.config, args.library_type, args.msvc_runtime)
         occt_binary_cache.write_install_profile(install_dir, profile)
 
     if not occt_binary_cache.install_matches_profile(install_dir, profile):

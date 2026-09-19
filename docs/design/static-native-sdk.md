@@ -127,7 +127,10 @@ ordered archive/system-library/framework closure from the SDK manifest. It
 does not download dependencies or SDK artifacts. Its safe ownership helpers
 copy output bytes into Rust values and release every Geometer-owned handle;
 `geometer-client`'s optional `direct-static` feature builds the shared
-catalog/contract validation and bounded executor on top.
+catalog/contract validation and bounded executor on top. It also re-exports a
+safe `serve_stdio()` bootstrap so a downstream executable can use itself as
+the ordinary IPC worker and retain process-pool parallelism while shipping one
+file.
 
 The versioned SDK JSON schema records target/profile identity, ordered archive
 entries, rescan/group boundaries, system libraries, Apple frameworks, and the

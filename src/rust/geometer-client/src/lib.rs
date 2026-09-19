@@ -29,6 +29,8 @@ pub use client::{GeometerClient, GeometerClientError, OperationCall, OperationRe
 pub use direct::GeometerDirectClient;
 pub use generated::contracts;
 pub use generated::contracts::NORMALIZED_CATALOG_SHA256;
+#[cfg(feature = "direct-static")]
+pub use geometer_sys::serve_stdio;
 pub use hlr::{MeshHlrProjectionRequest, ModelHlrProjectionRequest};
 pub use indexed_mesh_packet_a0::{
     INDEXED_TRIANGLE_MESH_MEDIA_TYPE, INDEXED_TRIANGLE_MESH_PACKET_FORMAT, IndexedMeshPacketError,

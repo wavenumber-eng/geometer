@@ -24,6 +24,12 @@ copy/free every Geometer-owned result before starting the next request. Use
 self-hosted worker processes when hard cancellation or crash containment is
 required.
 
+The feature also re-exports the safe `serve_stdio()` bootstrap. A statically
+linked application can reserve a hidden `serve --stdio` mode, spawn copies of
+its own executable through the ordinary `GeometerClient`, and retain the
+multi-process concurrency/crash boundary without distributing a second
+`geometer` executable.
+
 Since 2026.9.6, the client additionally provides typed `model_tessellation` and
 `mesh_illustration` methods using generated A0 values. Optional
 `mesh_illustration_with_hlr(input, hlr)` returns the native composed SVG with

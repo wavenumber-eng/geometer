@@ -31,6 +31,11 @@ queued work; an active timeout is observational and the executor continues to
 copy/free every Geometer-owned result before starting the next request. Use
 self-hosted worker processes when hard cancellation or crash containment is
 required.</p>
+<p>The feature also re-exports the safe <code>serve_stdio()</code> bootstrap. A statically
+linked application can reserve a hidden <code>serve --stdio</code> mode, spawn copies of
+its own executable through the ordinary <code>GeometerClient</code>, and retain the
+multi-process concurrency/crash boundary without distributing a second
+<code>geometer</code> executable.</p>
 <p>Since 2026.9.6, the client additionally provides typed <code>model_tessellation</code> and
 <code>mesh_illustration</code> methods using generated A0 values. Optional
 <code>mesh_illustration_with_hlr(input, hlr)</code> returns the native composed SVG with

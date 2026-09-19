@@ -186,6 +186,17 @@ pub fn operation_catalog_json() -> Result<Vec<u8>, Error> {
     Ok(value.take().into_bytes())
 }
 
+/// Run the executable IPC server on the current process standard streams.
+///
+/// Call this as the process's main worker entry point before starting unrelated
+/// threads or writing to standard output/error. Protocol-fatal shutdown paths
+/// may terminate the process without Rust unwinding.
+pub fn serve_stdio() -> c_int {
+    // SAFETY: the C ABI function has no pointer preconditions. Its exclusive
+    // standard-stream and process-lifecycle requirements are documented above.
+    unsafe { geometer_serve_stdio() }
+}
+
 fn copy_result_text(pointer: *const u8, size: u32, label: &str) -> Result<Vec<u8>, Error> {
     if size != 0 && pointer.is_null() {
         return Err(Error {

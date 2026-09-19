@@ -5,19 +5,27 @@ import {
   decodeIpcShutdownAckA0Json,
   decodeIpcWelcomeA0Json,
   decodeOperationOutcomeA0Json,
+  decodeOperationOutcomeB0Json,
   encodeIpcHelloA0Json,
   encodeIpcReasonA0Json,
   encodeIpcRequestA0Json,
+  encodeIpcRequestB0Json,
+  encodeMeshCollectionA0Json,
 } from "./generated/codecs.js";
 import type {
   HlrProjectionOptionsA0,
   HlrProjectionResultA0,
+  HlrProjectionResultB0,
   IpcEffectiveLimitsA0,
   IpcOperationDeclarationA0,
   IpcRequestValueA0,
+  IpcRequestValueB0,
   IpcShutdownAckA0,
   IpcWelcomeA0,
+  MeshCollectionA0,
+  MeshHlrProjectionRequestB0,
   OperationOutcomeA0,
+  OperationOutcomeB0,
 } from "./generated/contracts.js";
 import {
   NORMALIZED_CONTRACT_CATALOG_SHA256,
@@ -64,7 +72,7 @@ export interface GeometerIpcConnectOptionsA0 {
 
 export interface GeometerIpcOperationResponseA0 {
   readonly requestId: bigint;
-  readonly outcome: OperationOutcomeA0;
+  readonly outcome: OperationOutcomeA0 | OperationOutcomeB0;
   readonly attachments: readonly GeometerIpcAttachment[];
 }
 
@@ -77,6 +85,11 @@ export interface GeometerIpcModelHlrProjectionRequestA0 {
 export interface GeometerIpcMeshHlrProjectionRequestA0 {
   readonly mesh: IndexedTriangleMeshA0 | Uint8Array;
   readonly options?: HlrProjectionOptionsA0;
+}
+
+export interface GeometerIpcMeshHlrProjectionRequestB0 {
+  readonly meshCollection: MeshCollectionA0;
+  readonly request: MeshHlrProjectionRequestB0;
 }
 
 export interface GeometerIpcCallA0 {
@@ -100,6 +113,7 @@ export class GeometerIpcCancelledError extends GeometerIpcClientError {
 }
 
 interface PendingCall {
+  readonly declaration: IpcOperationDeclarationA0;
   readonly operation: OperationIdentity;
   readonly residentBytes: number;
   readonly response: Deferred<GeometerIpcOperationResponseA0>;
@@ -165,27 +179,40 @@ export class GeometerIpcClientA0 {
 
   start(
     operation: OperationIdentity,
-    request: IpcRequestValueA0,
+    request: IpcRequestValueA0 | IpcRequestValueB0,
     attachments: readonly GeometerIpcAttachment[] = [],
   ): GeometerIpcCallA0 {
     if (this.state !== "running") {
       throw new GeometerIpcClientError("Geometer IPC connection is not accepting requests.");
     }
     const declaration = negotiatedOperation(this.welcome, operation);
-    const envelope = { operation, request };
-    validateIpcRequestOperationPair(envelope);
+    const b0 = requestContractUsesB0(declaration.request_contract);
+    if (!b0) {
+      validateIpcRequestOperationPair({ operation, request: request as IpcRequestValueA0 });
+    } else if ((request as { readonly schema?: string }).schema !== declaration.request_contract) {
+      throw new GeometerIpcClientError(
+        "B0 request payload contract does not match the negotiated operation declaration.",
+      );
+    }
     validateAttachments(attachments, declaration.input_attachments, "request");
     const requestId = this.allocateRequestId();
     const frame = {
       attachments,
-      json: encodeIpcRequestA0Json(envelope),
+      json: b0
+        ? encodeIpcRequestB0Json({ operation, request: request as IpcRequestValueB0 })
+        : encodeIpcRequestA0Json({ operation, request: request as IpcRequestValueA0 }),
       kind: 3 as const,
       requestId,
     };
     const bytes = this.encodeEffectiveFrame(frame);
     this.reservePending(bytes.byteLength);
     const response = deferred<GeometerIpcOperationResponseA0>();
-    this.pending.set(requestId, { operation, residentBytes: bytes.byteLength, response });
+    this.pending.set(requestId, {
+      declaration,
+      operation,
+      residentBytes: bytes.byteLength,
+      response,
+    });
     void this.writeBytes(bytes).catch((error) => this.abort(asError(error)));
     return {
       cancel: (reason?: string) => this.cancel(requestId, reason),
@@ -196,7 +223,7 @@ export class GeometerIpcClientA0 {
 
   async execute(
     operation: OperationIdentity,
-    request: IpcRequestValueA0,
+    request: IpcRequestValueA0 | IpcRequestValueB0,
     attachments: readonly GeometerIpcAttachment[] = [],
   ): Promise<GeometerIpcOperationResponseA0> {
     return this.start(operation, request, attachments).response;
@@ -215,6 +242,41 @@ export class GeometerIpcClientA0 {
   }
 
   async meshHlrProjection(
+    request: GeometerIpcMeshHlrProjectionRequestB0,
+  ): Promise<HlrProjectionResultB0> {
+    const response = await this.execute(
+      "geometry.mesh_hlr_projection.b0",
+      { ...request.request, output_detail: request.request.output_detail ?? true },
+      [
+        {
+          name: "mesh_collection",
+          mediaType: "application/vnd.wavenumber.geometer.mesh-collection+json",
+          data: textEncoder.encode(encodeMeshCollectionA0Json(request.meshCollection)),
+        },
+      ],
+    );
+    if (!response.outcome.ok) {
+      throw new GeometerIpcClientError(
+        response.outcome.diagnostics.map((item) => item.message).join("; ") ||
+          "geometry.mesh_hlr_projection.b0 failed.",
+      );
+    }
+    if (
+      response.outcome.operation !== "geometry.mesh_hlr_projection.b0" ||
+      response.attachments.length !== 0
+    ) {
+      throw new GeometerIpcProtocolError("B0 mesh HLR returned an incompatible result.");
+    }
+    return response.outcome.result as HlrProjectionResultB0;
+  }
+
+  async meshHlrProjectionB0(
+    request: GeometerIpcMeshHlrProjectionRequestB0,
+  ): Promise<HlrProjectionResultB0> {
+    return this.meshHlrProjection(request);
+  }
+
+  async meshHlrProjectionA0(
     request: GeometerIpcMeshHlrProjectionRequestA0,
   ): Promise<HlrProjectionResultA0> {
     const packet =
@@ -255,7 +317,7 @@ export class GeometerIpcClientA0 {
     ) {
       throw new GeometerIpcProtocolError(`${operation} returned an incompatible result.`);
     }
-    return response.outcome.result;
+    return response.outcome.result as HlrProjectionResultA0;
   }
 
   async close(reason?: string): Promise<IpcShutdownAckA0> {
@@ -445,15 +507,19 @@ export class GeometerIpcClientA0 {
 
   private acceptResponse(frame: GeometerIpcFrame): void {
     const pending = requiredPending(this.pending, frame.requestId);
-    const outcome = decodeOperationOutcomeA0Json(frame.json);
+    const b0 = resultContractUsesB0(pending.declaration.result_contract);
+    const outcome = b0
+      ? decodeOperationOutcomeB0Json(frame.json)
+      : decodeOperationOutcomeA0Json(frame.json);
     if (outcome.operation !== pending.operation) {
       throw new GeometerIpcProtocolError("Operation response identity does not match its request.");
     }
-    validateIpcOutcomeOperationPair(outcome);
-    const declaration = negotiatedOperation(this.welcome, pending.operation);
+    if (!b0) {
+      validateIpcOutcomeOperationPair(outcome as OperationOutcomeA0);
+    }
     validateAttachments(
       frame.attachments,
-      outcome.ok ? declaration.output_attachments : [],
+      outcome.ok ? pending.declaration.output_attachments : [],
       "response",
     );
     this.releasePending(frame.requestId);
@@ -497,6 +563,30 @@ export class GeometerIpcClientA0 {
     this.pendingResidentBytes -= pending.residentBytes;
     this.pending.delete(requestId);
   }
+}
+
+const B0_REQUEST_CONTRACTS = new Set([
+  "geometry.model_illustration.request.b0",
+  "geometry.model_illustration_geometry.request.b0",
+  "geometry.mesh_illustration.request.b0",
+  "geometry.mesh_illustration_geometry.request.b0",
+  "geometry.mesh_hlr_projection.request.b0",
+]);
+
+const B0_RESULT_CONTRACTS = new Set([
+  "geometry.model_illustration.result.b0",
+  "geometry.model_illustration_geometry.result.b0",
+  "geometry.mesh_illustration.result.b0",
+  "geometry.mesh_illustration_geometry.result.b0",
+  "geometry.hlr_projection.result.b0",
+]);
+
+function requestContractUsesB0(contract: string): boolean {
+  return B0_REQUEST_CONTRACTS.has(contract);
+}
+
+function resultContractUsesB0(contract: string): boolean {
+  return B0_RESULT_CONTRACTS.has(contract);
 }
 
 function validateWelcome(welcome: IpcWelcomeA0, runtimeTarget: "portable" | "native"): void {

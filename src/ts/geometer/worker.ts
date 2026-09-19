@@ -8,11 +8,15 @@ import type {
   DiagnosticA0,
   HlrProjectionOptionsA0,
   HlrProjectionResultA0,
+  HlrProjectionResultB0,
   ModelBoundsResultA0,
 } from "./generated/index.js";
 import {
   decodeOperationOutcomeA0Json,
+  decodeOperationOutcomeB0Json,
   encodeHlrProjectionOptionsA0Json,
+  encodeMeshCollectionA0Json,
+  encodeMeshHlrProjectionRequestB0Json,
   encodeModelBoundsOptionsA0Json,
   operationCatalog,
 } from "./generated/index.js";
@@ -21,6 +25,7 @@ import type {
   GeometerOperationResponse,
   GeometerWasmCapabilityCatalog,
   MeshHlrProjectionRequest,
+  MeshHlrProjectionRequestA0,
   ModelBoundsRequest,
   ModelHlrProjectionRequest,
 } from "./wasm.js";
@@ -228,7 +233,7 @@ export class GeometerWorkerClient {
     if (!("bounds" in response.outcome.result)) {
       throw new GeometerWorkerError("model_bounds returned an incompatible result DTO.");
     }
-    return response.outcome.result;
+    return response.outcome.result as ModelBoundsResultA0;
   }
 
   async modelHlrProjection(request: ModelHlrProjectionRequest): Promise<HlrProjectionResultA0> {
@@ -241,7 +246,38 @@ export class GeometerWorkerClient {
     );
   }
 
-  async meshHlrProjection(request: MeshHlrProjectionRequest): Promise<HlrProjectionResultA0> {
+  async meshHlrProjection(request: MeshHlrProjectionRequest): Promise<HlrProjectionResultB0> {
+    const response = await this.execute(
+      "geometry.mesh_hlr_projection.b0",
+      encodeMeshHlrProjectionRequestB0Json({
+        ...request.request,
+        output_detail: request.request.output_detail ?? true,
+      }),
+      [
+        {
+          name: "mesh_collection",
+          mediaType: "application/vnd.wavenumber.geometer.mesh-collection+json",
+          data: new TextEncoder().encode(encodeMeshCollectionA0Json(request.meshCollection)),
+        },
+      ],
+    );
+    if (!response.outcome.ok) {
+      throw new GeometerOperationError(response.outcome.operation, response.outcome.diagnostics);
+    }
+    if (
+      response.outcome.operation !== "geometry.mesh_hlr_projection.b0" ||
+      response.attachments.length !== 0
+    ) {
+      throw new GeometerWorkerError("B0 mesh HLR returned an incompatible result.");
+    }
+    return response.outcome.result as HlrProjectionResultB0;
+  }
+
+  async meshHlrProjectionB0(request: MeshHlrProjectionRequest): Promise<HlrProjectionResultB0> {
+    return this.meshHlrProjection(request);
+  }
+
+  async meshHlrProjectionA0(request: MeshHlrProjectionRequestA0): Promise<HlrProjectionResultA0> {
     const { encodeIndexedTriangleMeshA0Packet, INDEXED_TRIANGLE_MESH_MEDIA_TYPE } = await import(
       "./indexed-mesh-packet-a0.js"
     );
@@ -277,7 +313,7 @@ export class GeometerWorkerClient {
     if (response.attachments.length !== 0) {
       throw new GeometerWorkerError(`${operation} returned unexpected attachments.`);
     }
-    return response.outcome.result;
+    return response.outcome.result as HlrProjectionResultA0;
   }
 
   async execute(
@@ -302,7 +338,9 @@ export class GeometerWorkerClient {
     if (response.kind !== "operation_result") {
       throw new GeometerWorkerError(`Expected operation_result, received ${response.kind}.`);
     }
-    const outcome = decodeOperationOutcomeA0Json(response.outcomeJson);
+    const outcome = operation.endsWith(".b0")
+      ? decodeOperationOutcomeB0Json(response.outcomeJson)
+      : decodeOperationOutcomeA0Json(response.outcomeJson);
     const result = {
       attachments: response.attachments.map((attachment) => ({
         data: new Uint8Array(attachment.data),

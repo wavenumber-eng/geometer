@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { createIllustrator, illustrateMesh, illustrateMeshGeometry } from "../../dist/wasm/npm/geometer/mesh-illustration.js";
+import { createIllustratorA0 as createIllustrator, illustrateMeshA0 as illustrateMesh, illustrateMeshGeometryA0 as illustrateMeshGeometry } from "../../dist/wasm/npm/geometer/mesh-illustration.js";
 import { nativeIllustrationFixtures } from "./native_illustration_fixtures.mjs";
 
 const platformDirectory = {

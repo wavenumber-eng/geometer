@@ -1,4 +1,4 @@
-import type { AnalyticPlanarBooleanBatchRequestA0, AnalyticPlanarBooleanBatchResultA0, DiagnosticA0, HlrProjectionOptionsA0, HlrProjectionResultA0, ModelBoundsInputMediaType, ModelBoundsOptionsA0, ModelBoundsResultA0, OperationOutcomeA0 } from "./generated/index.js";
+import type { AnalyticPlanarBooleanBatchRequestA0, AnalyticPlanarBooleanBatchResultA0, DiagnosticA0, HlrProjectionOptionsA0, HlrProjectionResultA0, ModelBoundsInputMediaType, ModelBoundsOptionsA0, ModelBoundsResultA0, OperationOutcomeA0, OperationOutcomeB0 } from "./generated/index.js";
 import type { IndexedTriangleMeshA0 } from "./indexed-mesh-packet-a0.js";
 export interface EmscriptenGeometerModule {
     readonly HEAPU8: Uint8Array;
@@ -25,7 +25,7 @@ export interface GeometerOperationAttachment {
 }
 export interface GeometerOperationResponse {
     readonly attachments: readonly GeometerOperationAttachment[];
-    readonly outcome: OperationOutcomeA0;
+    readonly outcome: OperationOutcomeA0 | OperationOutcomeB0;
 }
 export interface ModelBoundsRequest {
     readonly mediaType?: ModelBoundsInputMediaType;

@@ -321,7 +321,7 @@ int validate_mutation_publication(const std::string& operation, Result result, S
     succeed(&preview, operation, std::move(result));
     std::string json;
     contracts::ContractError error;
-    if (!contracts::encode_json(preview.outcome, &json, &error))
+    if (!encode_operation_outcome(preview.outcome, &json, &error))
     {
         if (status != nullptr)
         {

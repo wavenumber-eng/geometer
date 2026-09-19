@@ -34,6 +34,11 @@ Windows child processes are launched without a console window.
 
 Open STEP, orbit with left drag, pan with right/middle drag and zoom with the
 wheel. Fit is explicit; orbit does not change zoom or automatically refit.
+The B0 clipping controls select an X, Y, Z, or camera-facing plane, choose the
+retained side, and move the plane through the model. The left 3D pane remains
+the complete source while the illustration is clipped before bounds, linework,
+and projection. Camera-facing clipping follows orbit changes. The current cap
+policy is `none`, so the cut boundary is outlined without a synthesized face.
 Top/Bot/Front/Back/Left/Right and four ISO buttons use the HLR web demo's
 conventions. Select signed Top and Front model axes (default +Y/+Z); parallel
 choices are excluded. Changing axes updates the selected preset. Orbit returns
@@ -55,7 +60,7 @@ related options](../../../docs/design/mesh-illustration-native.md#fuse-surfaces-
 
 - Colored mesh: `geometry.model_tessellation.a0`, millimeters, stripped root
   placement, generated mesh-collection attachment.
-- Illustration: `geometry.model_illustration.a0`, with STEP import,
+- Illustration: `geometry.model_illustration.b0`, with STEP import,
   tessellation, Fast linework, shading and fusion completed in one native
   request. It returns the original A0 SVG result with five shading choices,
   bands/ambient/key/rim, material/fusion/back-face/color/line width/background

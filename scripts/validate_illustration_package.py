@@ -24,10 +24,10 @@ def validate(step: Path, output: Path) -> None:
     )  # Omitted fuse_surfaces uses the governed renderer default: true.
     with geometer.GeometerClient() as client:
         operations = {item.identity for item in client.welcome.operation_catalog.operations}
-        assert {"geometry.model_tessellation.a0", "geometry.mesh_illustration.a0"} <= operations
+        assert {"geometry.model_tessellation.a0", "geometry.mesh_illustration.b0"} <= operations
         meshes = client.model_tessellation(model)
-        input = geometer.MeshIllustrationInputA0(
-            schema="geometry.mesh_illustration.input.a0",
+        input = geometer.MeshIllustrationInputB0(
+            schema="geometry.mesh_illustration.input.b0",
             meshes=meshes.mesh_collection.meshes,
             view=view,
             style=style,
@@ -35,14 +35,16 @@ def validate(step: Path, output: Path) -> None:
         pure = client.mesh_illustration(input)
         assert pure.stats.surface_draws > 0 and pure.stats.outlines == 0 and pure.stats.details == 0
         assert pure == client.mesh_illustration(replace(input, style=replace(style, fuse_surfaces=True)))
-        hlr = client.model_hlr_projection(
-            model,
-            geometer.HlrProjectionOptionsA0(
+        collection = geometer.MeshCollectionA0(
+            schema="geometry.mesh_collection.a0",
+            length_unit="millimeter",
+            meshes=input.meshes,
+        )
+        hlr = client.mesh_hlr_projection(
+            collection,
+            geometer.MeshHlrProjectionRequestB0(
+                schema="geometry.mesh_hlr_projection.request.b0",
                 views=(geometer.HlrViewSpec(id="illustration", direction=view.direction, up=view.up),),
-                projection_algorithm=geometer.HlrProjectionAlgorithm.FAST,
-                outline_algorithm=geometer.HlrOutlineAlgorithm.FAST_MESH_SHADOW,
-                curve_mode=geometer.HlrCurveMode.POLYLINE,
-                strip_root_placement=True,
                 output_outline=True,
                 output_detail=True,
                 output_bbox=False,
@@ -50,8 +52,8 @@ def validate(step: Path, output: Path) -> None:
             ),
         )
         composed = client.mesh_illustration(input, hlr_projection=hlr)
-        geometry_input = geometer.MeshIllustrationGeometryInputA0(
-            schema="geometry.mesh_illustration_geometry.input.a0",
+        geometry_input = geometer.MeshIllustrationGeometryInputB0(
+            schema="geometry.mesh_illustration_geometry.input.b0",
             length_unit="millimeter",
             meshes=input.meshes,
             view=view,
@@ -59,13 +61,13 @@ def validate(step: Path, output: Path) -> None:
         )
         geometry = client.mesh_illustration_geometry(geometry_input, hlr_projection=hlr)
         assert geometry.stats == composed.stats and geometry.warnings == composed.warnings
-        assert isinstance(geometry, geometer.MeshIllustrationGeometryA0)
+        assert isinstance(geometry, geometer.MeshIllustrationGeometryB0)
         assert geometry.surfaces and geometry.lines and not hasattr(geometry, "svg")
-        assert "geometry.mesh_illustration_geometry.a0" in operations
+        assert "geometry.mesh_illustration_geometry.b0" in operations
         assert composed == client.mesh_illustration(input, hlr_projection=hlr)
         assert composed.stats.outlines > 0 and composed.stats.details > 0
-        assert isinstance(composed, geometer.MeshIllustrationResultA0)
-        assert composed.schema == "geometry.mesh_illustration.result.a0"
+        assert isinstance(composed, geometer.MeshIllustrationResultB0)
+        assert composed.schema == "geometry.mesh_illustration.result.b0"
         assert ET.fromstring(composed.svg).tag == "{http://www.w3.org/2000/svg}svg"
         try:
             client.mesh_illustration(replace(input, prepare=geometer.MeshIllustrationPrepareOptions(max_triangles=1)))

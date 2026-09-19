@@ -128,6 +128,53 @@ disk_job = disk_analytic_result.job_results[0]
 if disk_job.status != "success" or not disk_job.result_regions or len(disk_job.digest_sha256) != 64:
     raise RuntimeError("nontrivial analytic batch did not return canonical disk geometry")
 
+clip_mesh = geometer.MeshIllustrationMesh(
+    id="wheel-b0-clip-smoke",
+    positions=(-1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0),
+    indices=(0, 1, 2),
+    materials=(geometer.MeshIllustrationMaterial(color=(0.2, 0.5, 0.8)),),
+)
+clip_view = geometer.MeshIllustrationView(direction=(0.0, 0.0, 1.0), up=(0.0, 1.0, 0.0))
+partial_clip = geometer.IllustrationClipping(
+    planes=(geometer.HalfSpacePlane(normal=(1.0, 0.0, 0.0), distance_mm=0.0),),
+    cap_policy="none",
+)
+empty_clip = geometer.IllustrationClipping(
+    planes=(geometer.HalfSpacePlane(normal=(1.0, 0.0, 0.0), distance_mm=2.0),),
+    cap_policy="none",
+)
+with geometer.GeometerClient(exe, client_name="python-wheel-b0-validation") as illustration_client:
+    partial_illustration = illustration_client.mesh_illustration(
+        geometer.MeshIllustrationInputB0(
+            schema="geometry.mesh_illustration.input.b0",
+            meshes=(clip_mesh,),
+            view=clip_view,
+            clipping=partial_clip,
+        ),
+    )
+    empty_illustration = illustration_client.mesh_illustration(
+        geometer.MeshIllustrationInputB0(
+            schema="geometry.mesh_illustration.input.b0",
+            meshes=(clip_mesh,),
+            view=clip_view,
+            clipping=empty_clip,
+        ),
+    )
+if (
+    partial_illustration.schema != "geometry.mesh_illustration.result.b0"
+    or partial_illustration.empty
+    or partial_illustration.fragment.clipping is None
+    or partial_illustration.fragment.input_triangles != 1
+    or partial_illustration.fragment.output_triangles != 1
+):
+    raise RuntimeError("installed wheel executable did not return the expected partially clipped B0 result")
+if (
+    not empty_illustration.empty
+    or empty_illustration.fragment.output_triangles != 0
+    or "geometry.mesh_illustration.result.b0" not in empty_illustration.svg
+):
+    raise RuntimeError("installed wheel executable did not return explicit successful B0 empty output")
+
 bounds = geometer.model_bounds(step)
 if bounds.schema != "geometry.model_bounds.a0" or not bounds.source_hash:
     raise RuntimeError("generated model-bounds boundary did not return a validated result")
@@ -197,6 +244,8 @@ print(json.dumps({
     "model_bounds_hash": bounds.source_hash,
     "analytic_disk_regions": len(disk_job.result_regions),
     "analytic_disk_digest": disk_job.digest_sha256,
+    "b0_partial_fragment": partial_illustration.fragment.fragment_sha256,
+    "b0_empty_fragment": empty_illustration.fragment.fragment_sha256,
     "glb_bytes": len(glb),
     "planar_step_bytes": len(planar_step),
     "svg": str(svg_path),

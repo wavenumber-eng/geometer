@@ -1,6 +1,6 @@
 [package]
 name = "geometer-sys"
-version = "2026.9.18"
+version = "2026.9.19"
 edition = "2024"
 rust-version = "1.85"
 description = "Unsafe FFI and static SDK link projection for Geometer"

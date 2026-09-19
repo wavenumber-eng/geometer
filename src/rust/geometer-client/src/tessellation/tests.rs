@@ -16,11 +16,13 @@ fn response(collection: &MeshCollectionA0) -> OperationResponse {
         warnings: Vec::new(),
     };
     OperationResponse {
-        outcome: OperationOutcomeA0::Success(contracts::OperationSuccessA0 {
-            operation: "geometry.model_tessellation.a0".to_owned(),
-            ok: true,
-            result: OperationResultValueA0::ModelTessellation(metadata),
-        }),
+        outcome: crate::client::OperationOutcome::A0(OperationOutcomeA0::Success(
+            contracts::OperationSuccessA0 {
+                operation: "geometry.model_tessellation.a0".to_owned(),
+                ok: true,
+                result: OperationResultValueA0::ModelTessellation(metadata),
+            },
+        )),
         attachments: vec![Attachment {
             name: "mesh_collection".to_owned(),
             media_type: "application/vnd.wavenumber.geometer.mesh-collection+json".to_owned(),

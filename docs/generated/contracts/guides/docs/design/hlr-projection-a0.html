@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="91d0158e37d9a999b010d14f79e7537f2b9ccb0b03619b2143ec0d96343690ed">
+  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
   <title>HLR Projection A0 — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="91d0158e37d9a999b010d14f79e7537f2b9ccb0b03619b2143ec0d96343690ed" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/hlr-projection-a0.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="hlr-projection-a0">HLR Projection A0</h1></header>
 <h2 id="boundary">Boundary</h2>
@@ -234,7 +234,7 @@ const fromStep = await client.modelHlrProjection({
     fast: { crease_angle_rad: (25 * Math.PI) / 180 },
   },
 });
-const fromMesh = await client.meshHlrProjection({
+const fromMesh = await client.meshHlrProjectionA0({
   mesh: {
     positions: [0, 0, 0, 10, 0, 0, 0, 10, 0],
     indices: [0, 1, 2],
@@ -243,7 +243,8 @@ const fromMesh = await client.meshHlrProjection({
 });
 </code></pre>
 <p>The dedicated Worker and persistent TypeScript IPC clients use the same
-<code>modelHlrProjection</code> and <code>meshHlrProjection</code> method names.</p>
+<code>modelHlrProjection</code> and explicit <code>meshHlrProjectionA0</code> compatibility method
+names. Unqualified <code>meshHlrProjection</code> is the canonical B0 operation.</p>
 <h3 id="python-executable-ipc">Python executable IPC</h3>
 <pre><code class="language-python">from pathlib import Path
 
@@ -261,7 +262,7 @@ mesh = geometer.IndexedTriangleMeshA0(
 )
 with geometer.GeometerClient() as client:
     step_result = client.model_hlr_projection(Path(&quot;part.step&quot;).read_bytes(), options)
-    mesh_result = client.mesh_hlr_projection(mesh)
+    mesh_result = client.mesh_hlr_projection_a0(mesh)
 </code></pre>
 <h3 id="rust-executable-ipc">Rust executable IPC</h3>
 <pre><code class="language-rust">use geometer_client::{contracts, GeometerClient, ModelHlrProjectionRequest};
@@ -651,12 +652,13 @@ model are post-A0 work. The evaluated browser raster-HLR prototype is not part
 of the production A0 package.</p>
 <h2 id="typescript-convenience-composition">TypeScript convenience composition</h2>
 <p><code>@wavenumber/geometer/illustrated-hlr</code> composes the indexed-mesh operation with
-the production illustration renderer. <code>illustrateMeshWithFastHlr</code> is the
-one-shot SVG path; <code>createFastHlrIllustrator</code> returns both the governed HLR
-result and a reusable, disposable illustrator. Input positions and transforms
-are millimeters in this composition. The facade does not merge the contracts:
-callers can still inspect or store HLR linework independently of colorized
-output.</p>
+the production A0 illustration renderer. <code>illustrateMeshWithFastHlrA0</code> is the
+one-shot SVG path; <code>createFastHlrIllustratorA0</code> returns both the governed HLR
+result and a reusable, disposable illustrator. Its explicit A0 suffix prevents
+new callers from confusing this compatibility composition with correlated B0
+mesh HLR and clipping. Input positions and transforms are millimeters in this
+composition. The facade does not merge the contracts: callers can still inspect
+or store HLR linework independently of colorized output.</p>
 
 </main>
 </body>

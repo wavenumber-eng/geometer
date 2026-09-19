@@ -1,21 +1,25 @@
-# Model illustration A0
+# Model illustration operations
 
 Model illustration completes import or analytic lowering, Fast vector linework,
 technical shading, surface fusion, and output construction in one Geometer
 operation. Consumers do not transfer an intermediate triangle-mesh JSON value.
 
-The TypeSpec authority is
+The reusable source, view, and style authority is
 [`model-illustration-a0.tsp`](../../src/tsp/geometer/operations/model-illustration-a0.tsp).
-The operation and attachment projections are declared in
-[`model-illustration-operation-a0.tsp`](../../src/tsp/geometer/operations/model-illustration-operation-a0.tsp).
+Canonical operation roots and attachment projections are declared by the B0
+TypeSpec sources described in [illustration clipping B0](illustration-clipping-b0.md);
+the A0 operation declaration remains the compatibility authority.
 Generated schemas and styled contract pages are the field-level reference.
 
 ## Operations
 
-`geometry.model_illustration.a0` returns an inline deterministic SVG result.
-`geometry.model_illustration_geometry.a0` runs the same source preparation and
-rendering policy, then returns the existing renderer-neutral
-`geometry.mesh_illustration.geometry.a0` value in one governed JSON attachment.
+`geometry.model_illustration.b0` returns an inline deterministic SVG result.
+`geometry.model_illustration_geometry.b0` runs the same source preparation and
+rendering policy, then returns renderer-neutral
+`geometry.mesh_illustration.geometry.b0` in one governed JSON attachment. Both
+accept optional ordered half-spaces and report explicit empty/fragment metadata.
+The corresponding A0 identities remain strict compatibility operations without
+clipping fields.
 Use the latter when a Canvas, PDF, editor, or application renderer owns final
 drawing serialization.
 
@@ -144,4 +148,5 @@ request plus optional model attachment.
 - [`illustration_geometry_canvas.py`](../../examples/python/illustration_geometry_canvas.py)
   sends STEP once and draws returned raw geometry on Canvas.
 - [`mesh_illustration.rs`](../../src/rust/geometer-client/examples/mesh_illustration.rs)
+- [`direct_static_illustration.rs`](../../src/rust/geometer-client/examples/direct_static_illustration.rs)
   sends STEP once and writes the returned SVG.

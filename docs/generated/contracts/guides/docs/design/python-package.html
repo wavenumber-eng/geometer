@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="91d0158e37d9a999b010d14f79e7537f2b9ccb0b03619b2143ec0d96343690ed">
+  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
   <title>Python Package Interface — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="91d0158e37d9a999b010d14f79e7537f2b9ccb0b03619b2143ec0d96343690ed" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/python-package.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="python-package-interface">Python Package Interface</h1></header>
 <h2 id="python-interface">Python Interface</h2>
@@ -146,24 +146,27 @@ validates its result before the existing public <code>ModelBoundsResult</code> c
 wrapper is constructed. Public names, signatures, return attributes,
 executable discovery, and all other CLI-backed operations remain unchanged.</p>
 <p>The persistent client exposes governed HLR without temporary files:</p>
-<pre><code class="language-python">import geometer
+<pre><code class="language-python">from pathlib import Path
 
-options = geometer.HlrProjectionOptionsA0(
-    projection_algorithm=geometer.HlrProjectionAlgorithm.FAST,
-    outline_algorithm=geometer.HlrOutlineAlgorithm.FAST_MESH_SHADOW,
-    fast=geometer.FastHlrOptionsA0(crease_angle_rad=0.4363323129985824),
-    output_detail=True,
-)
+import geometer
+
 with geometer.GeometerClient() as client:
-    step_result = client.model_hlr_projection(Path(&quot;part.step&quot;).read_bytes(), options)
+    tessellated = client.model_tessellation(Path(&quot;part.step&quot;).read_bytes())
+    collection = geometer.MeshCollectionA0(
+        schema=&quot;geometry.mesh_collection.a0&quot;,
+        length_unit=&quot;millimeter&quot;,
+        meshes=tessellated.mesh_collection.meshes,
+    )
     mesh_result = client.mesh_hlr_projection(
-        geometer.IndexedTriangleMeshA0(
-            positions=(0.0, 0.0, 0.0, 10.0, 0.0, 0.0, 0.0, 10.0, 0.0),
-            indices=(0, 1, 2),
-            source_faces=(1,),
-        )
+        collection,
+        geometer.MeshHlrProjectionRequestB0(
+            schema=&quot;geometry.mesh_hlr_projection.request.b0&quot;,
+            output_detail=True,
+        ),
     )
 </code></pre>
+<p>The indexed-mesh compatibility signature remains available only as
+<code>client.mesh_hlr_projection_a0(mesh, options)</code>.</p>
 <p>The analytic planar Boolean candidate is integrated through the same
 executable-backed lane:</p>
 <blockquote>

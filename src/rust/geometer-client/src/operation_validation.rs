@@ -1,12 +1,15 @@
 use std::collections::HashSet;
 
-use crate::client::GeometerClientError;
+use crate::client::{GeometerClientError, OperationOutcome};
 use crate::generated::contracts::{
-    self, IpcOperationCatalogA0, IpcOperationDeclarationA0, IpcRequestValueA0,
-    IpcRuntimeDispatchA0, IpcWelcomeA0, OperationOutcomeA0, OperationResultValueA0,
-    PackedAttachmentProjectionA0,
+    self, IpcOperationCatalogA0, IpcOperationDeclarationA0, IpcRequestValueA0, IpcRequestValueB0,
+    IpcRuntimeDispatchA0, IpcWelcomeA0, OperationOutcomeA0, OperationOutcomeB0,
+    OperationResultValueA0, PackedAttachmentProjectionA0,
 };
-use crate::generated::dispatch::{logical_request_contract, logical_result_contract};
+use crate::generated::dispatch::{
+    logical_request_contract, logical_request_contract_b0, logical_result_contract,
+    logical_result_contract_b0,
+};
 use crate::ipc::Attachment;
 
 #[cfg(test)]
@@ -25,6 +28,28 @@ pub(crate) fn operation_declaration<'a>(
                 "operation {operation} is absent from the negotiated catalog"
             ))
         })
+}
+
+pub(crate) fn request_uses_b0(declaration: &IpcOperationDeclarationA0) -> bool {
+    matches!(
+        declaration.request_contract.as_str(),
+        "geometry.model_illustration.request.b0"
+            | "geometry.model_illustration_geometry.request.b0"
+            | "geometry.mesh_illustration.request.b0"
+            | "geometry.mesh_illustration_geometry.request.b0"
+            | "geometry.mesh_hlr_projection.request.b0"
+    )
+}
+
+pub(crate) fn result_uses_b0(declaration: &IpcOperationDeclarationA0) -> bool {
+    matches!(
+        declaration.result_contract.as_str(),
+        "geometry.model_illustration.result.b0"
+            | "geometry.model_illustration_geometry.result.b0"
+            | "geometry.mesh_illustration.result.b0"
+            | "geometry.mesh_illustration_geometry.result.b0"
+            | "geometry.hlr_projection.result.b0"
+    )
 }
 
 pub(crate) fn validate_operation_request(
@@ -57,7 +82,27 @@ pub(crate) fn decode_and_validate_request(
     declaration: &IpcOperationDeclarationA0,
     request_json: &[u8],
     attachments: &[Attachment],
-) -> Result<IpcRequestValueA0, GeometerClientError> {
+) -> Result<OperationRequest, GeometerClientError> {
+    if request_uses_b0(declaration) {
+        let request = crate::generated::dispatch::decode_logical_request_b0(
+            &declaration.request_contract,
+            request_json,
+        )?;
+        validate_declared_attachments(
+            &declaration.identity,
+            &declaration.input_attachments,
+            attachments,
+            "request",
+        )?;
+        if declaration.runtime_dispatch != IpcRuntimeDispatchA0::LogicalDto
+            || logical_request_contract_b0(&request) != Some(declaration.request_contract.as_str())
+        {
+            return Err(GeometerClientError::Protocol(
+                "B0 request projection does not match the operation runtime dispatch".to_owned(),
+            ));
+        }
+        return Ok(OperationRequest::B0(request));
+    }
     let request = match declaration.runtime_dispatch {
         IpcRuntimeDispatchA0::LogicalDto => crate::generated::dispatch::decode_logical_request(
             &declaration.request_contract,
@@ -70,14 +115,23 @@ pub(crate) fn decode_and_validate_request(
         }
     };
     validate_operation_request(declaration, &request, attachments)?;
-    Ok(request)
+    Ok(OperationRequest::A0(request))
+}
+
+pub(crate) enum OperationRequest {
+    A0(IpcRequestValueA0),
+    B0(IpcRequestValueB0),
 }
 
 #[cfg(feature = "direct-static")]
 pub(crate) fn encode_direct_request(
-    request: &IpcRequestValueA0,
+    request: &OperationRequest,
 ) -> Result<Vec<u8>, GeometerClientError> {
-    serde_json::to_vec(request).map_err(|error| {
+    let encoded = match request {
+        OperationRequest::A0(value) => serde_json::to_vec(value),
+        OperationRequest::B0(value) => serde_json::to_vec(value),
+    };
+    encoded.map_err(|error| {
         GeometerClientError::Protocol(format!(
             "could not encode direct operation request: {error}"
         ))
@@ -87,7 +141,7 @@ pub(crate) fn encode_direct_request(
 pub(crate) fn validate_operation_response(
     welcome: &IpcWelcomeA0,
     operation: &str,
-    outcome: &OperationOutcomeA0,
+    outcome: &OperationOutcome,
     attachments: &[Attachment],
 ) -> Result<(), GeometerClientError> {
     let declaration = operation_declaration(&welcome.operation_catalog, operation)?;
@@ -96,13 +150,16 @@ pub(crate) fn validate_operation_response(
 
 pub(crate) fn validate_operation_response_declaration(
     declaration: &IpcOperationDeclarationA0,
-    outcome: &OperationOutcomeA0,
+    outcome: &OperationOutcome,
     attachments: &[Attachment],
 ) -> Result<(), GeometerClientError> {
     let operation = declaration.identity.as_str();
     match outcome {
-        OperationOutcomeA0::Failure(_) => validate_failure_attachments(attachments),
-        OperationOutcomeA0::Success(success) => {
+        OperationOutcome::A0(OperationOutcomeA0::Failure(_))
+        | OperationOutcome::B0(OperationOutcomeB0::Failure(_)) => {
+            validate_failure_attachments(attachments)
+        }
+        OperationOutcome::A0(OperationOutcomeA0::Success(success)) => {
             validate_declared_attachments(
                 operation,
                 &declaration.output_attachments,
@@ -123,6 +180,24 @@ pub(crate) fn validate_operation_response_declaration(
                 _ => Err(GeometerClientError::Protocol(
                     "result projection does not match the operation runtime dispatch".to_owned(),
                 )),
+            }
+        }
+        OperationOutcome::B0(OperationOutcomeB0::Success(success)) => {
+            validate_declared_attachments(
+                operation,
+                &declaration.output_attachments,
+                attachments,
+                "response",
+            )?;
+            if declaration.runtime_dispatch == IpcRuntimeDispatchA0::LogicalDto
+                && logical_result_contract_b0(&success.result)
+                    == Some(declaration.result_contract.as_str())
+            {
+                Ok(())
+            } else {
+                Err(GeometerClientError::Protocol(
+                    "B0 result projection does not match the operation runtime dispatch".to_owned(),
+                ))
             }
         }
     }

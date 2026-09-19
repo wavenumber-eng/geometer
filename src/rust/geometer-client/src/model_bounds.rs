@@ -66,7 +66,7 @@ async fn run_model_bounds<B: crate::backend::OperationBackend>(
             "model_bounds returned unexpected attachments".to_owned(),
         ));
     }
-    match response.outcome {
+    match response.outcome.into_a0()? {
         OperationOutcomeA0::Success(success) => model_bounds_result(success.result),
         OperationOutcomeA0::Failure(failure) => Err(GeometerClientError::Operation {
             operation: failure.operation,

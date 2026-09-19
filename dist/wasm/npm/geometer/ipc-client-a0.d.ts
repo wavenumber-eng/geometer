@@ -1,4 +1,4 @@
-import type { HlrProjectionOptionsA0, HlrProjectionResultA0, IpcRequestValueA0, IpcShutdownAckA0, IpcWelcomeA0, OperationOutcomeA0 } from "./generated/contracts.js";
+import type { HlrProjectionOptionsA0, HlrProjectionResultA0, HlrProjectionResultB0, IpcRequestValueA0, IpcRequestValueB0, IpcShutdownAckA0, IpcWelcomeA0, MeshCollectionA0, MeshHlrProjectionRequestB0, OperationOutcomeA0, OperationOutcomeB0 } from "./generated/contracts.js";
 import { type OperationIdentity } from "./generated/operations.js";
 import { type IndexedTriangleMeshA0 } from "./indexed-mesh-packet-a0.js";
 import { type GeometerIpcAttachment } from "./ipc-a0.js";
@@ -17,7 +17,7 @@ export interface GeometerIpcConnectOptionsA0 {
 }
 export interface GeometerIpcOperationResponseA0 {
     readonly requestId: bigint;
-    readonly outcome: OperationOutcomeA0;
+    readonly outcome: OperationOutcomeA0 | OperationOutcomeB0;
     readonly attachments: readonly GeometerIpcAttachment[];
 }
 export interface GeometerIpcModelHlrProjectionRequestA0 {
@@ -28,6 +28,10 @@ export interface GeometerIpcModelHlrProjectionRequestA0 {
 export interface GeometerIpcMeshHlrProjectionRequestA0 {
     readonly mesh: IndexedTriangleMeshA0 | Uint8Array;
     readonly options?: HlrProjectionOptionsA0;
+}
+export interface GeometerIpcMeshHlrProjectionRequestB0 {
+    readonly meshCollection: MeshCollectionA0;
+    readonly request: MeshHlrProjectionRequestB0;
 }
 export interface GeometerIpcCallA0 {
     readonly requestId: bigint;
@@ -60,10 +64,12 @@ export declare class GeometerIpcClientA0 {
     private constructor();
     static connect(duplex: GeometerIpcDuplexA0, options: GeometerIpcConnectOptionsA0): Promise<GeometerIpcClientA0>;
     get welcome(): IpcWelcomeA0;
-    start(operation: OperationIdentity, request: IpcRequestValueA0, attachments?: readonly GeometerIpcAttachment[]): GeometerIpcCallA0;
-    execute(operation: OperationIdentity, request: IpcRequestValueA0, attachments?: readonly GeometerIpcAttachment[]): Promise<GeometerIpcOperationResponseA0>;
+    start(operation: OperationIdentity, request: IpcRequestValueA0 | IpcRequestValueB0, attachments?: readonly GeometerIpcAttachment[]): GeometerIpcCallA0;
+    execute(operation: OperationIdentity, request: IpcRequestValueA0 | IpcRequestValueB0, attachments?: readonly GeometerIpcAttachment[]): Promise<GeometerIpcOperationResponseA0>;
     modelHlrProjection(request: GeometerIpcModelHlrProjectionRequestA0): Promise<HlrProjectionResultA0>;
-    meshHlrProjection(request: GeometerIpcMeshHlrProjectionRequestA0): Promise<HlrProjectionResultA0>;
+    meshHlrProjection(request: GeometerIpcMeshHlrProjectionRequestB0): Promise<HlrProjectionResultB0>;
+    meshHlrProjectionB0(request: GeometerIpcMeshHlrProjectionRequestB0): Promise<HlrProjectionResultB0>;
+    meshHlrProjectionA0(request: GeometerIpcMeshHlrProjectionRequestA0): Promise<HlrProjectionResultA0>;
     private hlrProjection;
     close(reason?: string): Promise<IpcShutdownAckA0>;
     terminate(reason?: GeometerIpcClientError): void;

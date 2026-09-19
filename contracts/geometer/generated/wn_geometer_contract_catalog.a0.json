@@ -108,6 +108,27 @@
       "option_patch": false
     },
     {
+      "name": "Wavenumber.Geometer.Contracts.IpcB0.IpcRequestB0",
+      "contract_identity": "geometer.ipc.request.b0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometer.ipc.request:b0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshHlrProjectionB0.HlrProjectionResultB0",
+      "contract_identity": "geometry.hlr_projection.result.b0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.hlr_projection.result:b0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshHlrProjectionB0.MeshHlrProjectionRequestB0",
+      "contract_identity": "geometry.mesh_hlr_projection.request.b0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.mesh_hlr_projection.request:b0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationInputA0",
       "contract_identity": "geometry.mesh_illustration.input.a0",
       "schema_id": "urn:wavenumber:schema:geometer:geometry.mesh_illustration.input:a0",
@@ -127,6 +148,27 @@
       "schema_id": "urn:wavenumber:schema:geometer:geometry.mesh_illustration.style:a0",
       "declaration_kind": "model",
       "option_patch": true
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationB0.MeshIllustrationInputB0",
+      "contract_identity": "geometry.mesh_illustration.input.b0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.mesh_illustration.input:b0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationB0.MeshIllustrationRequestB0",
+      "contract_identity": "geometry.mesh_illustration.request.b0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.mesh_illustration.request:b0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationB0.MeshIllustrationResultB0",
+      "contract_identity": "geometry.mesh_illustration.result.b0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.mesh_illustration.result:b0",
+      "declaration_kind": "model",
+      "option_patch": false
     },
     {
       "name": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryA0",
@@ -153,6 +195,34 @@
       "name": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryResultA0",
       "contract_identity": "geometry.mesh_illustration_geometry.result.a0",
       "schema_id": "urn:wavenumber:schema:geometer:geometry.mesh_illustration_geometry.result:a0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryB0.MeshIllustrationGeometryB0",
+      "contract_identity": "geometry.mesh_illustration.geometry.b0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.mesh_illustration.geometry:b0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryB0.MeshIllustrationGeometryInputB0",
+      "contract_identity": "geometry.mesh_illustration_geometry.input.b0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.mesh_illustration_geometry.input:b0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryB0.MeshIllustrationGeometryRequestB0",
+      "contract_identity": "geometry.mesh_illustration_geometry.request.b0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.mesh_illustration_geometry.request:b0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryB0.MeshIllustrationGeometryResultB0",
+      "contract_identity": "geometry.mesh_illustration_geometry.result.b0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.mesh_illustration_geometry.result:b0",
       "declaration_kind": "model",
       "option_patch": false
     },
@@ -206,6 +276,34 @@
       "option_patch": false
     },
     {
+      "name": "Wavenumber.Geometer.Contracts.ModelIllustrationB0.ModelIllustrationGeometryRequestB0",
+      "contract_identity": "geometry.model_illustration_geometry.request.b0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.model_illustration_geometry.request:b0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.ModelIllustrationB0.ModelIllustrationGeometryResultB0",
+      "contract_identity": "geometry.model_illustration_geometry.result.b0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.model_illustration_geometry.result:b0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.ModelIllustrationB0.ModelIllustrationRequestB0",
+      "contract_identity": "geometry.model_illustration.request.b0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.model_illustration.request:b0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.ModelIllustrationB0.ModelIllustrationResultB0",
+      "contract_identity": "geometry.model_illustration.result.b0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometry.model_illustration.result:b0",
+      "declaration_kind": "model",
+      "option_patch": false
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.ModelTessellationA0.MeshCollectionA0",
       "contract_identity": "geometry.mesh_collection.a0",
       "schema_id": "urn:wavenumber:schema:geometer:geometry.mesh_collection:a0",
@@ -230,6 +328,13 @@
       "name": "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationOutcomeA0",
       "contract_identity": "geometer.operation.outcome.a0",
       "schema_id": "urn:wavenumber:schema:geometer:geometer.operation.outcome:a0",
+      "declaration_kind": "union",
+      "option_patch": false
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.OperationOutcomeB0.OperationOutcomeB0",
+      "contract_identity": "geometer.operation.outcome.b0",
+      "schema_id": "urn:wavenumber:schema:geometer:geometer.operation.outcome:b0",
       "declaration_kind": "union",
       "option_patch": false
     },
@@ -4818,6 +4923,401 @@
       ]
     },
     {
+      "name": "Wavenumber.Geometer.Contracts.IllustrationClippingB0.ClippingLimits",
+      "kind": "model",
+      "doc": "Independent hard work budgets for deterministic triangle clipping.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "max_output_triangles",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1,
+            "max_value": 2000000
+          },
+          "default": 2000000
+        },
+        {
+          "name": "max_generated_vertices",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1,
+            "max_value": 6000000
+          },
+          "default": 6000000
+        },
+        {
+          "name": "max_intersections",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1,
+            "max_value": 8000000
+          },
+          "default": 8000000
+        },
+        {
+          "name": "max_edge_plane_tests",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1,
+            "max_value": 32000000
+          },
+          "default": 32000000
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IllustrationClippingB0.FragmentMetadata",
+      "kind": "model",
+      "doc": "Deterministic identity and size summary for the prepared world-space fragment.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "clipping",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.IllustrationClippingB0.NormalizedClipping"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "input_triangles",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 2000000
+          }
+        },
+        {
+          "name": "output_triangles",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "max_value": 2000000
+          }
+        },
+        {
+          "name": "fragment_sha256",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 64,
+            "max_length": 64
+          }
+        },
+        {
+          "name": "linework_geometry_sha256",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 64,
+            "max_length": 64
+          }
+        },
+        {
+          "name": "raw_attachment_sha256",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 64,
+            "max_length": 64
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IllustrationClippingB0.HalfSpacePlane",
+      "kind": "model",
+      "doc": "One world-space half-space. The kept side satisfies dot(normal, point) - distance_mm >= -tolerance_mm.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "normal",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.IllustrationVector3"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "distance_mm",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "float64"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "tolerance_mm",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "float64"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 0
+          },
+          "default": 0
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IllustrationClippingB0.IllustrationClipping",
+      "kind": "model",
+      "doc": "Optional B0 clipping request. The first generation deliberately creates no section caps.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "planes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.IllustrationClippingB0.HalfSpacePlane"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 1,
+            "max_items": 16
+          }
+        },
+        {
+          "name": "cap_policy",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "none"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "limits",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.IllustrationClippingB0.ClippingLimits"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IllustrationClippingB0.NormalizedClipping",
+      "kind": "model",
+      "doc": "Fully resolved clipping values that participate in semantic identity.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "planes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.IllustrationClippingB0.NormalizedHalfSpacePlane"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 1,
+            "max_items": 16
+          }
+        },
+        {
+          "name": "cap_policy",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "none"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "max_output_triangles",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "max_generated_vertices",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "max_intersections",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "max_edge_plane_tests",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IllustrationClippingB0.NormalizedHalfSpacePlane",
+      "kind": "model",
+      "doc": "Canonical unit-normal plane returned in fragment metadata.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "normal",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.IllustrationVector3"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "distance_mm",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "float64"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "tolerance_mm",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "float64"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 0
+          }
+        }
+      ]
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.IpcA0.IpcAttachmentDeclarationA0",
       "kind": "model",
       "doc": "Named raw-attachment declaration in the negotiated operation catalog.",
@@ -6392,6 +6892,355 @@
       ]
     },
     {
+      "name": "Wavenumber.Geometer.Contracts.IpcB0.IpcRequestB0",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "operation",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "request",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.IpcB0.IpcRequestValueB0"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.IpcB0.IpcRequestValueB0",
+      "kind": "union",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "variants": [
+        {
+          "name": "model_illustration_geometry",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelIllustrationB0.ModelIllustrationGeometryRequestB0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "model_illustration",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelIllustrationB0.ModelIllustrationRequestB0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "mesh_illustration_geometry",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryB0.MeshIllustrationGeometryRequestB0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "mesh_illustration",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationB0.MeshIllustrationRequestB0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "mesh_hlr_projection",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshHlrProjectionB0.MeshHlrProjectionRequestB0"
+          },
+          "doc": "",
+          "annotations": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshHlrProjectionB0.HlrProjectionResultB0",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.hlr_projection.result.b0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "units",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "mm"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "empty",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "boolean"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshHlrProjectionB0.MeshCollectionHlrSource"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "views",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectedView"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 64
+          }
+        },
+        {
+          "name": "timings",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionTimings"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "fragment",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.IllustrationClippingB0.FragmentMetadata"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshHlrProjectionB0.MeshCollectionHlrSource",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "kind",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "mesh_collection"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "hash",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 64,
+            "max_length": 64
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshHlrProjectionB0.MeshHlrProjectionRequestB0",
+      "kind": "model",
+      "doc": "Fast-only HLR request over the governed colored mesh collection.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.mesh_hlr_projection.request.b0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "views",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrViewSpec"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 64
+          }
+        },
+        {
+          "name": "output_outline",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "boolean"
+          },
+          "annotations": {},
+          "constraints": {},
+          "default": true
+        },
+        {
+          "name": "output_detail",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "boolean"
+          },
+          "annotations": {},
+          "constraints": {},
+          "default": true
+        },
+        {
+          "name": "output_bbox",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "boolean"
+          },
+          "annotations": {},
+          "constraints": {},
+          "default": true
+        },
+        {
+          "name": "model_transform",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrMatrix4x4"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "round_digits",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 0,
+            "max_value": 9
+          },
+          "default": 3
+        },
+        {
+          "name": "fast",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.HlrProjectionA0.FastHlrOptionsA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "clipping",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.IllustrationClippingB0.IllustrationClipping"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.IllustrationMatrix4x4",
       "kind": "model",
       "doc": "",
@@ -7300,6 +8149,265 @@
       ]
     },
     {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationB0.MeshIllustrationInputB0",
+      "kind": "model",
+      "doc": "Serializable direct-value B0 illustration input.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.mesh_illustration.input.b0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "meshes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationMesh"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 1,
+            "max_items": 65536
+          }
+        },
+        {
+          "name": "view",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationView"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "prepare",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationPrepareOptions"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "style",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationStyleA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "svg",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationSvgOptions"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "clipping",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.IllustrationClippingB0.IllustrationClipping"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationB0.MeshIllustrationRequestB0",
+      "kind": "model",
+      "doc": "Attachment-backed B0 mesh illustration request.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.mesh_illustration.request.b0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "view",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationView"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "prepare",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationPrepareOptions"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "style",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationStyleA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "svg",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationSvgOptions"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "clipping",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.IllustrationClippingB0.IllustrationClipping"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationB0.MeshIllustrationResultB0",
+      "kind": "model",
+      "doc": "B0 SVG illustration result with explicit fragment emptiness and identity.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.mesh_illustration.result.b0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "empty",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "boolean"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "svg",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "stats",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationRenderStats"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "fragment",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.IllustrationClippingB0.FragmentMetadata"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "warnings",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "primitive",
+              "name": "string"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 256
+          }
+        }
+      ]
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryAttachment",
       "kind": "model",
       "doc": "",
@@ -8035,6 +9143,469 @@
           "type": {
             "kind": "reference",
             "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationRenderStats"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "warnings",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "primitive",
+              "name": "string"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 256
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryB0.IllustrationGeometryAttachmentB0",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "attachment",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "illustration_geometry"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.mesh_illustration.geometry.b0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "byte_length",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "uint32"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_value": 1,
+            "max_value": 268435456
+          }
+        },
+        {
+          "name": "sha256",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 64,
+            "max_length": 64
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryB0.MeshIllustrationGeometryB0",
+      "kind": "model",
+      "doc": "Renderer-neutral B0 geometry with optional bounds for an empty fragment.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.mesh_illustration.geometry.b0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "length_unit",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "millimeter"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "empty",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "boolean"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "view",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationView"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "bounds",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryBounds"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "surfaces",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometrySurface"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 2000000
+          }
+        },
+        {
+          "name": "lines",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryLine"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 1000000
+          }
+        },
+        {
+          "name": "presentation",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryPresentation"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "stats",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationRenderStats"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "fragment",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.IllustrationClippingB0.FragmentMetadata"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "warnings",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "primitive",
+              "name": "string"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 256
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryB0.MeshIllustrationGeometryInputB0",
+      "kind": "model",
+      "doc": "Direct-value B0 geometry input.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.mesh_illustration_geometry.input.b0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "length_unit",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "millimeter"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "meshes",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationMesh"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 1,
+            "max_items": 65536
+          }
+        },
+        {
+          "name": "view",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationView"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "prepare",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationPrepareOptions"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "style",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationStyleA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "clipping",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.IllustrationClippingB0.IllustrationClipping"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryB0.MeshIllustrationGeometryRequestB0",
+      "kind": "model",
+      "doc": "Attachment-backed B0 geometry request.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.mesh_illustration_geometry.request.b0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "view",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationView"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "prepare",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationPrepareOptions"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "style",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationStyleA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "clipping",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.IllustrationClippingB0.IllustrationClipping"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryB0.MeshIllustrationGeometryResultB0",
+      "kind": "model",
+      "doc": "B0 metadata for the renderer-neutral geometry attachment.",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.mesh_illustration_geometry.result.b0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "empty",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "boolean"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "geometry",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryB0.IllustrationGeometryAttachmentB0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "stats",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationRenderStats"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "fragment",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.IllustrationClippingB0.FragmentMetadata"
           },
           "annotations": {},
           "constraints": {}
@@ -10141,6 +11712,453 @@
       ]
     },
     {
+      "name": "Wavenumber.Geometer.Contracts.ModelIllustrationB0.ModelIllustrationGeometryRequestB0",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.model_illustration_geometry.request.b0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelIllustrationA0.ModelIllustrationSourceA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "view",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationView"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "prepare",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationPrepareOptions"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "linework",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelIllustrationA0.ModelIllustrationLineworkOptionsA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "style",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationStyleA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "work_limits",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelIllustrationA0.ModelIllustrationWorkLimitsA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "clipping",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.IllustrationClippingB0.IllustrationClipping"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.ModelIllustrationB0.ModelIllustrationGeometryResultB0",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.model_illustration_geometry.result.b0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "empty",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "boolean"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "geometry",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryB0.IllustrationGeometryAttachmentB0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "bounds_mm",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelIllustrationA0.ModelIllustrationBounds3MmA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelIllustrationA0.ModelIllustrationSourceSummaryA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "stats",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationRenderStats"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "timings",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelIllustrationA0.ModelIllustrationTimingsA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "fragment",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.IllustrationClippingB0.FragmentMetadata"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "warnings",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "primitive",
+              "name": "string"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 256
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.ModelIllustrationB0.ModelIllustrationRequestB0",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.model_illustration.request.b0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelIllustrationA0.ModelIllustrationSourceA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "view",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationView"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "prepare",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationPrepareOptions"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "linework",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelIllustrationA0.ModelIllustrationLineworkOptionsA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "style",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationStyleA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "svg",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationSvgOptions"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "work_limits",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelIllustrationA0.ModelIllustrationWorkLimitsA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "clipping",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.IllustrationClippingB0.IllustrationClipping"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.ModelIllustrationB0.ModelIllustrationResultB0",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "schema",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "string",
+            "value": "geometry.model_illustration.result.b0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "empty",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "boolean"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "svg",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "bounds_mm",
+          "optional": true,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelIllustrationA0.ModelIllustrationBounds3MmA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "source",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelIllustrationA0.ModelIllustrationSourceSummaryA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "stats",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationRenderStats"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "timings",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelIllustrationA0.ModelIllustrationTimingsA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "fragment",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.IllustrationClippingB0.FragmentMetadata"
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "warnings",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "primitive",
+              "name": "string"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "max_items": 256
+          }
+        }
+      ]
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.ModelTessellationA0.MeshCollectionA0",
       "kind": "model",
       "doc": "Shared colored indexed meshes. Coordinates and matrix translations are millimeters.",
@@ -10858,6 +12876,192 @@
           "type": {
             "kind": "reference",
             "target": "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationResultValueA0"
+          },
+          "annotations": {},
+          "constraints": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.OperationOutcomeB0.OperationFailureB0",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "operation",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "ok",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "boolean",
+            "value": false
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "diagnostics",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "array",
+            "element": {
+              "kind": "reference",
+              "target": "Wavenumber.Geometer.Contracts.Common.DiagnosticA0"
+            }
+          },
+          "annotations": {},
+          "constraints": {
+            "min_items": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.OperationOutcomeB0.OperationOutcomeB0",
+      "kind": "union",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "composition": "one_of",
+      "variants": [
+        {
+          "name": "success",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.OperationOutcomeB0.OperationSuccessB0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "failure",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.OperationOutcomeB0.OperationFailureB0"
+          },
+          "doc": "",
+          "annotations": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.OperationOutcomeB0.OperationResultValueB0",
+      "kind": "union",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "composition": "one_of",
+      "variants": [
+        {
+          "name": "model_illustration_geometry",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelIllustrationB0.ModelIllustrationGeometryResultB0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "model_illustration",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.ModelIllustrationB0.ModelIllustrationResultB0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "mesh_illustration_geometry",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryB0.MeshIllustrationGeometryResultB0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "mesh_illustration",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshIllustrationB0.MeshIllustrationResultB0"
+          },
+          "doc": "",
+          "annotations": {}
+        },
+        {
+          "name": "mesh_hlr_projection",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.MeshHlrProjectionB0.HlrProjectionResultB0"
+          },
+          "doc": "",
+          "annotations": {}
+        }
+      ]
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.OperationOutcomeB0.OperationSuccessB0",
+      "kind": "model",
+      "doc": "",
+      "annotations": {},
+      "constraints": {},
+      "model_kind": "object",
+      "base": null,
+      "index_value": null,
+      "properties": [
+        {
+          "name": "operation",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "primitive",
+            "name": "string"
+          },
+          "annotations": {},
+          "constraints": {
+            "min_length": 1,
+            "max_length": 128
+          }
+        },
+        {
+          "name": "ok",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "literal",
+            "value_type": "boolean",
+            "value": true
+          },
+          "annotations": {},
+          "constraints": {}
+        },
+        {
+          "name": "result",
+          "optional": false,
+          "doc": "",
+          "type": {
+            "kind": "reference",
+            "target": "Wavenumber.Geometer.Contracts.OperationOutcomeB0.OperationResultValueB0"
           },
           "annotations": {},
           "constraints": {}
@@ -18402,6 +20606,27 @@
       "doc": "Project a synthesized indexed triangle mesh through the Fast HLR backend."
     },
     {
+      "name": "Wavenumber.Geometer.Contracts.Operations.meshHlrProjectionB0",
+      "identity": "geometry.mesh_hlr_projection.b0",
+      "request_contract": "geometry.mesh_hlr_projection.request.b0",
+      "result_contract": "geometry.hlr_projection.result.b0",
+      "input_attachments": [
+        {
+          "name": "mesh_collection",
+          "required": true,
+          "media_types": [
+            "application/vnd.wavenumber.geometer.mesh-collection+json"
+          ],
+          "max_bytes": 268435456
+        }
+      ],
+      "output_attachments": [],
+      "runtime_available": true,
+      "native_runtime_available": false,
+      "runtime_dispatch": "logical_dto",
+      "doc": "Project a colored mesh collection through deterministic clipping and Fast HLR."
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.Operations.meshIllustrationGeometry",
       "identity": "geometry.mesh_illustration_geometry.a0",
       "request_contract": "geometry.mesh_illustration_geometry.request.a0",
@@ -18440,6 +20665,44 @@
       "doc": "Return ordered shaded illustration geometry without generating SVG. Does not compute HLR."
     },
     {
+      "name": "Wavenumber.Geometer.Contracts.Operations.meshIllustrationGeometryB0",
+      "identity": "geometry.mesh_illustration_geometry.b0",
+      "request_contract": "geometry.mesh_illustration_geometry.request.b0",
+      "result_contract": "geometry.mesh_illustration_geometry.result.b0",
+      "input_attachments": [
+        {
+          "name": "hlr_projection",
+          "required": false,
+          "media_types": [
+            "application/vnd.wavenumber.geometer.hlr-projection+json"
+          ],
+          "max_bytes": 67108864
+        },
+        {
+          "name": "mesh_collection",
+          "required": true,
+          "media_types": [
+            "application/vnd.wavenumber.geometer.mesh-collection+json"
+          ],
+          "max_bytes": 268435456
+        }
+      ],
+      "output_attachments": [
+        {
+          "name": "illustration_geometry",
+          "required": true,
+          "media_types": [
+            "application/vnd.wavenumber.geometer.illustration-geometry+json"
+          ],
+          "max_bytes": 268435456
+        }
+      ],
+      "runtime_available": true,
+      "native_runtime_available": false,
+      "runtime_dispatch": "logical_dto",
+      "doc": "Return renderer-neutral B0 geometry for a colored mesh collection."
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.Operations.meshIllustration",
       "identity": "geometry.mesh_illustration.a0",
       "request_contract": "geometry.mesh_illustration.request.a0",
@@ -18467,6 +20730,35 @@
       "native_runtime_available": false,
       "runtime_dispatch": "logical_dto",
       "doc": "Render colored meshes to the existing deterministic A0 SVG result without JavaScript."
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.Operations.meshIllustrationB0",
+      "identity": "geometry.mesh_illustration.b0",
+      "request_contract": "geometry.mesh_illustration.request.b0",
+      "result_contract": "geometry.mesh_illustration.result.b0",
+      "input_attachments": [
+        {
+          "name": "hlr_projection",
+          "required": false,
+          "media_types": [
+            "application/vnd.wavenumber.geometer.hlr-projection+json"
+          ],
+          "max_bytes": 67108864
+        },
+        {
+          "name": "mesh_collection",
+          "required": true,
+          "media_types": [
+            "application/vnd.wavenumber.geometer.mesh-collection+json"
+          ],
+          "max_bytes": 268435456
+        }
+      ],
+      "output_attachments": [],
+      "runtime_available": true,
+      "native_runtime_available": false,
+      "runtime_dispatch": "logical_dto",
+      "doc": "Render a colored mesh collection with optional deterministic half-space clipping."
     },
     {
       "name": "Wavenumber.Geometer.Contracts.Operations.modelBounds",
@@ -18544,6 +20836,37 @@
       "doc": "Import or lower one source and return renderer-neutral illustration geometry."
     },
     {
+      "name": "Wavenumber.Geometer.Contracts.Operations.modelIllustrationGeometryB0",
+      "identity": "geometry.model_illustration_geometry.b0",
+      "request_contract": "geometry.model_illustration_geometry.request.b0",
+      "result_contract": "geometry.model_illustration_geometry.result.b0",
+      "input_attachments": [
+        {
+          "name": "model",
+          "required": false,
+          "media_types": [
+            "application/step",
+            "model/step"
+          ],
+          "max_bytes": 268435456
+        }
+      ],
+      "output_attachments": [
+        {
+          "name": "illustration_geometry",
+          "required": true,
+          "media_types": [
+            "application/vnd.wavenumber.geometer.illustration-geometry+json"
+          ],
+          "max_bytes": 268435456
+        }
+      ],
+      "runtime_available": true,
+      "native_runtime_available": false,
+      "runtime_dispatch": "logical_dto",
+      "doc": ""
+    },
+    {
       "name": "Wavenumber.Geometer.Contracts.Operations.modelIllustration",
       "identity": "geometry.model_illustration.a0",
       "request_contract": "geometry.model_illustration.request.a0",
@@ -18564,6 +20887,28 @@
       "native_runtime_available": false,
       "runtime_dispatch": "logical_dto",
       "doc": "Import or lower one source and return a complete deterministic SVG illustration."
+    },
+    {
+      "name": "Wavenumber.Geometer.Contracts.Operations.modelIllustrationB0",
+      "identity": "geometry.model_illustration.b0",
+      "request_contract": "geometry.model_illustration.request.b0",
+      "result_contract": "geometry.model_illustration.result.b0",
+      "input_attachments": [
+        {
+          "name": "model",
+          "required": false,
+          "media_types": [
+            "application/step",
+            "model/step"
+          ],
+          "max_bytes": 268435456
+        }
+      ],
+      "output_attachments": [],
+      "runtime_available": true,
+      "native_runtime_available": false,
+      "runtime_dispatch": "logical_dto",
+      "doc": ""
     },
     {
       "name": "Wavenumber.Geometer.Contracts.Operations.modelTessellation",

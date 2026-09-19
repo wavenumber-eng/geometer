@@ -8,10 +8,10 @@ import pytest
 import geometer
 from geometer._generated.contracts.codecs import (
     encode_mesh_collection_a0_json,
-    encode_mesh_illustration_geometry_a0_json,
+    encode_mesh_illustration_geometry_b0_json,
 )
 from geometer._ipc_a0 import Attachment
-from geometer._generated.contracts.models import OperationSuccessA0
+from geometer._generated.contracts.models import OperationSuccessB0
 from geometer._illustration_geometry import _decode_response
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -22,8 +22,8 @@ def illustration_input():
     model = (ROOT / "tests/fixtures/step/embedded_models/SOT-23.STEP").read_bytes()
     with geometer.GeometerClient() as client:
         meshes = client.model_tessellation(model).mesh_collection.meshes
-    return geometer.MeshIllustrationGeometryInputA0(
-        schema="geometry.mesh_illustration_geometry.input.a0",
+    return geometer.MeshIllustrationGeometryInputB0(
+        schema="geometry.mesh_illustration_geometry.input.b0",
         length_unit="millimeter",
         meshes=meshes,
         view=geometer.MeshIllustrationView(direction=(0.4, 0.7, 1), up=(0, 1, 0)),
@@ -36,16 +36,15 @@ def illustration_input():
 @pytest.mark.parametrize("mirror", [False, True])
 def test_geometry_matches_svg_with_hlr_and_survives_operation_errors(illustration_input, mirror):
     input = replace(illustration_input, view=replace(illustration_input.view, mirror_x=mirror))
-    model = (ROOT / "tests/fixtures/step/embedded_models/SOT-23.STEP").read_bytes()
     with geometer.GeometerClient() as client:
-        hlr = client.model_hlr_projection(
-            model,
-            geometer.HlrProjectionOptionsA0(
+        collection = geometer.MeshCollectionA0(
+            schema="geometry.mesh_collection.a0", length_unit="millimeter", meshes=input.meshes
+        )
+        hlr = client.mesh_hlr_projection(
+            collection,
+            geometer.MeshHlrProjectionRequestB0(
+                schema="geometry.mesh_hlr_projection.request.b0",
                 views=(geometer.HlrViewSpec(id="test", direction=input.view.direction, up=input.view.up),),
-                projection_algorithm=geometer.HlrProjectionAlgorithm.FAST,
-                outline_algorithm=geometer.HlrOutlineAlgorithm.FAST_MESH_SHADOW,
-                curve_mode=geometer.HlrCurveMode.POLYLINE,
-                strip_root_placement=True,
                 output_detail=True,
                 output_outline=True,
                 output_bbox=False,
@@ -54,8 +53,8 @@ def test_geometry_matches_svg_with_hlr_and_survives_operation_errors(illustratio
         )
         geometry = client.mesh_illustration_geometry(input, hlr_projection=hlr)
         svg = client.mesh_illustration(
-            geometer.MeshIllustrationInputA0(
-                schema="geometry.mesh_illustration.input.a0",
+            geometer.MeshIllustrationInputB0(
+                schema="geometry.mesh_illustration.input.b0",
                 meshes=input.meshes,
                 view=input.view,
                 style=input.style,
@@ -92,15 +91,16 @@ def test_geometry_attachment_integrity_and_semantic_validation(illustration_inpu
             )
         ),
     )
-    request = geometer.MeshIllustrationGeometryRequestA0(
-        schema="geometry.mesh_illustration_geometry.request.a0", view=input.view, style=input.style
+    request = geometer.MeshIllustrationGeometryRequestB0(
+        schema="geometry.mesh_illustration_geometry.request.b0", view=input.view, style=input.style
     )
     with geometer.GeometerClient() as client:
-        response = client.execute("geometry.mesh_illustration_geometry.a0", request, (attachment,))
+        response = client.execute("geometry.mesh_illustration_geometry.b0", request, (attachment,))
         geometry = _decode_response(response)
-        assert isinstance(response.outcome, OperationSuccessA0)
+        assert isinstance(response.outcome, OperationSuccessB0)
         metadata = response.outcome.result
-        assert isinstance(metadata, geometer.MeshIllustrationGeometryResultA0)
+        assert isinstance(metadata, geometer.MeshIllustrationGeometryResultB0)
+        assert geometry.bounds is not None
         output = response.attachments[0]
         for changed in (
             replace(output, name="wrong"),
@@ -110,10 +110,13 @@ def test_geometry_attachment_integrity_and_semantic_validation(illustration_inpu
             with pytest.raises(ValueError):
                 _decode_response(replace(response, attachments=(changed,)))
         for altered in (
-            replace(geometry, bounds=replace(geometry.bounds, min=geometry.bounds.max, max=geometry.bounds.min)),
+            replace(
+                geometry,
+                bounds=replace(geometry.bounds, min=geometry.bounds.max, max=geometry.bounds.min),
+            ),
             replace(geometry, stats=replace(geometry.stats, commands=geometry.stats.commands + 1)),
         ):
-            encoded = encode_mesh_illustration_geometry_a0_json(altered)
+            encoded = encode_mesh_illustration_geometry_b0_json(altered)
             new_metadata = replace(
                 metadata,
                 stats=altered.stats,
@@ -127,7 +130,7 @@ def test_geometry_attachment_integrity_and_semantic_validation(illustration_inpu
                         attachments=(replace(output, data=encoded),),
                     )
                 )
-        bad = client.execute("geometry.mesh_illustration_geometry.a0", request, (replace(attachment, data=b"{}"),))
+        bad = client.execute("geometry.mesh_illustration_geometry.b0", request, (replace(attachment, data=b"{}"),))
         assert not bad.outcome.ok
         assert client.mesh_illustration_geometry(input) == geometry
 

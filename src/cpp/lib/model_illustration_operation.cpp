@@ -1,5 +1,6 @@
 #include "model_illustration_operation.h"
 #include "analytic_illustration_lowering.h"
+#include "illustration_clipping.h"
 #include "mesh_illustration_internal.h"
 #include "model_illustration_transform.h"
 
@@ -16,6 +17,7 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <type_traits>
 #include <utility>
 
 namespace geometer
@@ -38,10 +40,20 @@ void fail(OperationExecution* execution, const char* operation, std::string code
     diagnostic.operation = operation;
     diagnostic.category = category;
     diagnostic.retryable = false;
-    contracts::OperationFailureA0 failure;
-    failure.operation = operation;
-    failure.diagnostics.push_back(std::move(diagnostic));
-    execution->outcome = std::move(failure);
+    if (operation_uses_b0(operation))
+    {
+        contracts::OperationFailureB0 failure;
+        failure.operation = operation;
+        failure.diagnostics.push_back(std::move(diagnostic));
+        execution->outcome = std::move(failure);
+    }
+    else
+    {
+        contracts::OperationFailureA0 failure;
+        failure.operation = operation;
+        failure.diagnostics.push_back(std::move(diagnostic));
+        execution->outcome = std::move(failure);
+    }
     execution->attachments.clear();
 }
 
@@ -226,9 +238,55 @@ struct PreparedModelIllustration
     std::vector<std::string> warnings;
     std::optional<contracts::HlrProjectionResultA0> hlr;
     MeshIllustrationExecutionLimits limits;
-    contracts::ModelIllustrationBounds3MmA0 bounds;
+    std::optional<contracts::ModelIllustrationBounds3MmA0> bounds;
+    contracts::FragmentMetadata fragment;
+    bool empty = true;
     std::optional<contracts::MeshIllustrationStyleA0> style;
 };
+
+std::optional<contracts::IllustrationClipping>
+request_clipping(const contracts::ModelIllustrationRequestA0&)
+{
+    return {};
+}
+
+std::optional<contracts::IllustrationClipping>
+request_clipping(const contracts::ModelIllustrationGeometryRequestA0&)
+{
+    return {};
+}
+
+const std::optional<contracts::IllustrationClipping>&
+request_clipping(const contracts::ModelIllustrationRequestB0& request)
+{
+    return request.clipping;
+}
+
+const std::optional<contracts::IllustrationClipping>&
+request_clipping(const contracts::ModelIllustrationGeometryRequestB0& request)
+{
+    return request.clipping;
+}
+
+bool request_supports_empty(const contracts::ModelIllustrationRequestA0&)
+{
+    return false;
+}
+
+bool request_supports_empty(const contracts::ModelIllustrationGeometryRequestA0&)
+{
+    return false;
+}
+
+bool request_supports_empty(const contracts::ModelIllustrationRequestB0&)
+{
+    return true;
+}
+
+bool request_supports_empty(const contracts::ModelIllustrationGeometryRequestB0&)
+{
+    return true;
+}
 
 int set_status(Status* status, int code, std::string message)
 {
@@ -341,34 +399,71 @@ int prepare_model_illustration(const Request& request, const ModelIllustrationAt
         source_hash =
             sha256_hex(reinterpret_cast<const std::uint8_t*>(validated.data()), validated.size());
     }
-    std::array<double, 3> minimum = {std::numeric_limits<double>::infinity(),
-                                     std::numeric_limits<double>::infinity(),
-                                     std::numeric_limits<double>::infinity()};
-    std::array<double, 3> maximum = {-std::numeric_limits<double>::infinity(),
-                                     -std::numeric_limits<double>::infinity(),
-                                     -std::numeric_limits<double>::infinity()};
-    bool has_point = false;
-    for (const auto& mesh : output->collection.meshes)
+    constexpr bool b0 = std::is_same_v<Request, contracts::ModelIllustrationRequestB0> ||
+                        std::is_same_v<Request, contracts::ModelIllustrationGeometryRequestB0>;
+    if constexpr (b0)
     {
-        const auto matrix = matrix_or_identity(mesh.matrix);
-        for (std::size_t index = 0; index + 2 < mesh.positions.size(); index += 3)
-        {
-            const auto point =
-                transform_point(matrix, mesh.positions[index], mesh.positions[index + 1],
-                                mesh.positions[index + 2]);
-            for (std::size_t axis = 0; axis < 3; ++axis)
-            {
-                minimum[axis] = std::min(minimum[axis], point[axis]);
-                maximum[axis] = std::max(maximum[axis], point[axis]);
-            }
-            has_point = true;
-        }
+        std::vector<contracts::MeshIllustrationMesh> legacy_renderer_meshes;
+        if (!request_clipping(request))
+            legacy_renderer_meshes = output->collection.meshes;
+        PreparedIllustrationFragment fragment;
+        code = prepare_illustration_fragment(
+            std::move(output->collection.meshes), request_clipping(request), {},
+            model_input ? source_hash : std::string{}, &fragment, &nested);
+        if (code != 0)
+            return set_status(status, code == 102 ? 102 : invalid_prepared_model, nested.message);
+        output->collection.meshes = request_clipping(request)
+                                        ? std::move(fragment.collection.meshes)
+                                        : std::move(legacy_renderer_meshes);
+        output->bounds = std::move(fragment.bounds_mm);
+        output->fragment = std::move(fragment.metadata);
+        output->empty = fragment.empty;
     }
-    if (!has_point)
-        return set_status(status, invalid_prepared_model,
-                          "Model illustration source contains no usable geometry.");
-    output->bounds = {minimum[0], minimum[1], minimum[2], maximum[0], maximum[1], maximum[2]};
+    else
+    {
+        // A0 remains the exact compatibility path. Do not pass it through the B0
+        // transform/canonicalization pipeline: that can change SVG and HLR bytes.
+        std::array<double, 3> minimum = {std::numeric_limits<double>::infinity(),
+                                         std::numeric_limits<double>::infinity(),
+                                         std::numeric_limits<double>::infinity()};
+        std::array<double, 3> maximum = {-std::numeric_limits<double>::infinity(),
+                                         -std::numeric_limits<double>::infinity(),
+                                         -std::numeric_limits<double>::infinity()};
+        bool has_point = false;
+        for (const auto& mesh : output->collection.meshes)
+        {
+            const auto matrix = matrix_or_identity(mesh.matrix);
+            for (std::size_t index = 0; index + 2 < mesh.positions.size(); index += 3)
+            {
+                const auto point =
+                    transform_point(matrix, mesh.positions[index], mesh.positions[index + 1],
+                                    mesh.positions[index + 2]);
+                for (std::size_t axis = 0; axis < 3; ++axis)
+                {
+                    minimum[axis] = std::min(minimum[axis], point[axis]);
+                    maximum[axis] = std::max(maximum[axis], point[axis]);
+                }
+                has_point = true;
+            }
+        }
+        if (!has_point)
+            return set_status(status, invalid_prepared_model,
+                              "Model illustration source contains no usable geometry.");
+        output->bounds = {minimum[0], minimum[1], minimum[2], maximum[0], maximum[1], maximum[2]};
+        output->empty = false;
+    }
     output->style = request.style;
+    if (output->empty)
+    {
+        if (!request_supports_empty(request))
+            return set_status(status, invalid_prepared_model,
+                              "Model illustration source contains no usable geometry.");
+        output->timings.source_preparation_ms = milliseconds(preparation_start);
+        return 0;
+    }
+    const auto& bounds = *output->bounds;
+    const std::array<double, 3> minimum{bounds[0], bounds[1], bounds[2]};
+    const std::array<double, 3> maximum{bounds[3], bounds[4], bounds[5]};
     if (request.linework &&
         (request.linework->outline_width_mm || request.linework->detail_width_mm))
     {
@@ -421,7 +516,10 @@ int prepare_model_illustration(const Request& request, const ModelIllustrationAt
         const bool resource_limit = code == 3 || code == 6 || code == 7 || code == 102;
         return set_status(status, resource_limit ? 102 : linework_failed, nested.message);
     }
-    output->hlr = contract_hlr(projected, source_hash);
+    if constexpr (b0)
+        output->hlr = contract_hlr(projected, output->fragment.linework_geometry_sha256);
+    else
+        output->hlr = contract_hlr(projected, source_hash);
     return 0;
 }
 } // namespace
@@ -467,7 +565,7 @@ int illustrate_model(const contracts::ModelIllustrationRequestA0& request,
     }
     prepared.timings.illustration_ms = milliseconds(illustration_start);
     cap_warnings(&prepared.warnings);
-    result->bounds_mm = prepared.bounds;
+    result->bounds_mm = *prepared.bounds;
     result->source = std::move(prepared.source);
     result->timings = prepared.timings;
     result->warnings = std::move(prepared.warnings);
@@ -514,7 +612,7 @@ int illustrate_model_geometry(const contracts::ModelIllustrationGeometryRequestA
     cap_warnings(&prepared.warnings);
     result->geometry.warnings = prepared.warnings;
     result->metadata.source = std::move(prepared.source);
-    result->metadata.bounds_mm = prepared.bounds;
+    result->metadata.bounds_mm = *prepared.bounds;
     result->metadata.stats = result->geometry.stats;
     result->metadata.timings = prepared.timings;
     result->metadata.warnings = prepared.warnings;
@@ -522,13 +620,232 @@ int illustrate_model_geometry(const contracts::ModelIllustrationGeometryRequestA
     return 0;
 }
 
-void execute_model_illustration(const unsigned char* request, std::size_t size,
-                                const std::vector<OperationAttachmentView>& attachments,
-                                OperationExecution* execution, bool geometry_only)
+int illustrate_model(const contracts::ModelIllustrationRequestB0& request,
+                     const ModelIllustrationAttachmentView* model,
+                     contracts::ModelIllustrationResultB0* result, Status* status)
 {
-    const char* operation = geometry_only ? "geometry.model_illustration_geometry.a0"
-                                          : "geometry.model_illustration.a0";
+    if (result)
+        *result = {};
+    if (!result)
+        return set_status(status, 1, "Model illustration result pointer is null.");
+    PreparedModelIllustration prepared;
+    int code = prepare_model_illustration(request, model, &prepared, status);
+    if (code != 0)
+        return code;
+    const auto illustration_start = Clock::now();
+    try
+    {
+        const illustration_detail::IllustrationInputView input{
+            prepared.collection.meshes, request.view, request.prepare, prepared.style};
+        const auto rendered = illustration_detail::prepare_illustration(
+            input, prepared.hlr ? &*prepared.hlr : nullptr,
+            prepared.limits.max_candidate_comparisons, prepared.limits.max_drawing_commands);
+        result->svg = illustration_detail::render_svg(
+            rendered.scene, rendered.style, rendered.commands,
+            request.svg.value_or(contracts::MeshIllustrationSvgOptions{}),
+            "geometry.model_illustration.result.b0");
+        result->stats = rendered.commands.stats;
+        prepared.warnings.insert(prepared.warnings.end(), rendered.scene.warnings.begin(),
+                                 rendered.scene.warnings.end());
+    }
+    catch (const illustration_detail::ResourceLimit& error)
+    {
+        return set_status(status, 102, error.what());
+    }
+    catch (const std::bad_alloc&)
+    {
+        return set_status(status, 102, "Model illustration allocation failed.");
+    }
+    catch (const std::exception& error)
+    {
+        return set_status(status, illustration_failed, error.what());
+    }
+    prepared.timings.illustration_ms = milliseconds(illustration_start);
+    cap_warnings(&prepared.warnings);
+    result->empty = prepared.empty;
+    result->bounds_mm = std::move(prepared.bounds);
+    result->source = std::move(prepared.source);
+    result->timings = prepared.timings;
+    result->fragment = std::move(prepared.fragment);
+    result->warnings = std::move(prepared.warnings);
+    return 0;
+}
+
+int illustrate_model_geometry(const contracts::ModelIllustrationGeometryRequestB0& request,
+                              const ModelIllustrationAttachmentView* model,
+                              ModelIllustrationGeometryB0* result, Status* status)
+{
+    if (result)
+        *result = {};
+    if (!result)
+        return set_status(status, 1, "Model illustration geometry result pointer is null.");
+    PreparedModelIllustration prepared;
+    int code = prepare_model_illustration(request, model, &prepared, status);
+    if (code != 0)
+        return code;
+    const auto illustration_start = Clock::now();
+    contracts::MeshIllustrationGeometryA0 geometry;
+    try
+    {
+        const illustration_detail::IllustrationInputView input{
+            prepared.collection.meshes, request.view, request.prepare, prepared.style};
+        const auto rendered = illustration_detail::prepare_illustration(
+            input, prepared.hlr ? &*prepared.hlr : nullptr,
+            prepared.limits.max_candidate_comparisons, prepared.limits.max_drawing_commands);
+        geometry = illustration_detail::make_illustration_geometry(rendered, request.view);
+    }
+    catch (const illustration_detail::ResourceLimit& error)
+    {
+        return set_status(status, 102, error.what());
+    }
+    catch (const std::bad_alloc&)
+    {
+        return set_status(status, 102, "Model illustration allocation failed.");
+    }
+    catch (const std::exception& error)
+    {
+        return set_status(status, illustration_failed, error.what());
+    }
+    prepared.timings.illustration_ms = milliseconds(illustration_start);
+    prepared.warnings.insert(prepared.warnings.end(), geometry.warnings.begin(),
+                             geometry.warnings.end());
+    cap_warnings(&prepared.warnings);
+    result->geometry.empty = prepared.empty;
+    result->geometry.view = std::move(geometry.view);
+    if (!prepared.empty)
+        result->geometry.bounds = std::move(geometry.bounds);
+    result->geometry.surfaces = std::move(geometry.surfaces);
+    result->geometry.lines = std::move(geometry.lines);
+    result->geometry.presentation = std::move(geometry.presentation);
+    result->geometry.stats = geometry.stats;
+    result->geometry.fragment = prepared.fragment;
+    result->geometry.warnings = prepared.warnings;
+    result->metadata.empty = prepared.empty;
+    result->metadata.bounds_mm = std::move(prepared.bounds);
+    result->metadata.source = std::move(prepared.source);
+    result->metadata.stats = geometry.stats;
+    result->metadata.timings = prepared.timings;
+    result->metadata.fragment = std::move(prepared.fragment);
+    result->metadata.warnings = std::move(prepared.warnings);
+    return 0;
+}
+
+void execute_model_illustration(const std::string& operation_id, const unsigned char* request,
+                                std::size_t size,
+                                const std::vector<OperationAttachmentView>& attachments,
+                                OperationExecution* execution)
+{
+    const bool geometry_only = operation_id == "geometry.model_illustration_geometry.a0" ||
+                               operation_id == "geometry.model_illustration_geometry.b0";
+    const char* operation = operation_id.c_str();
+    const bool b0 = operation_uses_b0(operation_id);
     contracts::ContractError error;
+    if (b0)
+    {
+        contracts::ModelIllustrationGeometryRequestB0 geometry_request;
+        contracts::ModelIllustrationRequestB0 svg_request;
+        const bool decoded = geometry_only
+                                 ? contracts::decode_json(request, size, &geometry_request, &error)
+                                 : contracts::decode_json(request, size, &svg_request, &error);
+        if (!decoded)
+        {
+            fail(execution, operation, error.code, error.message,
+                 contracts::DiagnosticCategory::contract);
+            return;
+        }
+        const auto& source = geometry_only ? geometry_request.source : svg_request.source;
+        const bool model_input =
+            std::holds_alternative<contracts::ModelAttachmentIllustrationSourceA0>(source);
+        if ((model_input &&
+             (attachments.size() != 1 || attachments[0].name != "model" ||
+              (attachments[0].media_type != "application/step" &&
+               attachments[0].media_type != "model/step") ||
+              attachments[0].size > operation_input_attachment_max_bytes(operation, "model"))) ||
+            (!model_input && !attachments.empty()))
+        {
+            fail(execution, operation, "geometer.contract.invalid_attachment",
+                 model_input ? "A model source requires one bounded STEP attachment named model."
+                             : "An analytic source does not accept attachments.",
+                 contracts::DiagnosticCategory::contract);
+            return;
+        }
+        const auto report_failure = [&](int code, const Status& status)
+        {
+            const char* diagnostic =
+                code == invalid_attachment       ? "geometer.contract.invalid_attachment"
+                : code == unsupported_linework   ? "geometer.contract.unsupported_linework_option"
+                : code == invalid_transform      ? "geometer.contract.invalid_transform"
+                : code == invalid_analytic_scene ? "geometer.contract.invalid_analytic_scene"
+                : code == invalid_prepared_model ? "geometer.contract.invalid_clipping"
+                : code == linework_failed        ? "geometer.operation.linework_failed"
+                : code == illustration_failed    ? "geometer.operation.illustration_failed"
+                : code == tessellation_failed    ? "geometer.operation.tessellation_failed"
+                : code == 103                    ? "geometer.contract.resource_limit_exceeded"
+                : code == 102                    ? "geometer.operation.resource_limit_exceeded"
+                                                 : "geometer.operation.model_illustration_failed";
+            const bool contract = code == invalid_attachment || code == unsupported_linework ||
+                                  code == invalid_transform || code == invalid_analytic_scene ||
+                                  code == invalid_prepared_model || code == 103;
+            fail(execution, operation, diagnostic, status.message,
+                 contract ? contracts::DiagnosticCategory::contract
+                          : contracts::DiagnosticCategory::operation);
+        };
+        std::optional<ModelIllustrationAttachmentView> model;
+        if (model_input)
+            model = ModelIllustrationAttachmentView{attachments[0].data, attachments[0].size,
+                                                    attachments[0].media_type};
+        Status status;
+        contracts::OperationSuccessB0 success;
+        success.operation = operation;
+        if (!geometry_only)
+        {
+            contracts::ModelIllustrationResultB0 result;
+            const int code =
+                illustrate_model(svg_request, model ? &*model : nullptr, &result, &status);
+            if (code != 0)
+            {
+                report_failure(code, status);
+                return;
+            }
+            success.result = std::move(result);
+            execution->outcome = std::move(success);
+            execution->attachments.clear();
+            return;
+        }
+        ModelIllustrationGeometryB0 result;
+        const int code = illustrate_model_geometry(geometry_request, model ? &*model : nullptr,
+                                                   &result, &status);
+        if (code != 0)
+        {
+            report_failure(code, status);
+            return;
+        }
+        const auto serialization_start = Clock::now();
+        std::string json;
+        if (!contracts::encode_json(result.geometry, &json, &error))
+        {
+            fail(execution, operation, error.code, error.message,
+                 contracts::DiagnosticCategory::operation);
+            return;
+        }
+        result.metadata.timings.attachment_encoding_ms = milliseconds(serialization_start);
+        if (json.size() > operation_output_attachment_max_bytes(operation, "illustration_geometry"))
+        {
+            fail(execution, operation, "geometer.operation.resource_limit_exceeded",
+                 "Illustration geometry JSON exceeds its operation attachment limit.",
+                 contracts::DiagnosticCategory::operation);
+            return;
+        }
+        result.metadata.geometry.byte_length = static_cast<std::uint32_t>(json.size());
+        result.metadata.geometry.sha256 =
+            sha256_hex(reinterpret_cast<const std::uint8_t*>(json.data()), json.size());
+        success.result = std::move(result.metadata);
+        execution->outcome = std::move(success);
+        execution->attachments = {{"illustration_geometry",
+                                   "application/vnd.wavenumber.geometer.illustration-geometry+json",
+                                   std::vector<unsigned char>(json.begin(), json.end())}};
+        return;
+    }
     contracts::ModelIllustrationGeometryRequestA0 geometry_request;
     contracts::ModelIllustrationRequestA0 svg_request;
     bool decoded = geometry_only ? contracts::decode_json(request, size, &geometry_request, &error)

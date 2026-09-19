@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometer.ipc.request:b0",
+  "type": "object",
+  "properties": {
+    "operation": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "request": {
+      "$ref": "#/$defs/IpcRequestValueB0"
+    }
+  },
+  "required": [
+    "operation",
+    "request"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "$defs": {
+    "IpcRequestValueB0": {
+      "anyOf": [
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.model_illustration_geometry.request:b0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.model_illustration.request:b0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.mesh_illustration_geometry.request:b0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.mesh_illustration.request:b0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.mesh_hlr_projection.request:b0"
+        }
+      ]
+    }
+  }
+}

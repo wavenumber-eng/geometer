@@ -23,8 +23,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
     let result = client
         .model_illustration(
-            ModelIllustrationRequestA0 {
-                schema: "geometry.model_illustration.request.a0".to_owned(),
+            ModelIllustrationRequestB0 {
+                schema: "geometry.model_illustration.request.b0".to_owned(),
                 source: ModelIllustrationSourceA0::ModelSource(
                     ModelAttachmentIllustrationSourceA0 {
                         kind: "model".to_owned(),
@@ -58,6 +58,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 style: Some(style),
                 svg: None,
                 work_limits: None,
+                clipping: None,
             },
             Some(step),
         )

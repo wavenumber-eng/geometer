@@ -53,6 +53,11 @@
           <label class="illustration-control" title="Angular deflection used by polygonal HLR detail and mesh-shadow linework. Smaller values produce smoother traced curves."><span>HLR angle</span><input id="illustrationHlrAngularDeflection" type="number" min="1" max="60" step="0.1" value="28.64788975654116"><span>deg</span></label>
           <p class="illustration-info">Controls only fast vector detail lines and the fast mesh-shadow outline; it does not change filled surface triangles.</p>
           <p class="illustration-info" id="illustrationMeshInfo">The demo does not impose a triangle-count limit; mesh density is controlled by the STEP and HLR tolerances above.</p>
+          <h3>B0 half-space clipping</h3>
+          <label class="illustration-control" title="Selects the world-space normal for the B0 illustration clip plane."><span>Clip plane</span><select id="illustrationClipMode"><option value="off" selected>Off</option><option value="x">X axis</option><option value="y">Y axis</option><option value="z">Z axis</option><option value="view">Camera-facing</option></select><span></span></label>
+          <label class="illustration-control" title="Chooses which side of the plane Geometer keeps."><span>Keep side</span><select id="illustrationClipSide" disabled><option value="positive" selected>Positive</option><option value="negative">Negative</option></select><span></span></label>
+          <label class="illustration-control" title="Moves the plane from the minimum to maximum extent of the model along its normal."><span>Position</span><input id="illustrationClipPosition" type="range" min="0" max="100" step="1" value="50" disabled><output id="illustrationClipPositionValue">Off</output></label>
+          <p class="illustration-info">Clipping is executed by <code>geometry.model_illustration_geometry.b0</code> after model placement and before bounds, linework, and projection. Camera-facing mode follows the orbit view. The B0 cap policy is <code>none</code>.</p>
         </section>
         <section>
           <h2>Surface</h2>
@@ -90,11 +95,11 @@
           <label class="illustration-control"><span>Background</span><input id="illustrationBackground" type="color" value="#ffffff"><span></span></label>
           <label class="illustration-check"><input id="illustrationTransparent" type="checkbox"><span>Transparent background</span></label>
           <p class="illustration-info" id="illustrationCounts">No scene prepared.</p>
-          <p class="illustration-info">Production path: STEP -&gt; Geometer mesh -&gt; A0 SVG/Canvas illustration with Fast vector linework.</p>
+          <p class="illustration-info">Production path: STEP -&gt; Geometer B0 model illustration geometry -&gt; SVG/Canvas with Fast vector linework.</p>
         </section>
       </aside>
     </main>
-    <footer class="illustration-status"><span id="illustrationStatus">Initializing</span><span id="illustrationTiming">mesh illustration A0</span></footer>
+    <footer class="illustration-status"><span id="illustrationStatus">Initializing</span><span id="illustrationTiming">model illustration B0</span></footer>
   </div>
   <pre id="illustrationValidation">RUNNING</pre>
   <script type="importmap">

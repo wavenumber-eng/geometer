@@ -14,9 +14,7 @@ def _effective_memory_limit(
     inherited_hard_limit: int,
     infinity: int,
 ) -> int:
-    finite_limits = [
-        limit for limit in (inherited_soft_limit, inherited_hard_limit) if limit != infinity
-    ]
+    finite_limits = [limit for limit in (inherited_soft_limit, inherited_hard_limit) if limit != infinity]
     return min([requested, *finite_limits])
 
 

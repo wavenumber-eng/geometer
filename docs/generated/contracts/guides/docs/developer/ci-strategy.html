@@ -4,19 +4,19 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="91d0158e37d9a999b010d14f79e7537f2b9ccb0b03619b2143ec0d96343690ed">
+  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
   <title>Build Automation Strategy — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="91d0158e37d9a999b010d14f79e7537f2b9ccb0b03619b2143ec0d96343690ed" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/developer/ci-strategy.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="build-automation-strategy">Build Automation Strategy</h1></header>
 <p>Geometer does not run GitHub Actions for pushes or pull requests. In particular,
 documentation changes trigger no automation. Developers run the affected
 checks locally before pushing and record important validation in the pull
-request. The only automatic GitHub Actions workflow is <code>Publish</code>, triggered by
-publishing a GitHub release; it builds and validates every supported release
-platform.</p>
+request. Every workflow is manual-only. <code>Publish</code> is dispatched only for an
+existing reviewed release tag and is the sole path that rebuilds and publishes
+the complete supported release matrix.</p>
 <h2 id="local-development-gate">Local development gate</h2>
 <p>Choose checks in proportion to the change, using the commands in the canonical
 <a href="README.html">developer guide</a>. Before a release, run the complete local gate:</p>
@@ -50,12 +50,22 @@ ordinary pull requests or releases.</p>
 <pre><code class="language-powershell">uv run python scripts/validate_native.py --include-experimental-tests
 </code></pre>
 <h2 id="release-automation">Release automation</h2>
-<p>Publishing a GitHub release is the only automatic CI event. It builds and
-packages Windows x64, Linux x64, Linux
-arm64, macOS arm64, and WASM. Each native platform runs the production C++
-suite. Python, Rust, and TypeScript integration runs once against Linux x64;
-the other platforms concentrate on native and wheel packaging. Experimental
-qualification is independent of publishing.</p>
+<p>Dispatch <code>Publish</code> manually at an exact existing <code>vYYYY-MM-DD</code> tag and supply
+that same tag as the workflow input. The workflow rejects any dispatch-ref,
+input-tag, or checked-out-commit mismatch, then builds and packages Windows
+x64, Linux x64, Linux arm64, macOS arm64, and WASM. Each native platform runs
+the production C++ suite and rebuilds its platform-specific <code>wn-geometer</code>
+wheel, native archive, and static SDK. Python, Rust, and TypeScript integration
+runs once against Linux x64; the other platforms concentrate on native and
+wheel packaging. Experimental qualification is independent of publishing.</p>
+<p>The four platform jobs and WASM feed one exact digest inventory. The workflow
+attests the inventory and all four SDK archives, uploads the exact bytes to a
+draft GitHub Release, re-downloads the draft, and only then sends the four
+qualified wheels to PyPI through trusted publishing. A successful PyPI publish
+allows the GitHub Release to become public. A final job downloads the public
+assets again, checks every size and SHA-256, and verifies GitHub attestations.
+No push, pull request, documentation change, tag creation, or GitHub Release
+event starts this workflow.</p>
 <h2 id="dependency-caches">Dependency caches</h2>
 <p>Every native OCCT consumer and producer uses this key family:</p>
 <pre><code class="language-text">occt-v2-native-&lt;platform&gt;-&lt;compiler&gt;-&lt;occt-tag&gt;-&lt;recipe-hash&gt;

@@ -1,19 +1,19 @@
 {
   "artifact": {
     "name": "geometer.exe",
-    "sha256": "e68d27b6d0dd662e969361ec67945692bf9db75572532bb1ac8088b48fc127a0"
+    "sha256": "521f3dfd853fe2dbd2299f8e53ee3b681e548f1267de761d0c1f41099f7c9814"
   },
   "build": {
     "arch": "x64",
     "build_type": "Release",
-    "c_abi_version": 20260913,
+    "c_abi_version": 20260919,
     "compiler": {
       "authority": "cmake_compiler_id_and_version",
       "id": "MSVC",
       "version": "19.44.35221.0"
     },
     "generator": "Ninja",
-    "geometer_version": "2026.9.13",
+    "geometer_version": "2026.9.19",
     "occt": {
       "authority": "occt_profile_unverified",
       "profile_sha256": "unavailable",
@@ -24,7 +24,7 @@
     "platform": "windows",
     "source": {
       "authority": "git_head_and_source_worktree_excluding_dist_build_deps_out",
-      "revision": "03e0c5c14ce29c38e51ba50b34c4a3020e5762d1",
+      "revision": "ffb250b7cab66bdbfec3fc2a255dad7f8fe8902c",
       "tree_state": "dirty"
     }
   },

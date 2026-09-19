@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.mesh_illustration_geometry.request:b0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.mesh_illustration_geometry.request.b0"
+    },
+    "view": {
+      "$ref": "#/$defs/MeshIllustrationView"
+    },
+    "prepare": {
+      "$ref": "#/$defs/MeshIllustrationPrepareOptions"
+    },
+    "style": {
+      "$ref": "urn:wavenumber:schema:geometer:geometry.mesh_illustration.style:a0"
+    },
+    "clipping": {
+      "$ref": "#/$defs/IllustrationClipping"
+    }
+  },
+  "required": [
+    "schema",
+    "view"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Attachment-backed B0 geometry request.",
+  "$defs": {
+    "MeshIllustrationView": {
+      "type": "object",
+      "properties": {
+        "direction": {
+          "$ref": "#/$defs/IllustrationVector3"
+        },
+        "up": {
+          "$ref": "#/$defs/IllustrationVector3"
+        },
+        "mirror_x": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "direction",
+        "up"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "MeshIllustrationPrepareOptions": {
+      "type": "object",
+      "properties": {
+        "max_triangles": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2000000,
+          "default": 750000
+        },
+        "weld_tolerance": {
+          "type": "number",
+          "default": 1e-7,
+          "exclusiveMinimum": 0
+        }
+      },
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "IllustrationClipping": {
+      "type": "object",
+      "properties": {
+        "planes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/HalfSpacePlane"
+          },
+          "minItems": 1,
+          "maxItems": 16
+        },
+        "cap_policy": {
+          "type": "string",
+          "const": "none"
+        },
+        "limits": {
+          "$ref": "#/$defs/ClippingLimits"
+        }
+      },
+      "required": [
+        "planes",
+        "cap_policy"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Optional B0 clipping request. The first generation deliberately creates no section caps."
+    },
+    "IllustrationVector3": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "HalfSpacePlane": {
+      "type": "object",
+      "properties": {
+        "normal": {
+          "$ref": "#/$defs/IllustrationVector3"
+        },
+        "distance_mm": {
+          "type": "number"
+        },
+        "tolerance_mm": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0
+        }
+      },
+      "required": [
+        "normal",
+        "distance_mm"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "One world-space half-space. The kept side satisfies dot(normal, point) - distance_mm >= -tolerance_mm."
+    },
+    "ClippingLimits": {
+      "type": "object",
+      "properties": {
+        "max_output_triangles": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2000000,
+          "default": 2000000
+        },
+        "max_generated_vertices": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 6000000,
+          "default": 6000000
+        },
+        "max_intersections": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8000000,
+          "default": 8000000
+        },
+        "max_edge_plane_tests": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32000000,
+          "default": 32000000
+        }
+      },
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Independent hard work budgets for deterministic triangle clipping."
+    }
+  }
+}

@@ -179,10 +179,10 @@ class ResidentSetSampler:
         }
 
 
-def request() -> geometer.ModelIllustrationGeometryRequestA0:
+def request() -> geometer.ModelIllustrationGeometryRequestB0:
     """Create the representative STEP-to-drawing operation request."""
-    return geometer.ModelIllustrationGeometryRequestA0(
-        schema="geometry.model_illustration_geometry.request.a0",
+    return geometer.ModelIllustrationGeometryRequestB0(
+        schema="geometry.model_illustration_geometry.request.b0",
         source=geometer.ModelAttachmentIllustrationSourceA0(kind="model", attachment="model"),
         view=geometer.MeshIllustrationView(direction=(0.4, 0.7, 1.0), up=(0.0, 1.0, 0.0)),
         style=geometer.MeshIllustrationStyleA0(show_hlr_detail=True),
@@ -191,7 +191,7 @@ def request() -> geometer.ModelIllustrationGeometryRequestA0:
 
 def execute_once(
     client: geometer.GeometerClient,
-    operation_request: geometer.ModelIllustrationGeometryRequestA0,
+    operation_request: geometer.ModelIllustrationGeometryRequestB0,
     model: bytes,
 ) -> dict[str, Any]:
     """Execute and time one governed operation."""
@@ -216,7 +216,7 @@ def require_output_identity(samples: list[dict[str, Any]], context: str) -> dict
 
 def benchmark_single_worker(
     executable: Path,
-    operation_request: geometer.ModelIllustrationGeometryRequestA0,
+    operation_request: geometer.ModelIllustrationGeometryRequestB0,
     model: bytes,
     warmup: int,
     repeat: int,
@@ -252,7 +252,7 @@ def benchmark_single_worker(
 
 def execute_lane(
     client: geometer.GeometerClient,
-    operation_request: geometer.ModelIllustrationGeometryRequestA0,
+    operation_request: geometer.ModelIllustrationGeometryRequestB0,
     model: bytes,
     jobs: int,
     barrier: threading.Barrier,
@@ -265,7 +265,7 @@ def execute_lane(
 def execute_balanced_batch(
     executor: concurrent.futures.ThreadPoolExecutor,
     clients: list[geometer.GeometerClient],
-    operation_request: geometer.ModelIllustrationGeometryRequestA0,
+    operation_request: geometer.ModelIllustrationGeometryRequestB0,
     model: bytes,
     jobs_per_worker: int,
 ) -> tuple[list[dict[str, Any]], float]:
@@ -283,7 +283,7 @@ def execute_balanced_batch(
 
 def benchmark_throughput(
     executable: Path,
-    operation_request: geometer.ModelIllustrationGeometryRequestA0,
+    operation_request: geometer.ModelIllustrationGeometryRequestB0,
     model: bytes,
     workers: int,
     minimum_jobs: int,

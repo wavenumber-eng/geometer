@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
+  <title>geometry.mesh_illustration_geometry.result.b0 — Geometer</title>
+  <link rel="stylesheet" href="../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="contract" data-contract-identity="geometry.mesh_illustration_geometry.result.b0" data-promotion-status="pilot_candidate">
+<main>
+<header>
+  <p class="page-type">Contract root</p>
+  <h1><code>geometry.mesh_illustration_geometry.result.b0</code></h1>
+  <p class="lede">B0 metadata for the renderer-neutral geometry attachment.</p>
+</header>
+<nav class="nav" aria-label="Contract navigation"><a href="../index.html">All contracts</a><a href="../../../../contracts/geometer/generated/schema/MeshIllustrationGeometryResultB0.json">JSON Schema</a><a href="../../../../src/tsp/geometer/main.tsp">TypeSpec entry point</a><a href="../../../design/contract-semantics.md">Compatibility policy</a></nav>
+<aside class="callout"><strong>Generated, not authored.</strong> Edit TypeSpec and regenerate. Lifecycle evidence remains in the promotion manifest.</aside>
+
+<section><h2>Identity</h2><table><tbody>
+<tr><th>Contract</th><td><code>geometry.mesh_illustration_geometry.result.b0</code></td></tr>
+<tr><th>Schema</th><td><code>urn:wavenumber:schema:geometer:geometry.mesh_illustration_geometry.result:b0</code></td></tr>
+<tr><th>Declaration</th><td><code>Wavenumber.Geometer.Contracts.MeshIllustrationGeometryB0.MeshIllustrationGeometryResultB0</code></td></tr>
+<tr><th>Lifecycle</th><td><span class="status">pilot_candidate</span></td></tr>
+<tr><th>Maturity</th><td>See interface support policy; promotion is not maturity</td></tr>
+<tr><th>Current authority</th><td><code>typespec_candidate</code></td></tr>
+</tbody></table></section>
+<section class="model-section"><h2>Declarations <span class="tag">7</span></h2><details open id="declaration-wavenumber-geometer-contracts-meshillustrationgeometryb0-meshillustrationgeometryresultb0"><summary><h2><code>MeshIllustrationGeometryResultB0</code> <span class="tag">model</span></h2></summary><p>B0 metadata for the renderer-neutral geometry attachment.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>schema</code></td><td>required</td><td><code>&quot;geometry.mesh_illustration_geometry.result.b0&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>empty</code></td><td>required</td><td><code>boolean</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>geometry</code></td><td>required</td><td><code><a href="#declaration-wavenumber-geometer-contracts-meshillustrationgeometryb0-illustrationgeometryattachmentb0">IllustrationGeometryAttachmentB0</a></code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>stats</code></td><td>required</td><td><code><a href="#declaration-wavenumber-geometer-contracts-meshillustrationa0-meshillustrationrenderstats">MeshIllustrationRenderStats</a></code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>fragment</code></td><td>required</td><td><code><a href="#declaration-wavenumber-geometer-contracts-illustrationclippingb0-fragmentmetadata">FragmentMetadata</a></code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>warnings</code></td><td>required</td><td><code>string[]</code></td><td>—</td><td><code>max_items=256</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-illustrationclippingb0-fragmentmetadata"><summary><h2><code>FragmentMetadata</code> <span class="tag">model</span></h2></summary><p>Deterministic identity and size summary for the prepared world-space fragment.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>clipping</code></td><td>optional</td><td><code><a href="#declaration-wavenumber-geometer-contracts-illustrationclippingb0-normalizedclipping">NormalizedClipping</a></code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>input_triangles</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=2000000</code></td><td></td></tr>
+<tr><td><code>output_triangles</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>max_value=2000000</code></td><td></td></tr>
+<tr><td><code>fragment_sha256</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=64</code> <code>max_length=64</code></td><td></td></tr>
+<tr><td><code>linework_geometry_sha256</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=64</code> <code>max_length=64</code></td><td></td></tr>
+<tr><td><code>raw_attachment_sha256</code></td><td>optional</td><td><code>string</code></td><td>—</td><td><code>min_length=64</code> <code>max_length=64</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-illustrationclippingb0-normalizedclipping"><summary><h2><code>NormalizedClipping</code> <span class="tag">model</span></h2></summary><p>Fully resolved clipping values that participate in semantic identity.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>planes</code></td><td>required</td><td><code><a href="#declaration-wavenumber-geometer-contracts-illustrationclippingb0-normalizedhalfspaceplane">NormalizedHalfSpacePlane</a>[]</code></td><td>—</td><td><code>min_items=1</code> <code>max_items=16</code></td><td></td></tr>
+<tr><td><code>cap_policy</code></td><td>required</td><td><code>&quot;none&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>max_output_triangles</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>max_generated_vertices</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>max_intersections</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>max_edge_plane_tests</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-illustrationclippingb0-normalizedhalfspaceplane"><summary><h2><code>NormalizedHalfSpacePlane</code> <span class="tag">model</span></h2></summary><p>Canonical unit-normal plane returned in fragment metadata.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>normal</code></td><td>required</td><td><code><a href="#declaration-wavenumber-geometer-contracts-meshillustrationa0-illustrationvector3">IllustrationVector3</a></code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>distance_mm</code></td><td>required</td><td><code>float64</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>tolerance_mm</code></td><td>required</td><td><code>float64</code></td><td>—</td><td><code>min_value=0</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-meshillustrationa0-illustrationvector3"><summary><h2><code>IllustrationVector3</code> <span class="tag">model</span></h2></summary><p></p><p><span class="tag">array</span> element <code>float64</code>; <code>min_items=3</code> <code>max_items=3</code></p></details>
+<details open id="declaration-wavenumber-geometer-contracts-meshillustrationa0-meshillustrationrenderstats"><summary><h2><code>MeshIllustrationRenderStats</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>triangles</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=0</code></td><td></td></tr>
+<tr><td><code>surface_draws</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=0</code></td><td></td></tr>
+<tr><td><code>layered_surfaces</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=0</code></td><td></td></tr>
+<tr><td><code>outlines</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=0</code></td><td></td></tr>
+<tr><td><code>details</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=0</code></td><td></td></tr>
+<tr><td><code>creases</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=0</code></td><td></td></tr>
+<tr><td><code>commands</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=0</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-meshillustrationgeometryb0-illustrationgeometryattachmentb0"><summary><h2><code>IllustrationGeometryAttachmentB0</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>attachment</code></td><td>required</td><td><code>&quot;illustration_geometry&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>schema</code></td><td>required</td><td><code>&quot;geometry.mesh_illustration.geometry.b0&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>byte_length</code></td><td>required</td><td><code>uint32</code></td><td>—</td><td><code>min_value=1</code> <code>max_value=268435456</code></td><td></td></tr>
+<tr><td><code>sha256</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=64</code> <code>max_length=64</code></td><td></td></tr></tbody></table></details></section>
+</main>
+</body>
+</html>

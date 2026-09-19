@@ -1,5 +1,5 @@
-import type { AnalyticPlanarBooleanBatchRequestA0, AnalyticPlanarBooleanBatchResultA0, DiagnosticA0, HlrProjectionResultA0, ModelBoundsResultA0 } from "./generated/index.js";
-import type { GeometerOperationAttachment, GeometerOperationResponse, GeometerWasmCapabilityCatalog, MeshHlrProjectionRequest, ModelBoundsRequest, ModelHlrProjectionRequest } from "./wasm.js";
+import type { AnalyticPlanarBooleanBatchRequestA0, AnalyticPlanarBooleanBatchResultA0, DiagnosticA0, HlrProjectionResultA0, HlrProjectionResultB0, ModelBoundsResultA0 } from "./generated/index.js";
+import type { GeometerOperationAttachment, GeometerOperationResponse, GeometerWasmCapabilityCatalog, MeshHlrProjectionRequest, MeshHlrProjectionRequestA0, ModelBoundsRequest, ModelHlrProjectionRequest } from "./wasm.js";
 export declare const GEOMETER_WASM_WORKER_PROTOCOL: "wn.geometer.wasm_worker.a0";
 export interface GeometerWorkerClientOptions {
     /** Structured-cloneable Emscripten options other than wasmBinary. */
@@ -70,7 +70,9 @@ export declare class GeometerWorkerClient {
     analyticPlanarBooleanBatch(request: AnalyticPlanarBooleanBatchRequestA0): Promise<AnalyticPlanarBooleanBatchResultA0>;
     modelBounds(request: ModelBoundsRequest): Promise<ModelBoundsResultA0>;
     modelHlrProjection(request: ModelHlrProjectionRequest): Promise<HlrProjectionResultA0>;
-    meshHlrProjection(request: MeshHlrProjectionRequest): Promise<HlrProjectionResultA0>;
+    meshHlrProjection(request: MeshHlrProjectionRequest): Promise<HlrProjectionResultB0>;
+    meshHlrProjectionB0(request: MeshHlrProjectionRequest): Promise<HlrProjectionResultB0>;
+    meshHlrProjectionA0(request: MeshHlrProjectionRequestA0): Promise<HlrProjectionResultA0>;
     private hlrProjection;
     execute(operation: string, requestJson: string, attachments: readonly GeometerOperationAttachment[]): Promise<GeometerOperationResponse>;
     /** Gracefully shuts down the host and terminates the underlying Worker. */

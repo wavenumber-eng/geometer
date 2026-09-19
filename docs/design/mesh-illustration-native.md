@@ -17,33 +17,39 @@ separates these client savings from native preparation, fusion and linework cost
 
 ## Availability and authority
 
-Geometer 2026.9.6 introduces `geometer::illustrate_mesh` in
+Geometer 2026.9.6 introduced `geometer::illustrate_mesh` in
 `geometer/mesh_illustration.h`, linked through `geometer_lib`. It performs CPU
 vector illustration without a JavaScript engine, browser, GPU or WASM runtime.
-The same renderer is exposed by
-`geometry.mesh_illustration.a0` through the generic operation ABI and native
-`serve --stdio` dispatcher, with typed Rust/Python methods. Use matching
-clients and a compatible 2026.9.6 or later executable; 2026.9.4 does not expose it.
+The renderer is exposed canonically by `geometry.mesh_illustration.b0` through
+the generic operation ABI and native `serve --stdio` dispatcher, with typed
+Rust/Python methods. B0 adds post-transform half-space clipping, explicit empty
+results, and fragment identity. `geometry.mesh_illustration.a0` remains an
+explicit compatibility operation. Use matching clients and executable because
+catalog and C ABI generations are negotiated exactly.
 See [release qualification](../developer/native-api-readiness.md) for validation evidence.
 
-Public input, style and result values come from the existing TypeSpec
+The reusable mesh, view, preparation, and style values come from the existing TypeSpec
 [`mesh-illustration-a0.tsp`](../../src/tsp/geometer/operations/mesh-illustration-a0.tsp).
-The C++ API uses those generated structures directly. Its private scene,
+The B0 operation and result roots are owned by
+[`mesh-illustration-b0.tsp`](../../src/tsp/geometer/operations/mesh-illustration-b0.tsp)
+and the shared [clipping contract](illustration-clipping-b0.md). The C++ API
+uses generated structures directly. Its private scene,
 visibility graph and drawing commands are implementation details, not new wire
 formats. The existing [browser API](hlr-projection-a0.md) remains supported.
 
-The executable settings and attachment declaration come from
-[`mesh-illustration-operation-a0.tsp`](../../src/tsp/geometer/operations/mesh-illustration-operation-a0.tsp).
+The executable settings and attachment declaration come from the generated B0
+operation declaration, with the A0 declaration retained for compatibility.
 It reuses the same view/prepare/style/SVG fields and requires one
 `mesh_collection` attachment, media type
 `application/vnd.wavenumber.geometer.mesh-collection+json`, containing UTF-8
 `geometry.mesh_collection.a0` JSON (maximum 256 MiB). No private indexed-mesh
 layout, base64 JSON or local file path is required. The result is the existing
-`geometry.mesh_illustration.result.a0`, including inline SVG, not a relabeled
-attachment descriptor. There are no output attachments.
+`geometry.mesh_illustration.result.b0`, including inline SVG, explicit empty and
+fragment metadata, not a relabeled attachment descriptor. There are no output
+attachments.
 
-An optional `hlr_projection` attachment contains the existing generated
-`geometry.hlr_projection.result.a0` JSON, media type
+An optional B0 `hlr_projection` attachment contains generated
+`geometry.hlr_projection.result.b0` JSON, media type
 `application/vnd.wavenumber.geometer.hlr-projection+json`, maximum 64 MiB.
 Exactly one view must match the illustration's normalized direction/up basis;
 units must be millimeters. Request `curve_mode: polyline`: arcs are rejected,
@@ -51,18 +57,19 @@ not silently approximated. All layers combined are limited to 1,000,000
 segments, including disabled layers and bbox. The renderer uses the mesh
 bounds/viewport and applies `mirror_x` to both fills and supplied linework.
 
-Supply **visible-only** HLR from the same model, placement and transform as the
-meshes. The projection contract does not bind its source hash to a mesh
-collection or retain the producing options; composition cannot verify those
-relationships or recover visibility from arbitrary 2D segments. The complete
-STEP examples and demo use the same STEP bytes and stripped root placement,
-with no additional model transform. Hidden HLR edges must remain disabled.
+Supply **visible-only** B0 HLR from the same transformed and clipped fragment as
+the meshes. Canonical B0 composition verifies the projection's
+`linework_geometry_sha256` against the fragment identity before rendering; a
+mismatch is an operation error. The explicit A0 compatibility operation still
+accepts `geometry.hlr_projection.result.a0`, whose contract cannot verify the
+source/transform relationship. Neither generation can recover visibility from
+arbitrary 2D segments. Hidden HLR edges must remain disabled.
 
 ## Rust and Python executable clients
 
-Both clients accept the existing generated `MeshIllustrationInputA0` and adapt
-it to generated settings plus the mesh attachment. This keeps the public
-illustration input shape consistent with the browser and direct C++ API.
+Both clients use generated `MeshIllustrationInputB0` values and adapt them to
+generated settings plus the mesh attachment. Explicitly named A0 methods remain
+for compatibility; maintained consumers select B0.
 
 Python also exposes public one-shot `geometer.model_tessellation(step_bytes)`
 and `geometer.mesh_illustration(input, hlr_projection=hlr)` helpers. Each owns
@@ -78,6 +85,19 @@ now uses the one-pass model operation, closes the process, and writes SVG. See
 cargo run --manifest-path src/rust/geometer-client/Cargo.toml --example mesh_illustration -- PATH_TO_MATCHING_GEOMETER INPUT.step OUTPUT.svg
 ```
 
+The static SDK has a separate in-process sample that does not launch
+`geometer(.exe)`:
+
+```powershell
+$env:GEOMETER_SDK_DIR = "PATH_TO_EXTRACTED_SDK"
+cargo run --manifest-path src/rust/geometer-client/Cargo.toml --features direct-static --example direct_static_illustration -- --step INPUT.step --clip --output-dir out/clip-demo
+```
+
+Release SDK qualification packages that example as a standalone application,
+runs its unclipped, partially clipped, and empty cases with executable discovery
+disabled, validates the SVG and comparison HTML, and rejects dynamic Geometer or
+OCCT imports. Omitting `--step` uses the built-in generic analytic specimen.
+
 Equivalent Python:
 
 ```python
@@ -88,23 +108,15 @@ with geometer.GeometerClient(executable="PATH_TO_MATCHING_GEOMETER") as client:
     step = Path("INPUT.step").read_bytes()
     tessellated = client.model_tessellation(step)
     view = geometer.MeshIllustrationView(direction=(0.4, 0.7, 1.0), up=(0.0, 1.0, 0.0))
-    hlr = client.model_hlr_projection(step, geometer.HlrProjectionOptionsA0(
-        views=(geometer.HlrViewSpec(id="illustration", direction=view.direction, up=view.up),),
-        projection_algorithm=geometer.HlrProjectionAlgorithm.FAST,
-        outline_algorithm=geometer.HlrOutlineAlgorithm.FAST_MESH_SHADOW,
-        curve_mode=geometer.HlrCurveMode.POLYLINE,
-        strip_root_placement=True, output_outline=True, output_detail=True, output_bbox=False,
-        fast=geometer.FastHlrOptionsA0(include_hidden=False),
-    ))
-    result = client.mesh_illustration(geometer.MeshIllustrationInputA0(
-        schema="geometry.mesh_illustration.input.a0",
+    result = client.mesh_illustration(geometer.MeshIllustrationInputB0(
+        schema="geometry.mesh_illustration.input.b0",
         meshes=tessellated.mesh_collection.meshes,
         view=view,
         style=geometer.MeshIllustrationStyleA0(
             shading=geometer.MeshIllustrationShading.TOON,
             show_outlines=False, show_creases=False,
             show_hlr_outline=True, show_hlr_detail=True),
-    ), hlr_projection=hlr)
+    ))
 Path("OUTPUT.svg").write_text(result.svg, encoding="utf-8")
 ```
 
@@ -125,14 +137,14 @@ int code = geometer::model_tessellation_from_bytes(
     step_bytes.data(), step_bytes.size(), {}, &collection, &status);
 if (code != 0) { /* report status.message and stop */ }
 
-geometer::contracts::MeshIllustrationInputA0 input;
+geometer::contracts::MeshIllustrationInputB0 input;
 input.meshes = std::move(collection.meshes);
 input.view.direction = {0, 0, 1};
 input.view.up = {0, 1, 0};
-geometer::contracts::MeshIllustrationResultA0 result;
+geometer::contracts::MeshIllustrationResultB0 result;
 code = geometer::illustrate_mesh(input, &result, &status);
 if (code != 0) { /* report status.message and stop */ }
-// result.svg is vector XML; result.stats and result.warnings are generated A0 values.
+// result.svg is vector XML; result.fragment identifies the transformed/clipped geometry.
 ```
 
 See [colored tessellation](model-tessellation-a0.md) for millimeter units,
@@ -158,9 +170,11 @@ The native implementation follows the production TypeScript renderer:
   background/title options and chained line paths.
 
 The pure `illustrate_mesh(input, result, status)` / Rust `mesh_illustration(input)`
-calls still do not compute HLR. For a finished layered SVG, use the C++ overload
-`illustrate_mesh(input, hlr, result, status)`, Rust
+calls still do not compute HLR. For a finished layered SVG, use the B0 C++
+overload `illustrate_mesh(input, hlr, result, status)`, Rust
 `mesh_illustration_with_hlr(input, hlr)`, or Python's `hlr_projection=` keyword.
+The B0 HLR fragment digest must match the transformed and clipped illustration
+fragment; mismatches fail rather than composing unrelated geometry.
 `show_hlr_detail` and `show_hlr_outline` select supplied lines; detail is drawn
 before outline, above fills, exactly as in the web Lab. Consumers do not manage
 SVG z-order. They may retain the original HLR result for independent layers.

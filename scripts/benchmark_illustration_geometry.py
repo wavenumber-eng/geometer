@@ -16,10 +16,10 @@ from pathlib import Path
 
 from benchmark_mesh_illustration import ROOT, geometer, synthetic_grid
 from geometer._generated.contracts.codecs import (
-    decode_mesh_illustration_geometry_input_a0_json,
-    decode_mesh_illustration_input_a0_json,
-    encode_mesh_illustration_geometry_a0_json,
-    encode_mesh_illustration_result_a0_json,
+    decode_mesh_illustration_geometry_input_b0_json,
+    decode_mesh_illustration_input_b0_json,
+    encode_mesh_illustration_geometry_b0_json,
+    encode_mesh_illustration_result_b0_json,
 )
 
 
@@ -35,18 +35,18 @@ def main() -> None:
     report = {"binary_sha256": hashlib.sha256(args.executable.read_bytes()).hexdigest(), "samples": [], "summary": []}
     with geometer.GeometerClient(executable=args.executable) as client:
         collection = client.model_tessellation((ROOT / "tests/fixtures/step/embedded_models/SOT-23.STEP").read_bytes())
-        small = geometer.MeshIllustrationInputA0(
-            schema="geometry.mesh_illustration.input.a0",
+        small = geometer.MeshIllustrationInputB0(
+            schema="geometry.mesh_illustration.input.b0",
             meshes=collection.mesh_collection.meshes,
             view=geometer.MeshIllustrationView(direction=(0.4, 0.7, 1), up=(0, 1, 0)),
         )
         inputs = {
-            "grid": decode_mesh_illustration_input_a0_json(json.dumps(synthetic_grid(48)).encode()),
+            "grid": decode_mesh_illustration_input_b0_json(json.dumps(synthetic_grid(48)).encode()),
             "sot23": small,
         }
         for name, svg_input in inputs.items():
-            geometry_input = geometer.MeshIllustrationGeometryInputA0(
-                schema="geometry.mesh_illustration_geometry.input.a0",
+            geometry_input = geometer.MeshIllustrationGeometryInputB0(
+                schema="geometry.mesh_illustration_geometry.input.b0",
                 length_unit="millimeter",
                 meshes=svg_input.meshes,
                 view=svg_input.view,
@@ -65,9 +65,9 @@ def main() -> None:
                     elapsed = time.perf_counter() - start
                     start = time.perf_counter()
                     encoded = (
-                        encode_mesh_illustration_result_a0_json(result)
-                        if isinstance(result, geometer.MeshIllustrationResultA0)
-                        else encode_mesh_illustration_geometry_a0_json(result)
+                        encode_mesh_illustration_result_b0_json(result)
+                        if isinstance(result, geometer.MeshIllustrationResultB0)
+                        else encode_mesh_illustration_geometry_b0_json(result)
                     )
                     encoding = time.perf_counter() - start
                     signature = (result.stats, result.warnings)
@@ -97,13 +97,13 @@ def main() -> None:
                 )
         if args.large:
             fixture = synthetic_grid(190)
-            fixture.update(schema="geometry.mesh_illustration_geometry.input.a0", length_unit="millimeter")
+            fixture.update(schema="geometry.mesh_illustration_geometry.input.b0", length_unit="millimeter")
             fixture["style"].update(fuse_surfaces=False, layer_coplanar_materials=False)
-            typed = decode_mesh_illustration_geometry_input_a0_json(json.dumps(fixture).encode())
+            typed = decode_mesh_illustration_geometry_input_b0_json(json.dumps(fixture).encode())
             start = time.perf_counter()
             drawing = client.mesh_illustration_geometry(typed, timeout=180)
             elapsed = time.perf_counter() - start
-            size = len(encode_mesh_illustration_geometry_a0_json(drawing))
+            size = len(encode_mesh_illustration_geometry_b0_json(drawing))
             assert size > 8 * 1024 * 1024 and drawing.stats.surface_draws == 190 * 190 * 2
             assert client.mesh_illustration(small).stats.triangles > 0
             report["large_attachment"] = dict(

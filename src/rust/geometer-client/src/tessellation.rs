@@ -91,7 +91,7 @@ fn decode_response(
     source_hash: &str,
     max_triangles: u32,
 ) -> Result<ModelTessellation, GeometerClientError> {
-    let success = match response.outcome {
+    let success = match response.outcome.into_a0()? {
         OperationOutcomeA0::Failure(failure) => {
             return Err(GeometerClientError::Operation {
                 operation: failure.operation,

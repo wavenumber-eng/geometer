@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="91d0158e37d9a999b010d14f79e7537f2b9ccb0b03619b2143ec0d96343690ed">
+  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
   <title>Static Native SDK — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="91d0158e37d9a999b010d14f79e7537f2b9ccb0b03619b2143ec0d96343690ed" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/static-native-sdk.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="static-native-sdk">Static Native SDK</h1></header>
 <h2 id="status">Status</h2>
@@ -139,6 +139,13 @@ catalog/contract validation and bounded executor on top. It also re-exports a
 safe <code>serve_stdio()</code> bootstrap so a downstream executable can use itself as
 the ordinary IPC worker and retain process-pool parallelism while shipping one
 file.</p>
+<p>Release qualification also builds the Rust
+<a href="../../../../../../src/rust/geometer-client/examples/direct_static_illustration.rs"><code>direct_static_illustration</code></a>
+sample against the relocated SDK, copies only its application binary into an
+unrelated package directory, clears Geometer executable discovery and the
+normal executable search path, and runs STEP-to-SVG illustration. The produced
+app must have no dynamic Geometer or OCCT imports and no bundled
+<code>geometer(.exe)</code> fallback.</p>
 <p>The versioned SDK JSON schema records target/profile identity, ordered archive
 entries, rescan/group boundaries, system libraries, Apple frameworks, and the
 minimum platform baseline. Cargo consumers validate this manifest using
@@ -173,7 +180,9 @@ compliance by itself.</p>
 <li>The four-platform matrix builds deterministic candidate archives and their
 provenance.</li>
 <li>Clean relocated CMake and Cargo consumers validate the exact candidate
-bytes, including a direct operation and the embedded stdio server.</li>
+bytes, including a direct operation, the embedded stdio server, and the
+internal direct-static clipping qualification sample. The sample is not a
+release asset; the existing browser and egui Labs are the maintained demos.</li>
 <li>KiCad Cruncher consumes those same bytes for Windows x64 and macOS ARM64
 one/four-worker Toon qualification with no Geometer sidecar.</li>
 <li>Full review and release signoff approve an exact expected asset inventory.</li>

@@ -14,9 +14,9 @@ export type {
   MeshIllustratorA0,
 } from "./mesh-illustration.js";
 export {
-  createIllustrator,
-  illustrateMesh,
-  illustrateMeshGeometry,
+  createIllustratorA0,
+  illustrateMeshA0,
+  illustrateMeshGeometryA0,
   prepareMeshIllustration,
   renderMeshIllustrationCanvas,
   renderMeshIllustrationSvg,

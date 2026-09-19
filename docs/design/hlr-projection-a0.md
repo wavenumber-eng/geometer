@@ -202,7 +202,7 @@ const fromStep = await client.modelHlrProjection({
     fast: { crease_angle_rad: (25 * Math.PI) / 180 },
   },
 });
-const fromMesh = await client.meshHlrProjection({
+const fromMesh = await client.meshHlrProjectionA0({
   mesh: {
     positions: [0, 0, 0, 10, 0, 0, 0, 10, 0],
     indices: [0, 1, 2],
@@ -212,7 +212,8 @@ const fromMesh = await client.meshHlrProjection({
 ```
 
 The dedicated Worker and persistent TypeScript IPC clients use the same
-`modelHlrProjection` and `meshHlrProjection` method names.
+`modelHlrProjection` and explicit `meshHlrProjectionA0` compatibility method
+names. Unqualified `meshHlrProjection` is the canonical B0 operation.
 
 ### Python executable IPC
 
@@ -233,7 +234,7 @@ mesh = geometer.IndexedTriangleMeshA0(
 )
 with geometer.GeometerClient() as client:
     step_result = client.model_hlr_projection(Path("part.step").read_bytes(), options)
-    mesh_result = client.mesh_hlr_projection(mesh)
+    mesh_result = client.mesh_hlr_projection_a0(mesh)
 ```
 
 ### Rust executable IPC
@@ -429,9 +430,10 @@ of the production A0 package.
 ## TypeScript convenience composition
 
 `@wavenumber/geometer/illustrated-hlr` composes the indexed-mesh operation with
-the production illustration renderer. `illustrateMeshWithFastHlr` is the
-one-shot SVG path; `createFastHlrIllustrator` returns both the governed HLR
-result and a reusable, disposable illustrator. Input positions and transforms
-are millimeters in this composition. The facade does not merge the contracts:
-callers can still inspect or store HLR linework independently of colorized
-output.
+the production A0 illustration renderer. `illustrateMeshWithFastHlrA0` is the
+one-shot SVG path; `createFastHlrIllustratorA0` returns both the governed HLR
+result and a reusable, disposable illustrator. Its explicit A0 suffix prevents
+new callers from confusing this compatibility composition with correlated B0
+mesh HLR and clipping. Input positions and transforms are millimeters in this
+composition. The facade does not merge the contracts: callers can still inspect
+or store HLR linework independently of colorized output.

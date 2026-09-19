@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
+  <title>Illustration Half-Space Clipping B0 — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/illustration-clipping-b0.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="illustration-half-space-clipping-b0">Illustration Half-Space Clipping B0</h1></header>
+<p>Geometer B0 illustration operations accept an ordered set of generic 3D
+half-spaces. A point is retained when</p>
+<pre><code class="language-text">dot(normal, point) - distance_mm &gt;= -tolerance_mm
+</code></pre>
+<p>Clipping runs after STEP root placement, authored analytic lowering, per-mesh
+placement, and the operation's affine transform. It runs before bounds, Fast
+HLR, outlines, visibility ordering, shading, and 2D projection. The same native
+kernel is used by model illustration, composed-mesh illustration, and composed-
+mesh HLR.</p>
+<p>The B0 operation identities are:</p>
+<ul>
+<li><code>geometry.model_illustration.b0</code></li>
+<li><code>geometry.model_illustration_geometry.b0</code></li>
+<li><code>geometry.mesh_illustration.b0</code></li>
+<li><code>geometry.mesh_illustration_geometry.b0</code></li>
+<li><code>geometry.mesh_hlr_projection.b0</code></li>
+</ul>
+<p>The executable IPC framing, generic C ABI, Worker protocol, and operation
+catalog remain A0. The operation identity selects the exact A0 or B0 logical
+request/outcome root. A0 illustration operations remain strict compatibility
+adapters without clipping fields; maintained clients and examples use B0.
+The public C++ value API likewise overloads <code>illustrate_mesh</code> and
+<code>illustrate_mesh_geometry</code> for the B0 input/result roots. The A0 overloads are
+retained unchanged as explicit compatibility entry points.</p>
+<h2 id="deterministic-fragment-contract">Deterministic fragment contract</h2>
+<p>Planes are normalized and evaluated in authored order. New boundary vertices
+and normals are interpolated, source material indices are preserved, duplicate
+and degenerate output is removed deterministically, and unused geometry is
+compacted. <code>cap_policy</code> is currently required to be <code>none</code>: cut edges are
+ordinary mesh boundaries for HLR/outlines, and no synthetic section surface or
+material is invented.</p>
+<p>Each B0 result reports normalized clipping, input/output triangle counts, the
+raw attachment digest when applicable, a complete fragment digest, and a
+geometry-only digest used to prove that supplied HLR and shaded geometry came
+from the same transformed and clipped fragment. Plane definitions, tolerance,
+cap policy, transforms, and effective work limits therefore participate in
+result/cache identity.</p>
+<p>An entirely removed fragment is a successful result with <code>empty: true</code>, zero
+output triangles, and absent bounds. Implementations must not fabricate
+six-zero bounds. SVG operations return a valid empty illustration document;
+geometry and HLR operations return empty collections for the requested view.</p>
+<p>Clipping is bounded by 16 planes and explicit ceilings for output triangles,
+generated vertices, intersections, and edge-plane tests. Non-finite values,
+zero normals, unsupported cap policies, malformed geometry, and exceeded work
+limits fail closed with governed diagnostics.</p>
+<p>This facility is intentionally unaware of PCBs or board footprints. A
+condition such as “outside a 2D footprint or beyond a viewed surface” is not a
+half-space and requires a separate profile/occluder design.</p>
+
+</main>
+</body>
+</html>

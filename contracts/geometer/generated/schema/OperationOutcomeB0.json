@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometer.operation.outcome:b0",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/OperationSuccessB0"
+    },
+    {
+      "$ref": "#/$defs/OperationFailureB0"
+    }
+  ],
+  "$defs": {
+    "OperationSuccessB0": {
+      "type": "object",
+      "properties": {
+        "operation": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "ok": {
+          "type": "boolean",
+          "const": true
+        },
+        "result": {
+          "$ref": "#/$defs/OperationResultValueB0"
+        }
+      },
+      "required": [
+        "operation",
+        "ok",
+        "result"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "OperationFailureB0": {
+      "type": "object",
+      "properties": {
+        "operation": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "ok": {
+          "type": "boolean",
+          "const": false
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:wavenumber:schema:geometer:geometry.common.diagnostic:a0"
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "operation",
+        "ok",
+        "diagnostics"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "OperationResultValueB0": {
+      "oneOf": [
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.model_illustration_geometry.result:b0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.model_illustration.result:b0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.mesh_illustration_geometry.result:b0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.mesh_illustration.result:b0"
+        },
+        {
+          "$ref": "urn:wavenumber:schema:geometer:geometry.hlr_projection.result:b0"
+        }
+      ]
+    }
+  }
+}

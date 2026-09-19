@@ -12,6 +12,7 @@ from ._generated.contracts.models import (
     ModelTessellationRequestA0,
     ModelTessellationResultA0,
     OperationFailureA0,
+    OperationFailureB0,
 )
 from ._ipc_a0 import Attachment
 
@@ -39,7 +40,7 @@ def model_tessellation(
         (Attachment(name="model", media_type="application/step", data=model),),
         timeout=timeout,
     )
-    if isinstance(response.outcome, OperationFailureA0):
+    if isinstance(response.outcome, (OperationFailureA0, OperationFailureB0)):
         raise GeometerOperationError(response.outcome.operation, response.outcome.diagnostics)
     try:
         result = _decode_response(response, sha256(model).hexdigest())
@@ -53,7 +54,7 @@ def model_tessellation(
 
 
 def _decode_response(response: OperationResponse, source_hash: str) -> ModelTessellation:
-    if isinstance(response.outcome, OperationFailureA0):
+    if isinstance(response.outcome, (OperationFailureA0, OperationFailureB0)):
         raise ValueError("unexpected failed response")
     result = response.outcome.result
     if not isinstance(result, ModelTessellationResultA0) or len(response.attachments) != 1:

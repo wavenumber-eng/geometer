@@ -632,6 +632,14 @@ add_test(NAME geometer_model_tessellation_test COMMAND geometer_model_tessellati
 add_executable(geometer_mesh_illustration_test mesh_illustration_test.cpp)
 add_executable(geometer_mesh_illustration_geometry_test mesh_illustration_geometry_test.cpp)
 add_executable(geometer_model_illustration_native_test model_illustration_native_test.cpp)
+add_executable(geometer_illustration_clipping_test illustration_clipping_test.cpp)
+target_include_directories(geometer_illustration_clipping_test PRIVATE
+                           ${PROJECT_SOURCE_DIR}/src/cpp/lib)
+target_link_libraries(geometer_illustration_clipping_test PRIVATE geometer_lib)
+add_test(NAME geometer_illustration_clipping_test COMMAND geometer_illustration_clipping_test)
+add_executable(geometer_illustration_b0_operation_test illustration_b0_operation_test.cpp)
+target_link_libraries(geometer_illustration_b0_operation_test PRIVATE geometer_lib)
+add_test(NAME geometer_illustration_b0_operation_test COMMAND geometer_illustration_b0_operation_test)
 target_include_directories(geometer_model_illustration_native_test PRIVATE
                            ${PROJECT_SOURCE_DIR}/src/cpp/lib)
 target_link_libraries(geometer_model_illustration_native_test PRIVATE geometer_lib)
@@ -893,6 +901,8 @@ if(EMSCRIPTEN)
         geometer_mesh_illustration_test
         geometer_mesh_illustration_geometry_test
         geometer_model_illustration_native_test
+        geometer_illustration_clipping_test
+        geometer_illustration_b0_operation_test
         geometer_operation_contract_test
         geometer_projection_options_json_test
         geometer_projection_model_transform_test

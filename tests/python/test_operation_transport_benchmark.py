@@ -46,7 +46,7 @@ def test_invalid_percentile_is_rejected() -> None:
 def test_request_uses_the_governed_native_operation() -> None:
     operation_request = benchmark.request()
 
-    assert operation_request.schema == "geometry.model_illustration_geometry.request.a0"
+    assert operation_request.schema == "geometry.model_illustration_geometry.request.b0"
     assert operation_request.source.kind == "model"
     assert operation_request.source.attachment == "model"
     assert operation_request.style.show_hlr_detail is True

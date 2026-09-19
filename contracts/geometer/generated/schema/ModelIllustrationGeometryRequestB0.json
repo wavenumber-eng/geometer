@@ -1,0 +1,879 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.model_illustration_geometry.request:b0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.model_illustration_geometry.request.b0"
+    },
+    "source": {
+      "$ref": "#/$defs/ModelIllustrationSourceA0"
+    },
+    "view": {
+      "$ref": "#/$defs/MeshIllustrationView"
+    },
+    "prepare": {
+      "$ref": "#/$defs/MeshIllustrationPrepareOptions"
+    },
+    "linework": {
+      "$ref": "#/$defs/ModelIllustrationLineworkOptionsA0"
+    },
+    "style": {
+      "$ref": "urn:wavenumber:schema:geometer:geometry.mesh_illustration.style:a0"
+    },
+    "work_limits": {
+      "$ref": "#/$defs/ModelIllustrationWorkLimitsA0"
+    },
+    "clipping": {
+      "$ref": "#/$defs/IllustrationClipping"
+    }
+  },
+  "required": [
+    "schema",
+    "source",
+    "view"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "$defs": {
+    "ModelIllustrationSourceA0": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/ModelAttachmentIllustrationSourceA0"
+        },
+        {
+          "$ref": "#/$defs/AnalyticIllustrationSourceA0"
+        }
+      ]
+    },
+    "MeshIllustrationView": {
+      "type": "object",
+      "properties": {
+        "direction": {
+          "$ref": "#/$defs/IllustrationVector3"
+        },
+        "up": {
+          "$ref": "#/$defs/IllustrationVector3"
+        },
+        "mirror_x": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "direction",
+        "up"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "MeshIllustrationPrepareOptions": {
+      "type": "object",
+      "properties": {
+        "max_triangles": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2000000,
+          "default": 750000
+        },
+        "weld_tolerance": {
+          "type": "number",
+          "default": 1e-7,
+          "exclusiveMinimum": 0
+        }
+      },
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "ModelIllustrationLineworkOptionsA0": {
+      "type": "object",
+      "properties": {
+        "fast": {
+          "$ref": "#/$defs/FastHlrOptionsA0"
+        },
+        "outline_width_mm": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1000,
+          "description": "Physical outline width applied after prepared source bounds are known."
+        },
+        "detail_width_mm": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1000,
+          "description": "Physical detail width applied after prepared source bounds are known."
+        }
+      },
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "ModelIllustrationWorkLimitsA0": {
+      "type": "object",
+      "properties": {
+        "max_visibility_candidate_pairs": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000000,
+          "default": 100000000,
+          "description": "Maximum candidate comparisons in each Fast linework and illustration visibility stage."
+        },
+        "max_drawing_commands": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2000000,
+          "default": 2000000
+        }
+      },
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "IllustrationClipping": {
+      "type": "object",
+      "properties": {
+        "planes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/HalfSpacePlane"
+          },
+          "minItems": 1,
+          "maxItems": 16
+        },
+        "cap_policy": {
+          "type": "string",
+          "const": "none"
+        },
+        "limits": {
+          "$ref": "#/$defs/ClippingLimits"
+        }
+      },
+      "required": [
+        "planes",
+        "cap_policy"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Optional B0 clipping request. The first generation deliberately creates no section caps."
+    },
+    "ModelAttachmentIllustrationSourceA0": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "model"
+        },
+        "attachment": {
+          "type": "string",
+          "const": "model"
+        },
+        "transform": {
+          "$ref": "#/$defs/IllustrationMatrix4x4",
+          "description": "Applied after root-placement normalization."
+        },
+        "material_override": {
+          "$ref": "#/$defs/MeshIllustrationMaterial"
+        },
+        "tessellation": {
+          "$ref": "#/$defs/ModelTessellationOptionsA0"
+        }
+      },
+      "required": [
+        "kind",
+        "attachment"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "AnalyticIllustrationSourceA0": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "analytic"
+        },
+        "scene": {
+          "$ref": "#/$defs/AnalyticSceneA0"
+        },
+        "lowering": {
+          "$ref": "#/$defs/AnalyticLoweringOptionsA0"
+        }
+      },
+      "required": [
+        "kind",
+        "scene"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "IllustrationVector3": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "FastHlrOptionsA0": {
+      "type": "object",
+      "properties": {
+        "include_boundaries": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_creases": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_silhouettes": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_hidden": {
+          "type": "boolean",
+          "default": false
+        },
+        "suppress_coplanar_seams": {
+          "type": "boolean",
+          "default": false
+        },
+        "crease_angle_rad": {
+          "type": "number",
+          "default": 0.5235987755982988,
+          "minimum": 0,
+          "maximum": 3.141592653589793
+        },
+        "weld_tolerance": {
+          "type": "number",
+          "default": 1e-7,
+          "exclusiveMinimum": 0
+        },
+        "projected_tolerance": {
+          "type": "number",
+          "default": 1e-8,
+          "exclusiveMinimum": 0
+        },
+        "depth_tolerance": {
+          "type": "number",
+          "default": 1e-7,
+          "minimum": 0
+        },
+        "coplanar_seam_angle_rad": {
+          "type": "number",
+          "default": 0.017453292519943295,
+          "minimum": 0,
+          "maximum": 1.5707963267948966
+        },
+        "coplanar_seam_depth_tolerance": {
+          "type": "number",
+          "default": 0.000001,
+          "minimum": 0
+        },
+        "coplanar_seam_lateral_tolerance": {
+          "type": "number",
+          "default": 0.000001,
+          "minimum": 0
+        },
+        "limits": {
+          "$ref": "#/$defs/FastHlrLimitsA0"
+        }
+      },
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Fast vector-HLR controls. Angles are radians and geometric tolerances use model units."
+    },
+    "HalfSpacePlane": {
+      "type": "object",
+      "properties": {
+        "normal": {
+          "$ref": "#/$defs/IllustrationVector3"
+        },
+        "distance_mm": {
+          "type": "number"
+        },
+        "tolerance_mm": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0
+        }
+      },
+      "required": [
+        "normal",
+        "distance_mm"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "One world-space half-space. The kept side satisfies dot(normal, point) - distance_mm >= -tolerance_mm."
+    },
+    "ClippingLimits": {
+      "type": "object",
+      "properties": {
+        "max_output_triangles": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2000000,
+          "default": 2000000
+        },
+        "max_generated_vertices": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 6000000,
+          "default": 6000000
+        },
+        "max_intersections": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8000000,
+          "default": 8000000
+        },
+        "max_edge_plane_tests": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32000000,
+          "default": 32000000
+        }
+      },
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Independent hard work budgets for deterministic triangle clipping."
+    },
+    "IllustrationMatrix4x4": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 16,
+      "maxItems": 16
+    },
+    "MeshIllustrationMaterial": {
+      "type": "object",
+      "properties": {
+        "color": {
+          "$ref": "#/$defs/IllustrationVector3",
+          "description": "sRGB channels in the inclusive range [0, 1]."
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 1024
+        }
+      },
+      "required": [
+        "color"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "ModelTessellationOptionsA0": {
+      "type": "object",
+      "properties": {
+        "linear_deflection_mm": {
+          "type": "number",
+          "default": 0.1,
+          "minimum": 0.000001,
+          "maximum": 1000
+        },
+        "angular_deflection_rad": {
+          "type": "number",
+          "default": 0.5,
+          "minimum": 0.000001,
+          "maximum": 3.141592653589793
+        },
+        "root_placement": {
+          "$ref": "#/$defs/ModelRootPlacement",
+          "default": "strip"
+        },
+        "max_triangles": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2000000,
+          "default": 750000
+        },
+        "allow_partial": {
+          "type": "boolean",
+          "default": true,
+          "description": "Return usable faces with warnings when completed meshing has local face failures."
+        }
+      },
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Reusable bounded STEP tessellation controls."
+    },
+    "AnalyticSceneA0": {
+      "type": "object",
+      "properties": {
+        "definitions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AnalyticDefinitionA0"
+          },
+          "minItems": 1,
+          "maxItems": 65536
+        },
+        "occurrences": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AnalyticOccurrenceA0"
+          },
+          "minItems": 1,
+          "maxItems": 65536
+        }
+      },
+      "required": [
+        "definitions",
+        "occurrences"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "AnalyticLoweringOptionsA0": {
+      "type": "object",
+      "properties": {
+        "linear_deflection_mm": {
+          "type": "number",
+          "default": 0.1,
+          "minimum": 0.000001,
+          "maximum": 1000
+        },
+        "angular_deflection_rad": {
+          "type": "number",
+          "default": 0.5,
+          "minimum": 0.000001,
+          "maximum": 3.141592653589793
+        },
+        "limits": {
+          "$ref": "#/$defs/AnalyticIllustrationLimitsA0"
+        }
+      },
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "FastHlrLimitsA0": {
+      "type": "object",
+      "properties": {
+        "max_vertices": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295,
+          "default": 2000000
+        },
+        "max_triangles": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295,
+          "default": 2000000
+        },
+        "max_edges": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295,
+          "default": 4000000
+        },
+        "max_grid_references": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295,
+          "default": 64000000
+        },
+        "max_candidate_pairs": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295,
+          "default": 100000000
+        },
+        "max_fragments": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295,
+          "default": 8000000
+        },
+        "max_output_segments": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295,
+          "default": 4000000
+        }
+      },
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Resource ceilings applied during Fast mesh preparation and projection."
+    },
+    "ModelRootPlacement": {
+      "type": "string",
+      "enum": [
+        "strip",
+        "preserve"
+      ]
+    },
+    "AnalyticDefinitionA0": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "primitives": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AnalyticPrimitiveA0"
+          },
+          "minItems": 1,
+          "maxItems": 65536
+        }
+      },
+      "required": [
+        "id",
+        "primitives"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "AnalyticOccurrenceA0": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "definition_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "transform": {
+          "$ref": "#/$defs/IllustrationMatrix4x4",
+          "description": "Omitted means identity. Column-major affine transform; translations are millimeters."
+        }
+      },
+      "required": [
+        "id",
+        "definition_id"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "AnalyticIllustrationLimitsA0": {
+      "type": "object",
+      "properties": {
+        "max_reached_definitions": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65536,
+          "default": 4096
+        },
+        "max_reached_occurrences": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65536,
+          "default": 65536
+        },
+        "max_reached_primitives": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65536,
+          "default": 65536
+        },
+        "max_reached_rings": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 262144,
+          "default": 262144
+        },
+        "max_reached_points": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2000000,
+          "default": 2000000
+        },
+        "max_generated_curve_samples": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2000000,
+          "default": 2000000
+        },
+        "max_definition_triangles": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2000000,
+          "default": 750000
+        },
+        "max_topology_candidate_pairs": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000000,
+          "default": 10000000
+        }
+      },
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "AnalyticPrimitiveA0": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/AnalyticExtrusionA0"
+        },
+        {
+          "$ref": "#/$defs/AnalyticCylinderA0"
+        },
+        {
+          "$ref": "#/$defs/AnalyticSphereA0"
+        }
+      ]
+    },
+    "AnalyticExtrusionA0": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "extrusion"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "regions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/IllustrationProfileRegionA0"
+          },
+          "minItems": 1,
+          "maxItems": 65536
+        },
+        "z_min_mm": {
+          "type": "number"
+        },
+        "z_max_mm": {
+          "type": "number"
+        },
+        "material": {
+          "$ref": "#/$defs/MeshIllustrationMaterial"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "regions",
+        "z_min_mm",
+        "z_max_mm",
+        "material"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "AnalyticCylinderA0": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "cylinder"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "center_mm": {
+          "$ref": "#/$defs/IllustrationVector2Mm"
+        },
+        "radius_mm": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "z_min_mm": {
+          "type": "number"
+        },
+        "z_max_mm": {
+          "type": "number"
+        },
+        "material": {
+          "$ref": "#/$defs/MeshIllustrationMaterial"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "center_mm",
+        "radius_mm",
+        "z_min_mm",
+        "z_max_mm",
+        "material"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "AnalyticSphereA0": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "sphere"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "center_mm": {
+          "$ref": "#/$defs/IllustrationVector3"
+        },
+        "radius_mm": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "material": {
+          "$ref": "#/$defs/MeshIllustrationMaterial"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "center_mm",
+        "radius_mm",
+        "material"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "IllustrationProfileRegionA0": {
+      "type": "object",
+      "properties": {
+        "outer": {
+          "$ref": "#/$defs/IllustrationProfileRingA0"
+        },
+        "holes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/IllustrationProfileRingA0"
+          },
+          "maxItems": 131071
+        }
+      },
+      "required": [
+        "outer"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "IllustrationVector2Mm": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "IllustrationProfileRingA0": {
+      "type": "object",
+      "properties": {
+        "points_mm": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/IllustrationVector2Mm"
+          },
+          "minItems": 3,
+          "maxItems": 131072,
+          "description": "Segment i connects point i to point (i + 1) modulo point count."
+        },
+        "segments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/IllustrationProfileSegmentA0"
+          },
+          "minItems": 3,
+          "maxItems": 131072
+        }
+      },
+      "required": [
+        "points_mm",
+        "segments"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "IllustrationProfileSegmentA0": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/IllustrationProfileLineA0"
+        },
+        {
+          "$ref": "#/$defs/IllustrationProfileCircularArcA0"
+        }
+      ]
+    },
+    "IllustrationProfileLineA0": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "line"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "IllustrationProfileCircularArcA0": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "circular_arc"
+        },
+        "center_mm": {
+          "$ref": "#/$defs/IllustrationVector2Mm"
+        },
+        "sweep": {
+          "$ref": "#/$defs/PlanarArcSweep"
+        }
+      },
+      "required": [
+        "kind",
+        "center_mm",
+        "sweep"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "PlanarArcSweep": {
+      "type": "string",
+      "enum": [
+        "cw",
+        "ccw"
+      ]
+    }
+  }
+}

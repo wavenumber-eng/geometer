@@ -1,6 +1,9 @@
 // Test-only oracle: native runtime consumers never load JavaScript.
 import { readFileSync } from "node:fs";
-import { illustrateMesh, createIllustrator } from "../../dist/wasm/npm/geometer/mesh-illustration.js";
+import {
+  illustrateMeshA0 as illustrateMesh,
+  createIllustratorA0 as createIllustrator,
+} from "../../dist/wasm/npm/geometer/mesh-illustration.js";
 
 const value = JSON.parse(readFileSync(0, "utf8"));
 if (value.input && value.hlr) {

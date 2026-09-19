@@ -1,4 +1,4 @@
-import type { HlrProjectionOptionsA0, HlrProjectionResultA0, IpcRequestValueA0, IpcShutdownAckA0, IpcWelcomeA0, OperationOutcomeA0 } from "./generated/contracts.js";
+import type { HlrProjectionOptionsA0, HlrProjectionResultA0, IpcRequestValueA0, IpcRequestValueB0, IpcShutdownAckA0, IpcWelcomeA0, OperationOutcomeA0, OperationOutcomeB0 } from "./generated/contracts.js";
 import { type OperationIdentity } from "./generated/operations.js";
 import { type IndexedTriangleMeshA0 } from "./indexed-mesh-packet-a0.js";
 import { type GeometerIpcAttachment } from "./ipc-a0.js";
@@ -17,7 +17,7 @@ export interface GeometerIpcConnectOptionsA0 {
 }
 export interface GeometerIpcOperationResponseA0 {
     readonly requestId: bigint;
-    readonly outcome: OperationOutcomeA0;
+    readonly outcome: OperationOutcomeA0 | OperationOutcomeB0;
     readonly attachments: readonly GeometerIpcAttachment[];
 }
 export interface GeometerIpcModelHlrProjectionRequestA0 {
@@ -60,8 +60,8 @@ export declare class GeometerIpcClientA0 {
     private constructor();
     static connect(duplex: GeometerIpcDuplexA0, options: GeometerIpcConnectOptionsA0): Promise<GeometerIpcClientA0>;
     get welcome(): IpcWelcomeA0;
-    start(operation: OperationIdentity, request: IpcRequestValueA0, attachments?: readonly GeometerIpcAttachment[]): GeometerIpcCallA0;
-    execute(operation: OperationIdentity, request: IpcRequestValueA0, attachments?: readonly GeometerIpcAttachment[]): Promise<GeometerIpcOperationResponseA0>;
+    start(operation: OperationIdentity, request: IpcRequestValueA0 | IpcRequestValueB0, attachments?: readonly GeometerIpcAttachment[]): GeometerIpcCallA0;
+    execute(operation: OperationIdentity, request: IpcRequestValueA0 | IpcRequestValueB0, attachments?: readonly GeometerIpcAttachment[]): Promise<GeometerIpcOperationResponseA0>;
     modelHlrProjection(request: GeometerIpcModelHlrProjectionRequestA0): Promise<HlrProjectionResultA0>;
     meshHlrProjection(request: GeometerIpcMeshHlrProjectionRequestA0): Promise<HlrProjectionResultA0>;
     private hlrProjection;

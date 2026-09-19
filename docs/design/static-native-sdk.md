@@ -132,6 +132,14 @@ safe `serve_stdio()` bootstrap so a downstream executable can use itself as
 the ordinary IPC worker and retain process-pool parallelism while shipping one
 file.
 
+Release qualification also builds the Rust
+[`direct_static_illustration`](../../src/rust/geometer-client/examples/direct_static_illustration.rs)
+sample against the relocated SDK, copies only its application binary into an
+unrelated package directory, clears Geometer executable discovery and the
+normal executable search path, and runs STEP-to-SVG illustration. The produced
+app must have no dynamic Geometer or OCCT imports and no bundled
+`geometer(.exe)` fallback.
+
 The versioned SDK JSON schema records target/profile identity, ordered archive
 entries, rescan/group boundaries, system libraries, Apple frameworks, and the
 minimum platform baseline. Cargo consumers validate this manifest using
@@ -174,7 +182,9 @@ SDK archives are external GitHub Release assets and are not committed under
 1. The four-platform matrix builds deterministic candidate archives and their
    provenance.
 2. Clean relocated CMake and Cargo consumers validate the exact candidate
-   bytes, including a direct operation and the embedded stdio server.
+   bytes, including a direct operation, the embedded stdio server, and the
+   internal direct-static clipping qualification sample. The sample is not a
+   release asset; the existing browser and egui Labs are the maintained demos.
 3. KiCad Cruncher consumes those same bytes for Windows x64 and macOS ARM64
    one/four-worker Toon qualification with no Geometer sidecar.
 4. Full review and release signoff approve an exact expected asset inventory.

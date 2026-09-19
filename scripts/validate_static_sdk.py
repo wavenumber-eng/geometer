@@ -14,6 +14,7 @@ import subprocess
 import sys
 import tempfile
 import zipfile
+import xml.etree.ElementTree as ET
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -32,7 +33,11 @@ REQUIRED_SDK_FILES = {
     "share/geometer/geometer-sdk.json",
     "share/geometer/geometer-sdk.schema.json",
 }
-FORBIDDEN_PRIVATE_IMPORTS = re.compile(r"^(?:geometer|TK[A-Za-z0-9_]+)\.dll$", re.IGNORECASE)
+FORBIDDEN_PRIVATE_IMPORTS = re.compile(
+    r"^(?:geometer|libgeometer|TK[A-Za-z0-9_]+|libTK[A-Za-z0-9_]+)"
+    r"(?:\.dll|\.dylib|\.so(?:\..*)?)$",
+    re.IGNORECASE,
+)
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -318,14 +323,14 @@ def validate_direct_rust_client(sdk: Path) -> None:
     if sys.platform == "win32":
         flags = environment.get("RUSTFLAGS", "")
         environment["RUSTFLAGS"] = f"{flags} -C target-feature=+crt-static".strip()
-    manifest = ROOT / "src/rust/geometer-client/Cargo.toml"
+    cargo_manifest = ROOT / "src/rust/geometer-client/Cargo.toml"
     command = [
         cargo,
         "test",
         "--release",
         "--locked",
         "--manifest-path",
-        str(manifest),
+        str(cargo_manifest),
         "--features",
         "direct-static",
         "--test",
@@ -335,7 +340,102 @@ def validate_direct_rust_client(sdk: Path) -> None:
     subprocess.check_call(command, cwd=ROOT, env=environment)
 
 
-def validate_external_consumer(archive_path: Path, manifest: dict[str, Any], keep_work: bool = False) -> None:
+def validate_direct_static_illustration(sdk: Path, root: Path) -> None:
+    cargo = shutil.which("cargo")
+    if cargo is None:
+        raise RuntimeError("cargo is required to package the direct static illustration example")
+    target = root / "direct illustration target"
+    environment = os.environ.copy()
+    environment["CARGO_TARGET_DIR"] = str(target)
+    environment["GEOMETER_SDK_DIR"] = str(sdk)
+    if sys.platform == "win32":
+        flags = environment.get("RUSTFLAGS", "")
+        environment["RUSTFLAGS"] = f"{flags} -C target-feature=+crt-static".strip()
+    cargo_manifest = ROOT / "src/rust/geometer-client/Cargo.toml"
+    command = [
+        cargo,
+        "build",
+        "--release",
+        "--locked",
+        "--manifest-path",
+        str(cargo_manifest),
+        "--features",
+        "direct-static",
+        "--example",
+        "direct_static_illustration",
+    ]
+    print(
+        "  > cargo build --release --locked --features direct-static --example direct_static_illustration",
+        flush=True,
+    )
+    subprocess.check_call(command, cwd=ROOT, env=environment)
+
+    executable_name = "direct_static_illustration.exe" if sys.platform == "win32" else "direct_static_illustration"
+    built = target / "release/examples" / executable_name
+    package = root / "packaged direct illustration"
+    package.mkdir()
+    packaged = package / (
+        "geometer-static-illustration.exe" if sys.platform == "win32" else "geometer-static-illustration"
+    )
+    shutil.copy2(built, packaged)
+    if sorted(path.name for path in package.iterdir()) != [packaged.name]:
+        raise ValueError("direct illustration package must initially contain only its app binary")
+
+    isolated_path = root / "empty executable search path"
+    isolated_path.mkdir()
+    run_environment = environment.copy()
+    run_environment["PATH"] = str(isolated_path)
+    run_environment.pop("GEOMETER_EXE", None)
+    run_environment.pop("GEOMETER_EXECUTABLE", None)
+    observed = []
+    for name, distance in (("unclipped", "-100"), ("partial", "0"), ("empty", "100")):
+        output = root / f"clip {name}"
+        print(f"  > packaged direct illustration --clip --distance {distance}", flush=True)
+        result = subprocess.run(
+            [
+                str(packaged),
+                "--clip",
+                "--normal",
+                "0,0,1",
+                "--distance",
+                distance,
+                "--cap-policy",
+                "none",
+                "--output-dir",
+                str(output),
+            ],
+            cwd=package,
+            env=run_environment,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        if result.stdout:
+            print(result.stdout, end="")
+        if result.stderr:
+            print(result.stderr, end="", file=sys.stderr)
+        if result.returncode != 0:
+            raise subprocess.CalledProcessError(result.returncode, [str(packaged)])
+        svg = output / "clipped.svg"
+        html = (output / "comparison.html").read_text(encoding="utf-8")
+        minimum_svg_bytes = 100 if name == "empty" else 500
+        if ET.parse(svg).getroot().tag != "{http://www.w3.org/2000/svg}svg" or svg.stat().st_size < minimum_svg_bytes:
+            raise ValueError("packaged direct illustration did not write a valid clipped SVG")
+        if "cap_policy: none" not in html or "fragment_sha256" not in html:
+            raise ValueError("packaged direct illustration comparison omitted governed clipping metadata")
+        observed.append(result.stdout)
+    if "empty=true" not in observed[2] or "empty=false" not in observed[0] + observed[1]:
+        raise ValueError("packaged direct illustration did not exercise partial and empty clip states")
+    forbidden = sorted(name for name in imported_libraries(packaged) if FORBIDDEN_PRIVATE_IMPORTS.match(name))
+    if forbidden:
+        raise ValueError("packaged direct illustration imports private Geometer DLLs: " + ", ".join(forbidden))
+    if any(path.name.casefold() in {"geometer", "geometer.exe"} for path in package.rglob("*")):
+        raise ValueError("packaged direct illustration unexpectedly contains a Geometer executable")
+def validate_external_consumer(
+    archive_path: Path,
+    manifest: dict[str, Any],
+    keep_work: bool = False,
+) -> None:
     root = Path(tempfile.mkdtemp(prefix="geometer sdk qualification "))
     try:
         sdk = root / "relocated sdk"
@@ -363,6 +463,7 @@ def validate_external_consumer(archive_path: Path, manifest: dict[str, Any], kee
                 raise ValueError("embedded stdio server returned an empty operation catalog")
         validate_cargo_consumer(sdk, root)
         validate_direct_rust_client(sdk)
+        validate_direct_static_illustration(sdk, root)
         imports = imported_libraries(executable)
         forbidden = sorted(name for name in imports if FORBIDDEN_PRIVATE_IMPORTS.match(name))
         if forbidden:

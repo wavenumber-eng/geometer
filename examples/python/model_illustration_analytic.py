@@ -16,7 +16,7 @@ def rectangle(width: float, height: float) -> geometer.IllustrationProfileRingA0
     )
 
 
-def request() -> geometer.ModelIllustrationRequestA0:
+def request() -> geometer.ModelIllustrationRequestB0:
     body = geometer.MeshIllustrationMaterial(color=(0.15, 0.42, 0.68), name="body")
     metal = geometer.MeshIllustrationMaterial(color=(0.78, 0.8, 0.82), name="metal")
     marker = geometer.MeshIllustrationMaterial(color=(0.88, 0.18, 0.16), name="marker")
@@ -71,8 +71,8 @@ def request() -> geometer.ModelIllustrationRequestA0:
             ),
         ),
     )
-    return geometer.ModelIllustrationRequestA0(
-        schema="geometry.model_illustration.request.a0",
+    return geometer.ModelIllustrationRequestB0(
+        schema="geometry.model_illustration.request.b0",
         source=source,
         view=geometer.MeshIllustrationView(direction=(0.45, 0.65, 1), up=(0, 1, 0)),
         style=geometer.MeshIllustrationStyleA0(

@@ -1,6 +1,6 @@
 [package]
 name = "geometer-client"
-version = "2026.9.18"
+version = "2026.9.19"
 edition = "2024"
 rust-version = "1.85"
 description = "Generated contracts and persistent executable IPC client for Geometer"
@@ -21,7 +21,7 @@ cognitive_complexity = "deny"
 allow_attributes_without_reason = "deny"
 
 [dependencies]
-geometer-sys = { path = "../geometer-sys", version = "2026.9.18", optional = true }
+geometer-sys = { path = "../geometer-sys", version = "2026.9.19", optional = true }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["raw_value"] }
 sha2 = "0.10"
@@ -30,3 +30,7 @@ tokio = { version = "1.47", features = ["io-util", "macros", "process", "rt", "r
 
 [dev-dependencies]
 tokio = { version = "1.47", features = ["fs"] }
+
+[[example]]
+name = "direct_static_illustration"
+required-features = ["direct-static"]

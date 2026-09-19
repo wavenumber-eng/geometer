@@ -87,7 +87,7 @@ async fn run_analytic_planar_boolean_batch<B: crate::backend::OperationBackend>(
             }],
         )
         .await?;
-    match response.outcome {
+    match response.outcome.into_a0()? {
         OperationOutcomeA0::Failure(failure) => Err(GeometerClientError::Operation {
             operation: failure.operation,
             diagnostics: failure.diagnostics,

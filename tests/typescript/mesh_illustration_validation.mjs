@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import { createFastHlrIllustrator } from "../../dist/wasm/npm/geometer/illustrated-hlr.js";
+import { createFastHlrIllustratorA0 } from "../../dist/wasm/npm/geometer/illustrated-hlr.js";
 import {
-  createIllustrator,
-  illustrateMesh,
+  createIllustratorA0 as createIllustrator,
+  illustrateMeshA0 as illustrateMesh,
   prepareMeshIllustration,
   renderMeshIllustrationSvg,
   toMeshIllustrationStyleA0,
@@ -61,9 +61,9 @@ assert.equal(reusable.disposed, true);
 assert.throws(() => reusable.renderSvg(), /disposed/u);
 
 let observedHlrOptions;
-const composed = await createFastHlrIllustrator(
+const composed = await createFastHlrIllustratorA0(
   {
-    async meshHlrProjection(request) {
+    async meshHlrProjectionA0(request) {
       observedHlrOptions = request.options;
       return {
         views: [

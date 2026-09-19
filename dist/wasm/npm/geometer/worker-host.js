@@ -1,4 +1,4 @@
-import { encodeOperationOutcomeA0Json } from "./generated/index.js";
+import { encodeOperationOutcomeA0Json, encodeOperationOutcomeB0Json } from "./generated/index.js";
 import { createGeometerWasmClient, GeometerOperationError, GeometerWasmTransportError, } from "./wasm.js";
 import { GEOMETER_WASM_WORKER_PROTOCOL } from "./worker.js";
 /** Installs the generic Geometer A0 protocol into a dedicated Worker scope. */
@@ -74,7 +74,9 @@ export function startGeometerWorkerHost(factory, scope, options = {}) {
             scope.postMessage({
                 attachments,
                 kind: "operation_result",
-                outcomeJson: encodeOperationOutcomeA0Json(response.outcome),
+                outcomeJson: request.operation.endsWith(".b0")
+                    ? encodeOperationOutcomeB0Json(response.outcome)
+                    : encodeOperationOutcomeA0Json(response.outcome),
                 protocol: GEOMETER_WASM_WORKER_PROTOCOL,
                 requestId: request.requestId,
             }, attachments.map((attachment) => attachment.data));

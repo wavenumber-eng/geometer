@@ -29,6 +29,8 @@ PRODUCTION_VALIDATION_TARGETS = (
     "geometer_model_illustration_native_test",
     "geometer_mesh_illustration_geometry_test",
     "geometer_mesh_illustration_test",
+    "geometer_illustration_clipping_test",
+    "geometer_illustration_b0_operation_test",
     "geometer_operation_contract_test",
     "geometer_ipc_a0_frame_test",
     "geometer_c_api_stdio_test_server",

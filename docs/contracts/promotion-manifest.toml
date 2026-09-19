@@ -601,7 +601,7 @@ sha256 = "87e16b5b2453ad1f9263d92953d5741a30780db02eeea0d59d61f10967c4537b"
 status = "vendored"
 
 [c_abi]
-generation = 20260918
+generation = 20260919
 source = "src/cpp/lib/geometer/c_api.h"
 symbols = [
   "geometer_operation_catalog_json",
@@ -1225,6 +1225,141 @@ pilot_required = true
 compatibility = "Bounded JSON geometry attachment descriptor with matching statistics and warnings."
 
 [[contracts]]
+id = "geometer.ipc.request.b0"
+kind = "transport_envelope"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/ipc-b0.tsp"
+pilot_required = true
+compatibility = "B0 closed executable request envelope selected by exact operation identity inside unchanged A0 binary framing."
+
+[[contracts]]
+id = "geometer.operation.outcome.b0"
+kind = "transport_envelope"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operation-outcome-b0.tsp"
+pilot_required = true
+compatibility = "B0 operation outcome for clipped illustration roots; A0 outcome remains byte-for-byte frozen."
+
+[[contracts]]
+id = "geometry.mesh_hlr_projection.request.b0"
+kind = "request"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/mesh-hlr-projection-b0.tsp"
+pilot_required = true
+compatibility = "Fast-only colored mesh-collection HLR request with optional world-space half-space clipping."
+
+[[contracts]]
+id = "geometry.hlr_projection.result.b0"
+kind = "result"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/mesh-hlr-projection-b0.tsp"
+pilot_required = true
+compatibility = "B0 mesh HLR linework with explicit empty and clipped-fragment identity; A0 model and indexed-mesh HLR remain unchanged."
+
+[[contracts]]
+id = "geometry.mesh_illustration.input.b0"
+kind = "request"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/mesh-illustration-b0.tsp"
+pilot_required = true
+compatibility = "B0 direct-value mesh illustration input with optional clipping; A0 remains a strict compatibility input."
+
+[[contracts]]
+id = "geometry.mesh_illustration.request.b0"
+kind = "request"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/mesh-illustration-b0.tsp"
+pilot_required = true
+compatibility = "B0 attachment-backed illustration request with optional clipping over geometry.mesh_collection.a0."
+
+[[contracts]]
+id = "geometry.mesh_illustration.result.b0"
+kind = "result"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/mesh-illustration-b0.tsp"
+pilot_required = true
+compatibility = "B0 SVG result with explicit empty state and deterministic fragment identity."
+
+[[contracts]]
+id = "geometry.mesh_illustration.geometry.b0"
+kind = "result"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/mesh-illustration-geometry-b0.tsp"
+pilot_required = true
+compatibility = "B0 renderer-neutral geometry with optional bounds, explicit empty state, and fragment identity."
+
+[[contracts]]
+id = "geometry.mesh_illustration_geometry.input.b0"
+kind = "request"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/mesh-illustration-geometry-b0.tsp"
+pilot_required = true
+compatibility = "B0 direct-value geometry illustration input with optional clipping."
+
+[[contracts]]
+id = "geometry.mesh_illustration_geometry.request.b0"
+kind = "request"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/mesh-illustration-geometry-b0.tsp"
+pilot_required = true
+compatibility = "B0 attachment-backed geometry illustration request with optional clipping."
+
+[[contracts]]
+id = "geometry.mesh_illustration_geometry.result.b0"
+kind = "result"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/mesh-illustration-geometry-b0.tsp"
+pilot_required = true
+compatibility = "B0 renderer-neutral attachment metadata with explicit empty and fragment identity."
+
+[[contracts]]
+id = "geometry.model_illustration.request.b0"
+kind = "request"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/model-illustration-b0.tsp"
+pilot_required = true
+compatibility = "B0 STEP or analytic illustration request with optional post-transform clipping."
+
+[[contracts]]
+id = "geometry.model_illustration.result.b0"
+kind = "result"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/model-illustration-b0.tsp"
+pilot_required = true
+compatibility = "B0 model SVG result with optional bounds, explicit empty state, and fragment identity."
+
+[[contracts]]
+id = "geometry.model_illustration_geometry.request.b0"
+kind = "request"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/model-illustration-b0.tsp"
+pilot_required = true
+compatibility = "B0 STEP or analytic renderer-neutral request with optional post-transform clipping."
+
+[[contracts]]
+id = "geometry.model_illustration_geometry.result.b0"
+kind = "result"
+status = "pilot_candidate"
+current_authority = "typespec_candidate"
+source = "src/tsp/geometer/operations/model-illustration-b0.tsp"
+pilot_required = true
+compatibility = "B0 model geometry metadata with optional bounds, explicit empty state, and fragment identity."
+
+[[contracts]]
 id = "geometry.projection.options.b0"
 kind = "option_patch"
 status = "inventory_only"
@@ -1533,6 +1668,56 @@ cli_names = []
 compatibility_cli_names = []
 
 [[operations]]
+id = "geometry.mesh_hlr_projection.b0"
+status = "pilot_candidate"
+request_contract = "geometry.mesh_hlr_projection.request.b0"
+result_contract = "geometry.hlr_projection.result.b0"
+input_attachments = ["mesh_collection"]
+output_attachments = []
+cli_names = []
+compatibility_cli_names = []
+
+[[operations]]
+id = "geometry.model_illustration.b0"
+status = "pilot_candidate"
+request_contract = "geometry.model_illustration.request.b0"
+result_contract = "geometry.model_illustration.result.b0"
+input_attachments = ["model"]
+output_attachments = []
+cli_names = []
+compatibility_cli_names = []
+
+[[operations]]
+id = "geometry.model_illustration_geometry.b0"
+status = "pilot_candidate"
+request_contract = "geometry.model_illustration_geometry.request.b0"
+result_contract = "geometry.model_illustration_geometry.result.b0"
+input_attachments = ["model"]
+output_attachments = ["illustration_geometry"]
+cli_names = []
+compatibility_cli_names = []
+
+[[operations]]
+id = "geometry.mesh_illustration.b0"
+status = "pilot_candidate"
+request_contract = "geometry.mesh_illustration.request.b0"
+result_contract = "geometry.mesh_illustration.result.b0"
+input_attachments = ["mesh_collection", "hlr_projection"]
+output_attachments = []
+cli_names = []
+compatibility_cli_names = []
+
+[[operations]]
+id = "geometry.mesh_illustration_geometry.b0"
+status = "pilot_candidate"
+request_contract = "geometry.mesh_illustration_geometry.request.b0"
+result_contract = "geometry.mesh_illustration_geometry.result.b0"
+input_attachments = ["mesh_collection", "hlr_projection"]
+output_attachments = ["illustration_geometry"]
+cli_names = []
+compatibility_cli_names = []
+
+[[operations]]
 id = "geometry.model_to_glb.a0"
 status = "inventory_only"
 request_contract = "geometry.step_to_glb.options.a0"
@@ -1657,7 +1842,7 @@ cross_transport_parity_status = "exact_native_executable_ipc_browser_wasm_result
 performance_qualification_harness = "scripts/qualify_analytic_planar_boolean.py"
 performance_qualification_harness_sha256 = "33fb62524db6a9f9ec3cdcc2caebe34eb83ef901e4d6a1fc91240137b0d698bf"
 performance_qualification_modules = ["scripts/analytic_qualification/__init__.py", "scripts/analytic_qualification/corpus.py", "scripts/analytic_qualification/environment.py", "scripts/analytic_qualification/replay.py", "scripts/analytic_qualification/runner.py", "scripts/analytic_qualification/telemetry.py"]
-performance_qualification_module_sha256 = ["bf7457786a4376c2112402e12947fa527ac7752911a8216abee9e544f3ee6366", "737b6ea92c26b5ecf6d7350d69e6c0738d625dbd78dd2d214fbec06a8c5e6cc6", "ba482fc2073e7e4fafcb8fd689c3b17f4ec0a320c62c3a19260802054e8876a9", "a497e76c135ac3eb7e0b73161d9d1dc322b8da4897a21f275ef930b4bd8ef05c", "6b7a7880c37ccdca7a9c8760d1bf4e086113bd92c0d80a01c4f0300a61a171d6", "ae7e1e94f064a80bce81eff72f456ac651756056773c6b832546457f3df9d78a"]
+performance_qualification_module_sha256 = ["bf7457786a4376c2112402e12947fa527ac7752911a8216abee9e544f3ee6366", "737b6ea92c26b5ecf6d7350d69e6c0738d625dbd78dd2d214fbec06a8c5e6cc6", "ba482fc2073e7e4fafcb8fd689c3b17f4ec0a320c62c3a19260802054e8876a9", "4b64f392828dae31f81d81fdab37702a00ec686b9b37a2da1b8f33314032cc67", "6b7a7880c37ccdca7a9c8760d1bf4e086113bd92c0d80a01c4f0300a61a171d6", "ae7e1e94f064a80bce81eff72f456ac651756056773c6b832546457f3df9d78a"]
 performance_qualification_test = "tests/python/test_analytic_qualification.py"
 performance_qualification_test_sha256 = "01d8aac445ab43b4c02b05a39e33ad80638afda5ad4fbf976e737777827f02a8"
 performance_qualification_native_helper = "tests/cpp/analytic_solver_telemetry_helper.cpp"
@@ -1676,7 +1861,7 @@ performance_qualification_default_request = "tests/contracts/vectors/analytic/cr
 real_board_packet_provenance = "docs/contracts/analytic-real-board-packet-provenance.toml"
 real_board_packet_provenance_sha256 = "3e465a113fb4edb7667b9b76e684337f1062f76e3456b7a5ef0404f82034d7c2"
 real_board_packet_provenance_test = "tests/python/test_contract_promotion_manifest.py"
-real_board_packet_provenance_test_sha256 = "f24be20448b1a7a1a0e712bab5285bad1c26ea5d614b6cb3a719e0220392dc94"
+real_board_packet_provenance_test_sha256 = "d82620005b97ef646456cc27a784e4ddbe40fcea941c7cae2025ec637c10565c"
 real_board_packet_provenance_status = "public_mit_redistribution_authorized_rt_generated_local_qualified_loz_pending"
 real_board_packet_case_ids = ["rt_super_c1_pwr4", "loz_old_man_curved_copper"]
 real_board_packet_source_sha256 = ["90545409b6ce16e0b636fce3176c90b73be301d03f0a9e32c4ab21a42ad14aca", "377d5a05ed24137ea603d11c663d52ae48849b378534b346010936b826eb2375"]

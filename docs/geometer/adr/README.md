@@ -21,3 +21,4 @@ and should not be treated as docs of record after a change ships.
 - [ADR 016: Fast HLR And Illustration Boundaries](geometer-adr-016-fast_hlr_and_illustration_boundaries.md)
 - [ADR 017: Retain Analytic Planar Boolean As Experimental](geometer-adr-017-retain_analytic_planar_boolean_as_experimental.md)
 - [ADR 018: Ship A Supported Static SDK And Unified Operation Clients](geometer-adr-018-supported_static_sdk_and_unified_operation_clients.md)
+- [ADR 019: Version Illustration Clipping As B0 Operations](geometer-adr-019-illustration_half_space_clipping_b0.md)

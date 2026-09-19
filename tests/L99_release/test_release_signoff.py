@@ -196,7 +196,7 @@ def test_normal_builds_use_public_dependency_cache_without_r2_secrets() -> None:
     assert "R2_SECRET_ACCESS_KEY" in producer_workflow
 
 
-def test_ci_is_manual_only_and_release_integrates_once() -> None:
+def test_ci_is_manual_only_and_release_rebuilds_every_output_once() -> None:
     ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
     release = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
 
@@ -214,9 +214,14 @@ def test_ci_is_manual_only_and_release_integrates_once() -> None:
     assert "push:" not in ci
 
     assert 'name: Publish' in release
-    assert "release:" in release
-    assert "workflow_dispatch:" not in release
-    assert "pull_request:" not in release
+    release_triggers = release.split("\npermissions:", 1)[0]
+    assert "workflow_dispatch:" in release_triggers
+    assert "\n  release:" not in release_triggers
+    assert "\n  pull_request:" not in release_triggers
+    assert "\n  push:" not in release_triggers
+    assert "ref: ${{ inputs.tag }}" in release
+    assert 'test "$GITHUB_REF" = "refs/tags/$RELEASE_TAG"' in release
+    assert 'test "$(git rev-parse HEAD)" = "$(git rev-parse "$GITHUB_SHA^{commit}")"' in release
 
     assert release.count("uv run --group dev rack run python") == 1
     assert release.count("uv run --group dev rack run typescript") == 1
@@ -230,24 +235,37 @@ def test_ci_is_manual_only_and_release_integrates_once() -> None:
     assert "scripts/build_static_sdk.py --platform ${{ matrix.platform }}" in release
     assert "scripts/validate_static_sdk.py out/sdk-candidate/geometer-sdk-*.zip" in release
     assert "scripts/validate_release_inventory.py" in release
+    assert "scripts/verify_release_inventory.py" in release
     assert "name: qualified-release" in release
     assert "--clobber" not in release
     assert "needs: qualify-release" in release
+    assert "needs: github-assets" in release
+    assert "needs: pypi" in release
+    assert "needs: publish-release" in release
+    assert "actions/attest@v4" in release
+    assert "artifact-metadata: write" in release
+    assert "gh attestation verify" in release
+    assert "mapfile -d '' attestable_archives" in release
+    assert "-name 'geometer-sdk-*.zip'" in release
+    assert "geometer-static-illustration-demo" not in release
+    assert 'test "${#attestable_archives[@]}" -eq 4' in release
+    assert 'for asset in "${attestable_archives[@]}"; do' in release
+    assert '--signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml"' in release
+    assert '--source-ref "$GITHUB_REF"' in release
+    assert '--source-digest "$GITHUB_SHA"' in release
+    assert "wn-dev-std audit . --mode release --format json" in release
     assert "-eq 4" in release
 
 
-def test_publish_is_the_only_automatically_triggered_workflow() -> None:
+def test_every_workflow_is_manual_only() -> None:
     workflows = ROOT / ".github" / "workflows"
     automatic_triggers = ("pull_request:", "push:", "schedule:", "release:")
 
     for path in workflows.glob("*.yml"):
         workflow = path.read_text(encoding="utf-8")
-        if path.name == "release.yml":
-            assert "release:" in workflow
-            assert all(trigger not in workflow for trigger in automatic_triggers[:-1])
-        else:
-            assert "workflow_dispatch:" in workflow
-            assert all(trigger not in workflow for trigger in automatic_triggers)
+        triggers = workflow.split("\npermissions:", 1)[0]
+        assert "workflow_dispatch:" in triggers
+        assert all(f"\n  {trigger}" not in triggers for trigger in automatic_triggers)
 
 
 def test_every_workflow_job_has_a_cost_timeout() -> None:
@@ -319,7 +337,7 @@ def test_experimental_qualification_is_outside_normal_ci_and_release() -> None:
     assert "--include-experimental-tests" not in release
     assert "  cross-transport:" not in release
     assert release.count("needs: [build, wasm]") == 1
-    assert release.count("needs: qualify-release") == 2
+    assert release.count("needs: qualify-release") == 1
 
 
 def test_occt_cache_consumers_share_platform_keys() -> None:

@@ -1,11 +1,12 @@
-import { decodeMeshIllustrationGeometryA0Json, } from "@wavenumber/geometer";
+import { decodeMeshIllustrationGeometryB0Json, } from "@wavenumber/geometer";
 import { prepareMeshIllustration, renderMeshIllustrationCanvas, renderMeshIllustrationSvg, toMeshIllustrationStyleA0, } from "@wavenumber/geometer/mesh-illustration";
 import { applyExperimentalAmbientOcclusion, prepareExperimentalAmbientOcclusion, } from "@wavenumber/geometer/mesh-illustration-ao-experimental";
 import * as THREE from "three";
 import { TrackballControls } from "three/addons/controls/TrackballControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { renderNativeGeometryCanvas, renderNativeGeometrySvg, } from "./illustration_geometry_renderers.js";
 import { colorFromHex, DEFAULT_SURFACE_MESH_KEY, DEMO_MODEL_ORDER, formatBytes, formatMs, MESH_QUALITY_PRESETS, normalizeTuple, surfaceMeshKey, } from "./illustration_demo_support.js";
+import { renderNativeGeometryCanvas, renderNativeGeometrySvg, } from "./illustration_geometry_renderers.js";
+import { currentClipping, currentModelIllustrationTransform, currentModelTransform, wireClippingControls, } from "./illustration_request_geometry.js";
 function required(id) {
     const value = document.getElementById(id);
     if (!(value instanceof HTMLElement))
@@ -39,6 +40,10 @@ const els = {
     hlrDeflection: required("illustrationHlrDeflection"),
     hlrAngularDeflection: required("illustrationHlrAngularDeflection"),
     meshInfo: required("illustrationMeshInfo"),
+    clipMode: required("illustrationClipMode"),
+    clipSide: required("illustrationClipSide"),
+    clipPosition: required("illustrationClipPosition"),
+    clipPositionValue: required("illustrationClipPositionValue"),
     shading: required("illustrationShading"),
     bands: required("illustrationBands"),
     bandsValue: required("illustrationBandsValue"),
@@ -249,7 +254,10 @@ function scheduleFastVectorLineworkUpdate() {
 }
 function refreshStyle() {
     window.clearTimeout(styleIllustrationTimer);
-    if (state.root && state.model && (state.model.step || state.model.stepBuffer) && !els.ambientOcclusion.checked) {
+    if (state.root &&
+        state.model &&
+        (state.model.step || state.model.stepBuffer) &&
+        !els.ambientOcclusion.checked) {
         styleIllustrationTimer = window.setTimeout(() => {
             styleIllustrationTimer = 0;
             prepareIllustration("style").catch(showError);
@@ -359,40 +367,6 @@ function currentView() {
     const direction = new THREE.Vector3().subVectors(camera.position, controls.target).normalize();
     const up = camera.up.clone().normalize();
     return { direction: [direction.x, direction.y, direction.z], up: [up.x, up.y, up.z] };
-}
-function currentModelTransform(root) {
-    root.updateMatrixWorld(true);
-    const value = root.matrixWorld.elements;
-    const at = (index) => value[index] ?? (index % 5 === 0 ? 1 : 0);
-    // Three stores column-major matrices; Geometer's HLR option is row-major.
-    // Keep this transform in STEP millimetres so geometry.projection.b0 retains
-    // its documented units; convert the resulting segments at the adapter edge.
-    return [
-        at(0),
-        at(4),
-        at(8),
-        at(12) * 1000,
-        at(1),
-        at(5),
-        at(9),
-        at(13) * 1000,
-        at(2),
-        at(6),
-        at(10),
-        at(14) * 1000,
-        at(3),
-        at(7),
-        at(11),
-        at(15),
-    ];
-}
-function currentModelIllustrationTransform(root) {
-    root.updateMatrixWorld(true);
-    const value = root.matrixWorld.elements.slice();
-    value[12] = (value[12] ?? 0) * 1000;
-    value[13] = (value[13] ?? 0) * 1000;
-    value[14] = (value[14] ?? 0) * 1000;
-    return value;
 }
 function moveCameraToView(viewId) {
     const view = namedView(viewId);
@@ -509,7 +483,7 @@ function redrawStyle() {
         els.downloadStyle.disabled = false;
         els.svgHost.classList.toggle("hidden", state.output !== "svg");
         els.illustrationCanvas.classList.toggle("hidden", state.output !== "canvas");
-        els.outputPane.dataset.engine = "model-illustration-a0";
+        els.outputPane.dataset.engine = "model-illustration-b0";
         els.outputLabel.textContent =
             state.output === "svg"
                 ? `MODEL ILLUSTRATION / C++ WASM CPU / SVG / ${fastVectorLineworkLabel()} / ${formatBytes(svgBytes)}`
@@ -581,6 +555,7 @@ async function prepareIllustration(reason) {
     try {
         const input = meshInput(root);
         const view = currentView();
+        const clipping = currentClipping(root, view, els);
         const meshSettings = currentMeshSettings();
         let prepared = prepareMeshIllustration(input, view, { weldTolerance: 1e-5 });
         let nativeGeometry = null;
@@ -627,9 +602,11 @@ async function prepareIllustration(reason) {
             delete els.outputPane.dataset.ambientOcclusionCached;
         }
         let hlrMs = 0;
-        if (model && (model.step || model.stepBuffer) && !els.ambientOcclusion.checked) {
+        if (model &&
+            (model.step || model.stepBuffer) &&
+            (!els.ambientOcclusion.checked || clipping !== undefined)) {
             setBusy(`Illustrating ${model.name} with Geometer...`, "indicator");
-            const native = await loadModelIllustration(model, view, currentModelIllustrationTransform(root));
+            const native = await loadModelIllustration(model, view, currentModelIllustrationTransform(root), clipping);
             nativeGeometry = native.geometry;
             nativeIllustrationMs = native.illustrationMs;
         }
@@ -669,6 +646,11 @@ async function prepareIllustration(reason) {
         els.outputPane.dataset.cameraZoom = camera.zoom.toFixed(9);
         els.outputPane.dataset.cameraHalfHeight = Number(camera.userData.halfHeight ?? 1).toFixed(9);
         els.outputPane.dataset.prepareGeneration = String(state.prepareGeneration);
+        els.outputPane.dataset.clipping = clipping ? els.clipMode.value : "off";
+        els.outputPane.dataset.clipSide = clipping ? els.clipSide.value : "none";
+        els.outputPane.dataset.clipDistanceMm = clipping
+            ? String(clipping.planes[0]?.distance_mm ?? 0)
+            : "";
         if (state.showHlrDetail) {
             els.outputPane.dataset.fastVectorCrease = els.fastCrease.value;
             els.outputPane.dataset.fastVectorCoplanarSeams = String(els.fastCoplanarSeams.checked);
@@ -947,7 +929,7 @@ async function modelStepBuffer(model) {
     model.stepBuffer = await fetchArrayBuffer(model.step);
     return model.stepBuffer;
 }
-async function loadModelIllustration(model, view, modelTransform) {
+async function loadModelIllustration(model, view, modelTransform, clipping) {
     const source = await modelStepBuffer(model);
     const settings = currentMeshSettings();
     const result = await runStepWorker({
@@ -965,11 +947,12 @@ async function loadModelIllustration(model, view, modelTransform) {
             coplanarSeamDepthTolerance: Number.parseFloat(els.fastSeamDepth.value),
         },
         style: currentStyle(),
+        clipping,
     }, source.slice(0));
     if (!result.illustration)
         throw new Error("Model illustration Worker returned no drawing geometry.");
     return {
-        geometry: decodeMeshIllustrationGeometryA0Json(JSON.stringify(result.illustration.geometry)),
+        geometry: decodeMeshIllustrationGeometryB0Json(JSON.stringify(result.illustration.geometry)),
         illustrationMs: result.timings?.illustrationMs ?? 0,
     };
 }
@@ -1249,6 +1232,7 @@ function wireEvents() {
         if (state.root)
             prepareIllustration("ambient occlusion").catch(showError);
     });
+    wireClippingControls(els, () => state.root && prepareIllustration("clipping").catch(showError), cancelAmbientOcclusion);
     for (const control of [els.aoRadius, els.aoSamples]) {
         control.addEventListener("change", () => {
             state.ambientOcclusion = null;

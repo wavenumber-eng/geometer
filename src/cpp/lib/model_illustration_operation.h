@@ -4,7 +4,8 @@
 
 namespace geometer
 {
-void execute_model_illustration(const unsigned char* request, std::size_t size,
+void execute_model_illustration(const std::string& operation, const unsigned char* request,
+                                std::size_t size,
                                 const std::vector<OperationAttachmentView>& attachments,
-                                OperationExecution* execution, bool geometry_only = false);
+                                OperationExecution* execution);
 } // namespace geometer

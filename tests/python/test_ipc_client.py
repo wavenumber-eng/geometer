@@ -161,7 +161,7 @@ def test_typed_mesh_hlr_projection_round_trips_structured_mesh() -> None:
         source_faces=(1,),
     )
     with GeometerIpcClient(executable, client_name="python-mesh-hlr-test") as client:
-        result = client.mesh_hlr_projection(mesh, HlrProjectionOptionsA0())
+        result = client.mesh_hlr_projection_a0(mesh, HlrProjectionOptionsA0())
 
     assert result.schema == "geometry.hlr_projection.result.a0"
     assert result.source.kind.value == "indexed_mesh"
@@ -186,8 +186,8 @@ def test_hlr_ipc_omission_defaults_to_fast_detail_and_fast_mesh_shadow() -> None
     with GeometerIpcClient(executable, client_name="python-hlr-default-test") as client:
         model_default = client.model_hlr_projection(step, HlrProjectionOptionsA0())
         model_explicit = client.model_hlr_projection(step, explicit_fast)
-        mesh_default = client.mesh_hlr_projection(mesh, HlrProjectionOptionsA0())
-        mesh_explicit = client.mesh_hlr_projection(mesh, explicit_fast)
+        mesh_default = client.mesh_hlr_projection_a0(mesh, HlrProjectionOptionsA0())
+        mesh_explicit = client.mesh_hlr_projection_a0(mesh, explicit_fast)
 
     assert model_default.source == model_explicit.source
     assert model_default.views == model_explicit.views

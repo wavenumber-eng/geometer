@@ -630,6 +630,57 @@ struct HlrProjectionResultA0
     HlrProjectionTimings timings{};
 };
 
+struct ClippingLimits
+{
+    std::optional<std::uint32_t> max_output_triangles{};
+    std::optional<std::uint32_t> max_generated_vertices{};
+    std::optional<std::uint32_t> max_intersections{};
+    std::optional<std::uint32_t> max_edge_plane_tests{};
+};
+
+using IllustrationVector3 = std::vector<double>;
+
+struct NormalizedHalfSpacePlane
+{
+    IllustrationVector3 normal{};
+    double distance_mm{};
+    double tolerance_mm{};
+};
+
+struct NormalizedClipping
+{
+    std::vector<NormalizedHalfSpacePlane> planes{};
+    std::string cap_policy = "none";
+    std::uint32_t max_output_triangles{};
+    std::uint32_t max_generated_vertices{};
+    std::uint32_t max_intersections{};
+    std::uint32_t max_edge_plane_tests{};
+};
+
+struct FragmentMetadata
+{
+    std::optional<NormalizedClipping> clipping{};
+    std::uint32_t input_triangles{};
+    std::uint32_t output_triangles{};
+    std::string fragment_sha256{};
+    std::string linework_geometry_sha256{};
+    std::optional<std::string> raw_attachment_sha256{};
+};
+
+struct HalfSpacePlane
+{
+    IllustrationVector3 normal{};
+    double distance_mm{};
+    std::optional<double> tolerance_mm{};
+};
+
+struct IllustrationClipping
+{
+    std::vector<HalfSpacePlane> planes{};
+    std::string cap_policy = "none";
+    std::optional<ClippingLimits> limits{};
+};
+
 struct IpcAttachmentDeclarationA0
 {
     std::string name{};
@@ -776,8 +827,6 @@ struct IpcReasonA0
 };
 
 using IllustrationMatrix4x4 = std::vector<double>;
-
-using IllustrationVector3 = std::vector<double>;
 
 struct MeshIllustrationMaterial
 {
@@ -1536,6 +1585,91 @@ struct IpcWelcomeA0
     std::vector<std::string> capabilities{};
 };
 
+struct ModelIllustrationGeometryRequestB0
+{
+    std::string schema = "geometry.model_illustration_geometry.request.b0";
+    ModelIllustrationSourceA0 source{};
+    MeshIllustrationView view{};
+    std::optional<MeshIllustrationPrepareOptions> prepare{};
+    std::optional<ModelIllustrationLineworkOptionsA0> linework{};
+    std::optional<MeshIllustrationStyleA0> style{};
+    std::optional<ModelIllustrationWorkLimitsA0> work_limits{};
+    std::optional<IllustrationClipping> clipping{};
+};
+
+struct ModelIllustrationRequestB0
+{
+    std::string schema = "geometry.model_illustration.request.b0";
+    ModelIllustrationSourceA0 source{};
+    MeshIllustrationView view{};
+    std::optional<MeshIllustrationPrepareOptions> prepare{};
+    std::optional<ModelIllustrationLineworkOptionsA0> linework{};
+    std::optional<MeshIllustrationStyleA0> style{};
+    std::optional<MeshIllustrationSvgOptions> svg{};
+    std::optional<ModelIllustrationWorkLimitsA0> work_limits{};
+    std::optional<IllustrationClipping> clipping{};
+};
+
+struct MeshIllustrationGeometryRequestB0
+{
+    std::string schema = "geometry.mesh_illustration_geometry.request.b0";
+    MeshIllustrationView view{};
+    std::optional<MeshIllustrationPrepareOptions> prepare{};
+    std::optional<MeshIllustrationStyleA0> style{};
+    std::optional<IllustrationClipping> clipping{};
+};
+
+struct MeshIllustrationRequestB0
+{
+    std::string schema = "geometry.mesh_illustration.request.b0";
+    MeshIllustrationView view{};
+    std::optional<MeshIllustrationPrepareOptions> prepare{};
+    std::optional<MeshIllustrationStyleA0> style{};
+    std::optional<MeshIllustrationSvgOptions> svg{};
+    std::optional<IllustrationClipping> clipping{};
+};
+
+struct MeshHlrProjectionRequestB0
+{
+    std::string schema = "geometry.mesh_hlr_projection.request.b0";
+    std::optional<std::vector<HlrViewSpec>> views{};
+    std::optional<bool> output_outline{};
+    std::optional<bool> output_detail{};
+    std::optional<bool> output_bbox{};
+    std::optional<HlrMatrix4x4> model_transform{};
+    std::optional<std::uint32_t> round_digits{};
+    std::optional<FastHlrOptionsA0> fast{};
+    std::optional<IllustrationClipping> clipping{};
+};
+
+using IpcRequestValueB0 =
+    std::variant<ModelIllustrationGeometryRequestB0, ModelIllustrationRequestB0,
+                 MeshIllustrationGeometryRequestB0, MeshIllustrationRequestB0,
+                 MeshHlrProjectionRequestB0>;
+
+struct IpcRequestB0
+{
+    std::string operation{};
+    IpcRequestValueB0 request{};
+};
+
+struct MeshCollectionHlrSource
+{
+    std::string kind = "mesh_collection";
+    std::string hash{};
+};
+
+struct HlrProjectionResultB0
+{
+    std::string schema = "geometry.hlr_projection.result.b0";
+    std::string units = "mm";
+    bool empty{};
+    MeshCollectionHlrSource source{};
+    std::vector<HlrProjectedView> views{};
+    HlrProjectionTimings timings{};
+    FragmentMetadata fragment{};
+};
+
 struct MeshIllustrationMesh
 {
     std::string id{};
@@ -1574,6 +1708,27 @@ struct MeshIllustrationResultA0
     std::string schema = "geometry.mesh_illustration.result.a0";
     std::string svg{};
     MeshIllustrationRenderStats stats{};
+    std::vector<std::string> warnings{};
+};
+
+struct MeshIllustrationInputB0
+{
+    std::string schema = "geometry.mesh_illustration.input.b0";
+    std::vector<MeshIllustrationMesh> meshes{};
+    MeshIllustrationView view{};
+    std::optional<MeshIllustrationPrepareOptions> prepare{};
+    std::optional<MeshIllustrationStyleA0> style{};
+    std::optional<MeshIllustrationSvgOptions> svg{};
+    std::optional<IllustrationClipping> clipping{};
+};
+
+struct MeshIllustrationResultB0
+{
+    std::string schema = "geometry.mesh_illustration.result.b0";
+    bool empty{};
+    std::string svg{};
+    MeshIllustrationRenderStats stats{};
+    FragmentMetadata fragment{};
     std::vector<std::string> warnings{};
 };
 
@@ -1668,6 +1823,50 @@ struct MeshIllustrationGeometryResultA0
     std::vector<std::string> warnings{};
 };
 
+struct IllustrationGeometryAttachmentB0
+{
+    std::string attachment = "illustration_geometry";
+    std::string schema = "geometry.mesh_illustration.geometry.b0";
+    std::uint32_t byte_length{};
+    std::string sha256{};
+};
+
+struct MeshIllustrationGeometryB0
+{
+    std::string schema = "geometry.mesh_illustration.geometry.b0";
+    std::string length_unit = "millimeter";
+    bool empty{};
+    MeshIllustrationView view{};
+    std::optional<IllustrationGeometryBounds> bounds{};
+    std::vector<IllustrationGeometrySurface> surfaces{};
+    std::vector<IllustrationGeometryLine> lines{};
+    IllustrationGeometryPresentation presentation{};
+    MeshIllustrationRenderStats stats{};
+    FragmentMetadata fragment{};
+    std::vector<std::string> warnings{};
+};
+
+struct MeshIllustrationGeometryInputB0
+{
+    std::string schema = "geometry.mesh_illustration_geometry.input.b0";
+    std::string length_unit = "millimeter";
+    std::vector<MeshIllustrationMesh> meshes{};
+    MeshIllustrationView view{};
+    std::optional<MeshIllustrationPrepareOptions> prepare{};
+    std::optional<MeshIllustrationStyleA0> style{};
+    std::optional<IllustrationClipping> clipping{};
+};
+
+struct MeshIllustrationGeometryResultB0
+{
+    std::string schema = "geometry.mesh_illustration_geometry.result.b0";
+    bool empty{};
+    IllustrationGeometryAttachmentB0 geometry{};
+    MeshIllustrationRenderStats stats{};
+    FragmentMetadata fragment{};
+    std::vector<std::string> warnings{};
+};
+
 struct ModelBoundsSource
 {
     ModelFormat format{};
@@ -1755,6 +1954,32 @@ struct ModelIllustrationResultA0
     ModelIllustrationSourceSummaryA0 source{};
     MeshIllustrationRenderStats stats{};
     ModelIllustrationTimingsA0 timings{};
+    std::vector<std::string> warnings{};
+};
+
+struct ModelIllustrationGeometryResultB0
+{
+    std::string schema = "geometry.model_illustration_geometry.result.b0";
+    bool empty{};
+    IllustrationGeometryAttachmentB0 geometry{};
+    std::optional<ModelIllustrationBounds3MmA0> bounds_mm{};
+    ModelIllustrationSourceSummaryA0 source{};
+    MeshIllustrationRenderStats stats{};
+    ModelIllustrationTimingsA0 timings{};
+    FragmentMetadata fragment{};
+    std::vector<std::string> warnings{};
+};
+
+struct ModelIllustrationResultB0
+{
+    std::string schema = "geometry.model_illustration.result.b0";
+    bool empty{};
+    std::string svg{};
+    std::optional<ModelIllustrationBounds3MmA0> bounds_mm{};
+    ModelIllustrationSourceSummaryA0 source{};
+    MeshIllustrationRenderStats stats{};
+    ModelIllustrationTimingsA0 timings{};
+    FragmentMetadata fragment{};
     std::vector<std::string> warnings{};
 };
 
@@ -2290,6 +2515,26 @@ struct OperationSuccessA0
 
 using OperationOutcomeA0 = std::variant<OperationSuccessA0, OperationFailureA0>;
 
+struct OperationFailureB0
+{
+    std::string operation{};
+    bool ok = false;
+    std::vector<DiagnosticA0> diagnostics{};
+};
+
+using OperationResultValueB0 =
+    std::variant<ModelIllustrationGeometryResultB0, ModelIllustrationResultB0,
+                 MeshIllustrationGeometryResultB0, MeshIllustrationResultB0, HlrProjectionResultB0>;
+
+struct OperationSuccessB0
+{
+    std::string operation{};
+    bool ok = true;
+    OperationResultValueB0 result{};
+};
+
+using OperationOutcomeB0 = std::variant<OperationSuccessB0, OperationFailureB0>;
+
 bool decode_json(const unsigned char* data, std::size_t size, DiagnosticA0* value,
                  ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const DiagnosticA0& value, std::string* json, ContractError* error = nullptr);
@@ -2343,6 +2588,20 @@ bool decode_json(const unsigned char* data, std::size_t size, IpcWelcomeA0* valu
                  ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const IpcWelcomeA0& value, std::string* json, ContractError* error = nullptr);
 
+bool decode_json(const unsigned char* data, std::size_t size, IpcRequestB0* value,
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
+bool encode_json(const IpcRequestB0& value, std::string* json, ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, HlrProjectionResultB0* value,
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
+bool encode_json(const HlrProjectionResultB0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, MeshHlrProjectionRequestB0* value,
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
+bool encode_json(const MeshHlrProjectionRequestB0& value, std::string* json,
+                 ContractError* error = nullptr);
+
 bool decode_json(const unsigned char* data, std::size_t size, MeshIllustrationInputA0* value,
                  ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const MeshIllustrationInputA0& value, std::string* json,
@@ -2356,6 +2615,21 @@ bool encode_json(const MeshIllustrationResultA0& value, std::string* json,
 bool decode_json(const unsigned char* data, std::size_t size, MeshIllustrationStyleA0* value,
                  ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const MeshIllustrationStyleA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, MeshIllustrationInputB0* value,
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
+bool encode_json(const MeshIllustrationInputB0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, MeshIllustrationRequestB0* value,
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
+bool encode_json(const MeshIllustrationRequestB0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, MeshIllustrationResultB0* value,
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
+bool encode_json(const MeshIllustrationResultB0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, MeshIllustrationGeometryA0* value,
@@ -2379,6 +2653,29 @@ bool decode_json(const unsigned char* data, std::size_t size,
                  MeshIllustrationGeometryResultA0* value, ContractError* error = nullptr,
                  std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const MeshIllustrationGeometryResultA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, MeshIllustrationGeometryB0* value,
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
+bool encode_json(const MeshIllustrationGeometryB0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size,
+                 MeshIllustrationGeometryInputB0* value, ContractError* error = nullptr,
+                 std::size_t max_json_bytes = 32U * 1024U * 1024U);
+bool encode_json(const MeshIllustrationGeometryInputB0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size,
+                 MeshIllustrationGeometryRequestB0* value, ContractError* error = nullptr,
+                 std::size_t max_json_bytes = 32U * 1024U * 1024U);
+bool encode_json(const MeshIllustrationGeometryRequestB0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size,
+                 MeshIllustrationGeometryResultB0* value, ContractError* error = nullptr,
+                 std::size_t max_json_bytes = 32U * 1024U * 1024U);
+bool encode_json(const MeshIllustrationGeometryResultB0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size, MeshIllustrationRequestA0* value,
@@ -2418,6 +2715,28 @@ bool decode_json(const unsigned char* data, std::size_t size, ModelIllustrationR
 bool encode_json(const ModelIllustrationResultA0& value, std::string* json,
                  ContractError* error = nullptr);
 
+bool decode_json(const unsigned char* data, std::size_t size,
+                 ModelIllustrationGeometryRequestB0* value, ContractError* error = nullptr,
+                 std::size_t max_json_bytes = 32U * 1024U * 1024U);
+bool encode_json(const ModelIllustrationGeometryRequestB0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size,
+                 ModelIllustrationGeometryResultB0* value, ContractError* error = nullptr,
+                 std::size_t max_json_bytes = 32U * 1024U * 1024U);
+bool encode_json(const ModelIllustrationGeometryResultB0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, ModelIllustrationRequestB0* value,
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
+bool encode_json(const ModelIllustrationRequestB0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, ModelIllustrationResultB0* value,
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
+bool encode_json(const ModelIllustrationResultB0& value, std::string* json,
+                 ContractError* error = nullptr);
+
 bool decode_json(const unsigned char* data, std::size_t size, MeshCollectionA0* value,
                  ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const MeshCollectionA0& value, std::string* json, ContractError* error = nullptr);
@@ -2435,6 +2754,11 @@ bool encode_json(const ModelTessellationResultA0& value, std::string* json,
 bool decode_json(const unsigned char* data, std::size_t size, OperationOutcomeA0* value,
                  ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
 bool encode_json(const OperationOutcomeA0& value, std::string* json,
+                 ContractError* error = nullptr);
+
+bool decode_json(const unsigned char* data, std::size_t size, OperationOutcomeB0* value,
+                 ContractError* error = nullptr, std::size_t max_json_bytes = 32U * 1024U * 1024U);
+bool encode_json(const OperationOutcomeB0& value, std::string* json,
                  ContractError* error = nullptr);
 
 bool decode_json(const unsigned char* data, std::size_t size,

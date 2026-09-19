@@ -134,6 +134,28 @@ def test_static_sdk_validation_rejects_payload_tampering(tmp_path: Path, monkeyp
         raise AssertionError("tampered SDK archive was accepted")
 
 
+def test_direct_static_illustration_sample_cannot_fall_back_to_the_cli() -> None:
+    source = (
+        package_static_sdk.ROOT
+        / "src/rust/geometer-client/examples/direct_static_illustration.rs"
+    ).read_text(encoding="utf-8")
+    assert "GeometerDirectClient::new()" in source
+    assert "GeometerClient::spawn" not in source
+    assert "find_executable" not in source
+
+    for name in (
+        "geometer.dll",
+        "libgeometer.so",
+        "libgeometer.dylib",
+        "TKBRep.dll",
+        "libTKBRep.so.7.8",
+        "libTKBRep.dylib",
+    ):
+        assert validate_static_sdk.FORBIDDEN_PRIVATE_IMPORTS.fullmatch(name)
+    for name in ("KERNEL32.dll", "libc.so.6", "libSystem.B.dylib"):
+        assert validate_static_sdk.FORBIDDEN_PRIVATE_IMPORTS.fullmatch(name) is None
+
+
 def test_linux_cmake_projection_preserves_rescan_group() -> None:
     manifest = {
         "archives": {

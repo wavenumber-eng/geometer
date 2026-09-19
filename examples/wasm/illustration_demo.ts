@@ -1,6 +1,6 @@
 import {
-  decodeMeshIllustrationGeometryA0Json,
-  type MeshIllustrationGeometryA0,
+  decodeMeshIllustrationGeometryB0Json,
+  type MeshIllustrationGeometryB0,
 } from "@wavenumber/geometer";
 import {
   type MeshIllustrationInput,
@@ -23,28 +23,34 @@ import * as THREE from "three";
 import { TrackballControls } from "three/addons/controls/TrackballControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import {
+  type CameraViewState,
+  colorFromHex,
+  DEFAULT_SURFACE_MESH_KEY,
+  DEMO_MODEL_ORDER,
+  type DemoModel,
+  formatBytes,
+  formatMs,
+  type HlrProjection,
+  type IllustrationClipping,
+  type IllustrationWorkerResponse,
+  MESH_QUALITY_PRESETS,
+  type MeshQualityId,
+  type MeshSettings,
+  normalizeTuple,
+  type OutputId,
+  surfaceMeshKey,
+  type ViewId,
+} from "./illustration_demo_support.js";
+import {
   renderNativeGeometryCanvas,
   renderNativeGeometrySvg,
 } from "./illustration_geometry_renderers.js";
 import {
-  colorFromHex,
-  DEFAULT_SURFACE_MESH_KEY,
-  DEMO_MODEL_ORDER,
-  formatBytes,
-  formatMs,
-  MESH_QUALITY_PRESETS,
-  normalizeTuple,
-  surfaceMeshKey,
-  type CameraViewState,
-  type DemoModel,
-  type EmbeddedDemoData,
-  type HlrProjection,
-  type IllustrationWorkerResponse,
-  type MeshQualityId,
-  type MeshSettings,
-  type OutputId,
-  type ViewId,
-} from "./illustration_demo_support.js";
+  currentClipping,
+  currentModelIllustrationTransform,
+  currentModelTransform,
+  wireClippingControls,
+} from "./illustration_request_geometry.js";
 
 function required<T extends HTMLElement>(id: string): T {
   const value = document.getElementById(id);
@@ -79,6 +85,10 @@ const els = {
   hlrDeflection: required<HTMLInputElement>("illustrationHlrDeflection"),
   hlrAngularDeflection: required<HTMLInputElement>("illustrationHlrAngularDeflection"),
   meshInfo: required<HTMLParagraphElement>("illustrationMeshInfo"),
+  clipMode: required<HTMLSelectElement>("illustrationClipMode"),
+  clipSide: required<HTMLSelectElement>("illustrationClipSide"),
+  clipPosition: required<HTMLInputElement>("illustrationClipPosition"),
+  clipPositionValue: required<HTMLOutputElement>("illustrationClipPositionValue"),
   shading: required<HTMLSelectElement>("illustrationShading"),
   bands: required<HTMLInputElement>("illustrationBands"),
   bandsValue: required<HTMLOutputElement>("illustrationBandsValue"),
@@ -122,7 +132,7 @@ const state: {
   model: DemoModel | null;
   root: THREE.Object3D | null;
   scene: MeshIllustrationScene | null;
-  nativeGeometry: MeshIllustrationGeometryA0 | null;
+  nativeGeometry: MeshIllustrationGeometryB0 | null;
   style: MeshIllustrationStyle | null;
   svg: string;
   view: ViewId;
@@ -361,7 +371,12 @@ function scheduleFastVectorLineworkUpdate(): void {
 
 function refreshStyle(): void {
   window.clearTimeout(styleIllustrationTimer);
-  if (state.root && state.model && (state.model.step || state.model.stepBuffer) && !els.ambientOcclusion.checked) {
+  if (
+    state.root &&
+    state.model &&
+    (state.model.step || state.model.stepBuffer) &&
+    !els.ambientOcclusion.checked
+  ) {
     styleIllustrationTimer = window.setTimeout(() => {
       styleIllustrationTimer = 0;
       prepareIllustration("style").catch(showError);
@@ -473,42 +488,6 @@ function currentView(): MeshIllustrationView {
   const direction = new THREE.Vector3().subVectors(camera.position, controls.target).normalize();
   const up = camera.up.clone().normalize();
   return { direction: [direction.x, direction.y, direction.z], up: [up.x, up.y, up.z] };
-}
-
-function currentModelTransform(root: THREE.Object3D): number[] {
-  root.updateMatrixWorld(true);
-  const value = root.matrixWorld.elements;
-  const at = (index: number): number => value[index] ?? (index % 5 === 0 ? 1 : 0);
-  // Three stores column-major matrices; Geometer's HLR option is row-major.
-  // Keep this transform in STEP millimetres so geometry.projection.b0 retains
-  // its documented units; convert the resulting segments at the adapter edge.
-  return [
-    at(0),
-    at(4),
-    at(8),
-    at(12) * 1000,
-    at(1),
-    at(5),
-    at(9),
-    at(13) * 1000,
-    at(2),
-    at(6),
-    at(10),
-    at(14) * 1000,
-    at(3),
-    at(7),
-    at(11),
-    at(15),
-  ];
-}
-
-function currentModelIllustrationTransform(root: THREE.Object3D): number[] {
-  root.updateMatrixWorld(true);
-  const value = root.matrixWorld.elements.slice();
-  value[12] = (value[12] ?? 0) * 1000;
-  value[13] = (value[13] ?? 0) * 1000;
-  value[14] = (value[14] ?? 0) * 1000;
-  return value;
 }
 
 function moveCameraToView(viewId: Exclude<ViewId, "camera">): void {
@@ -632,7 +611,7 @@ function redrawStyle(): void {
     els.downloadStyle.disabled = false;
     els.svgHost.classList.toggle("hidden", state.output !== "svg");
     els.illustrationCanvas.classList.toggle("hidden", state.output !== "canvas");
-    els.outputPane.dataset.engine = "model-illustration-a0";
+    els.outputPane.dataset.engine = "model-illustration-b0";
     els.outputLabel.textContent =
       state.output === "svg"
         ? `MODEL ILLUSTRATION / C++ WASM CPU / SVG / ${fastVectorLineworkLabel()} / ${formatBytes(svgBytes)}`
@@ -708,9 +687,10 @@ async function prepareIllustration(reason: string): Promise<void> {
   try {
     const input = meshInput(root);
     const view = currentView();
+    const clipping = currentClipping(root, view, els);
     const meshSettings = currentMeshSettings();
     let prepared = prepareMeshIllustration(input, view, { weldTolerance: 1e-5 });
-    let nativeGeometry: MeshIllustrationGeometryA0 | null = null;
+    let nativeGeometry: MeshIllustrationGeometryB0 | null = null;
     let nativeIllustrationMs = 0;
     let aoMs = 0;
     let aoCached = true;
@@ -753,12 +733,17 @@ async function prepareIllustration(reason: string): Promise<void> {
       delete els.outputPane.dataset.ambientOcclusionCached;
     }
     let hlrMs = 0;
-    if (model && (model.step || model.stepBuffer) && !els.ambientOcclusion.checked) {
+    if (
+      model &&
+      (model.step || model.stepBuffer) &&
+      (!els.ambientOcclusion.checked || clipping !== undefined)
+    ) {
       setBusy(`Illustrating ${model.name} with Geometer...`, "indicator");
       const native = await loadModelIllustration(
         model,
         view,
         currentModelIllustrationTransform(root),
+        clipping,
       );
       nativeGeometry = native.geometry;
       nativeIllustrationMs = native.illustrationMs;
@@ -800,6 +785,11 @@ async function prepareIllustration(reason: string): Promise<void> {
     els.outputPane.dataset.cameraZoom = camera.zoom.toFixed(9);
     els.outputPane.dataset.cameraHalfHeight = Number(camera.userData.halfHeight ?? 1).toFixed(9);
     els.outputPane.dataset.prepareGeneration = String(state.prepareGeneration);
+    els.outputPane.dataset.clipping = clipping ? els.clipMode.value : "off";
+    els.outputPane.dataset.clipSide = clipping ? els.clipSide.value : "none";
+    els.outputPane.dataset.clipDistanceMm = clipping
+      ? String(clipping.planes[0]?.distance_mm ?? 0)
+      : "";
     if (state.showHlrDetail) {
       els.outputPane.dataset.fastVectorCrease = els.fastCrease.value;
       els.outputPane.dataset.fastVectorCoplanarSeams = String(els.fastCoplanarSeams.checked);
@@ -1097,7 +1087,8 @@ async function loadModelIllustration(
   model: DemoModel,
   view: MeshIllustrationView,
   modelTransform: number[],
-): Promise<{ geometry: MeshIllustrationGeometryA0; illustrationMs: number }> {
+  clipping?: IllustrationClipping,
+): Promise<{ geometry: MeshIllustrationGeometryB0; illustrationMs: number }> {
   const source = await modelStepBuffer(model);
   const settings = currentMeshSettings();
   const result = await runStepWorker(
@@ -1116,15 +1107,14 @@ async function loadModelIllustration(
         coplanarSeamDepthTolerance: Number.parseFloat(els.fastSeamDepth.value),
       },
       style: currentStyle(),
+      clipping,
     },
     source.slice(0),
   );
   if (!result.illustration)
     throw new Error("Model illustration Worker returned no drawing geometry.");
   return {
-    geometry: decodeMeshIllustrationGeometryA0Json(
-      JSON.stringify(result.illustration.geometry),
-    ),
+    geometry: decodeMeshIllustrationGeometryB0Json(JSON.stringify(result.illustration.geometry)),
     illustrationMs: result.timings?.illustrationMs ?? 0,
   };
 }
@@ -1300,7 +1290,8 @@ async function validateIfRequested(): Promise<void> {
   await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
   await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
   const svgDraws = els.svgHost.querySelectorAll("polygon, path").length;
-  const visibleTriangles = state.nativeGeometry?.stats.triangles ?? state.scene.stats.projectedTriangles;
+  const visibleTriangles =
+    state.nativeGeometry?.stats.triangles ?? state.scene.stats.projectedTriangles;
   const pass =
     visibleTriangles > 0 &&
     svgDraws > 0 &&
@@ -1425,6 +1416,11 @@ function wireEvents(): void {
   els.ambientOcclusion.addEventListener("change", () => {
     if (state.root) prepareIllustration("ambient occlusion").catch(showError);
   });
+  wireClippingControls(
+    els,
+    () => state.root && prepareIllustration("clipping").catch(showError),
+    cancelAmbientOcclusion,
+  );
   for (const control of [els.aoRadius, els.aoSamples]) {
     control.addEventListener("change", () => {
       state.ambientOcclusion = null;

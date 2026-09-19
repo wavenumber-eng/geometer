@@ -306,6 +306,7 @@ export type HlrOutlineAlgorithm = "hlr-close" | "mesh-shadow" | "fast-mesh-shado
 export type HlrVector3 = readonly [number, number, number];
 export type ProjectedSegment = readonly [number, number, number, number];
 export type HlrVector2 = readonly [number, number];
+/** A circular arc expressed in the requested view-plane XY frame. */
 export interface ProjectedArc {
     readonly start: HlrVector2;
     readonly end: HlrVector2;
@@ -315,6 +316,7 @@ export interface ProjectedArc {
     readonly ccw: boolean;
     readonly full_circle: boolean;
 }
+/** Axis-aligned bounds in the requested view-plane XY frame. */
 export interface ProjectionBounds {
     readonly min_x: number;
     readonly min_y: number;
@@ -323,6 +325,7 @@ export interface ProjectionBounds {
     readonly width: number;
     readonly height: number;
 }
+/** Segments, arcs, and bounds expressed in the requested view-plane XY frame. */
 export interface ProjectedGeometry {
     readonly segments: readonly ProjectedSegment[];
     readonly arcs: readonly ProjectedArc[];
@@ -334,6 +337,13 @@ export interface HlrProjectionModes {
     readonly detail: ProjectedGeometry;
     readonly bbox: ProjectedGeometry;
 }
+/** Projection output in the view plane defined by direction and up. For
+up=[0,1,0], direction=[0,0,1] maps model (x,y) to view (x,y), while
+direction=[0,0,-1] maps it to (-x,y). To place footprint-local output on a
+board, use board_point = occurrence_transform * view_to_model * view_point;
+the axial bottom view_to_model is diag(-1,1) in 2D and is distinct from the
+physical bottom-side occurrence transform. This frame applies equally to
+silhouette/detail/outline segments, arcs, and bounds. */
 export interface HlrProjectedView {
     readonly id: string;
     readonly direction: HlrVector3;
@@ -341,9 +351,18 @@ export interface HlrProjectedView {
     readonly modes: HlrProjectionModes;
 }
 export type HlrProjectionAlgorithm = "poly" | "exact" | "fast";
+/** An orthographic view whose output coordinates lie in its own view plane.
+Geometer sets Z = normalize(direction), removes the Z component from up and
+normalizes the remainder as Y, then sets X = Y cross Z. Direction points
+along positive view depth, from the model toward the observer: greater
+dot(point, Z) is closer and an outward normal with positive dot(normal, Z)
+is front-facing. The basis origin is model-coordinate [0,0,0]; projection
+does not recenter on source bounds. */
 export interface HlrViewSpec {
     readonly id: string;
+    /** Positive view-depth direction from the model toward the observer. */
     readonly direction: HlrVector3;
+    /** Preferred positive view Y; its component along direction is removed. */
     readonly up: HlrVector3;
 }
 /** Presence-preserving additive options shared by STEP and indexed-mesh HLR operations. */
@@ -352,6 +371,9 @@ export interface HlrProjectionOptionsA0 {
     readonly output_outline?: boolean;
     readonly output_detail?: boolean;
     readonly output_bbox?: boolean;
+    /** Row-major affine transform applied to source points before view projection.
+  Translation is retained and projection remains anchored at [0,0,0]; no
+  source-bounds recentering occurs. */
     readonly model_transform?: HlrMatrix4x4;
     readonly strip_root_placement?: boolean;
     readonly curve_mode?: HlrCurveMode;
@@ -368,14 +390,14 @@ export interface HlrProjectionOptionsA0 {
     readonly edge_h_sewn?: boolean;
     readonly edge_h_iso?: boolean;
     readonly union_outline_polygons?: boolean;
-    /** Omission selects the operation-specific default: poly for model HLR and Fast for mesh HLR. */
+    /** Omission selects Fast triangle detail. Older OCCT algorithms require explicit selection. */
     readonly projection_algorithm?: HlrProjectionAlgorithm;
     readonly mesh_linear_deflection?: number;
     readonly mesh_angular_deflection?: number;
     readonly mesh_relative?: boolean;
     readonly mesh_deflection_mode?: HlrMeshDeflectionMode;
     readonly mesh_deflection_coefficient?: number;
-    /** Omission selects the operation-specific default: HLR-close for model HLR and Fast mesh-shadow for mesh HLR. */
+    /** Omission selects Fast Mesh Shadow. Older outline algorithms require explicit selection. */
     readonly outline_algorithm?: HlrOutlineAlgorithm;
     readonly hlr_angle_tolerance?: number;
     readonly fast?: FastHlrOptionsA0;
@@ -398,6 +420,50 @@ export interface HlrProjectionResultA0 {
     readonly source: HlrProjectionSource;
     readonly views: readonly HlrProjectedView[];
     readonly timings: HlrProjectionTimings;
+}
+/** Independent hard work budgets for deterministic triangle clipping. */
+export interface ClippingLimits {
+    readonly max_output_triangles?: number;
+    readonly max_generated_vertices?: number;
+    readonly max_intersections?: number;
+    readonly max_edge_plane_tests?: number;
+}
+export type IllustrationVector3 = readonly [number, number, number];
+/** Canonical unit-normal plane returned in fragment metadata. */
+export interface NormalizedHalfSpacePlane {
+    readonly normal: IllustrationVector3;
+    readonly distance_mm: number;
+    readonly tolerance_mm: number;
+}
+/** Fully resolved clipping values that participate in semantic identity. */
+export interface NormalizedClipping {
+    readonly planes: readonly NormalizedHalfSpacePlane[];
+    readonly cap_policy: "none";
+    readonly max_output_triangles: number;
+    readonly max_generated_vertices: number;
+    readonly max_intersections: number;
+    readonly max_edge_plane_tests: number;
+}
+/** Deterministic identity and size summary for the prepared world-space fragment. */
+export interface FragmentMetadata {
+    readonly clipping?: NormalizedClipping;
+    readonly input_triangles: number;
+    readonly output_triangles: number;
+    readonly fragment_sha256: string;
+    readonly linework_geometry_sha256: string;
+    readonly raw_attachment_sha256?: string;
+}
+/** One world-space half-space. The kept side satisfies dot(normal, point) - distance_mm >= -tolerance_mm. */
+export interface HalfSpacePlane {
+    readonly normal: IllustrationVector3;
+    readonly distance_mm: number;
+    readonly tolerance_mm?: number;
+}
+/** Optional B0 clipping request. The first generation deliberately creates no section caps. */
+export interface IllustrationClipping {
+    readonly planes: readonly HalfSpacePlane[];
+    readonly cap_policy: "none";
+    readonly limits?: ClippingLimits;
 }
 /** Named raw-attachment declaration in the negotiated operation catalog. */
 export interface IpcAttachmentDeclarationA0 {
@@ -519,7 +585,128 @@ export interface IpcProtocolErrorA0 {
 export interface IpcReasonA0 {
     readonly reason?: string;
 }
-export type IllustrationVector3 = readonly [number, number, number];
+export type IllustrationMatrix4x4 = readonly [
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+    number
+];
+export interface MeshIllustrationMaterial {
+    /** sRGB channels in the inclusive range [0, 1]. */
+    readonly color: IllustrationVector3;
+    readonly opacity?: number;
+    readonly name?: string;
+}
+export type ModelRootPlacement = "strip" | "preserve";
+/** Reusable bounded STEP tessellation controls. */
+export interface ModelTessellationOptionsA0 {
+    readonly linear_deflection_mm?: number;
+    readonly angular_deflection_rad?: number;
+    readonly root_placement?: ModelRootPlacement;
+    readonly max_triangles?: number;
+    /** Return usable faces with warnings when completed meshing has local face failures. */
+    readonly allow_partial?: boolean;
+}
+export interface ModelAttachmentIllustrationSourceA0 {
+    readonly kind: "model";
+    readonly attachment: "model";
+    /** Applied after root-placement normalization. */
+    readonly transform?: IllustrationMatrix4x4;
+    readonly material_override?: MeshIllustrationMaterial;
+    readonly tessellation?: ModelTessellationOptionsA0;
+}
+export type IllustrationVector2Mm = readonly [number, number];
+export interface IllustrationProfileLineA0 {
+    readonly kind: "line";
+}
+export type PlanarArcSweep = "cw" | "ccw";
+export interface IllustrationProfileCircularArcA0 {
+    readonly kind: "circular_arc";
+    readonly center_mm: IllustrationVector2Mm;
+    readonly sweep: PlanarArcSweep;
+}
+export type IllustrationProfileSegmentA0 = IllustrationProfileLineA0 | IllustrationProfileCircularArcA0;
+export interface IllustrationProfileRingA0 {
+    /** Segment i connects point i to point (i + 1) modulo point count. */
+    readonly points_mm: readonly IllustrationVector2Mm[];
+    readonly segments: readonly IllustrationProfileSegmentA0[];
+}
+export interface IllustrationProfileRegionA0 {
+    readonly outer: IllustrationProfileRingA0;
+    readonly holes?: readonly IllustrationProfileRingA0[];
+}
+export interface AnalyticExtrusionA0 {
+    readonly kind: "extrusion";
+    readonly id: string;
+    readonly regions: readonly IllustrationProfileRegionA0[];
+    readonly z_min_mm: number;
+    readonly z_max_mm: number;
+    readonly material: MeshIllustrationMaterial;
+}
+export interface AnalyticCylinderA0 {
+    readonly kind: "cylinder";
+    readonly id: string;
+    readonly center_mm: IllustrationVector2Mm;
+    readonly radius_mm: number;
+    readonly z_min_mm: number;
+    readonly z_max_mm: number;
+    readonly material: MeshIllustrationMaterial;
+}
+export interface AnalyticSphereA0 {
+    readonly kind: "sphere";
+    readonly id: string;
+    readonly center_mm: IllustrationVector3;
+    readonly radius_mm: number;
+    readonly material: MeshIllustrationMaterial;
+}
+export type AnalyticPrimitiveA0 = AnalyticExtrusionA0 | AnalyticCylinderA0 | AnalyticSphereA0;
+export interface AnalyticDefinitionA0 {
+    readonly id: string;
+    readonly primitives: readonly AnalyticPrimitiveA0[];
+}
+export interface AnalyticOccurrenceA0 {
+    readonly id: string;
+    readonly definition_id: string;
+    /** Omitted means identity. Column-major affine transform; translations are millimeters. */
+    readonly transform?: IllustrationMatrix4x4;
+}
+export interface AnalyticSceneA0 {
+    readonly definitions: readonly AnalyticDefinitionA0[];
+    readonly occurrences: readonly AnalyticOccurrenceA0[];
+}
+export interface AnalyticIllustrationLimitsA0 {
+    readonly max_reached_definitions?: number;
+    readonly max_reached_occurrences?: number;
+    readonly max_reached_primitives?: number;
+    readonly max_reached_rings?: number;
+    readonly max_reached_points?: number;
+    readonly max_generated_curve_samples?: number;
+    readonly max_definition_triangles?: number;
+    readonly max_topology_candidate_pairs?: number;
+}
+export interface AnalyticLoweringOptionsA0 {
+    readonly linear_deflection_mm?: number;
+    readonly angular_deflection_rad?: number;
+    readonly limits?: AnalyticIllustrationLimitsA0;
+}
+export interface AnalyticIllustrationSourceA0 {
+    readonly kind: "analytic";
+    readonly scene: AnalyticSceneA0;
+    readonly lowering?: AnalyticLoweringOptionsA0;
+}
+export type ModelIllustrationSourceA0 = ModelAttachmentIllustrationSourceA0 | AnalyticIllustrationSourceA0;
 export interface MeshIllustrationView {
     readonly direction: IllustrationVector3;
     readonly up: IllustrationVector3;
@@ -528,6 +715,13 @@ export interface MeshIllustrationView {
 export interface MeshIllustrationPrepareOptions {
     readonly max_triangles?: number;
     readonly weld_tolerance?: number;
+}
+export interface ModelIllustrationLineworkOptionsA0 {
+    readonly fast?: FastHlrOptionsA0;
+    /** Physical outline width applied after prepared source bounds are known. */
+    readonly outline_width_mm?: number;
+    /** Physical detail width applied after prepared source bounds are known. */
+    readonly detail_width_mm?: number;
 }
 export type MeshIllustrationShading = "unlit" | "flat" | "lambert" | "banded" | "toon";
 /** Presence-preserving illustration style. Package defaults apply to absent fields. */
@@ -555,16 +749,40 @@ export interface MeshIllustrationStyleA0 {
     readonly double_sided?: boolean;
     readonly rim_amount?: number;
 }
+export interface ModelIllustrationWorkLimitsA0 {
+    /** Maximum candidate comparisons in each Fast linework and illustration visibility stage. */
+    readonly max_visibility_candidate_pairs?: number;
+    readonly max_drawing_commands?: number;
+}
+export interface ModelIllustrationGeometryRequestA0 {
+    readonly schema: "geometry.model_illustration_geometry.request.a0";
+    readonly source: ModelIllustrationSourceA0;
+    readonly view: MeshIllustrationView;
+    readonly prepare?: MeshIllustrationPrepareOptions;
+    readonly linework?: ModelIllustrationLineworkOptionsA0;
+    readonly style?: MeshIllustrationStyleA0;
+    readonly work_limits?: ModelIllustrationWorkLimitsA0;
+}
+export interface MeshIllustrationSvgOptions {
+    readonly coordinate_span?: number;
+    readonly title?: string;
+}
+export interface ModelIllustrationRequestA0 {
+    readonly schema: "geometry.model_illustration.request.a0";
+    readonly source: ModelIllustrationSourceA0;
+    readonly view: MeshIllustrationView;
+    readonly prepare?: MeshIllustrationPrepareOptions;
+    readonly linework?: ModelIllustrationLineworkOptionsA0;
+    readonly style?: MeshIllustrationStyleA0;
+    readonly svg?: MeshIllustrationSvgOptions;
+    readonly work_limits?: ModelIllustrationWorkLimitsA0;
+}
 /** Reuses bounded mesh_collection and optional matching visible HLR attachments. */
 export interface MeshIllustrationGeometryRequestA0 {
     readonly schema: "geometry.mesh_illustration_geometry.request.a0";
     readonly view: MeshIllustrationView;
     readonly prepare?: MeshIllustrationPrepareOptions;
     readonly style?: MeshIllustrationStyleA0;
-}
-export interface MeshIllustrationSvgOptions {
-    readonly coordinate_span?: number;
-    readonly title?: string;
 }
 /** Native one-shot illustration settings. Meshes arrive in the required
 mesh_collection attachment governed by geometry.mesh_collection.a0.
@@ -582,7 +800,6 @@ export interface MeshIllustrationRequestA0 {
     readonly style?: MeshIllustrationStyleA0;
     readonly svg?: MeshIllustrationSvgOptions;
 }
-export type ModelRootPlacement = "strip" | "preserve";
 /** Stateless STEP tessellation; component placement is retained in either root mode. */
 export interface ModelTessellationRequestA0 {
     readonly schema: "geometry.model_tessellation.request.a0";
@@ -934,7 +1151,7 @@ export interface StepTopologyAnalyzeRecoveryRequestA0 {
 /** Structurally representable request payloads for executable IPC A0.
 A variant is callable only when the negotiated runtime catalog advertises
 its operation; structural presence does not imply runtime availability. */
-export type IpcRequestValueA0 = MeshIllustrationGeometryRequestA0 | MeshIllustrationRequestA0 | ModelTessellationRequestA0 | ModelBoundsOptionsA0 | HlrProjectionOptionsA0 | PackedAttachmentProjectionA0 | StepTopologyOpenRequestA0 | StepTopologyCloseRequestA0 | StepTopologyInspectRequestA0 | StepTopologyRenderRequestA0 | StepTopologyResolveHitRequestA0 | StepTopologyApplyLogicalGroupsRequestA0 | StepTopologyApplyMetadataProbesRequestA0 | StepTopologyCheckpointEditJournalRequestA0 | StepTopologyApplyHierarchyRequestA0 | StepTopologySaveRequestA0 | StepTopologyRestoreRequestA0 | StepTopologyAnalyzeRecoveryRequestA0;
+export type IpcRequestValueA0 = ModelIllustrationGeometryRequestA0 | ModelIllustrationRequestA0 | MeshIllustrationGeometryRequestA0 | MeshIllustrationRequestA0 | ModelTessellationRequestA0 | ModelBoundsOptionsA0 | HlrProjectionOptionsA0 | PackedAttachmentProjectionA0 | StepTopologyOpenRequestA0 | StepTopologyCloseRequestA0 | StepTopologyInspectRequestA0 | StepTopologyRenderRequestA0 | StepTopologyResolveHitRequestA0 | StepTopologyApplyLogicalGroupsRequestA0 | StepTopologyApplyMetadataProbesRequestA0 | StepTopologyCheckpointEditJournalRequestA0 | StepTopologyApplyHierarchyRequestA0 | StepTopologySaveRequestA0 | StepTopologyRestoreRequestA0 | StepTopologyAnalyzeRecoveryRequestA0;
 export interface IpcRequestA0 {
     readonly operation: string;
     readonly request: IpcRequestValueA0;
@@ -955,29 +1172,73 @@ export interface IpcWelcomeA0 {
     readonly limits: IpcEffectiveLimitsA0;
     readonly capabilities: readonly string[];
 }
-export type IllustrationMatrix4x4 = readonly [
-    number,
-    number,
-    number,
-    number,
-    number,
-    number,
-    number,
-    number,
-    number,
-    number,
-    number,
-    number,
-    number,
-    number,
-    number,
-    number
-];
-export interface MeshIllustrationMaterial {
-    /** sRGB channels in the inclusive range [0, 1]. */
-    readonly color: IllustrationVector3;
-    readonly opacity?: number;
-    readonly name?: string;
+export interface ModelIllustrationGeometryRequestB0 {
+    readonly schema: "geometry.model_illustration_geometry.request.b0";
+    readonly source: ModelIllustrationSourceA0;
+    readonly view: MeshIllustrationView;
+    readonly prepare?: MeshIllustrationPrepareOptions;
+    readonly linework?: ModelIllustrationLineworkOptionsA0;
+    readonly style?: MeshIllustrationStyleA0;
+    readonly work_limits?: ModelIllustrationWorkLimitsA0;
+    readonly clipping?: IllustrationClipping;
+}
+export interface ModelIllustrationRequestB0 {
+    readonly schema: "geometry.model_illustration.request.b0";
+    readonly source: ModelIllustrationSourceA0;
+    readonly view: MeshIllustrationView;
+    readonly prepare?: MeshIllustrationPrepareOptions;
+    readonly linework?: ModelIllustrationLineworkOptionsA0;
+    readonly style?: MeshIllustrationStyleA0;
+    readonly svg?: MeshIllustrationSvgOptions;
+    readonly work_limits?: ModelIllustrationWorkLimitsA0;
+    readonly clipping?: IllustrationClipping;
+}
+/** Attachment-backed B0 geometry request. */
+export interface MeshIllustrationGeometryRequestB0 {
+    readonly schema: "geometry.mesh_illustration_geometry.request.b0";
+    readonly view: MeshIllustrationView;
+    readonly prepare?: MeshIllustrationPrepareOptions;
+    readonly style?: MeshIllustrationStyleA0;
+    readonly clipping?: IllustrationClipping;
+}
+/** Attachment-backed B0 mesh illustration request. */
+export interface MeshIllustrationRequestB0 {
+    readonly schema: "geometry.mesh_illustration.request.b0";
+    readonly view: MeshIllustrationView;
+    readonly prepare?: MeshIllustrationPrepareOptions;
+    readonly style?: MeshIllustrationStyleA0;
+    readonly svg?: MeshIllustrationSvgOptions;
+    readonly clipping?: IllustrationClipping;
+}
+/** Fast-only HLR request over the governed colored mesh collection. */
+export interface MeshHlrProjectionRequestB0 {
+    readonly schema: "geometry.mesh_hlr_projection.request.b0";
+    readonly views?: readonly HlrViewSpec[];
+    readonly output_outline?: boolean;
+    readonly output_detail?: boolean;
+    readonly output_bbox?: boolean;
+    readonly model_transform?: HlrMatrix4x4;
+    readonly round_digits?: number;
+    readonly fast?: FastHlrOptionsA0;
+    readonly clipping?: IllustrationClipping;
+}
+export type IpcRequestValueB0 = ModelIllustrationGeometryRequestB0 | ModelIllustrationRequestB0 | MeshIllustrationGeometryRequestB0 | MeshIllustrationRequestB0 | MeshHlrProjectionRequestB0;
+export interface IpcRequestB0 {
+    readonly operation: string;
+    readonly request: IpcRequestValueB0;
+}
+export interface MeshCollectionHlrSource {
+    readonly kind: "mesh_collection";
+    readonly hash: string;
+}
+export interface HlrProjectionResultB0 {
+    readonly schema: "geometry.hlr_projection.result.b0";
+    readonly units: "mm";
+    readonly empty: boolean;
+    readonly source: MeshCollectionHlrSource;
+    readonly views: readonly HlrProjectedView[];
+    readonly timings: HlrProjectionTimings;
+    readonly fragment: FragmentMetadata;
 }
 export interface MeshIllustrationMesh {
     readonly id: string;
@@ -1012,6 +1273,25 @@ export interface MeshIllustrationResultA0 {
     readonly schema: "geometry.mesh_illustration.result.a0";
     readonly svg: string;
     readonly stats: MeshIllustrationRenderStats;
+    readonly warnings: readonly string[];
+}
+/** Serializable direct-value B0 illustration input. */
+export interface MeshIllustrationInputB0 {
+    readonly schema: "geometry.mesh_illustration.input.b0";
+    readonly meshes: readonly MeshIllustrationMesh[];
+    readonly view: MeshIllustrationView;
+    readonly prepare?: MeshIllustrationPrepareOptions;
+    readonly style?: MeshIllustrationStyleA0;
+    readonly svg?: MeshIllustrationSvgOptions;
+    readonly clipping?: IllustrationClipping;
+}
+/** B0 SVG illustration result with explicit fragment emptiness and identity. */
+export interface MeshIllustrationResultB0 {
+    readonly schema: "geometry.mesh_illustration.result.b0";
+    readonly empty: boolean;
+    readonly svg: string;
+    readonly stats: MeshIllustrationRenderStats;
+    readonly fragment: FragmentMetadata;
     readonly warnings: readonly string[];
 }
 export interface IllustrationGeometryAttachment {
@@ -1095,6 +1375,45 @@ export interface MeshIllustrationGeometryResultA0 {
     readonly stats: MeshIllustrationRenderStats;
     readonly warnings: readonly string[];
 }
+export interface IllustrationGeometryAttachmentB0 {
+    readonly attachment: "illustration_geometry";
+    readonly schema: "geometry.mesh_illustration.geometry.b0";
+    readonly byte_length: number;
+    readonly sha256: string;
+}
+/** Renderer-neutral B0 geometry with optional bounds for an empty fragment. */
+export interface MeshIllustrationGeometryB0 {
+    readonly schema: "geometry.mesh_illustration.geometry.b0";
+    readonly length_unit: "millimeter";
+    readonly empty: boolean;
+    readonly view: MeshIllustrationView;
+    readonly bounds?: IllustrationGeometryBounds;
+    readonly surfaces: readonly IllustrationGeometrySurface[];
+    readonly lines: readonly IllustrationGeometryLine[];
+    readonly presentation: IllustrationGeometryPresentation;
+    readonly stats: MeshIllustrationRenderStats;
+    readonly fragment: FragmentMetadata;
+    readonly warnings: readonly string[];
+}
+/** Direct-value B0 geometry input. */
+export interface MeshIllustrationGeometryInputB0 {
+    readonly schema: "geometry.mesh_illustration_geometry.input.b0";
+    readonly length_unit: "millimeter";
+    readonly meshes: readonly MeshIllustrationMesh[];
+    readonly view: MeshIllustrationView;
+    readonly prepare?: MeshIllustrationPrepareOptions;
+    readonly style?: MeshIllustrationStyleA0;
+    readonly clipping?: IllustrationClipping;
+}
+/** B0 metadata for the renderer-neutral geometry attachment. */
+export interface MeshIllustrationGeometryResultB0 {
+    readonly schema: "geometry.mesh_illustration_geometry.result.b0";
+    readonly empty: boolean;
+    readonly geometry: IllustrationGeometryAttachmentB0;
+    readonly stats: MeshIllustrationRenderStats;
+    readonly fragment: FragmentMetadata;
+    readonly warnings: readonly string[];
+}
 /** Source identity included in a successful model-bounds result. */
 export interface ModelBoundsSource {
     readonly format: ModelFormat;
@@ -1121,6 +1440,81 @@ export interface ModelBoundsResultA0 {
     readonly source: ModelBoundsSource;
     readonly bounds: ModelBoundsValues;
     readonly timings: ModelBoundsTimings;
+}
+export interface AnalyticSourceSummaryA0 {
+    readonly kind: "analytic";
+    readonly definitions: number;
+    readonly occurrences: number;
+    readonly primitives: number;
+    readonly triangles: number;
+}
+export type ModelAttachmentMediaTypeA0 = "application/step" | "model/step";
+export interface ModelAttachmentSourceSummaryA0 {
+    readonly kind: "model";
+    readonly media_type: ModelAttachmentMediaTypeA0;
+    readonly source_sha256: string;
+    readonly meshes: number;
+    readonly triangles: number;
+}
+export type ModelIllustrationBounds3MmA0 = readonly [
+    number,
+    number,
+    number,
+    number,
+    number,
+    number
+];
+export type ModelIllustrationSourceSummaryA0 = ModelAttachmentSourceSummaryA0 | AnalyticSourceSummaryA0;
+export interface ModelIllustrationTimingsA0 {
+    /** Model import+tessellation or analytic validation+lowering. */
+    readonly source_preparation_ms: number;
+    readonly linework_ms: number;
+    /** Shading, ordering, fusion, and SVG construction when applicable. */
+    readonly illustration_ms: number;
+    /** Encoding a returned attachment, zero for the inline SVG operation. */
+    readonly attachment_encoding_ms: number;
+}
+export interface ModelIllustrationGeometryResultA0 {
+    readonly schema: "geometry.model_illustration_geometry.result.a0";
+    readonly geometry: IllustrationGeometryAttachment;
+    /** Prepared source bounds [min_x, min_y, min_z, max_x, max_y, max_z]. */
+    readonly bounds_mm: ModelIllustrationBounds3MmA0;
+    readonly source: ModelIllustrationSourceSummaryA0;
+    readonly stats: MeshIllustrationRenderStats;
+    readonly timings: ModelIllustrationTimingsA0;
+    readonly warnings: readonly string[];
+}
+export interface ModelIllustrationResultA0 {
+    readonly schema: "geometry.model_illustration.result.a0";
+    readonly svg: string;
+    /** Prepared source bounds [min_x, min_y, min_z, max_x, max_y, max_z]. */
+    readonly bounds_mm: ModelIllustrationBounds3MmA0;
+    readonly source: ModelIllustrationSourceSummaryA0;
+    readonly stats: MeshIllustrationRenderStats;
+    readonly timings: ModelIllustrationTimingsA0;
+    readonly warnings: readonly string[];
+}
+export interface ModelIllustrationGeometryResultB0 {
+    readonly schema: "geometry.model_illustration_geometry.result.b0";
+    readonly empty: boolean;
+    readonly geometry: IllustrationGeometryAttachmentB0;
+    readonly bounds_mm?: ModelIllustrationBounds3MmA0;
+    readonly source: ModelIllustrationSourceSummaryA0;
+    readonly stats: MeshIllustrationRenderStats;
+    readonly timings: ModelIllustrationTimingsA0;
+    readonly fragment: FragmentMetadata;
+    readonly warnings: readonly string[];
+}
+export interface ModelIllustrationResultB0 {
+    readonly schema: "geometry.model_illustration.result.b0";
+    readonly empty: boolean;
+    readonly svg: string;
+    readonly bounds_mm?: ModelIllustrationBounds3MmA0;
+    readonly source: ModelIllustrationSourceSummaryA0;
+    readonly stats: MeshIllustrationRenderStats;
+    readonly timings: ModelIllustrationTimingsA0;
+    readonly fragment: FragmentMetadata;
+    readonly warnings: readonly string[];
 }
 /** Shared colored indexed meshes. Coordinates and matrix translations are millimeters. */
 export interface MeshCollectionA0 {
@@ -1479,7 +1873,7 @@ export interface StepTopologyAnalyzeRecoveryResultA0 {
 /** Structurally representable operation results. A result variant may belong
 to a runtime-unavailable experimental operation and is not an availability
 claim; the negotiated operation catalog remains authoritative. */
-export type OperationResultValueA0 = MeshIllustrationGeometryResultA0 | MeshIllustrationResultA0 | ModelTessellationResultA0 | ModelBoundsResultA0 | HlrProjectionResultA0 | PackedAttachmentProjectionA0 | StepTopologyOpenResultA0 | StepTopologyCloseResultA0 | StepTopologyInspectResultA0 | StepTopologyRenderResultA0 | StepTopologyResolveHitResultA0 | StepTopologyApplyLogicalGroupsResultA0 | StepTopologyApplyMetadataProbesResultA0 | StepTopologyCheckpointEditJournalResultA0 | StepTopologyApplyHierarchyResultA0 | StepTopologySaveResultA0 | StepTopologyRestoreResultA0 | StepTopologyAnalyzeRecoveryResultA0;
+export type OperationResultValueA0 = ModelIllustrationGeometryResultA0 | ModelIllustrationResultA0 | MeshIllustrationGeometryResultA0 | MeshIllustrationResultA0 | ModelTessellationResultA0 | ModelBoundsResultA0 | HlrProjectionResultA0 | PackedAttachmentProjectionA0 | StepTopologyOpenResultA0 | StepTopologyCloseResultA0 | StepTopologyInspectResultA0 | StepTopologyRenderResultA0 | StepTopologyResolveHitResultA0 | StepTopologyApplyLogicalGroupsResultA0 | StepTopologyApplyMetadataProbesResultA0 | StepTopologyCheckpointEditJournalResultA0 | StepTopologyApplyHierarchyResultA0 | StepTopologySaveResultA0 | StepTopologyRestoreResultA0 | StepTopologyAnalyzeRecoveryResultA0;
 /** A completed operation with its operation-specific result. */
 export interface OperationSuccessA0 {
     readonly operation: string;
@@ -1488,3 +1882,15 @@ export interface OperationSuccessA0 {
 }
 /** Transport-neutral typed outcome shared by the generic C ABI and executable IPC. */
 export type OperationOutcomeA0 = OperationSuccessA0 | OperationFailureA0;
+export interface OperationFailureB0 {
+    readonly operation: string;
+    readonly ok: false;
+    readonly diagnostics: readonly DiagnosticA0[];
+}
+export type OperationResultValueB0 = ModelIllustrationGeometryResultB0 | ModelIllustrationResultB0 | MeshIllustrationGeometryResultB0 | MeshIllustrationResultB0 | HlrProjectionResultB0;
+export interface OperationSuccessB0 {
+    readonly operation: string;
+    readonly ok: true;
+    readonly result: OperationResultValueB0;
+}
+export type OperationOutcomeB0 = OperationSuccessB0 | OperationFailureB0;

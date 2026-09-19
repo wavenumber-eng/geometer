@@ -1,6 +1,7 @@
 #include "geometer/operation_transport.h"
 
 #include <cstddef>
+#include <type_traits>
 #include <unordered_set>
 #include <variant>
 
@@ -83,6 +84,73 @@ OperationResponseValidationStatus fail(OperationResponseValidationStatus status,
     return status;
 }
 
+template <typename Outcome, typename Failure, typename Success>
+OperationResponseValidationStatus
+validate_decoded_outcome(const std::string& operation_id, const Outcome& outcome,
+                         const std::vector<OperationOutputAttachment>& attachments,
+                         const std::unordered_set<std::string>& names, std::string* message)
+{
+    const auto* failure = std::get_if<Failure>(&outcome);
+    if (failure != nullptr)
+    {
+        if (failure->operation != operation_id)
+            return fail(OperationResponseValidationStatus::invalid, message,
+                        "Operation failure identity does not match its request.");
+        if (!attachments.empty())
+            return fail(OperationResponseValidationStatus::invalid, message,
+                        "A failed operation response must not carry attachments.");
+        return OperationResponseValidationStatus::ok;
+    }
+    const auto& success = std::get<Success>(outcome);
+    if (success.operation != operation_id)
+        return fail(OperationResponseValidationStatus::invalid, message,
+                    "Operation success identity does not match its request.");
+    const char* result_contract = operation_result_contract(operation_id);
+    if (result_contract == nullptr)
+        return fail(OperationResponseValidationStatus::invalid, message,
+                    "A successful response names an unknown operation.");
+    const std::size_t required = operation_required_output_attachment_count(operation_id);
+    for (std::size_t index = 0; index < required; ++index)
+    {
+        const char* name = operation_required_output_attachment_name(operation_id, index);
+        if (name == nullptr || names.find(name) == names.end())
+            return fail(OperationResponseValidationStatus::invalid, message,
+                        "A successful operation response is missing a required attachment.");
+    }
+    const char* projection_attachment = nullptr;
+    const char* projection_format = nullptr;
+    const bool packed =
+        operation_result_projection(operation_id, &projection_attachment, &projection_format);
+    if constexpr (std::is_same_v<Success, contracts::OperationSuccessA0>)
+    {
+        const auto* projection =
+            std::get_if<contracts::PackedAttachmentProjectionA0>(&success.result);
+        if (packed)
+        {
+            if (projection == nullptr || projection->schema != result_contract ||
+                projection->packet.attachment != projection_attachment ||
+                projection->packet.format != projection_format ||
+                names.find(projection_attachment) == names.end())
+                return fail(OperationResponseValidationStatus::invalid, message,
+                            "Packed operation result metadata does not match its catalog "
+                            "projection.");
+        }
+        else if (!operation_logical_result_matches(operation_id, success.result))
+            return fail(OperationResponseValidationStatus::invalid, message,
+                        "Logical operation result does not match its catalog contract.");
+    }
+    else
+    {
+        if (packed)
+            return fail(OperationResponseValidationStatus::invalid, message,
+                        "B0 operations do not support an A0 packed result projection.");
+        if (!operation_logical_result_matches(operation_id, success.result))
+            return fail(OperationResponseValidationStatus::invalid, message,
+                        "Logical operation result does not match its catalog contract.");
+    }
+    return OperationResponseValidationStatus::ok;
+}
+
 } // namespace
 
 OperationResponseValidationStatus
@@ -141,66 +209,35 @@ validate_operation_response(const std::string& operation_id, const std::string& 
                         "An output attachment is not declared by the operation catalog.");
         }
     }
-    contracts::OperationOutcomeA0 outcome;
     contracts::ContractError contract_error;
+    if (operation_uses_b0(operation_id))
+    {
+        contracts::OperationOutcomeB0 outcome;
+        if (!contracts::decode_json(reinterpret_cast<const unsigned char*>(json.data()),
+                                    json.size(), &outcome, &contract_error))
+        {
+            if (message != nullptr)
+                *message = "Operation response JSON violates the generated B0 outcome contract: " +
+                           contract_error.message;
+            return OperationResponseValidationStatus::invalid;
+        }
+        return validate_decoded_outcome<contracts::OperationOutcomeB0,
+                                        contracts::OperationFailureB0,
+                                        contracts::OperationSuccessB0>(operation_id, outcome,
+                                                                       attachments, names, message);
+    }
+    contracts::OperationOutcomeA0 outcome;
     if (!contracts::decode_json(reinterpret_cast<const unsigned char*>(json.data()), json.size(),
                                 &outcome, &contract_error))
     {
         if (message != nullptr)
-        {
             *message = "Operation response JSON violates the generated outcome contract: " +
                        contract_error.message;
-        }
         return OperationResponseValidationStatus::invalid;
     }
-    const auto* failure = std::get_if<contracts::OperationFailureA0>(&outcome);
-    if (failure != nullptr)
-    {
-        if (failure->operation != operation_id)
-            return fail(OperationResponseValidationStatus::invalid, message,
-                        "Operation failure identity does not match its request.");
-        if (!attachments.empty())
-            return fail(OperationResponseValidationStatus::invalid, message,
-                        "A failed operation response must not carry attachments.");
-        return OperationResponseValidationStatus::ok;
-    }
-    const auto& success = std::get<contracts::OperationSuccessA0>(outcome);
-    if (success.operation != operation_id)
-        return fail(OperationResponseValidationStatus::invalid, message,
-                    "Operation success identity does not match its request.");
-    const char* result_contract = operation_result_contract(operation_id);
-    if (result_contract == nullptr)
-        return fail(OperationResponseValidationStatus::invalid, message,
-                    "A successful response names an unknown operation.");
-    const std::size_t required = operation_required_output_attachment_count(operation_id);
-    for (std::size_t index = 0; index < required; ++index)
-    {
-        const char* name = operation_required_output_attachment_name(operation_id, index);
-        if (name == nullptr || names.find(name) == names.end())
-            return fail(OperationResponseValidationStatus::invalid, message,
-                        "A successful operation response is missing a required attachment.");
-    }
-    const char* projection_attachment = nullptr;
-    const char* projection_format = nullptr;
-    const bool packed =
-        operation_result_projection(operation_id, &projection_attachment, &projection_format);
-    const auto* projection = std::get_if<contracts::PackedAttachmentProjectionA0>(&success.result);
-    if (packed)
-    {
-        if (projection == nullptr || projection->schema != result_contract ||
-            projection->packet.attachment != projection_attachment ||
-            projection->packet.format != projection_format ||
-            names.find(projection_attachment) == names.end())
-            return fail(OperationResponseValidationStatus::invalid, message,
-                        "Packed operation result metadata does not match its catalog projection.");
-    }
-    else
-    {
-        if (!operation_logical_result_matches(operation_id, success.result))
-            return fail(OperationResponseValidationStatus::invalid, message,
-                        "Logical operation result does not match its catalog contract.");
-    }
-    return OperationResponseValidationStatus::ok;
+    return validate_decoded_outcome<contracts::OperationOutcomeA0, contracts::OperationFailureA0,
+                                    contracts::OperationSuccessA0>(operation_id, outcome,
+                                                                   attachments, names, message);
 }
 
 } // namespace geometer

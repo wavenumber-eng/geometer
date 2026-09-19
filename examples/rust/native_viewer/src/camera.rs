@@ -23,6 +23,8 @@ pub fn normalized(value: Vec3) -> Vec3 {
 
 #[derive(Clone, Copy, Debug)]
 pub struct Bounds {
+    pub minimum: Vec3,
+    pub maximum: Vec3,
     pub center: Vec3,
     pub radius: f64,
 }
@@ -30,6 +32,8 @@ pub struct Bounds {
 impl Default for Bounds {
     fn default() -> Self {
         Self {
+            minimum: [-1.0; 3],
+            maximum: [1.0; 3],
             center: [0.0; 3],
             radius: 1.0,
         }
@@ -160,6 +164,8 @@ mod tests {
         let mut camera = Camera::default();
         camera.fit(
             Bounds {
+                minimum: [-7.0, -6.0, -5.0],
+                maximum: [9.0, 10.0, 11.0],
                 center: [1.0, 2.0, 3.0],
                 radius: 8.0,
             },

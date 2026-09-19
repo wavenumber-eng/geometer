@@ -22,8 +22,9 @@ objectives = [
     "Verify colored native STEP tessellation through generated mesh attachments and typed clients.",
     "Verify direct file-backed and analytic model illustration through the governed one-pass boundary.",
     "Benchmark executable IPC startup, persistent operation latency, process-pool throughput, and memory before transport changes.",
-    "Verify deterministic relocatable static SDK packaging, exact link manifests, payload inventories, external consumer qualification, and isolated Windows CRT profiles.",
-    "Verify the immutable release inventory includes every native runtime, wheel, WASM archive, and static SDK sidecar exactly once.",
+    "Verify deterministic relocatable static SDK packaging, exact link manifests, payload inventories, external consumer qualification, a packaged direct-static Rust illustration app with no Geometer executable fallback, and isolated Windows CRT profiles.",
+    "Verify the immutable release inventory includes every native runtime, wheel, WASM archive, and static SDK sidecar exactly once and binds downloaded release bytes to strict canonical metadata.",
+    "Prevent maintained examples and scripts from selecting superseded A0 illustration operations and require durable docs to name B0 as canonical.",
 ]
 
 [[subtests]]
@@ -212,5 +213,12 @@ test_case_type = "unit"
 id = "PY_027"
 file = "test_release_inventory.py"
 name = "Immutable Release Inventory"
-description = "Checks exact multi-platform native, wheel, WASM, static SDK, checksum, and provenance asset naming with duplicate rejection."
+description = "Checks exact multi-platform native, wheel, WASM, static SDK, checksum, and provenance asset naming plus fail-closed post-download metadata and digest verification."
+test_case_type = "unit"
+
+[[subtests]]
+id = "PY_028"
+file = "test_illustration_b0_migration.py"
+name = "Illustration B0 Consumer Migration"
+description = "Rejects live A0 illustration operation selection outside the reviewed compatibility inventory and checks canonical B0 documentation."
 test_case_type = "unit"

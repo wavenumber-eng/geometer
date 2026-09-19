@@ -3,9 +3,9 @@
 Geometer does not run GitHub Actions for pushes or pull requests. In particular,
 documentation changes trigger no automation. Developers run the affected
 checks locally before pushing and record important validation in the pull
-request. The only automatic GitHub Actions workflow is `Publish`, triggered by
-publishing a GitHub release; it builds and validates every supported release
-platform.
+request. Every workflow is manual-only. `Publish` is dispatched only for an
+existing reviewed release tag and is the sole path that rebuilds and publishes
+the complete supported release matrix.
 
 ## Local development gate
 
@@ -53,12 +53,23 @@ uv run python scripts/validate_native.py --include-experimental-tests
 
 ## Release automation
 
-Publishing a GitHub release is the only automatic CI event. It builds and
-packages Windows x64, Linux x64, Linux
-arm64, macOS arm64, and WASM. Each native platform runs the production C++
-suite. Python, Rust, and TypeScript integration runs once against Linux x64;
-the other platforms concentrate on native and wheel packaging. Experimental
-qualification is independent of publishing.
+Dispatch `Publish` manually at an exact existing `vYYYY-MM-DD` tag and supply
+that same tag as the workflow input. The workflow rejects any dispatch-ref,
+input-tag, or checked-out-commit mismatch, then builds and packages Windows
+x64, Linux x64, Linux arm64, macOS arm64, and WASM. Each native platform runs
+the production C++ suite and rebuilds its platform-specific `wn-geometer`
+wheel, native archive, and static SDK. Python, Rust, and TypeScript integration
+runs once against Linux x64; the other platforms concentrate on native and
+wheel packaging. Experimental qualification is independent of publishing.
+
+The four platform jobs and WASM feed one exact digest inventory. The workflow
+attests the inventory and all four SDK archives, uploads the exact bytes to a
+draft GitHub Release, re-downloads the draft, and only then sends the four
+qualified wheels to PyPI through trusted publishing. A successful PyPI publish
+allows the GitHub Release to become public. A final job downloads the public
+assets again, checks every size and SHA-256, and verifies GitHub attestations.
+No push, pull request, documentation change, tag creation, or GitHub Release
+event starts this workflow.
 
 ## Dependency caches
 

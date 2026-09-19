@@ -369,7 +369,6 @@ def _assert_projection_surfaces(manifest: dict[str, Any]) -> None:
     assert package_json["name"] == manifest["packages"]["typescript"]
     assert manifest["packages"]["typescript_module_format"] == "esm"
     assert package_json["type"] == "module"
-
     rust_projection = manifest["rust_projection"]
     assert rust_projection["status"] == "implemented_model_bounds_analytic_and_hlr_ipc_pilots"
     assert rust_projection["live_operation"] == "geometry.model_bounds.a0"
@@ -381,9 +380,7 @@ def _assert_projection_surfaces(manifest: dict[str, Any]) -> None:
     assert rust_projection["runtime_dependency"] is False
 
     python_projection = manifest["python_projection"]
-    assert python_projection["status"] == (
-        "implemented_model_bounds_compatible_boundary_analytic_and_hlr_ipc_pilots"
-    )
+    assert python_projection["status"] == ("implemented_model_bounds_compatible_boundary_analytic_and_hlr_ipc_pilots")
     assert python_projection["live_operation"] == "geometry.model_bounds.a0"
     assert python_projection["analytic_live_operation"] == ("geometry.analytic_planar_boolean_batch.a0")
     assert python_projection["model_hlr_live_operation"] == "geometry.model_hlr_projection.a0"
@@ -459,7 +456,6 @@ def _assert_contract_and_operation_inventory(manifest: dict[str, Any]) -> None:
         if item["status"] in {"promoted", "candidate_frozen"}
     )
     assert all((ROOT / item["source"]).is_file() for item in contracts if item["source"] != "none")
-
     operations = manifest["operations"]
     operation_ids = [item["id"] for item in operations]
     _unique(operation_ids, "operation id")
@@ -471,10 +467,14 @@ def _assert_contract_and_operation_inventory(manifest: dict[str, Any]) -> None:
         "geometry.model_tessellation.a0",
         "geometry.model_illustration.a0",
         "geometry.model_illustration_geometry.a0",
+        "geometry.mesh_hlr_projection.b0",
+        "geometry.mesh_illustration.b0",
+        "geometry.mesh_illustration_geometry.b0",
+        "geometry.model_illustration.b0",
+        "geometry.model_illustration_geometry.b0",
     }
     assert {item["id"] for item in operations if item["status"] == "promoted"} == {"geometry.model_bounds.a0"}
     assert_step_topology_inventory(manifest, contracts, operations)
-
     candidates = manifest["candidate_operations"]
     candidate_ids = [item["id"] for item in candidates]
     _unique(candidate_ids, "candidate operation id")
@@ -589,7 +589,9 @@ def _assert_candidate_projection_surfaces(manifest: dict[str, Any]) -> None:
     assert "decode_AnalyticPlanarBoolean" not in cpp_contract_json
     assert "write_AnalyticPlanarBoolean" not in cpp_contract_json
     assert "using OperationResultValueA0 =" in cpp_contract_header
-    assert "ModelBoundsResultA0, HlrProjectionResultA0, PackedAttachmentProjectionA0" in " ".join(cpp_contract_header.split())
+    assert "ModelBoundsResultA0, HlrProjectionResultA0, PackedAttachmentProjectionA0" in " ".join(
+        cpp_contract_header.split()
+    )
     assert "PackedAttachmentProjectionA0, StepTopologyOpenResultA0" in " ".join(cpp_contract_header.split())
     assert "StepTopologyAnalyzeRecoveryResultA0>;" in cpp_contract_header
     assert "holds_alternative<contracts::AnalyticPlanarBoolean" not in cpp_operation_catalog

@@ -238,7 +238,7 @@ extern "C" int geometer_operation_execute(const char* operation_id, uint32_t ope
                                  request_json_size, views, &execution);
         auto owned = std::make_unique<GeometerOperationResult>();
         geometer::contracts::ContractError contract_error;
-        if (!geometer::contracts::encode_json(execution.outcome, &owned->json, &contract_error))
+        if (!geometer::encode_operation_outcome(execution.outcome, &owned->json, &contract_error))
         {
             return local_failure(GEOMETER_OPERATION_ABI_INTERNAL, error,
                                  "Could not encode the governed operation outcome.");

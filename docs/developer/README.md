@@ -459,23 +459,35 @@ tag.
 ### Public release workflow
 
 The normal publication path is [Publish](../../.github/workflows/release.yml),
-triggered by publishing a GitHub release. Prepare the UTC date version, release
-notes, generated contracts/docs and a release PR first. Require the
-[CI](../../.github/workflows/ci.yml) four-platform native/client/installed-wheel
-matrix, L99 and standards checks, plus [WASM](../../.github/workflows/wasm.yml)
-browser and cross-transport checks before tagging. Inspect native artifact
+dispatched manually with an exact existing release tag. Prepare the UTC date
+version, release notes, generated contracts/docs and a release PR first. Run
+the complete native, client, installed-wheel, L99, standards, browser, and
+cross-transport gates locally before tagging. Inspect native artifact
 attestations for clean source and verified OCCT provenance, then refresh
 committed `dist/` outputs from those qualified builds. Do not publish a local
 development wheel or change attestation fields to make it qualify.
 
-After the reviewed release PR merges, tag its exact revision and publish the
-GitHub release using the dated notes. Publish rebuilds and tests Windows x64,
-Linux x64, Linux ARM64 and macOS ARM64 wheels plus WASM, uploads GitHub assets
-and checksums, and publishes wheels through PyPI trusted publishing. Verify
-workflow completion, release assets and PyPI version/platform files. Then
-install from PyPI in WSL2 and run the headless package example (REQ-006),
-including the installed native illustration workflow. Native Rust GUI binaries
-remain outside release packaging pending a separate decision.
+After the reviewed release PR merges, tag its exact revision but do not create
+or publish the GitHub Release by hand. Dispatch `Publish` at that same tag and
+provide the tag as its input; for example,
+`gh workflow run release.yml --ref v2026-09-19 -f tag=v2026-09-19`. The
+workflow rejects a dispatch ref and input-tag mismatch so GitHub provenance is
+bound to the source revision actually being released. It
+checks out the tag on every runner and rebuilds Windows x64, Linux x64, Linux
+ARM64, and macOS ARM64 native archives, platform wheels, and static SDKs, plus
+WASM. All outputs feed one exact digest inventory. The workflow uploads the
+qualified bytes to a draft GitHub Release and verifies the downloaded draft
+before PyPI trusted publishing receives exactly the four rebuilt wheels. Only a
+successful PyPI publication permits the GitHub Release to become public; a
+final job downloads every public asset and verifies its digest and GitHub
+attestation.
+
+Verify workflow completion and the PyPI version/platform files. Then install
+from PyPI in WSL2 and run the headless package example (REQ-006), including the
+installed native illustration workflow. Native Rust GUI binaries remain
+outside release packaging pending a separate decision. No GitHub workflow is
+triggered by pushes, pull requests, documentation changes, tags, or release
+events.
 
 The commands below are optional manual upload procedures, not a bypass of the
 same qualification gates. Include every supported platform, including Linux
@@ -485,21 +497,21 @@ PyPI upload commands:
 
 ```powershell
 # Preflight metadata.
-python -m twine check out\wheelhouse\windows-x64\wn_geometer-2026.9.7-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.7-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.7-py3-none-macosx_11_0_arm64.whl
+python -m twine check out\wheelhouse\windows-x64\wn_geometer-2026.9.19-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.19-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\linux-arm64\wn_geometer-2026.9.19-py3-none-manylinux_2_35_aarch64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.19-py3-none-macosx_11_0_arm64.whl
 
 # Optional dry-run project on TestPyPI.
-python -m twine upload --repository testpypi out\wheelhouse\windows-x64\wn_geometer-2026.9.7-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.7-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.7-py3-none-macosx_11_0_arm64.whl
+python -m twine upload --repository testpypi out\wheelhouse\windows-x64\wn_geometer-2026.9.19-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.19-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\linux-arm64\wn_geometer-2026.9.19-py3-none-manylinux_2_35_aarch64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.19-py3-none-macosx_11_0_arm64.whl
 
 # Public PyPI release.
-python -m twine upload --repository pypi out\wheelhouse\windows-x64\wn_geometer-2026.9.7-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.7-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.7-py3-none-macosx_11_0_arm64.whl
+python -m twine upload --repository pypi out\wheelhouse\windows-x64\wn_geometer-2026.9.19-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.19-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\linux-arm64\wn_geometer-2026.9.19-py3-none-manylinux_2_35_aarch64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.19-py3-none-macosx_11_0_arm64.whl
 ```
 
 For token-based upload, set `TWINE_USERNAME=__token__` and put the PyPI or
 TestPyPI API token in `TWINE_PASSWORD`, or use an equivalent `.pypirc`/keyring
 setup. Do not write upload tokens into the repository.
 
-The current release target is `wn-geometer==2026.9.7`; callers install
-`wn-geometer==2026.9.7` and import `geometer`.
+The current release target is `wn-geometer==2026.9.19`; callers install
+`wn-geometer==2026.9.19` and import `geometer`.
 
 For local token setup, copy `.env.example` to `.env`, fill the token values,
 and keep `.env` out of version control.
@@ -680,8 +692,8 @@ date-based ABI generation, for example `20260907`.
 ## Versioning
 
 Geometer follows [ADR 006](../geometer/adr/geometer-adr-006-date_based_versioning_policy.md).
-The current release identity is `v2026-09-18`; the CMake/PyPI package version
-is `2026.9.18`; the C ABI generation is `20260918`.
+The current release identity is `v2026-09-19`; the CMake/PyPI package version
+is `2026.9.19`; the C ABI generation is `20260919`.
 
 The root `CMakeLists.txt` declares `GEOMETER_RELEASE_DATE`,
 `GEOMETER_RELEASE_VERSION`, and `GEOMETER_ABI_VERSION`. The root

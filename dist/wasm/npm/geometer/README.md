@@ -12,14 +12,24 @@ const bounds = await client.modelBounds({ model: stepBytes });
 console.log(bounds.bounds.size);
 ```
 
-Fast HLR can consume synthesized indexed meshes without first creating STEP:
+Canonical B0 Fast HLR consumes the same governed mesh collection and clipping
+request used by B0 illustration:
 
 ```ts
 const projection = await client.meshHlrProjection({
-  mesh: {
-    positions: [0, 0, 0, 10, 0, 0, 0, 10, 0],
-    indices: [0, 1, 2],
-    sourceFaces: [1],
+  meshCollection: {
+    schema: "geometry.mesh_collection.a0",
+    length_unit: "millimeter",
+    meshes: [{
+      id: "triangle",
+      positions: [0, 0, 0, 10, 0, 0, 0, 10, 0],
+      indices: [0, 1, 2],
+      materials: [{ color: [0.2, 0.7, 0.62] }],
+    }],
+  },
+  request: {
+    schema: "geometry.mesh_hlr_projection.request.b0",
+    views: [{ id: "front", direction: [0, 0, 1], up: [0, 1, 0] }],
   },
 });
 console.log(projection.views[0].modes.detail.segments);
@@ -30,11 +40,29 @@ return `geometry.hlr_projection.result.a0`; model projection defaults to
 `poly`, while mesh projection selects the only applicable Fast backend when
 the algorithm selectors are absent.
 
-The mesh illustration module owns projection preparation, visibility ordering,
-safe surface fusion and coplanar layering, colorization, and SVG/Canvas output:
+The canonical unqualified mesh illustration API is transport-backed B0:
 
 ```ts
-import { createIllustrator, illustrateMesh } from "@wavenumber/geometer/mesh-illustration";
+const result = await client.meshIllustration({
+  input: {
+    schema: "geometry.mesh_illustration.input.b0",
+    meshes,
+    view: { direction: [0, 0, 1], up: [0, 1, 0] },
+    clipping: {
+      planes: [{ normal: [0, 0, 1], distance_mm: 0 }],
+      cap_policy: "none",
+    },
+  },
+});
+```
+
+The pure TypeScript mesh illustration module is the explicitly named A0 compatibility
+renderer. It owns projection preparation, visibility ordering, safe surface
+fusion and coplanar layering, colorization, and SVG/Canvas output for existing
+in-process callers:
+
+```ts
+import { createIllustratorA0, illustrateMeshA0 } from "@wavenumber/geometer/mesh-illustration";
 
 const input = {
   schema: "geometry.mesh_illustration.input.a0",
@@ -42,9 +70,9 @@ const input = {
   view: { direction: [0, 0, 1], up: [0, 1, 0] },
   style: { shading: "toon", fuse_surfaces: true },
 };
-const svgResult = illustrateMesh(input);
+const svgResult = illustrateMeshA0(input);
 
-const illustrator = createIllustrator(input);
+const illustrator = createIllustratorA0(input);
 illustrator.renderCanvas(context, { shading: "unlit" });
 illustrator.dispose();
 ```
@@ -53,21 +81,27 @@ One-shot SVG results use `geometry.mesh_illustration.result.a0`. The reusable
 prepared scene stays inside the returned illustrator so its ordering and cache
 internals can evolve without becoming a serialized contract.
 
+New code that needs transforms plus half-space clipping uses the canonical B0
+WASM operation through `createGeometerWasmClient`: `geometry.mesh_illustration.b0`
+or `geometry.mesh_illustration_geometry.b0`. B0 clipping is native kernel work;
+the A0 compatibility renderer does not duplicate it in TypeScript.
+
 When the same millimeter mesh should produce Fast vector linework and a
 colorized SVG, the optional composition keeps both underlying results visible:
 
 ```ts
-import { illustrateMeshWithFastHlr } from "@wavenumber/geometer/illustrated-hlr";
+import { illustrateMeshWithFastHlrA0 } from "@wavenumber/geometer/illustrated-hlr";
 
-const { hlr, illustration } = await illustrateMeshWithFastHlr(client, {
+const { hlr, illustration } = await illustrateMeshWithFastHlrA0(client, {
   illustration: input,
 });
 ```
 
-Use `createFastHlrIllustrator` to prepare once and render multiple illustration
-styles. The facade flattens illustration transforms into the governed indexed
-mesh, forces the explicitly Fast vector selectors, and overlays returned
-outline/detail segments. HLR and illustration remain separately usable APIs.
+This explicitly named A0 compatibility facade flattens illustration transforms
+into the legacy governed indexed mesh and overlays returned outline/detail
+segments. New composed-mesh code should call canonical B0 `meshHlrProjection`
+and pass its correlated result to `meshIllustration` or
+`meshIllustrationGeometry`.
 
 The packed analytic Boolean operation uses `bigint` for every 64-bit identity
 and integer-nanometer value. The client owns packet encoding and strict result

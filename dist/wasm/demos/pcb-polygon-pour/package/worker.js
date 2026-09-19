@@ -1,5 +1,5 @@
 import { decodeAnalyticPlanarBooleanBatchResultA0Packet, encodeAnalyticPlanarBooleanBatchRequestA0Packet, } from "./analytic-packet-a0.js";
-import { decodeOperationOutcomeA0Json, encodeHlrProjectionOptionsA0Json, encodeModelBoundsOptionsA0Json, operationCatalog, } from "./generated/index.js";
+import { decodeOperationOutcomeA0Json, decodeOperationOutcomeB0Json, encodeHlrProjectionOptionsA0Json, encodeModelBoundsOptionsA0Json, operationCatalog, } from "./generated/index.js";
 import { GeometerOperationError, GeometerWasmTransportError } from "./wasm.js";
 export const GEOMETER_WASM_WORKER_PROTOCOL = "wn.geometer.wasm_worker.a0";
 export class GeometerWorkerError extends Error {
@@ -131,7 +131,9 @@ export class GeometerWorkerClient {
         if (response.kind !== "operation_result") {
             throw new GeometerWorkerError(`Expected operation_result, received ${response.kind}.`);
         }
-        const outcome = decodeOperationOutcomeA0Json(response.outcomeJson);
+        const outcome = operation.endsWith(".b0")
+            ? decodeOperationOutcomeB0Json(response.outcomeJson)
+            : decodeOperationOutcomeA0Json(response.outcomeJson);
         const result = {
             attachments: response.attachments.map((attachment) => ({
                 data: new Uint8Array(attachment.data),

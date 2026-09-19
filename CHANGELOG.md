@@ -4,6 +4,29 @@ All notable changes to geometer are documented here.
 
 ## [Unreleased]
 
+## [2026.9.19] - 2026-09-19
+
+### Added
+
+- Added deterministic post-transform half-space clipping for direct model,
+  analytic, composed-mesh illustration, and mesh HLR through the new B0
+  operation family.
+- Added explicit successful empty-fragment results, material-preserving clipped
+  geometry, and matching fragment identity across illustration and HLR.
+- Added clipping controls to the browser Illustration Lab and native Rust API
+  Lab.
+
+### Changed
+
+- Made B0 the canonical illustration generation in maintained Python, Rust,
+  TypeScript, browser, Worker, executable IPC, and direct-static consumers;
+  strict A0 compatibility operations remain available.
+- Advanced the package, generated clients, executable, WASM artifacts, and C
+  ABI generation together for the expanded operation catalog.
+- Qualified the static SDK and unified-transport release work together with the
+  B0 clipping implementation so downstream consumers receive one immutable
+  package/catalog generation.
+
 ## [2026.9.18] - 2026-09-18
 
 ### Added

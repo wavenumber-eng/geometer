@@ -1,4 +1,5 @@
-import { encodeOperationOutcomeA0Json } from "./generated/index.js";
+import type { OperationOutcomeA0, OperationOutcomeB0 } from "./generated/index.js";
+import { encodeOperationOutcomeA0Json, encodeOperationOutcomeB0Json } from "./generated/index.js";
 import type { EmscriptenGeometerFactory, GeometerOperationAttachment } from "./wasm.js";
 import {
   createGeometerWasmClient,
@@ -116,7 +117,9 @@ export function startGeometerWorkerHost(
         {
           attachments,
           kind: "operation_result",
-          outcomeJson: encodeOperationOutcomeA0Json(response.outcome),
+          outcomeJson: request.operation.endsWith(".b0")
+            ? encodeOperationOutcomeB0Json(response.outcome as OperationOutcomeB0)
+            : encodeOperationOutcomeA0Json(response.outcome as OperationOutcomeA0),
           protocol: GEOMETER_WASM_WORKER_PROTOCOL,
           requestId: request.requestId,
         },

@@ -24,12 +24,19 @@ pub struct Model {
 }
 
 pub struct Solution {
-    pub result: ModelIllustrationResultA0,
+    pub result: ModelIllustrationResultB0,
     pub result_json: Vec<u8>,
     pub style_json: Vec<u8>,
     pub image: egui::ColorImage,
     pub hlr_json: Vec<u8>,
     pub hlr_images: [egui::ColorImage; 2],
+}
+
+pub struct SolveSettings {
+    pub view: MeshIllustrationView,
+    pub style: MeshIllustrationStyleA0,
+    pub hlr: HlrProjectionOptionsA0,
+    pub clipping: Option<IllustrationClipping>,
 }
 
 pub enum Event {
@@ -54,7 +61,7 @@ impl Export {
     pub(crate) fn data(&self) -> (&'static str, &[u8]) {
         match self {
             Self::Svg(s) => ("illustration.svg", s.result.svg.as_bytes()),
-            Self::Result(s) => ("illustration.a0.json", &s.result_json),
+            Self::Result(s) => ("illustration.b0.json", &s.result_json),
             Self::Style(s) => ("illustration-style.a0.json", &s.style_json),
             Self::Hlr(s) => ("hlr-projection.a0.json", &s.hlr_json),
             Self::Mesh(m) => ("mesh-collection.a0.json", &m.geometry_json),
@@ -182,13 +189,17 @@ impl Jobs {
         revision: u64,
         client: GeometerClient,
         model: Arc<Model>,
-        view: MeshIllustrationView,
-        style: MeshIllustrationStyleA0,
-        mut options: HlrProjectionOptionsA0,
+        settings: SolveSettings,
     ) {
         let emit = self.emit();
         self.runtime.as_ref().unwrap().spawn(async move {
             let result = async {
+                let SolveSettings {
+                    view,
+                    style,
+                    hlr: mut options,
+                    clipping,
+                } = settings;
                 options.output_outline = Some(style.show_hlr_outline.unwrap_or(true));
                 options.output_detail = Some(style.show_hlr_detail.unwrap_or(false));
                 let linework = ModelIllustrationLineworkOptionsA0 {
@@ -196,8 +207,8 @@ impl Jobs {
                     outline_width_mm: None,
                     detail_width_mm: None,
                 };
-                let hlr = if options.output_outline == Some(true)
-                    || options.output_detail == Some(true)
+                let hlr = if clipping.is_none()
+                    && (options.output_outline == Some(true) || options.output_detail == Some(true))
                 {
                     emit(Event::Phase("Geometer: HLR detail / shadow"));
                     Some(
@@ -215,8 +226,8 @@ impl Jobs {
                 };
                 emit(Event::Phase("Geometer: native illustration"));
                 let mirror_x = view.mirror_x.unwrap_or(false);
-                let request = ModelIllustrationRequestA0 {
-                    schema: "geometry.model_illustration.request.a0".into(),
+                let request = ModelIllustrationRequestB0 {
+                    schema: "geometry.model_illustration.request.b0".into(),
                     source: ModelIllustrationSourceA0::ModelSource(
                         ModelAttachmentIllustrationSourceA0 {
                             kind: "model".into(),
@@ -238,6 +249,7 @@ impl Jobs {
                     style: Some(style.clone()),
                     svg: None,
                     work_limits: None,
+                    clipping,
                 };
                 let result = client
                     .model_illustration(request, Some(model.step.clone()))
@@ -246,7 +258,7 @@ impl Jobs {
                 emit(Event::Phase("Rasterizing SVG preview"));
                 tokio::task::spawn_blocking(move || {
                     let image = raster::rasterize(&result.svg)?;
-                    let result_json = encode_model_illustration_result_a0_json(&result)
+                    let result_json = encode_model_illustration_result_b0_json(&result)
                         .map_err(|e| e.to_string())?;
                     let style_json = encode_mesh_illustration_style_a0_json(&style)
                         .map_err(|e| e.to_string())?;

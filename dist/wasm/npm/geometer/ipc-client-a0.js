@@ -1,4 +1,4 @@
-import { decodeIpcCancelledA0Json, decodeIpcCancelRejectedA0Json, decodeIpcProtocolErrorA0Json, decodeIpcShutdownAckA0Json, decodeIpcWelcomeA0Json, decodeOperationOutcomeA0Json, encodeIpcHelloA0Json, encodeIpcReasonA0Json, encodeIpcRequestA0Json, } from "./generated/codecs.js";
+import { decodeIpcCancelledA0Json, decodeIpcCancelRejectedA0Json, decodeIpcProtocolErrorA0Json, decodeIpcShutdownAckA0Json, decodeIpcWelcomeA0Json, decodeOperationOutcomeA0Json, decodeOperationOutcomeB0Json, encodeIpcHelloA0Json, encodeIpcReasonA0Json, encodeIpcRequestA0Json, encodeIpcRequestB0Json, encodeMeshCollectionA0Json, } from "./generated/codecs.js";
 import { NORMALIZED_CONTRACT_CATALOG_SHA256, operationCatalog, } from "./generated/operations.js";
 import { encodeIndexedTriangleMeshA0Packet, INDEXED_TRIANGLE_MESH_MEDIA_TYPE, } from "./indexed-mesh-packet-a0.js";
 import { encodeGeometerIpcFrame, GEOMETER_IPC_A0_LIMITS, GeometerIpcFrameDecoder, GeometerIpcProtocolError, validateIpcOutcomeOperationPair, validateIpcRequestOperationPair, } from "./ipc-a0.js";
@@ -80,20 +80,32 @@ export class GeometerIpcClientA0 {
             throw new GeometerIpcClientError("Geometer IPC connection is not accepting requests.");
         }
         const declaration = negotiatedOperation(this.welcome, operation);
-        const envelope = { operation, request };
-        validateIpcRequestOperationPair(envelope);
+        const b0 = requestContractUsesB0(declaration.request_contract);
+        if (!b0) {
+            validateIpcRequestOperationPair({ operation, request: request });
+        }
+        else if (request.schema !== declaration.request_contract) {
+            throw new GeometerIpcClientError("B0 request payload contract does not match the negotiated operation declaration.");
+        }
         validateAttachments(attachments, declaration.input_attachments, "request");
         const requestId = this.allocateRequestId();
         const frame = {
             attachments,
-            json: encodeIpcRequestA0Json(envelope),
+            json: b0
+                ? encodeIpcRequestB0Json({ operation, request: request })
+                : encodeIpcRequestA0Json({ operation, request: request }),
             kind: 3,
             requestId,
         };
         const bytes = this.encodeEffectiveFrame(frame);
         this.reservePending(bytes.byteLength);
         const response = deferred();
-        this.pending.set(requestId, { operation, residentBytes: bytes.byteLength, response });
+        this.pending.set(requestId, {
+            declaration,
+            operation,
+            residentBytes: bytes.byteLength,
+            response,
+        });
         void this.writeBytes(bytes).catch((error) => this.abort(asError(error)));
         return {
             cancel: (reason) => this.cancel(requestId, reason),
@@ -108,6 +120,27 @@ export class GeometerIpcClientA0 {
         return this.hlrProjection("geometry.model_hlr_projection.a0", "model", request.mediaType ?? "application/step", request.model, request.options);
     }
     async meshHlrProjection(request) {
+        const response = await this.execute("geometry.mesh_hlr_projection.b0", { ...request.request, output_detail: request.request.output_detail ?? true }, [
+            {
+                name: "mesh_collection",
+                mediaType: "application/vnd.wavenumber.geometer.mesh-collection+json",
+                data: textEncoder.encode(encodeMeshCollectionA0Json(request.meshCollection)),
+            },
+        ]);
+        if (!response.outcome.ok) {
+            throw new GeometerIpcClientError(response.outcome.diagnostics.map((item) => item.message).join("; ") ||
+                "geometry.mesh_hlr_projection.b0 failed.");
+        }
+        if (response.outcome.operation !== "geometry.mesh_hlr_projection.b0" ||
+            response.attachments.length !== 0) {
+            throw new GeometerIpcProtocolError("B0 mesh HLR returned an incompatible result.");
+        }
+        return response.outcome.result;
+    }
+    async meshHlrProjectionB0(request) {
+        return this.meshHlrProjection(request);
+    }
+    async meshHlrProjectionA0(request) {
         const packet = request.mesh instanceof Uint8Array
             ? request.mesh
             : encodeIndexedTriangleMeshA0Packet(request.mesh);
@@ -309,13 +342,17 @@ export class GeometerIpcClientA0 {
     }
     acceptResponse(frame) {
         const pending = requiredPending(this.pending, frame.requestId);
-        const outcome = decodeOperationOutcomeA0Json(frame.json);
+        const b0 = resultContractUsesB0(pending.declaration.result_contract);
+        const outcome = b0
+            ? decodeOperationOutcomeB0Json(frame.json)
+            : decodeOperationOutcomeA0Json(frame.json);
         if (outcome.operation !== pending.operation) {
             throw new GeometerIpcProtocolError("Operation response identity does not match its request.");
         }
-        validateIpcOutcomeOperationPair(outcome);
-        const declaration = negotiatedOperation(this.welcome, pending.operation);
-        validateAttachments(frame.attachments, outcome.ok ? declaration.output_attachments : [], "response");
+        if (!b0) {
+            validateIpcOutcomeOperationPair(outcome);
+        }
+        validateAttachments(frame.attachments, outcome.ok ? pending.declaration.output_attachments : [], "response");
         this.releasePending(frame.requestId);
         pending.response.resolve({
             attachments: frame.attachments,
@@ -356,6 +393,26 @@ export class GeometerIpcClientA0 {
         this.pendingResidentBytes -= pending.residentBytes;
         this.pending.delete(requestId);
     }
+}
+const B0_REQUEST_CONTRACTS = new Set([
+    "geometry.model_illustration.request.b0",
+    "geometry.model_illustration_geometry.request.b0",
+    "geometry.mesh_illustration.request.b0",
+    "geometry.mesh_illustration_geometry.request.b0",
+    "geometry.mesh_hlr_projection.request.b0",
+]);
+const B0_RESULT_CONTRACTS = new Set([
+    "geometry.model_illustration.result.b0",
+    "geometry.model_illustration_geometry.result.b0",
+    "geometry.mesh_illustration.result.b0",
+    "geometry.mesh_illustration_geometry.result.b0",
+    "geometry.hlr_projection.result.b0",
+]);
+function requestContractUsesB0(contract) {
+    return B0_REQUEST_CONTRACTS.has(contract);
+}
+function resultContractUsesB0(contract) {
+    return B0_RESULT_CONTRACTS.has(contract);
 }
 function validateWelcome(welcome, runtimeTarget) {
     if (welcome.catalog_sha256 !== NORMALIZED_CONTRACT_CATALOG_SHA256) {

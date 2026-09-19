@@ -114,6 +114,42 @@ pub fn decode_logical_request(
         }),
     }
 }
+pub fn decode_logical_request_b0(
+    contract: &str,
+    data: &[u8],
+) -> Result<contracts::IpcRequestValueB0, contracts::ContractError> {
+    match contract {
+        "geometry.model_illustration_geometry.request.b0" => {
+            Ok(contracts::IpcRequestValueB0::ModelIllustrationGeometry(
+                contracts::decode_json::<contracts::ModelIllustrationGeometryRequestB0>(data)?,
+            ))
+        }
+        "geometry.model_illustration.request.b0" => {
+            Ok(contracts::IpcRequestValueB0::ModelIllustration(
+                contracts::decode_json::<contracts::ModelIllustrationRequestB0>(data)?,
+            ))
+        }
+        "geometry.mesh_illustration_geometry.request.b0" => {
+            Ok(contracts::IpcRequestValueB0::MeshIllustrationGeometry(
+                contracts::decode_json::<contracts::MeshIllustrationGeometryRequestB0>(data)?,
+            ))
+        }
+        "geometry.mesh_illustration.request.b0" => {
+            Ok(contracts::IpcRequestValueB0::MeshIllustration(
+                contracts::decode_json::<contracts::MeshIllustrationRequestB0>(data)?,
+            ))
+        }
+        "geometry.mesh_hlr_projection.request.b0" => {
+            Ok(contracts::IpcRequestValueB0::MeshHlrProjection(
+                contracts::decode_json::<contracts::MeshHlrProjectionRequestB0>(data)?,
+            ))
+        }
+        _ => Err(contracts::ContractError::Validation {
+            path: "/request".to_owned(),
+            message: format!("no generated B0 logical request codec for {contract}"),
+        }),
+    }
+}
 
 pub fn logical_request_contract(value: &contracts::IpcRequestValueA0) -> Option<&'static str> {
     match value {
@@ -233,6 +269,48 @@ pub fn logical_result_contract(value: &contracts::OperationResultValueA0) -> Opt
         }
         contracts::OperationResultValueA0::StepTopologyAnalyzeRecovery(_) => {
             Some("geometry.step_topology.analyze_recovery.result.a0")
+        }
+    }
+}
+
+pub fn logical_request_contract_b0(value: &contracts::IpcRequestValueB0) -> Option<&'static str> {
+    match value {
+        contracts::IpcRequestValueB0::ModelIllustrationGeometry(_) => {
+            Some("geometry.model_illustration_geometry.request.b0")
+        }
+        contracts::IpcRequestValueB0::ModelIllustration(_) => {
+            Some("geometry.model_illustration.request.b0")
+        }
+        contracts::IpcRequestValueB0::MeshIllustrationGeometry(_) => {
+            Some("geometry.mesh_illustration_geometry.request.b0")
+        }
+        contracts::IpcRequestValueB0::MeshIllustration(_) => {
+            Some("geometry.mesh_illustration.request.b0")
+        }
+        contracts::IpcRequestValueB0::MeshHlrProjection(_) => {
+            Some("geometry.mesh_hlr_projection.request.b0")
+        }
+    }
+}
+
+pub fn logical_result_contract_b0(
+    value: &contracts::OperationResultValueB0,
+) -> Option<&'static str> {
+    match value {
+        contracts::OperationResultValueB0::ModelIllustrationGeometry(_) => {
+            Some("geometry.model_illustration_geometry.result.b0")
+        }
+        contracts::OperationResultValueB0::ModelIllustration(_) => {
+            Some("geometry.model_illustration.result.b0")
+        }
+        contracts::OperationResultValueB0::MeshIllustrationGeometry(_) => {
+            Some("geometry.mesh_illustration_geometry.result.b0")
+        }
+        contracts::OperationResultValueB0::MeshIllustration(_) => {
+            Some("geometry.mesh_illustration.result.b0")
+        }
+        contracts::OperationResultValueB0::MeshHlrProjection(_) => {
+            Some("geometry.hlr_projection.result.b0")
         }
     }
 }

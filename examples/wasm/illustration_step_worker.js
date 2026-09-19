@@ -106,9 +106,18 @@ function projectMeshShadow(module, stepBytes, view, modelTransform, hlrOptions =
   );
 }
 
-function illustrateModel(module, stepBytes, view, modelTransform, meshOptions = {}, hlrOptions = {}, style = {}) {
+function illustrateModel(
+  module,
+  stepBytes,
+  view,
+  modelTransform,
+  meshOptions = {},
+  hlrOptions = {},
+  style = {},
+  clipping,
+) {
   const request = {
-    schema: "geometry.model_illustration_geometry.request.a0",
+    schema: "geometry.model_illustration_geometry.request.b0",
     source: {
       kind: "model",
       attachment: "model",
@@ -157,10 +166,11 @@ function illustrateModel(module, stepBytes, view, modelTransform, meshOptions = 
       double_sided: style.doubleSided,
       rim_amount: style.rimAmount,
     },
+    ...(clipping ? { clipping } : {}),
   };
   const response = self.GeometerOperationWorker.executeOneAttachmentWithOutputs(
     module,
-    "geometry.model_illustration_geometry.a0",
+    "geometry.model_illustration_geometry.b0",
     request,
     { name: "model", mediaType: "application/step", data: stepBytes },
   );
@@ -202,6 +212,7 @@ self.onmessage = async (event) => {
         meshOptions,
         hlrOptions,
         event.data.style,
+        event.data.clipping,
       );
       timings.illustrationMs = performance.now() - illustrationStarted;
       self.postMessage({ id, ok: true, operation, illustration, timings });

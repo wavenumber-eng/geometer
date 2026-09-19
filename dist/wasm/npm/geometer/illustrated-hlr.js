@@ -1,4 +1,4 @@
-import { createIllustrator, } from "./mesh-illustration.js";
+import { createIllustratorA0, } from "./mesh-illustration.js";
 const ILLUSTRATION_HLR_OPTION_KEYS = [
     "output_outline",
     "output_detail",
@@ -31,9 +31,9 @@ function illustrationHlrOptions(options) {
     return Object.fromEntries(ILLUSTRATION_HLR_OPTION_KEYS.flatMap((key) => options[key] === undefined ? [] : [[key, options[key]]]));
 }
 /** Prepare Fast vector linework and the colorized scene once for repeated rendering. */
-export async function createFastHlrIllustrator(projector, request) {
+export async function createFastHlrIllustratorA0(projector, request) {
     const input = request.illustration;
-    const hlr = await projector.meshHlrProjection({
+    const hlr = await projector.meshHlrProjectionA0({
         mesh: indexedMeshFromIllustrationInput(input),
         options: {
             ...illustrationHlrOptions(request.hlr),
@@ -53,12 +53,12 @@ export async function createFastHlrIllustrator(projector, request) {
         throw new Error("Fast HLR returned no illustration view.");
     return {
         hlr,
-        illustrator: createIllustrator(input, lineworkFromHlr(view, input.view.mirror_x === true)),
+        illustrator: createIllustratorA0(input, lineworkFromHlr(view, input.view.mirror_x === true)),
     };
 }
 /** Project Fast vector linework, colorize the mesh, and return one SVG result. */
-export async function illustrateMeshWithFastHlr(projector, request) {
-    const prepared = await createFastHlrIllustrator(projector, request);
+export async function illustrateMeshWithFastHlrA0(projector, request) {
+    const prepared = await createFastHlrIllustratorA0(projector, request);
     try {
         return { hlr: prepared.hlr, illustration: prepared.illustrator.renderSvg() };
     }

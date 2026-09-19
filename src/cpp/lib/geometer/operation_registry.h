@@ -4,6 +4,7 @@
 
 #include <cstddef>
 #include <string>
+#include <variant>
 #include <vector>
 
 namespace geometer
@@ -26,9 +27,16 @@ struct OperationOutputAttachment
 
 struct OperationExecution
 {
-    contracts::OperationOutcomeA0 outcome;
+    using Outcome = std::variant<contracts::OperationSuccessA0, contracts::OperationFailureA0,
+                                 contracts::OperationSuccessB0, contracts::OperationFailureB0>;
+
+    Outcome outcome;
     std::vector<OperationOutputAttachment> attachments;
 };
+
+bool operation_uses_b0(const std::string& operation_id);
+bool encode_operation_outcome(const OperationExecution::Outcome& outcome, std::string* json,
+                              contracts::ContractError* error = nullptr);
 
 const char* operation_catalog_json();
 const char* native_operation_catalog_json();
@@ -55,10 +63,16 @@ bool operation_result_projection(const std::string& operation_id, const char** a
                                  const char** format);
 bool operation_logical_result_matches(const std::string& operation_id,
                                       const contracts::OperationResultValueA0& result);
+bool operation_logical_result_matches(const std::string& operation_id,
+                                      const contracts::OperationResultValueB0& result);
 bool operation_request_value_matches(const std::string& operation_id,
                                      const contracts::IpcRequestValueA0& request);
+bool operation_request_value_matches(const std::string& operation_id,
+                                     const contracts::IpcRequestValueB0& request);
 bool operation_result_value_matches(const std::string& operation_id,
                                     const contracts::OperationResultValueA0& result);
+bool operation_result_value_matches(const std::string& operation_id,
+                                    const contracts::OperationResultValueB0& result);
 std::size_t operation_required_output_attachment_count(const std::string& operation_id);
 const char* operation_required_output_attachment_name(const std::string& operation_id,
                                                       std::size_t index);

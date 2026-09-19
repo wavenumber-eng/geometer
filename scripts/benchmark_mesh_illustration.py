@@ -23,8 +23,8 @@ sys.path.insert(0, str(ROOT / "python"))
 
 import geometer  # noqa: E402
 from geometer._generated.contracts.codecs import (  # noqa: E402
-    decode_mesh_illustration_input_a0_json,
-    encode_mesh_illustration_result_a0_json,
+    decode_mesh_illustration_input_b0_json,
+    encode_mesh_illustration_result_b0_json,
 )
 
 
@@ -41,7 +41,7 @@ def synthetic_grid(size: int) -> dict:
             indices.extend((a, a + 1, a + size + 2, a, a + size + 2, a + size + 1))
             materials.extend((int(col >= size // 2),) * 2)
     return {
-        "schema": "geometry.mesh_illustration.input.a0",
+        "schema": "geometry.mesh_illustration.input.b0",
         "meshes": [
             {
                 "id": "tilted-grid",
@@ -89,7 +89,7 @@ def main() -> None:
     fixtures = {
         "grid": synthetic_grid(args.grid),
         "sot23": {
-            "schema": "geometry.mesh_illustration.input.a0",
+            "schema": "geometry.mesh_illustration.input.b0",
             "meshes": collection["meshes"],
             "view": {"direction": [0.4, 0.7, 1], "up": [0, 1, 0]},
         },
@@ -113,7 +113,7 @@ def main() -> None:
             data = json.dumps(fixture, separators=(",", ":")).encode()
             path = output.parent / f"{name}.input.json"
             path.write_bytes(data)
-            typed = decode_mesh_illustration_input_a0_json(data)
+            typed = decode_mesh_illustration_input_b0_json(data)
             report["fixtures"][name] = {"sha256": sha256(data), "path": str(path)}
             reference = None
             for repeat in range(args.repeats):
@@ -129,7 +129,7 @@ def main() -> None:
                         else:
                             result = clients[mode].mesh_illustration(typed, timeout=120)
                             elapsed = time.perf_counter() - started
-                            encoded = encode_mesh_illustration_result_a0_json(result)
+                            encoded = encode_mesh_illustration_result_b0_json(result)
                         result = json.loads(encoded)
                         if reference is None:
                             reference = result

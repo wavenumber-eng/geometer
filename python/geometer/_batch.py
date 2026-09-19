@@ -110,16 +110,11 @@ class GeometerBatchRunner:
         chunks = _chunks(jobs, self.config.chunk_size)
         indexed_chunks = list(enumerate(chunks))
         if self.config.max_workers == 1 or len(indexed_chunks) == 1:
-            batches = [
-                self._run_chunk(index, chunk, root, options) for index, chunk in indexed_chunks
-            ]
+            batches = [self._run_chunk(index, chunk, root, options) for index, chunk in indexed_chunks]
         else:
             batches = []
             with ThreadPoolExecutor(max_workers=self.config.max_workers) as pool:
-                futures = [
-                    pool.submit(self._run_chunk, index, chunk, root, options)
-                    for index, chunk in indexed_chunks
-                ]
+                futures = [pool.submit(self._run_chunk, index, chunk, root, options) for index, chunk in indexed_chunks]
                 for future in as_completed(futures):
                     batches.append(future.result())
 
@@ -128,11 +123,7 @@ class GeometerBatchRunner:
         for batch in batches:
             response_jobs.extend(dict(job) for job in batch["jobs"])
         first_response = next(
-            (
-                batch["response"]
-                for batch in batches
-                if isinstance(batch.get("response"), Mapping)
-            ),
+            (batch["response"] for batch in batches if isinstance(batch.get("response"), Mapping)),
             {},
         )
         if isinstance(returned_work_dir, _UseRootSentinel):
@@ -145,11 +136,7 @@ class GeometerBatchRunner:
             batches=batches,
             wall_seconds=time.perf_counter() - start,
             work_dir=work_dir,
-            version=(
-                first_response.get("version")
-                if isinstance(first_response.get("version"), str)
-                else None
-            ),
+            version=(first_response.get("version") if isinstance(first_response.get("version"), str) else None),
             abi=first_response.get("abi") if isinstance(first_response.get("abi"), int) else None,
         )
 

@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="91d0158e37d9a999b010d14f79e7537f2b9ccb0b03619b2143ec0d96343690ed">
+  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
   <title>Rust Contracts And Native Clients — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="91d0158e37d9a999b010d14f79e7537f2b9ccb0b03619b2143ec0d96343690ed" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/rust-client.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="rust-contracts-and-native-clients">Rust Contracts And Native Clients</h1></header>
 <h2 id="current-status">Current status</h2>
@@ -40,13 +40,23 @@ linked application can reserve a hidden <code>serve --stdio</code> mode, spawn c
 its own executable through the ordinary <code>GeometerClient</code>, and retain the
 multi-process concurrency/crash boundary without distributing a second
 <code>geometer</code> executable.</p>
-<p>Since 2026.9.6, the client additionally provides typed <code>model_tessellation</code> and
-<code>mesh_illustration</code> methods using generated A0 values. Optional
+<p>The
+<a href="../../../../../../src/rust/geometer-client/examples/direct_static_illustration.rs"><code>direct_static_illustration</code></a>
+example is the release qualification sample for the in-process path. Static SDK
+validation builds it with <code>direct-static</code>, copies only the resulting application
+binary into an unrelated package directory, removes Geometer executable
+discovery variables and the normal executable search path, and runs a complete
+STEP-to-SVG illustration. Qualification also rejects dynamic Geometer or OCCT
+imports. This is distinct from <code>mesh_illustration</code>, which deliberately exercises
+the sibling-process client.</p>
+<p>The client provides typed <code>model_tessellation</code> and B0 <code>mesh_illustration</code>
+methods using generated values. Optional
 <code>mesh_illustration_with_hlr(input, hlr)</code> returns the native composed SVG with
 visibility-filtered outline/detail; consumers do not arrange SVG layers. The complete
 <a href="mesh-illustration-native.html">native STEP-to-SVG example</a> needs no JS/WASM runtime
 or handwritten subprocess protocol. These additions require a matching catalog
-and a compatible 2026.9.6 or later executable.</p>
+and an exactly matching catalog/C ABI generation. Explicit <code>*_a0</code> methods are
+retained only for compatibility tests and controlled migration.</p>
 <p>The analytic operation is experimental and not production-ready. It may fail
 closed on valid inputs and is not the dependable path for whole-board or
 whole-layer copper union. Prefer the Clipper2-backed planar APIs when
@@ -159,10 +169,13 @@ metadata drift. Fatal response ID/kind/JSON/attachment violations poison the
 connection and resolve every pending call. Negotiated response frame limits are
 checked before payload allocation.</p>
 <p><code>GeometerClient::model_hlr_projection()</code> accepts STEP bytes and canonical HLR
-options. <code>mesh_hlr_projection()</code> accepts an indexed-mesh A0 packet;
-<code>MeshHlrProjectionRequest::from_mesh()</code> encodes a structured mesh. Omitted
-selectors choose Fast detail and Fast Mesh Shadow for both operations. The model
-operation also accepts the older algorithms when explicitly requested.</p>
+options. Canonical <code>mesh_hlr_projection()</code> accepts a <code>MeshCollectionA0</code> and the
+complete generated <code>MeshHlrProjectionRequestB0</code>, then returns correlated B0
+fragment identity for illustration composition. The explicit
+<code>mesh_hlr_projection_a0()</code> compatibility method accepts an indexed-mesh A0
+packet; <code>MeshHlrProjectionRequestA0::from_mesh()</code> encodes a structured mesh.
+The model operation also accepts the older algorithms when explicitly
+requested.</p>
 <p><code>OperationCall::cancel()</code> requests queue-only cancellation. <code>wait_timeout()</code> is
 a local timeout: it sends a cancellation request and reports whether the server
 removed queued work; it never claims an active OCCT operation stopped. The
@@ -227,8 +240,11 @@ close/request race resolution, repeated real STEP work through one child,
 repeated nonempty typed analytic work through one child, native-produced packet
 corpus parity, mutation rejection, normative standalone job digests, graceful
 shutdown, and empty plus nontrivial friendly analytic IPC calls from a clean
-packaged-crate consumer against the platform executable in
-<code>dist/native/&lt;platform&gt;/</code>.
+Cargo-listed source staging against the platform executable in
+<code>dist/native/&lt;platform&gt;/</code>. The staging carries <code>geometer-sys</code> beside
+<code>geometer-client</code>, matching the static SDK layout; crates.io publication is not
+part of this release model. Static direct-link qualification separately builds
+and runs the packaged illustration sample from the relocated SDK.
 The external-process suite additionally proves a caller-supplied lifecycle
 controller through model tessellation, Fast HLR and HLR-composed illustration;
 last-handle drop, handshake timeout and cancelled construction must terminate,

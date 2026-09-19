@@ -99,6 +99,12 @@ title = "Document projection view-plane reconstruction and close issue 31"
 status = "pending"
 
 [[steps]]
+id = "illustration-clipping-40"
+title = "Implement and qualify generic illustration half-space clipping for the shared release"
+status = "pending"
+depends_on = ["dispatcher-unification"]
+
+[[steps]]
 id = "consumer-docs"
 title = "Update SDK, concurrency, transport, release, and downstream-consumer documentation"
 status = "pending"
@@ -126,7 +132,7 @@ depends_on = ["design-doc-intent-audit", "test-runtime-impact-audit"]
 id = "release-signoff"
 title = "Run full release signoff against the exact qualified candidate artifacts"
 status = "pending"
-depends_on = ["external-review", "sdk-release-candidate", "kicad-trial"]
+depends_on = ["external-review", "sdk-release-candidate", "kicad-trial", "illustration-clipping-40"]
 
 [[steps]]
 id = "release-promotion"
@@ -180,6 +186,11 @@ title = "The supported static SDK and unified Rust client are released and Geome
 status = "pending"
 
 [[exit_criteria]]
+id = "issue-40"
+title = "Generic illustration half-space clipping is released and Geometer issue 40 is closed"
+status = "pending"
+
+[[exit_criteria]]
 id = "performance"
 title = "Measured direct and self-hosted performance meets the recorded acceptance budgets"
 status = "pending"
@@ -212,6 +223,7 @@ This working plan covers:
 - [Geometer issue 38](https://github.com/wavenumber-eng/geometer/issues/38), the supported static native SDK and in-process Rust client;
 - [Geometer issue 31](https://github.com/wavenumber-eng/geometer/issues/31), projection view-plane and bottom-view reconstruction documentation;
 - [Geometer issue 25](https://github.com/wavenumber-eng/geometer/issues/25), hard topology-worker memory containment on macOS; and
+- [Geometer issue 40](https://github.com/wavenumber-eng/geometer/issues/40), generic post-transform illustration half-space clipping; and
 - a downstream proof in KiCad Cruncher using the newly completed native Toon workflow.
 
 The durable record after implementation is the accepted ADRs, requirements,
@@ -924,8 +936,10 @@ Do not leave implementation decisions only in this plan or its logs.
    independent implementation review.
 8. Run full release signoff, publish the exact qualified SDK asset matrix, then
    download and verify the public release.
-9. Close issues 25 and 31 when their own evidence is complete. Close issue 38
-   only after public released-asset verification—not merely a build-tree or
-   staged library—passes.
+9. Close issues 25 and 31 when their own evidence is complete. Close issue 40
+   after its B0 root contracts, generated clients, and existing Lab demos pass
+   public released-asset verification. Close issue 38 only after the full
+   public SDK asset matrix passes that same verification—not merely a
+   build-tree or staged library.
 10. Use the current dev-std close operation to retire this temporary plan after
     all outcomes are represented in the docs of record.

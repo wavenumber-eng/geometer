@@ -119,7 +119,15 @@ impl GeometerDirectClient {
             .await
             .map_err(|_| GeometerClientError::Static("direct executor response closed".to_owned()))?
             .map_err(GeometerClientError::Static)?;
-        let outcome = contracts::decode_operation_outcome_a0_json(&output.json)?;
+        let outcome = if crate::operation_validation::result_uses_b0(declaration) {
+            crate::client::OperationOutcome::B0(contracts::decode_operation_outcome_b0_json(
+                &output.json,
+            )?)
+        } else {
+            crate::client::OperationOutcome::A0(contracts::decode_operation_outcome_a0_json(
+                &output.json,
+            )?)
+        };
         let attachments = output
             .attachments
             .into_iter()

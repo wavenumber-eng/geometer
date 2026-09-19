@@ -10,11 +10,19 @@ from ._generated.contracts.models import (
     ENUM_TYPES,
     MODEL_TYPES,
     MeshIllustrationGeometryInputA0,
+    MeshIllustrationGeometryInputB0,
     MeshIllustrationInputA0,
+    MeshIllustrationInputB0,
 )
 
 
-def _mesh_attachment(input: MeshIllustrationInputA0 | MeshIllustrationGeometryInputA0, root: str) -> bytes:
+def _mesh_attachment(
+    input: MeshIllustrationInputA0
+    | MeshIllustrationGeometryInputA0
+    | MeshIllustrationInputB0
+    | MeshIllustrationGeometryInputB0,
+    root: str,
+) -> bytes:
     # Preserve full input validation and field/error order. The governed roots
     # share the collection's mesh descriptor, so its normalized subtree can be
     # serialized directly without visiting every coordinate a second time.

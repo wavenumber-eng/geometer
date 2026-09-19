@@ -36,11 +36,22 @@ consumers must use grouped native, npm, and WASM paths.
 
 Native `.lib` and `.a` files remain ordinary build/cache outputs under the
 configured CMake build tree. They are not committed or included in native
-runtime releases. A future native SDK must be a separately designed package
-with public headers, exported CMake targets, ABI/toolchain metadata, licenses,
-and a complete dependency-link strategy; a bare static archive is not an SDK.
+runtime archives. Each dated release separately publishes one static SDK for
+Windows x64, Linux x64, Linux arm64, and macOS arm64. Those SDKs contain public
+C ABI headers, exported relocatable CMake targets, Geometer and the exact OCCT
+link closure, ABI/toolchain metadata, integrity/provenance records, and license
+material. See [Static native SDK](static-native-sdk.md).
 
-Demo build scripts do not publish. See
+`Publish` is a manual workflow dispatched at the exact tag also supplied as its
+input, which binds GitHub provenance to the released source revision. It
+rebuilds all four native archives,
+all four platform wheels, all four static SDKs, and WASM; validates a single
+fail-closed inventory; and stages the unchanged bytes on a draft GitHub
+Release. PyPI receives exactly the four inventoried wheels. Only after trusted
+publishing succeeds is the GitHub Release made public, downloaded again, and
+checked against its inventory and GitHub attestations.
+
+Browser and native Lab build scripts do not publish demo applications. See
 [Browser demo packaging and UI](../developer/browser-demos.md) for the local build, closure,
 review, and explicit publication boundary.
 

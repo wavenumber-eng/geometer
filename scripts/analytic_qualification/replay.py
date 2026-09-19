@@ -11,6 +11,7 @@ from geometer._analytic_packet_a0 import (
 from geometer._generated.contracts.models import (
     FailedJobResult,
     OperationFailureA0,
+    OperationSuccessA0,
     PackedAttachmentProjectionA0,
     PackedAttachmentReferenceA0,
 )
@@ -64,6 +65,8 @@ def execute_packet(client: GeometerIpcClient, packet: bytes, timeout: float) -> 
     )
     if isinstance(response.outcome, OperationFailureA0):
         raise GeometerOperationError(response.outcome.operation, response.outcome.diagnostics)
+    if not isinstance(response.outcome, OperationSuccessA0):
+        raise QualificationError("production executable returned a non-A0 analytic outcome")
     expected_projection = PackedAttachmentProjectionA0(
         schema=ANALYTIC_RESULT_CONTRACT,
         packet=PackedAttachmentReferenceA0(

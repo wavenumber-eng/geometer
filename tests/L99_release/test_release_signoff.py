@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import importlib.util
 import shutil
 import subprocess
 import sys
@@ -129,6 +130,38 @@ def test_code_hygiene_exempts_only_generated_contract_sources_from_line_limit() 
             "assert not hygiene.is_line_length_exempt(Path('src/cpp/lib/ipc_a0_server.cpp'))",
         ]
     )
+
+
+def test_code_hygiene_allows_active_plans_but_rejects_completed_plans(tmp_path: Path) -> None:
+    script = ROOT / "scripts" / "check_code_hygiene.py"
+    spec = importlib.util.spec_from_file_location("check_code_hygiene", script)
+    assert spec is not None and spec.loader is not None
+    hygiene = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = hygiene
+    spec.loader.exec_module(hygiene)
+
+    plan = tmp_path / "example" / "plan.md"
+    plan.parent.mkdir()
+    plan.write_text(
+        "+++\n"
+        'type = "plan"\n'
+        'id = "example"\n'
+        'status = "active"\n'
+        '[[steps]]\nid = "work"\ntitle = "Work"\nstatus = "active"\n'
+        '[[exit_criteria]]\nid = "exit"\ntitle = "Exit"\nstatus = "pending"\n'
+        "+++\n\n# Plan\n",
+        encoding="utf-8",
+    )
+    assert hygiene.completed_plan_paths(tmp_path) == []
+
+    plan.write_text(
+        plan.read_text(encoding="utf-8")
+        .replace('status = "active"', 'status = "done"', 1)
+        .replace('status = "active"', 'status = "done"', 1)
+        .replace('status = "pending"', 'status = "met"', 1),
+        encoding="utf-8",
+    )
+    assert hygiene.completed_plan_paths(tmp_path) == [plan]
 
 
 def test_linux_wheel_builds_use_glibc_235_baseline() -> None:

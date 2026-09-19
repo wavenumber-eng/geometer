@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -180,12 +181,35 @@ def check_dist_root() -> list[Violation]:
     return violations
 
 
+def completed_plan_paths(plans_root: Path) -> list[Path]:
+    """Return governed plans whose work and exit criteria are all complete."""
+    completed = []
+    if not plans_root.is_dir():
+        return completed
+    for path in plans_root.glob("*/plan.md"):
+        text = path.read_text(encoding="utf-8")
+        parts = text.split("+++", 2)
+        if len(parts) != 3:
+            continue
+        metadata = tomllib.loads(parts[1])
+        steps = metadata.get("steps", [])
+        criteria = metadata.get("exit_criteria", [])
+        if (
+            steps
+            and criteria
+            and all(step.get("status") == "done" for step in steps)
+            and all(criterion.get("status") == "met" for criterion in criteria)
+        ):
+            completed.append(path)
+    return completed
+
+
 def check_removed_working_docs() -> list[Violation]:
     violations: list[Violation] = []
     if (ROOT / "CLAUDE.md").exists():
         violations.append(Violation(ROOT / "CLAUDE.md", "remove Claude-specific repo notes"))
-    if (ROOT / "docs" / "plans").exists():
-        violations.append(Violation(ROOT / "docs" / "plans", "completed plans should not persist in the repo"))
+    for path in completed_plan_paths(ROOT / "docs" / "plans"):
+        violations.append(Violation(path, "completed plan should be closed and removed"))
     return violations
 
 

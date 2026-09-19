@@ -8,6 +8,8 @@ import re
 import zipfile
 from pathlib import Path
 
+from validate_static_sdk import validate_archive as validate_static_sdk_archive
+
 
 LICENSE_NAMES = {
     "WN_GEOMETER_LICENSE.txt",
@@ -80,12 +82,21 @@ def validate_wheel(path: Path) -> None:
         raise ValueError("Linux wheel does not carry the governed manylinux_2_35 platform tag")
 
 
+def validate_sdk(path: Path) -> None:
+    validate_static_sdk_archive(path)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("kind", choices=("native", "wasm", "wheel"))
+    parser.add_argument("kind", choices=("native", "sdk", "wasm", "wheel"))
     parser.add_argument("artifacts", nargs="+")
     args = parser.parse_args()
-    validator = {"native": validate_native, "wasm": validate_wasm, "wheel": validate_wheel}[args.kind]
+    validator = {
+        "native": validate_native,
+        "sdk": validate_sdk,
+        "wasm": validate_wasm,
+        "wheel": validate_wheel,
+    }[args.kind]
     expanded = [Path(match) for pattern in args.artifacts for match in (glob.glob(pattern) or [pattern])]
     for artifact in expanded:
         validator(artifact.resolve())

@@ -6,6 +6,7 @@ import zipfile
 from pathlib import Path
 
 import package_static_sdk
+import validate_static_sdk
 from build_static_sdk import validate_windows_static_runtime
 
 
@@ -88,6 +89,46 @@ def test_static_sdk_is_deterministic_complete_and_relocatable(tmp_path: Path, mo
     provenance = json.loads(first.with_suffix(".zip.provenance.json").read_text(encoding="utf-8"))
     assert provenance["archive"]["sha256"] == hashlib.sha256(first.read_bytes()).hexdigest()
     assert provenance["source_revision"] == "a" * 40
+    assert validate_static_sdk.validate_archive(first)["platform"] == "windows-x64"
+
+
+def test_static_sdk_validation_rejects_payload_tampering(tmp_path: Path, monkeypatch) -> None:
+    build, geometer, private = _fake_build(tmp_path)
+    license_file = tmp_path / "LICENSE.txt"
+    license_file.write_text("test license\n", encoding="utf-8")
+    monkeypatch.setattr(
+        package_static_sdk,
+        "link_command",
+        lambda _build: f"link.exe {geometer} {private[0]} {private[1]} ws2_32.lib /out:probe.exe",
+    )
+    monkeypatch.setattr(package_static_sdk, "git_revision", lambda _allow_dirty: "a" * 40)
+    monkeypatch.setattr(
+        package_static_sdk,
+        "release_license_sources",
+        lambda _root, _platform: {"TEST_LICENSE.txt": license_file},
+    )
+    archive_path = tmp_path / "geometer-sdk.zip"
+    package_static_sdk.package(build, "windows-x64", archive_path, allow_dirty=True)
+    rewritten = tmp_path / "rewritten.zip"
+    with zipfile.ZipFile(archive_path) as source, zipfile.ZipFile(rewritten, "w") as destination:
+        for info in source.infolist():
+            value = b"tampered" if info.filename == "include/geometer/c_api.h" else source.read(info)
+            destination.writestr(info, value)
+    rewritten.replace(archive_path)
+    archive_path.with_suffix(".zip.sha256").write_text(
+        f"{hashlib.sha256(archive_path.read_bytes()).hexdigest()}  {archive_path.name}\n", encoding="utf-8"
+    )
+    provenance_path = archive_path.with_suffix(".zip.provenance.json")
+    provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
+    provenance["archive"]["sha256"] = hashlib.sha256(archive_path.read_bytes()).hexdigest()
+    provenance["archive"]["size"] = archive_path.stat().st_size
+    provenance_path.write_text(json.dumps(provenance), encoding="utf-8")
+    try:
+        validate_static_sdk.validate_archive(archive_path)
+    except ValueError as error:
+        assert "payload entry" in str(error)
+    else:
+        raise AssertionError("tampered SDK archive was accepted")
 
 
 def test_linux_cmake_projection_preserves_rescan_group() -> None:
@@ -106,6 +147,21 @@ def test_linux_cmake_projection_preserves_rescan_group() -> None:
     assert "$<LINK_GROUP:RESCAN,${_GEOMETER_PREFIX}/lib/occt/libTKernel.a," in targets
     assert "${_GEOMETER_PREFIX}/lib/occt/libTKMath.a>" in targets
     assert "stdc++;pthread;dl" in targets
+
+
+def test_macos_cmake_projection_uses_framework_link_feature() -> None:
+    manifest = {
+        "archives": {"geometer": "lib/libgeometer.a", "private": ["lib/occt/libTKernel.a"]},
+        "link": {
+            "rescan_private_archives": False,
+            "system_libraries": ["c++"],
+            "apple_frameworks": ["Foundation", "AppKit"],
+        },
+    }
+    targets = package_static_sdk.cmake_targets(manifest)
+    assert "$<LINK_LIBRARY:FRAMEWORK,Foundation>" in targets
+    assert "$<LINK_LIBRARY:FRAMEWORK,AppKit>" in targets
+    assert "-framework Foundation" not in targets
 
 
 def test_windows_static_occt_recipe_is_isolated() -> None:

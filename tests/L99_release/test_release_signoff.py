@@ -227,6 +227,13 @@ def test_ci_is_manual_only_and_release_integrates_once() -> None:
     assert "python -m build --wheel --outdir out/wheelhouse" not in release
     assert "twine check out/wheelhouse/*.whl" in release
     assert "path: out/wheelhouse/*.whl" in release
+    assert "scripts/build_static_sdk.py --platform ${{ matrix.platform }}" in release
+    assert "scripts/validate_static_sdk.py out/sdk-candidate/geometer-sdk-*.zip" in release
+    assert "scripts/validate_release_inventory.py" in release
+    assert "name: qualified-release" in release
+    assert "--clobber" not in release
+    assert "needs: qualify-release" in release
+    assert "-eq 4" in release
 
 
 def test_publish_is_the_only_automatically_triggered_workflow() -> None:
@@ -311,7 +318,8 @@ def test_experimental_qualification_is_outside_normal_ci_and_release() -> None:
     assert "--include-experimental-tests" not in ci
     assert "--include-experimental-tests" not in release
     assert "  cross-transport:" not in release
-    assert release.count("needs: [build, wasm]") == 2
+    assert release.count("needs: [build, wasm]") == 1
+    assert release.count("needs: qualify-release") == 2
 
 
 def test_occt_cache_consumers_share_platform_keys() -> None:

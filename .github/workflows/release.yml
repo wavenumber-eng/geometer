@@ -115,6 +115,8 @@ jobs:
             .deps/occt-src
             .deps/native/${{ matrix.platform }}/occt-build
             .deps/native/${{ matrix.platform }}/occt-install
+            .deps/native/${{ matrix.platform }}/occt-static-crt-build
+            .deps/native/${{ matrix.platform }}/occt-static-crt-install
           key: occt-v2-native-${{ matrix.platform }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-${{ hashFiles('scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
           restore-keys: |
             occt-v2-native-${{ matrix.platform }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-
@@ -143,6 +145,12 @@ jobs:
       - name: Package native dist
         run: uv run --no-project python scripts/package_release_artifacts.py native --platform ${{ matrix.platform }} --output out/native-${{ matrix.platform }}.zip
 
+      - name: Build static C ABI SDK candidate
+        run: uv run python scripts/build_static_sdk.py --platform ${{ matrix.platform }}
+
+      - name: Qualify relocated static SDK consumer
+        run: uv run python scripts/validate_static_sdk.py out/sdk-candidate/geometer-sdk-*.zip
+
       - name: Upload wheel artifact
         uses: actions/upload-artifact@v7
         with:
@@ -155,6 +163,16 @@ jobs:
         with:
           name: native-dist-${{ matrix.platform }}
           path: out/native-${{ matrix.platform }}.zip
+          if-no-files-found: error
+
+      - name: Upload static SDK candidate
+        uses: actions/upload-artifact@v7
+        with:
+          name: sdk-dist-${{ matrix.platform }}
+          path: |
+            out/sdk-candidate/geometer-sdk-*.zip
+            out/sdk-candidate/geometer-sdk-*.zip.sha256
+            out/sdk-candidate/geometer-sdk-*.zip.provenance.json
           if-no-files-found: error
 
   wasm:
@@ -252,9 +270,44 @@ jobs:
           path: out/wasm-dist.zip
           if-no-files-found: error
 
+  qualify-release:
+    name: immutable release inventory
+    needs: [build, wasm]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - uses: astral-sh/setup-uv@v8.2.0
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Download every release candidate
+        uses: actions/download-artifact@v8
+        with:
+          path: out/release-candidate
+
+      - name: Validate exact release inventory
+        run: >-
+          uv run --no-project python scripts/validate_release_inventory.py
+          out/release-candidate
+          --tag "${{ github.ref_name }}"
+          --output "out/geometer-release-inventory-${{ github.ref_name }}.json"
+
+      - name: Upload qualified immutable payload
+        uses: actions/upload-artifact@v7
+        with:
+          name: qualified-release
+          path: |
+            out/release-candidate/**
+            out/geometer-release-inventory-*.json
+          if-no-files-found: error
+
   github-assets:
     name: GitHub release assets
-    needs: [build, wasm]
+    needs: qualify-release
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
@@ -263,18 +316,19 @@ jobs:
       - name: Download release artifacts
         uses: actions/download-artifact@v8
         with:
-          path: out/release
+          name: qualified-release
+          path: out/qualified-release
 
       - name: Upload GitHub release assets
         env:
           GH_TOKEN: ${{ github.token }}
           TAG_NAME: ${{ github.ref_name }}
         run: |
-          find out/release -type f -print0 | xargs -0 gh release upload "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --clobber
+          find out/qualified-release -type f -print0 | xargs -0 gh release upload "$TAG_NAME" --repo "$GITHUB_REPOSITORY"
 
   pypi:
     name: PyPI trusted publish
-    needs: [build, wasm]
+    needs: qualify-release
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     environment:
@@ -284,12 +338,17 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - name: Download wheel artifacts
+      - name: Download qualified release payload
         uses: actions/download-artifact@v8
         with:
-          pattern: python-dist-*
-          path: dist-pypi
-          merge-multiple: true
+          name: qualified-release
+          path: out/qualified-release
+
+      - name: Select the four qualified platform wheels
+        run: |
+          mkdir dist-pypi
+          find out/qualified-release -type f -name '*.whl' -exec cp '{}' dist-pypi/ \;
+          test "$(find dist-pypi -maxdepth 1 -type f -name '*.whl' | wc -l)" -eq 4
 
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

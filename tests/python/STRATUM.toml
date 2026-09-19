@@ -22,7 +22,8 @@ objectives = [
     "Verify colored native STEP tessellation through generated mesh attachments and typed clients.",
     "Verify direct file-backed and analytic model illustration through the governed one-pass boundary.",
     "Benchmark executable IPC startup, persistent operation latency, process-pool throughput, and memory before transport changes.",
-    "Verify deterministic relocatable static SDK packaging, exact link manifests, payload inventories, and isolated Windows CRT profiles.",
+    "Verify deterministic relocatable static SDK packaging, exact link manifests, payload inventories, external consumer qualification, and isolated Windows CRT profiles.",
+    "Verify the immutable release inventory includes every native runtime, wheel, WASM archive, and static SDK sidecar exactly once.",
 ]
 
 [[subtests]]
@@ -204,5 +205,12 @@ test_case_type = "unit"
 id = "PY_026"
 file = "test_static_sdk_packaging.py"
 name = "Static C ABI SDK Packaging"
-description = "Checks deterministic SDK archives, relocatable CMake metadata, authoritative link closure projection, payload integrity, provenance, and Windows static-CRT isolation."
+description = "Checks deterministic SDK archives, relocatable CMake metadata, authoritative link closure projection, payload integrity, provenance, external consumer qualification, and Windows static-CRT isolation."
+test_case_type = "unit"
+
+[[subtests]]
+id = "PY_027"
+file = "test_release_inventory.py"
+name = "Immutable Release Inventory"
+description = "Checks exact multi-platform native, wheel, WASM, static SDK, checksum, and provenance asset naming with duplicate rejection."
 test_case_type = "unit"

@@ -1,5 +1,7 @@
-//! Typed HLR request facades over the generic executable IPC client.
+//! Typed HLR request facades over the shared operation backend.
 
+#[cfg(feature = "direct-static")]
+use crate::GeometerDirectClient;
 use crate::client::{GeometerClient, GeometerClientError};
 use crate::generated::contracts::{
     self, HlrProjectionOptionsA0, HlrProjectionResultA0, OperationOutcomeA0, OperationResultValueA0,
@@ -35,71 +37,81 @@ impl MeshHlrProjectionRequest {
     }
 }
 
-impl GeometerClient {
-    pub async fn model_hlr_projection(
-        &self,
-        request: ModelHlrProjectionRequest,
-    ) -> Result<HlrProjectionResultA0, GeometerClientError> {
-        self.hlr_projection(
-            "geometry.model_hlr_projection.a0",
-            "model",
-            request.media_type,
-            request.model,
-            request.options,
-        )
-        .await
-    }
+macro_rules! impl_hlr_client {
+    ($client:ty) => {
+        impl $client {
+            pub async fn model_hlr_projection(
+                &self,
+                request: ModelHlrProjectionRequest,
+            ) -> Result<HlrProjectionResultA0, GeometerClientError> {
+                run_hlr_projection(
+                    self,
+                    "geometry.model_hlr_projection.a0",
+                    "model",
+                    request.media_type,
+                    request.model,
+                    request.options,
+                )
+                .await
+            }
 
-    pub async fn mesh_hlr_projection(
-        &self,
-        request: MeshHlrProjectionRequest,
-    ) -> Result<HlrProjectionResultA0, GeometerClientError> {
-        self.hlr_projection(
-            "geometry.mesh_hlr_projection.a0",
-            "mesh",
-            INDEXED_TRIANGLE_MESH_MEDIA_TYPE.to_owned(),
-            request.mesh_packet,
-            request.options,
-        )
-        .await
-    }
+            pub async fn mesh_hlr_projection(
+                &self,
+                request: MeshHlrProjectionRequest,
+            ) -> Result<HlrProjectionResultA0, GeometerClientError> {
+                run_hlr_projection(
+                    self,
+                    "geometry.mesh_hlr_projection.a0",
+                    "mesh",
+                    INDEXED_TRIANGLE_MESH_MEDIA_TYPE.to_owned(),
+                    request.mesh_packet,
+                    request.options,
+                )
+                .await
+            }
+        }
+    };
+}
 
-    async fn hlr_projection(
-        &self,
-        operation: &str,
-        attachment_name: &str,
-        media_type: String,
-        data: Vec<u8>,
-        mut options: HlrProjectionOptionsA0,
-    ) -> Result<HlrProjectionResultA0, GeometerClientError> {
-        // Preserve the HLR default while disambiguating the presence-only IPC union.
-        if options.output_detail.is_none() {
-            options.output_detail = Some(true);
-        }
-        let options = contracts::encode_hlr_projection_options_a0_json(&options)?;
-        let response = self
-            .execute(
-                operation,
-                &options,
-                vec![Attachment {
-                    name: attachment_name.to_owned(),
-                    media_type,
-                    data,
-                }],
-            )
-            .await?;
-        if !response.attachments.is_empty() {
-            return Err(GeometerClientError::Protocol(
-                "HLR projection returned unexpected attachments".to_owned(),
-            ));
-        }
-        match response.outcome {
-            OperationOutcomeA0::Success(success) => hlr_projection_result(success.result),
-            OperationOutcomeA0::Failure(failure) => Err(GeometerClientError::Operation {
-                operation: failure.operation,
-                diagnostics: failure.diagnostics,
-            }),
-        }
+impl_hlr_client!(GeometerClient);
+#[cfg(feature = "direct-static")]
+impl_hlr_client!(GeometerDirectClient);
+
+async fn run_hlr_projection<B: crate::backend::OperationBackend>(
+    backend: &B,
+    operation: &str,
+    attachment_name: &str,
+    media_type: String,
+    data: Vec<u8>,
+    mut options: HlrProjectionOptionsA0,
+) -> Result<HlrProjectionResultA0, GeometerClientError> {
+    // Preserve the HLR default while disambiguating the presence-only IPC union.
+    if options.output_detail.is_none() {
+        options.output_detail = Some(true);
+    }
+    let options = contracts::encode_hlr_projection_options_a0_json(&options)?;
+    let response = backend
+        .execute_operation(
+            operation,
+            &options,
+            vec![Attachment {
+                name: attachment_name.to_owned(),
+                media_type,
+                data,
+            }],
+        )
+        .await?;
+    if !response.attachments.is_empty() {
+        return Err(GeometerClientError::Protocol(
+            "HLR projection returned unexpected attachments".to_owned(),
+        ));
+    }
+    match response.outcome {
+        OperationOutcomeA0::Success(success) => hlr_projection_result(success.result),
+        OperationOutcomeA0::Failure(failure) => Err(GeometerClientError::Operation {
+            operation: failure.operation,
+            diagnostics: failure.diagnostics,
+        }),
     }
 }
 

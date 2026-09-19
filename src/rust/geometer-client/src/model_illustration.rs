@@ -1,5 +1,7 @@
 //! One-pass STEP or analytic illustration without an intermediate mesh attachment.
 
+#[cfg(feature = "direct-static")]
+use crate::GeometerDirectClient;
 use crate::contracts::{
     self, MeshIllustrationGeometryA0, ModelIllustrationGeometryRequestA0,
     ModelIllustrationGeometryResultA0, ModelIllustrationRequestA0, ModelIllustrationResultA0,
@@ -16,50 +18,66 @@ pub struct ModelIllustrationGeometry {
     pub geometry: MeshIllustrationGeometryA0,
 }
 
-impl GeometerClient {
-    /// Illustrate one STEP model or analytic scene without transferring a mesh collection.
-    pub async fn model_illustration(
-        &self,
-        request: ModelIllustrationRequestA0,
-        model: Option<Vec<u8>>,
-    ) -> Result<ModelIllustrationResultA0, GeometerClientError> {
-        request.validate_at("")?;
-        let attachments = source_attachments(&request.source, model)?;
-        let response = self
-            .execute(
-                "geometry.model_illustration.a0",
-                &contracts::encode_json(&request)?,
-                attachments,
-            )
-            .await?;
-        let result = decode_svg_response(response);
-        if matches!(result, Err(GeometerClientError::Protocol(_))) {
-            self.terminate().await?;
-        }
-        result
-    }
+macro_rules! impl_model_illustration_client {
+    ($client:ty) => {
+        impl $client {
+            /// Illustrate one STEP model or analytic scene without transferring a mesh collection.
+            pub async fn model_illustration(
+                &self,
+                request: ModelIllustrationRequestA0,
+                model: Option<Vec<u8>>,
+            ) -> Result<ModelIllustrationResultA0, GeometerClientError> {
+                run_model_illustration(self, request, model).await
+            }
 
-    /// Return renderer-neutral geometry for one STEP model or analytic scene.
-    pub async fn model_illustration_geometry(
-        &self,
-        request: ModelIllustrationGeometryRequestA0,
-        model: Option<Vec<u8>>,
-    ) -> Result<ModelIllustrationGeometry, GeometerClientError> {
-        request.validate_at("")?;
-        let attachments = source_attachments(&request.source, model)?;
-        let response = self
-            .execute(
-                "geometry.model_illustration_geometry.a0",
-                &contracts::encode_json(&request)?,
-                attachments,
-            )
-            .await?;
-        let result = decode_geometry_response(response);
-        if matches!(result, Err(GeometerClientError::Protocol(_))) {
-            self.terminate().await?;
+            /// Return renderer-neutral geometry for one STEP model or analytic scene.
+            pub async fn model_illustration_geometry(
+                &self,
+                request: ModelIllustrationGeometryRequestA0,
+                model: Option<Vec<u8>>,
+            ) -> Result<ModelIllustrationGeometry, GeometerClientError> {
+                run_model_illustration_geometry(self, request, model).await
+            }
         }
-        result
-    }
+    };
+}
+
+impl_model_illustration_client!(GeometerClient);
+#[cfg(feature = "direct-static")]
+impl_model_illustration_client!(GeometerDirectClient);
+
+async fn run_model_illustration<B: crate::backend::OperationBackend>(
+    backend: &B,
+    request: ModelIllustrationRequestA0,
+    model: Option<Vec<u8>>,
+) -> Result<ModelIllustrationResultA0, GeometerClientError> {
+    request.validate_at("")?;
+    let attachments = source_attachments(&request.source, model)?;
+    let response = backend
+        .execute_operation(
+            "geometry.model_illustration.a0",
+            &contracts::encode_json(&request)?,
+            attachments,
+        )
+        .await?;
+    crate::backend::contain_protocol_result(backend, decode_svg_response(response)).await
+}
+
+async fn run_model_illustration_geometry<B: crate::backend::OperationBackend>(
+    backend: &B,
+    request: ModelIllustrationGeometryRequestA0,
+    model: Option<Vec<u8>>,
+) -> Result<ModelIllustrationGeometry, GeometerClientError> {
+    request.validate_at("")?;
+    let attachments = source_attachments(&request.source, model)?;
+    let response = backend
+        .execute_operation(
+            "geometry.model_illustration_geometry.a0",
+            &contracts::encode_json(&request)?,
+            attachments,
+        )
+        .await?;
+    crate::backend::contain_protocol_result(backend, decode_geometry_response(response)).await
 }
 
 fn source_attachments(

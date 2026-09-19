@@ -1,7 +1,8 @@
-//! Generated Geometer contracts and the persistent executable IPC A0 client.
+//! Generated Geometer contracts with executable and static native clients.
 
 mod analytic_client;
 pub mod analytic_packet_a0;
+mod backend;
 pub mod client;
 mod client_lifecycle;
 #[cfg(feature = "direct-static")]

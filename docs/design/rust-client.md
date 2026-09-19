@@ -1,4 +1,4 @@
-# Rust Contracts And Executable IPC Client
+# Rust Contracts And Native Clients
 
 ## Current status
 
@@ -17,6 +17,10 @@ they must not create per-operation extern declarations or bind OCCT directly.
 
 With the `direct-static` feature, `GeometerDirectClient` sends the same
 catalog-governed request JSON and named attachments through the static C ABI.
+The process and direct client types expose the same typed operation methods;
+their request construction, generated validation, result decoding, attachment
+integrity checks, and protocol-error handling are implemented once over the
+shared safe backend boundary.
 All direct clients share one bounded FIFO and one dedicated executor thread for
 the process. Queue saturation fails locally. Dropped clients do not cancel
 queued work; an active timeout is observational and the executor continues to

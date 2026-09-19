@@ -3,6 +3,8 @@
 use sha2::{Digest, Sha256};
 use std::collections::HashSet;
 
+#[cfg(feature = "direct-static")]
+use crate::GeometerDirectClient;
 use crate::contracts::{
     self, MeshCollectionA0, ModelTessellationRequestA0, ModelTessellationResultA0,
     OperationOutcomeA0, OperationResultValueA0,
@@ -41,32 +43,47 @@ pub struct ModelTessellation {
     pub mesh_collection: MeshCollectionA0,
 }
 
-impl GeometerClient {
-    /// Tessellate STEP bytes without JavaScript, WASM, files or private adapters.
-    pub async fn model_tessellation(
-        &self,
-        request: ModelTessellationRequest,
-    ) -> Result<ModelTessellation, GeometerClientError> {
-        let options = contracts::encode_json(&request.options)?;
-        let max_triangles = request.options.max_triangles.unwrap_or(750000);
-        let source_hash = format!("{:x}", Sha256::digest(&request.model));
-        let response = self
-            .execute(
-                "geometry.model_tessellation.a0",
-                &options,
-                vec![Attachment {
-                    name: "model".to_owned(),
-                    media_type: "application/step".to_owned(),
-                    data: request.model,
-                }],
-            )
-            .await?;
-        let result = decode_response(response, &source_hash, max_triangles);
-        if matches!(result, Err(GeometerClientError::Protocol(_))) {
-            self.terminate().await?;
+macro_rules! impl_tessellation_client {
+    ($client:ty) => {
+        impl $client {
+            /// Tessellate STEP bytes without JavaScript, WASM, files or private adapters.
+            pub async fn model_tessellation(
+                &self,
+                request: ModelTessellationRequest,
+            ) -> Result<ModelTessellation, GeometerClientError> {
+                run_model_tessellation(self, request).await
+            }
         }
-        result
-    }
+    };
+}
+
+impl_tessellation_client!(GeometerClient);
+#[cfg(feature = "direct-static")]
+impl_tessellation_client!(GeometerDirectClient);
+
+async fn run_model_tessellation<B: crate::backend::OperationBackend>(
+    backend: &B,
+    request: ModelTessellationRequest,
+) -> Result<ModelTessellation, GeometerClientError> {
+    let options = contracts::encode_json(&request.options)?;
+    let max_triangles = request.options.max_triangles.unwrap_or(750000);
+    let source_hash = format!("{:x}", Sha256::digest(&request.model));
+    let response = backend
+        .execute_operation(
+            "geometry.model_tessellation.a0",
+            &options,
+            vec![Attachment {
+                name: "model".to_owned(),
+                media_type: "application/step".to_owned(),
+                data: request.model,
+            }],
+        )
+        .await?;
+    crate::backend::contain_protocol_result(
+        backend,
+        decode_response(response, &source_hash, max_triangles),
+    )
+    .await
 }
 
 fn decode_response(

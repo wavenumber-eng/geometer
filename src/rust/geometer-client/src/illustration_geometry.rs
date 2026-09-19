@@ -1,5 +1,7 @@
 //! Owning illustration drawing geometry through governed JSON attachments.
 
+#[cfg(feature = "direct-static")]
+use crate::GeometerDirectClient;
 use crate::contracts::{
     self, HlrProjectionResultA0, MeshCollectionA0, MeshIllustrationGeometryA0,
     MeshIllustrationGeometryInputA0, MeshIllustrationGeometryRequestA0, OperationOutcomeA0,
@@ -9,66 +11,70 @@ use crate::ipc::Attachment;
 use crate::{GeometerClient, GeometerClientError, OperationResponse};
 use sha2::{Digest, Sha256};
 
-impl GeometerClient {
-    /// Return ordered shaded millimeter surfaces and lines without generating SVG.
-    pub async fn mesh_illustration_geometry(
-        &self,
-        input: MeshIllustrationGeometryInputA0,
-    ) -> Result<MeshIllustrationGeometryA0, GeometerClientError> {
-        self.illustration_geometry_request(input, None).await
-    }
+macro_rules! impl_illustration_geometry_client {
+    ($client:ty) => {
+        impl $client {
+            /// Return ordered shaded millimeter surfaces and lines without generating SVG.
+            pub async fn mesh_illustration_geometry(
+                &self,
+                input: MeshIllustrationGeometryInputA0,
+            ) -> Result<MeshIllustrationGeometryA0, GeometerClientError> {
+                run_illustration_geometry_request(self, input, None).await
+            }
 
-    /// Compose visible-only millimeter HLR from the same model/placement/view.
-    pub async fn mesh_illustration_geometry_with_hlr(
-        &self,
-        input: MeshIllustrationGeometryInputA0,
-        hlr: HlrProjectionResultA0,
-    ) -> Result<MeshIllustrationGeometryA0, GeometerClientError> {
-        self.illustration_geometry_request(input, Some(hlr)).await
-    }
+            /// Compose visible-only millimeter HLR from the same model/placement/view.
+            pub async fn mesh_illustration_geometry_with_hlr(
+                &self,
+                input: MeshIllustrationGeometryInputA0,
+                hlr: HlrProjectionResultA0,
+            ) -> Result<MeshIllustrationGeometryA0, GeometerClientError> {
+                run_illustration_geometry_request(self, input, Some(hlr)).await
+            }
+        }
+    };
+}
 
-    async fn illustration_geometry_request(
-        &self,
-        input: MeshIllustrationGeometryInputA0,
-        hlr: Option<HlrProjectionResultA0>,
-    ) -> Result<MeshIllustrationGeometryA0, GeometerClientError> {
-        input.validate_at("")?;
-        let request = MeshIllustrationGeometryRequestA0 {
-            schema: "geometry.mesh_illustration_geometry.request.a0".to_owned(),
-            view: input.view,
-            prepare: input.prepare,
-            style: input.style,
-        };
-        let collection = MeshCollectionA0 {
-            schema: "geometry.mesh_collection.a0".to_owned(),
-            length_unit: input.length_unit,
-            meshes: input.meshes,
-        };
-        let mut attachments = vec![Attachment {
-            name: "mesh_collection".to_owned(),
-            media_type: "application/vnd.wavenumber.geometer.mesh-collection+json".to_owned(),
-            data: contracts::encode_json(&collection)?,
-        }];
-        if let Some(hlr) = hlr {
-            attachments.push(Attachment {
-                name: "hlr_projection".to_owned(),
-                media_type: "application/vnd.wavenumber.geometer.hlr-projection+json".to_owned(),
-                data: contracts::encode_json(&hlr)?,
-            });
-        }
-        let response = self
-            .execute(
-                "geometry.mesh_illustration_geometry.a0",
-                &contracts::encode_json(&request)?,
-                attachments,
-            )
-            .await?;
-        let result = decode_response(response);
-        if matches!(result, Err(GeometerClientError::Protocol(_))) {
-            self.terminate().await?;
-        }
-        result
+impl_illustration_geometry_client!(GeometerClient);
+#[cfg(feature = "direct-static")]
+impl_illustration_geometry_client!(GeometerDirectClient);
+
+async fn run_illustration_geometry_request<B: crate::backend::OperationBackend>(
+    backend: &B,
+    input: MeshIllustrationGeometryInputA0,
+    hlr: Option<HlrProjectionResultA0>,
+) -> Result<MeshIllustrationGeometryA0, GeometerClientError> {
+    input.validate_at("")?;
+    let request = MeshIllustrationGeometryRequestA0 {
+        schema: "geometry.mesh_illustration_geometry.request.a0".to_owned(),
+        view: input.view,
+        prepare: input.prepare,
+        style: input.style,
+    };
+    let collection = MeshCollectionA0 {
+        schema: "geometry.mesh_collection.a0".to_owned(),
+        length_unit: input.length_unit,
+        meshes: input.meshes,
+    };
+    let mut attachments = vec![Attachment {
+        name: "mesh_collection".to_owned(),
+        media_type: "application/vnd.wavenumber.geometer.mesh-collection+json".to_owned(),
+        data: contracts::encode_json(&collection)?,
+    }];
+    if let Some(hlr) = hlr {
+        attachments.push(Attachment {
+            name: "hlr_projection".to_owned(),
+            media_type: "application/vnd.wavenumber.geometer.hlr-projection+json".to_owned(),
+            data: contracts::encode_json(&hlr)?,
+        });
     }
+    let response = backend
+        .execute_operation(
+            "geometry.mesh_illustration_geometry.a0",
+            &contracts::encode_json(&request)?,
+            attachments,
+        )
+        .await?;
+    crate::backend::contain_protocol_result(backend, decode_response(response)).await
 }
 
 fn invalid(message: &str) -> GeometerClientError {

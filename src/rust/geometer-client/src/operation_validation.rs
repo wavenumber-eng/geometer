@@ -2,8 +2,9 @@ use std::collections::HashSet;
 
 use crate::client::GeometerClientError;
 use crate::generated::contracts::{
-    self, IpcOperationDeclarationA0, IpcRequestValueA0, IpcRuntimeDispatchA0, IpcWelcomeA0,
-    OperationOutcomeA0, OperationResultValueA0, PackedAttachmentProjectionA0,
+    self, IpcOperationCatalogA0, IpcOperationDeclarationA0, IpcRequestValueA0,
+    IpcRuntimeDispatchA0, IpcWelcomeA0, OperationOutcomeA0, OperationResultValueA0,
+    PackedAttachmentProjectionA0,
 };
 use crate::generated::dispatch::{logical_request_contract, logical_result_contract};
 use crate::ipc::Attachment;
@@ -12,11 +13,10 @@ use crate::ipc::Attachment;
 mod tests;
 
 pub(crate) fn operation_declaration<'a>(
-    welcome: &'a IpcWelcomeA0,
+    catalog: &'a IpcOperationCatalogA0,
     operation: &str,
 ) -> Result<&'a IpcOperationDeclarationA0, GeometerClientError> {
-    welcome
-        .operation_catalog
+    catalog
         .operations
         .iter()
         .find(|value| value.identity == operation)
@@ -90,7 +90,7 @@ pub(crate) fn validate_operation_response(
     outcome: &OperationOutcomeA0,
     attachments: &[Attachment],
 ) -> Result<(), GeometerClientError> {
-    let declaration = operation_declaration(welcome, operation)?;
+    let declaration = operation_declaration(&welcome.operation_catalog, operation)?;
     validate_operation_response_declaration(declaration, outcome, attachments)
 }
 

@@ -1,0 +1,1130 @@
+{
+  "schema": "geometer.operation_transport_benchmark.a0",
+  "captured_at": "2026-09-19T01:35:33Z",
+  "platform": "macOS-15.7.9-arm64-arm-64bit",
+  "python": "3.12.14",
+  "git_head": "f4039933a581d2f80b0e6b8a35501f2658228085",
+  "source_revision": "f4039933a581d2f80b0e6b8a35501f2658228085",
+  "git_status_after_build": "M dist/native/macos-arm64/geometer\n M dist/native/macos-arm64/geometer.build-attestation.json\n M dist/native/macos-arm64/geometer_hlr_preview",
+  "workflow_url": "https://github.com/wavenumber-eng/geometer/actions/runs/35412675064",
+  "executable": "/Users/runner/work/geometer/geometer/dist/native/macos-arm64/geometer",
+  "executable_bytes": 35422472,
+  "executable_sha256": "f3942cfa38fbfd6619788f4e30b546af98db50fcf84f3f321310a132b807eb9f",
+  "executable_attestation": {
+    "path": "/Users/runner/work/geometer/geometer/dist/native/macos-arm64/geometer.build-attestation.json",
+    "bytes": 1209,
+    "sha256": "b403d11765c68a3e59ddebb249abcd98b170c7055e2f616304dd6f24f4093a57",
+    "document": {
+      "artifact": {
+        "name": "geometer",
+        "sha256": "f3942cfa38fbfd6619788f4e30b546af98db50fcf84f3f321310a132b807eb9f"
+      },
+      "build": {
+        "arch": "arm64",
+        "build_type": "Release",
+        "c_abi_version": 20260913,
+        "compiler": {
+          "authority": "cmake_compiler_id_and_version",
+          "id": "AppleClang",
+          "version": "17.0.0.17000013"
+        },
+        "generator": "Ninja",
+        "geometer_version": "2026.9.13",
+        "occt": {
+          "authority": "geometer_occt_profile_verified",
+          "profile_sha256": "fd0720e021020e7a43ba2f239450ab535e64c5dd702094965519e608d2fffeff",
+          "repo": "https://github.com/Open-Cascade-SAS/OCCT.git",
+          "tag": "V8_0_1",
+          "version": "8.0.1"
+        },
+        "platform": "macos",
+        "source": {
+          "authority": "git_head_and_source_worktree_excluding_dist_build_deps_out",
+          "revision": "f4039933a581d2f80b0e6b8a35501f2658228085",
+          "tree_state": "clean"
+        }
+      },
+      "producer": {
+        "identity": "wn.geometer.native_build_attestation_generator.a1",
+        "source": "scripts/native_build_attestation.py",
+        "source_sha256": "2907109513ccf73f488c50bf50f9e9861d24e03adf53593d5ef7e1b34bd09a85"
+      },
+      "schema": "wn.geometer.native_build_attestation.a1"
+    }
+  },
+  "fixture": "/Users/runner/work/geometer/geometer/tests/fixtures/step/embedded_models/XF2M_6015_1AH.step",
+  "input_bytes": 6291779,
+  "input_sha256": "8c4a0f48e8693ef30c0575ffbaddbc8303d52084b8c338ea437dfa1430d7d23e",
+  "configuration": {
+    "runs": 3,
+    "warmup": 2,
+    "repeat": 10,
+    "workers": 4,
+    "pool_jobs": 20,
+    "minimum_batch_seconds": 5.0
+  },
+  "runs": [
+    {
+      "single_worker": {
+        "startup_ms": 22.366584,
+        "first_operation": {
+          "elapsed_ms": 1995.571875,
+          "output_bytes": 1448437,
+          "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+        },
+        "warmup_samples": [
+          {
+            "elapsed_ms": 2022.952542,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 1987.413667,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          }
+        ],
+        "warm_samples": [
+          {
+            "elapsed_ms": 1870.503375,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 1913.997792,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 1935.544542,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 2039.570083,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 1822.882583,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 2137.743083,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 2002.3825,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 2344.251834,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 2721.672166,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 2603.760917,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          }
+        ],
+        "warm_summary_ms": {
+          "minimum": 1822.882583,
+          "median": 2020.9762915000001,
+          "p95": 2721.672166,
+          "maximum": 2721.672166
+        },
+        "output_identity": {
+          "output_bytes": 1448437,
+          "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+        },
+        "sampled_memory": {
+          "sample_interval_seconds": 0.05,
+          "complete_sample_count": 209,
+          "partial_sample_count": 0,
+          "failed_sample_count": 0,
+          "per_process_peak_resident_set_bytes": [
+            686292992
+          ],
+          "max_simultaneous_resident_set_bytes": 686292992
+        },
+        "windows_current_working_set_bytes": null,
+        "windows_os_peak_working_set_bytes": null
+      },
+      "single_lane_throughput": {
+        "workers": 1,
+        "jobs": 5,
+        "jobs_per_worker": 5,
+        "startup_ms": 30.628416,
+        "batch_seconds": 9.856800375,
+        "minimum_batch_seconds": 5.0,
+        "throughput_jobs_per_second": 0.507264001478776,
+        "calibration_attempts": [
+          {
+            "jobs_per_worker": 5,
+            "jobs": 5,
+            "batch_seconds": 9.856800375
+          }
+        ],
+        "executed_jobs_including_calibration": 6,
+        "warmup_samples": [
+          {
+            "elapsed_ms": 2211.17125,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          }
+        ],
+        "samples": [
+          {
+            "elapsed_ms": 2163.143416,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 1955.786708,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 1788.469292,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 1757.131542,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 2188.886083,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          }
+        ],
+        "output_identity": {
+          "output_bytes": 1448437,
+          "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+        },
+        "latency_summary_ms": {
+          "minimum": 1757.131542,
+          "median": 1955.786708,
+          "p95": 2188.886083,
+          "maximum": 2188.886083
+        },
+        "sampled_memory": {
+          "sample_interval_seconds": 0.05,
+          "complete_sample_count": 93,
+          "partial_sample_count": 0,
+          "failed_sample_count": 0,
+          "per_process_peak_resident_set_bytes": [
+            568229888
+          ],
+          "max_simultaneous_resident_set_bytes": 568229888
+        },
+        "windows_os_peak_working_set_bytes": [
+          null
+        ]
+      },
+      "process_pool": {
+        "workers": 4,
+        "jobs": 20,
+        "jobs_per_worker": 5,
+        "startup_ms": 62.280709,
+        "batch_seconds": 17.791392042,
+        "minimum_batch_seconds": 5.0,
+        "throughput_jobs_per_second": 1.1241391315972442,
+        "calibration_attempts": [
+          {
+            "jobs_per_worker": 5,
+            "jobs": 20,
+            "batch_seconds": 17.791392042
+          }
+        ],
+        "executed_jobs_including_calibration": 24,
+        "warmup_samples": [
+          {
+            "elapsed_ms": 4356.488541,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 4178.405875,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 4355.62425,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 4000.077125,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          }
+        ],
+        "samples": [
+          {
+            "elapsed_ms": 3834.902042,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3467.634917,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3147.881583,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3968.0305,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3364.833458,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3949.374,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3484.887625,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3133.649958,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3913.812417,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3146.779625,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3593.279458,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3281.140666,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3004.50075,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3582.766375,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3043.688667,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3726.046084,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3460.139375,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3084.49425,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3845.072042,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3002.9825,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          }
+        ],
+        "output_identity": {
+          "output_bytes": 1448437,
+          "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+        },
+        "latency_summary_ms": {
+          "minimum": 3002.9825,
+          "median": 3463.887146,
+          "p95": 3949.374,
+          "maximum": 3968.0305
+        },
+        "sampled_memory": {
+          "sample_interval_seconds": 0.05,
+          "complete_sample_count": 140,
+          "partial_sample_count": 0,
+          "failed_sample_count": 0,
+          "per_process_peak_resident_set_bytes": [
+            446627840,
+            475824128,
+            451313664,
+            447922176
+          ],
+          "max_simultaneous_resident_set_bytes": 1810104320
+        },
+        "windows_os_peak_working_set_bytes": [
+          null,
+          null,
+          null,
+          null
+        ]
+      }
+    },
+    {
+      "single_worker": {
+        "startup_ms": 26.798459,
+        "first_operation": {
+          "elapsed_ms": 1950.911875,
+          "output_bytes": 1448437,
+          "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+        },
+        "warmup_samples": [
+          {
+            "elapsed_ms": 1917.656417,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 2361.672083,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          }
+        ],
+        "warm_samples": [
+          {
+            "elapsed_ms": 2318.210583,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 1952.700292,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 2818.712334,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 1810.894625,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 2515.554542,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 1782.521375,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 1945.782625,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 1822.302917,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 1844.840084,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3145.994625,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          }
+        ],
+        "warm_summary_ms": {
+          "minimum": 1782.521375,
+          "median": 1949.2414585000001,
+          "p95": 3145.994625,
+          "maximum": 3145.994625
+        },
+        "output_identity": {
+          "output_bytes": 1448437,
+          "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+        },
+        "sampled_memory": {
+          "sample_interval_seconds": 0.05,
+          "complete_sample_count": 204,
+          "partial_sample_count": 0,
+          "failed_sample_count": 0,
+          "per_process_peak_resident_set_bytes": [
+            776847360
+          ],
+          "max_simultaneous_resident_set_bytes": 776847360
+        },
+        "windows_current_working_set_bytes": null,
+        "windows_os_peak_working_set_bytes": null
+      },
+      "single_lane_throughput": {
+        "workers": 1,
+        "jobs": 5,
+        "jobs_per_worker": 5,
+        "startup_ms": 15.943875,
+        "batch_seconds": 9.532844459,
+        "minimum_batch_seconds": 5.0,
+        "throughput_jobs_per_second": 0.5245024212347741,
+        "calibration_attempts": [
+          {
+            "jobs_per_worker": 5,
+            "jobs": 5,
+            "batch_seconds": 9.532844459
+          }
+        ],
+        "executed_jobs_including_calibration": 6,
+        "warmup_samples": [
+          {
+            "elapsed_ms": 1906.543625,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          }
+        ],
+        "samples": [
+          {
+            "elapsed_ms": 1727.718416,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 1738.785208,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 1813.564875,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 1999.861792,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 2246.29525,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          }
+        ],
+        "output_identity": {
+          "output_bytes": 1448437,
+          "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+        },
+        "latency_summary_ms": {
+          "minimum": 1727.718416,
+          "median": 1813.564875,
+          "p95": 2246.29525,
+          "maximum": 2246.29525
+        },
+        "sampled_memory": {
+          "sample_interval_seconds": 0.05,
+          "complete_sample_count": 92,
+          "partial_sample_count": 0,
+          "failed_sample_count": 0,
+          "per_process_peak_resident_set_bytes": [
+            744570880
+          ],
+          "max_simultaneous_resident_set_bytes": 744570880
+        },
+        "windows_os_peak_working_set_bytes": [
+          null
+        ]
+      },
+      "process_pool": {
+        "workers": 4,
+        "jobs": 20,
+        "jobs_per_worker": 5,
+        "startup_ms": 61.789084,
+        "batch_seconds": 16.3764315,
+        "minimum_batch_seconds": 5.0,
+        "throughput_jobs_per_second": 1.2212672828021172,
+        "calibration_attempts": [
+          {
+            "jobs_per_worker": 5,
+            "jobs": 20,
+            "batch_seconds": 16.3764315
+          }
+        ],
+        "executed_jobs_including_calibration": 24,
+        "warmup_samples": [
+          {
+            "elapsed_ms": 3497.776417,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3370.415916,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3290.369625,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3117.866125,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          }
+        ],
+        "samples": [
+          {
+            "elapsed_ms": 3390.849375,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3392.945833,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3090.275875,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3310.962209,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3034.287625,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3248.055917,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3429.629666,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3352.12325,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3289.387958,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3049.591666,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3202.089041,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3259.22275,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 2973.783667,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3274.660959,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3272.411875,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 2944.503459,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3225.972167,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 2954.779542,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3187.579625,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3268.383625,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          }
+        ],
+        "output_identity": {
+          "output_bytes": 1448437,
+          "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+        },
+        "latency_summary_ms": {
+          "minimum": 2944.503459,
+          "median": 3253.6393335000002,
+          "p95": 3392.945833,
+          "maximum": 3429.629666
+        },
+        "sampled_memory": {
+          "sample_interval_seconds": 0.05,
+          "complete_sample_count": 121,
+          "partial_sample_count": 0,
+          "failed_sample_count": 0,
+          "per_process_peak_resident_set_bytes": [
+            466845696,
+            469254144,
+            463355904,
+            492863488
+          ],
+          "max_simultaneous_resident_set_bytes": 1882243072
+        },
+        "windows_os_peak_working_set_bytes": [
+          null,
+          null,
+          null,
+          null
+        ]
+      }
+    },
+    {
+      "single_worker": {
+        "startup_ms": 24.1735,
+        "first_operation": {
+          "elapsed_ms": 2041.896375,
+          "output_bytes": 1448437,
+          "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+        },
+        "warmup_samples": [
+          {
+            "elapsed_ms": 1887.526666,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 1847.287958,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          }
+        ],
+        "warm_samples": [
+          {
+            "elapsed_ms": 1900.284792,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 1939.792625,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 2534.614208,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 2156.660834,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 1900.351917,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 1894.550166,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 1822.185417,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 2459.161667,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 1767.345042,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 1912.639833,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          }
+        ],
+        "warm_summary_ms": {
+          "minimum": 1767.345042,
+          "median": 1906.495875,
+          "p95": 2534.614208,
+          "maximum": 2534.614208
+        },
+        "output_identity": {
+          "output_bytes": 1448437,
+          "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+        },
+        "sampled_memory": {
+          "sample_interval_seconds": 0.05,
+          "complete_sample_count": 198,
+          "partial_sample_count": 0,
+          "failed_sample_count": 0,
+          "per_process_peak_resident_set_bytes": [
+            667828224
+          ],
+          "max_simultaneous_resident_set_bytes": 667828224
+        },
+        "windows_current_working_set_bytes": null,
+        "windows_os_peak_working_set_bytes": null
+      },
+      "single_lane_throughput": {
+        "workers": 1,
+        "jobs": 5,
+        "jobs_per_worker": 5,
+        "startup_ms": 15.464333,
+        "batch_seconds": 10.284061708,
+        "minimum_batch_seconds": 5.0,
+        "throughput_jobs_per_second": 0.486189225810507,
+        "calibration_attempts": [
+          {
+            "jobs_per_worker": 5,
+            "jobs": 5,
+            "batch_seconds": 10.284061708
+          }
+        ],
+        "executed_jobs_including_calibration": 6,
+        "warmup_samples": [
+          {
+            "elapsed_ms": 1760.411125,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          }
+        ],
+        "samples": [
+          {
+            "elapsed_ms": 1795.158791,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 1943.699625,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 2266.124292,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 2450.876291,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 1822.621916,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          }
+        ],
+        "output_identity": {
+          "output_bytes": 1448437,
+          "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+        },
+        "latency_summary_ms": {
+          "minimum": 1795.158791,
+          "median": 1943.699625,
+          "p95": 2450.876291,
+          "maximum": 2450.876291
+        },
+        "sampled_memory": {
+          "sample_interval_seconds": 0.05,
+          "complete_sample_count": 83,
+          "partial_sample_count": 0,
+          "failed_sample_count": 0,
+          "per_process_peak_resident_set_bytes": [
+            660652032
+          ],
+          "max_simultaneous_resident_set_bytes": 660652032
+        },
+        "windows_os_peak_working_set_bytes": [
+          null
+        ]
+      },
+      "process_pool": {
+        "workers": 4,
+        "jobs": 20,
+        "jobs_per_worker": 5,
+        "startup_ms": 76.2745,
+        "batch_seconds": 16.685083625,
+        "minimum_batch_seconds": 5.0,
+        "throughput_jobs_per_second": 1.1986754426590414,
+        "calibration_attempts": [
+          {
+            "jobs_per_worker": 5,
+            "jobs": 20,
+            "batch_seconds": 16.685083625
+          }
+        ],
+        "executed_jobs_including_calibration": 24,
+        "warmup_samples": [
+          {
+            "elapsed_ms": 3906.278792,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3596.738459,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3872.041917,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3983.203958,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          }
+        ],
+        "samples": [
+          {
+            "elapsed_ms": 3817.472042,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3108.028292,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3170.026917,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3658.032125,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 2924.894833,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3768.69175,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3301.196083,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3162.180708,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3373.123958,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 2959.216792,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3509.062625,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3008.036917,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3068.672833,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3388.217334,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3258.148209,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3400.002209,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 2848.895084,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3178.498667,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3376.891167,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          },
+          {
+            "elapsed_ms": 3294.157208,
+            "output_bytes": 1448437,
+            "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+          }
+        ],
+        "output_identity": {
+          "output_bytes": 1448437,
+          "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+        },
+        "latency_summary_ms": {
+          "minimum": 2848.895084,
+          "median": 3276.1527085,
+          "p95": 3768.69175,
+          "maximum": 3817.472042
+        },
+        "sampled_memory": {
+          "sample_interval_seconds": 0.05,
+          "complete_sample_count": 137,
+          "partial_sample_count": 0,
+          "failed_sample_count": 0,
+          "per_process_peak_resident_set_bytes": [
+            460668928,
+            472170496,
+            494239744,
+            454213632
+          ],
+          "max_simultaneous_resident_set_bytes": 1870970880
+        },
+        "windows_os_peak_working_set_bytes": [
+          null,
+          null,
+          null,
+          null
+        ]
+      }
+    }
+  ],
+  "aggregate": {
+    "output_identity": {
+      "output_bytes": 1448437,
+      "output_sha256": "15e8ba6b9c10eb3563c61f9673fd231890e78dd28003ff1933eaa2286e62baba"
+    },
+    "startup_ms": {
+      "minimum": 22.366584,
+      "median": 24.1735,
+      "p95": 26.798459,
+      "maximum": 26.798459
+    },
+    "first_operation_ms": {
+      "minimum": 1950.911875,
+      "median": 1995.571875,
+      "p95": 2041.896375,
+      "maximum": 2041.896375
+    },
+    "warm_operation_ms": {
+      "minimum": 1767.345042,
+      "median": 1942.787625,
+      "p95": 2818.712334,
+      "maximum": 3145.994625
+    },
+    "pool_throughput_jobs_per_second": {
+      "minimum": 1.1241391315972442,
+      "median": 1.1986754426590414,
+      "p95": 1.2212672828021172,
+      "maximum": 1.2212672828021172
+    },
+    "single_lane_throughput_jobs_per_second": {
+      "minimum": 0.486189225810507,
+      "median": 0.507264001478776,
+      "p95": 0.5245024212347741,
+      "maximum": 0.5245024212347741
+    },
+    "four_over_one_throughput_scaling": {
+      "minimum": 2.216083002775978,
+      "median": 2.3284302099636296,
+      "p95": 2.465450444033959,
+      "maximum": 2.465450444033959
+    }
+  }
+}

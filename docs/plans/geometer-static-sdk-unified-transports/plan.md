@@ -24,7 +24,7 @@ depends_on = ["architecture-contract"]
 [[steps]]
 id = "performance-baseline"
 title = "Record the existing sibling-process performance baseline and approve budgets"
-status = "active"
+status = "done"
 depends_on = ["transport-architecture-review"]
 
 [[steps]]
@@ -36,7 +36,7 @@ depends_on = ["transport-architecture-review"]
 [[steps]]
 id = "dispatcher-unification"
 title = "Route supported native, WASM, and executable operations through one governed dispatcher"
-status = "pending"
+status = "active"
 depends_on = ["transport-architecture-review", "performance-baseline"]
 
 [[steps]]

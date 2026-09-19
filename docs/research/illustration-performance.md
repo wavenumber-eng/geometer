@@ -75,6 +75,28 @@ seconds; concurrent build work means these are compatibility checks rather than
 a second controlled speedup experiment. An isolated RT cache-fill/warm pair
 took 12.98/7.54 seconds and retained identical SVG hashes.
 
+## B0 clipping release check
+
+Before the 2026.9.19 release, a focused Windows 11 x64 MSVC Release replay
+compared the retained A0 operations with B0 over one persistent executable IPC
+process. Each case used three warmups followed by nine alternating samples. The
+direct-model case used `SOT-23.STEP`; the composed-mesh case used the existing
+deterministic tilted grid. This is comparative release evidence, not a
+cross-platform timing promise.
+
+| Input | B0 no clipping / A0 | B0 retain-all plane / A0 | B0 midpoint clip / A0 | B0 empty clip / A0 |
+| --- | ---: | ---: | ---: | ---: |
+| SOT-23 direct model | 1.019 | 1.031 | 0.970 | 0.875 |
+| 32,768-triangle composed mesh | 1.050 | 1.134 | 0.476 | 0.049 |
+
+The composed-mesh A0 median was 0.373 seconds. Its B0 no-clip median was
+0.392 seconds, and the deliberately pessimistic plane retaining every triangle
+was 0.423 seconds. The SOT-23 medians were 0.0312, 0.0318, and 0.0322 seconds,
+respectively. Smaller 1,152-, 4,608-, and 18,432-triangle grids showed linear
+growth and no pathological change. Enabled midpoint and empty clipping reduced
+total time because bounds, projection, and SVG generation consumed less output
+geometry. No serious B0 speed regression was observed.
+
 ## Geometry without SVG
 
 The additive [drawing API](../design/mesh-illustration-geometry.md) shares native

@@ -100,6 +100,7 @@ def test_release_qualification_executes_b0_on_every_native_platform() -> None:
     native_validation = (ROOT / "scripts" / "validate_native.py").read_text(encoding="utf-8")
     assert '"geometer_illustration_clipping_test"' in native_validation
     assert '"geometer_illustration_b0_operation_test"' in native_validation
+    assert '"geometer_native_operation_execution_gate_test"' in native_validation
 
     package_validation = (ROOT / "scripts" / "validate_python_package.py").read_text(encoding="utf-8")
     assert 'client_name="python-wheel-b0-validation"' in package_validation

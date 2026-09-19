@@ -32,6 +32,7 @@ PRODUCTION_VALIDATION_TARGETS = (
     "geometer_illustration_clipping_test",
     "geometer_illustration_b0_operation_test",
     "geometer_operation_contract_test",
+    "geometer_native_operation_execution_gate_test",
     "geometer_ipc_a0_frame_test",
     "geometer_c_api_stdio_test_server",
     "geometer_ipc_a0_deadline_test_server",

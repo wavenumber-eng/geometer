@@ -264,8 +264,22 @@ The archive exports only `include/geometer/c_api.h` and the relocatable
 `Geometer::c_api_static` CMake target. OCCT headers and the Geometer C++ ABI are
 not SDK interfaces. The SDK contains the private static archive closure,
 machine-readable ordered link manifest, schemas, licenses, internal payload
-inventory, and build attestation. Candidate archives remain generated state
+inventory, build attestation, and the narrow `rust/geometer-sys` FFI crate.
+Cargo consumers set `GEOMETER_SDK_DIR` to the extracted archive root; the crate
+rejects a release, target, platform, or Windows `crt-static` mismatch before
+emitting link directives from the generated manifest. It never downloads an
+SDK. Candidate archives remain generated state
 until the exact bytes pass external-consumer and downstream qualification.
+
+Qualify an existing archive exactly as a release consumer sees it with:
+
+```powershell
+uv run python scripts\validate_static_sdk.py out\sdk-candidate\geometer-sdk-*.zip
+```
+
+This moves the SDK to an unrelated path containing spaces, builds and runs
+external CMake and Cargo consumers, invokes a direct model operation, starts
+the embedded stdio server, and rejects shared Geometer or OCCT dependencies.
 
 On first configure, CMake looks for OCCT at:
 

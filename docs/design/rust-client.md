@@ -8,6 +8,13 @@ TypeSpec catalog. The live client spawns one persistent native
 `geometer(.exe) serve --stdio` process and executes model bounds, model/mesh
 HLR, and analytic planar Boolean through their governed attachments.
 
+The separate `src/rust/geometer-sys` crate is the narrow unsafe boundary for
+the static C ABI SDK. Release SDK archives carry that crate beside their link
+manifest. Its build script requires an explicit extracted SDK path, validates
+release/target/runtime compatibility, and never downloads an SDK. Applications
+should keep operation contracts and codecs in the safe generated client layer;
+they must not create per-operation extern declarations or bind OCCT directly.
+
 Since 2026.9.6, the client additionally provides typed `model_tessellation` and
 `mesh_illustration` methods using generated A0 values. Optional
 `mesh_illustration_with_hlr(input, hlr)` returns the native composed SVG with

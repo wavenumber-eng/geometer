@@ -90,6 +90,8 @@ def check_surfaces() -> None:
     ]
     with (ROOT / "src" / "rust" / "geometer-client" / "Cargo.toml").open("rb") as handle:
         rust_version = tomllib.load(handle)["package"]["version"]
+    with (ROOT / "src" / "rust" / "geometer-sys" / "Cargo.toml").open("rb") as handle:
+        rust_sys_version = tomllib.load(handle)["package"]["version"]
     with (ROOT / "src" / "rust" / "geometer-client" / "Cargo.lock").open("rb") as handle:
         lock = tomllib.load(handle)
     rust_lock_version = next(
@@ -104,6 +106,7 @@ def check_surfaces() -> None:
     client_observed = {
         "src/ts/geometer/package.json": ts_version,
         "src/rust/geometer-client/Cargo.toml": rust_version,
+        "src/rust/geometer-sys/Cargo.toml": rust_sys_version,
         "src/rust/geometer-client/Cargo.lock": rust_lock_version,
     }
     mismatches = [f"{path}={actual}" for path, actual in observed.items() if actual != version]

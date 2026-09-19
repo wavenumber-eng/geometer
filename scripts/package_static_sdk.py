@@ -173,6 +173,9 @@ def recipe_digest() -> str:
         ROOT / "CMakePresets.json",
         ROOT / "src/cpp/lib/CMakeLists.txt",
         ROOT / "scripts/build_occt.py",
+        ROOT / "src/rust/geometer-sys/Cargo.toml",
+        ROOT / "src/rust/geometer-sys/build.rs",
+        ROOT / "src/rust/geometer-sys/src/lib.rs",
         Path(__file__).resolve(),
     ]
     digest = hashlib.sha256()
@@ -321,6 +324,11 @@ def package(build_dir: Path, platform: str, output: Path, allow_dirty: bool) -> 
                 private_relative.append(relative)
 
         copy_file(ROOT / "src/cpp/lib/geometer/c_api.h", stage / "include/geometer/c_api.h")
+        for relative in ("Cargo.toml", "build.rs", "src/lib.rs"):
+            copy_file(
+                ROOT / "src/rust/geometer-sys" / relative,
+                stage / "rust/geometer-sys" / relative,
+            )
         copy_file(ROOT / "schemas/geometer-sdk.schema.json", stage / "share/geometer/geometer-sdk.schema.json")
         copy_file(
             ROOT / "schemas/geometer-sdk-payload.schema.json",

@@ -217,8 +217,18 @@ wheel/runtime <code>/MD</code> install.</p>
 <code>Geometer::c_api_static</code> CMake target. OCCT headers and the Geometer C++ ABI are
 not SDK interfaces. The SDK contains the private static archive closure,
 machine-readable ordered link manifest, schemas, licenses, internal payload
-inventory, and build attestation. Candidate archives remain generated state
+inventory, build attestation, and the narrow <code>rust/geometer-sys</code> FFI crate.
+Cargo consumers set <code>GEOMETER_SDK_DIR</code> to the extracted archive root; the crate
+rejects a release, target, platform, or Windows <code>crt-static</code> mismatch before
+emitting link directives from the generated manifest. It never downloads an
+SDK. Candidate archives remain generated state
 until the exact bytes pass external-consumer and downstream qualification.</p>
+<p>Qualify an existing archive exactly as a release consumer sees it with:</p>
+<pre><code class="language-powershell">uv run python scripts\validate_static_sdk.py out\sdk-candidate\geometer-sdk-*.zip
+</code></pre>
+<p>This moves the SDK to an unrelated path containing spaces, builds and runs
+external CMake and Cargo consumers, invokes a direct model operation, starts
+the embedded stdio server, and rejects shared Geometer or OCCT dependencies.</p>
 <p>On first configure, CMake looks for OCCT at:</p>
 <pre><code class="language-text">.deps/native/&lt;platform&gt;/occt-install/lib/cmake/opencascade
 </code></pre>

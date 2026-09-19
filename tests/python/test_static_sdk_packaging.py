@@ -63,6 +63,9 @@ def test_static_sdk_is_deterministic_complete_and_relocatable(tmp_path: Path, mo
         assert {"lib/occt/TKernel.lib", "lib/occt/TKMath.lib"}.issubset(names)
         assert "lib/cmake/Geometer/GeometerConfig.cmake" in names
         assert "lib/cmake/Geometer/GeometerTargets.cmake" in names
+        assert "rust/geometer-sys/Cargo.toml" in names
+        assert "rust/geometer-sys/build.rs" in names
+        assert "rust/geometer-sys/src/lib.rs" in names
         assert "share/geometer/geometer-sdk.json" in names
         assert "share/geometer/geometer-sdk-payload.json" in names
         manifest = json.loads(archive.read("share/geometer/geometer-sdk.json"))

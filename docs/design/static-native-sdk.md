@@ -104,6 +104,9 @@ lib/occt/<required archives>
 lib/cmake/Geometer/GeometerConfig.cmake
 lib/cmake/Geometer/GeometerConfigVersion.cmake
 lib/cmake/Geometer/GeometerTargets.cmake
+rust/geometer-sys/Cargo.toml
+rust/geometer-sys/build.rs
+rust/geometer-sys/src/lib.rs
 share/geometer/geometer-sdk.json
 share/geometer/geometer-sdk.schema.json
 share/geometer/geometer-sdk-payload.json
@@ -116,6 +119,12 @@ The CMake package exports the relocatable `Geometer::c_api_static` target. OCCT
 and other implementation include directories remain private. Package-relative
 link-only imported targets carry the exact static dependency closure without
 requiring OCCT headers in a C ABI consumer.
+
+The packaged `geometer-sys` crate is the only reviewed Rust unsafe FFI owner.
+Its build script requires an explicit `GEOMETER_SDK_DIR`, validates the Cargo
+target and SDK release/profile, requires `crt-static` for Windows, and emits the
+ordered archive/system-library/framework closure from the SDK manifest. It
+does not download dependencies or SDK artifacts.
 
 The versioned SDK JSON schema records target/profile identity, ordered archive
 entries, rescan/group boundaries, system libraries, Apple frameworks, and the

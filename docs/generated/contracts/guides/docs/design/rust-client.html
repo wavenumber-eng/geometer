@@ -17,6 +17,12 @@ operation DTOs and strict Serde codecs are generated from the normalized
 TypeSpec catalog. The live client spawns one persistent native
 <code>geometer(.exe) serve --stdio</code> process and executes model bounds, model/mesh
 HLR, and analytic planar Boolean through their governed attachments.</p>
+<p>The separate <code>src/rust/geometer-sys</code> crate is the narrow unsafe boundary for
+the static C ABI SDK. Release SDK archives carry that crate beside their link
+manifest. Its build script requires an explicit extracted SDK path, validates
+release/target/runtime compatibility, and never downloads an SDK. Applications
+should keep operation contracts and codecs in the safe generated client layer;
+they must not create per-operation extern declarations or bind OCCT directly.</p>
 <p>Since 2026.9.6, the client additionally provides typed <code>model_tessellation</code> and
 <code>mesh_illustration</code> methods using generated A0 values. Optional
 <code>mesh_illustration_with_hlr(input, hlr)</code> returns the native composed SVG with

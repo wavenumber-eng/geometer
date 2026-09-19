@@ -102,6 +102,29 @@ bool pointer_matches_size(const void* pointer, uint32_t size)
     return (pointer != nullptr) == (size != 0U);
 }
 
+const char* public_operation_catalog_json()
+{
+#ifdef __EMSCRIPTEN__
+    return geometer::operation_catalog_json();
+#else
+    return geometer::native_operation_catalog_json();
+#endif
+}
+
+void execute_public_operation(const std::string& operation_id, const unsigned char* request_json,
+                              std::size_t request_json_size,
+                              const std::vector<geometer::OperationAttachmentView>& attachments,
+                              geometer::OperationExecution* execution)
+{
+#ifdef __EMSCRIPTEN__
+    geometer::execute_operation(operation_id, request_json, request_json_size, attachments,
+                                execution);
+#else
+    geometer::execute_native_operation(operation_id, request_json, request_json_size, attachments,
+                                       execution);
+#endif
+}
+
 } // namespace
 
 extern "C" int geometer_operation_catalog_json(char** value, char** error)
@@ -123,7 +146,7 @@ extern "C" int geometer_operation_catalog_json(char** value, char** error)
     }
     try
     {
-        const char* catalog = geometer::operation_catalog_json();
+        const char* catalog = public_operation_catalog_json();
         const std::size_t size = std::strlen(catalog);
         auto* copied = static_cast<char*>(std::malloc(size + 1U));
         if (copied == nullptr)
@@ -211,8 +234,8 @@ extern "C" int geometer_operation_execute(const char* operation_id, uint32_t ope
         }
 
         geometer::OperationExecution execution;
-        geometer::execute_operation(std::string(operation_id, operation_id_size), request_json,
-                                    request_json_size, views, &execution);
+        execute_public_operation(std::string(operation_id, operation_id_size), request_json,
+                                 request_json_size, views, &execution);
         auto owned = std::make_unique<GeometerOperationResult>();
         geometer::contracts::ContractError contract_error;
         if (!geometer::contracts::encode_json(execution.outcome, &owned->json, &contract_error))

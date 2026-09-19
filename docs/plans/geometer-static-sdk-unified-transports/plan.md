@@ -36,13 +36,13 @@ depends_on = ["transport-architecture-review"]
 [[steps]]
 id = "dispatcher-unification"
 title = "Route supported native, WASM, and executable operations through one governed dispatcher"
-status = "active"
+status = "done"
 depends_on = ["transport-architecture-review", "performance-baseline"]
 
 [[steps]]
 id = "concurrency-gate"
 title = "Enforce and test one serialized execution lane per Geometer runtime instance"
-status = "pending"
+status = "active"
 depends_on = ["dispatcher-unification"]
 
 [[steps]]

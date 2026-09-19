@@ -2,13 +2,16 @@
 
 ## Status and scope
 
-This is the proposed additive generic C ABI reviewed under ADR-011. It serves
-native callers and the full browser/Web Worker WASM build. It does not remove
-or change existing per-operation symbols.
+This is the additive generic C ABI reviewed under ADR-011. It serves native
+callers and the full browser/Web Worker WASM build. It does not remove or change
+existing per-operation symbols.
 
-The first implementation is `geometry.model_bounds.a0`. A successful browser
-pilot accepts model bytes as the named `model` attachment and returns
-`geometry.model_bounds.a0` JSON through this ABI.
+The native build returns the native operation-catalog projection and routes
+execution through the same native dispatcher used by executable IPC. The WASM
+build returns the portable projection and routes execution through the portable
+dispatcher. Operation identities, request/result DTOs, attachment declarations,
+and governed outcomes remain identical wherever both projections advertise an
+operation.
 
 ## Declarations
 
@@ -242,11 +245,16 @@ allocating. Zero-length data may use a null pointer; nonzero data may not.
 
 ## Threading
 
-The ABI adds no concurrent-execution or reentrancy guarantee. Callers and
-generated adapters must serialize catalog and execute calls. Result access and
-freeing must not race with another access or free of the same handle. A caller
-must not infer that OCCT operations can overlap merely because separate result
-handles exist. A later concurrency guarantee requires a reviewed ABI policy.
+Native execution calls are synchronous and acquire the process-wide Geometer
+execution lane in the common native dispatcher. Calls through the native C ABI
+therefore cannot overlap geometry or topology work invoked through executable
+IPC or another supported native adapter in the same process. Acquisition order
+between concurrent callers is unspecified. Catalog reads and access to distinct
+completed result handles do not acquire the execution lane.
+
+WASM execution is serialized by each module/Worker adapter. Parallel browser
+execution requires separate Worker/module instances. Result access and freeing
+must not race with another access or free of the same handle on any target.
 
 ## Emscripten requirements
 

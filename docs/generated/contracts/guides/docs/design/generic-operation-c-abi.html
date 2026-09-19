@@ -12,12 +12,15 @@
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/generic-operation-c-abi.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="generic-operation-c-abi">Generic Operation C ABI</h1></header>
 <h2 id="status-and-scope">Status and scope</h2>
-<p>This is the proposed additive generic C ABI reviewed under ADR-011. It serves
-native callers and the full browser/Web Worker WASM build. It does not remove
-or change existing per-operation symbols.</p>
-<p>The first implementation is <code>geometry.model_bounds.a0</code>. A successful browser
-pilot accepts model bytes as the named <code>model</code> attachment and returns
-<code>geometry.model_bounds.a0</code> JSON through this ABI.</p>
+<p>This is the additive generic C ABI reviewed under ADR-011. It serves native
+callers and the full browser/Web Worker WASM build. It does not remove or change
+existing per-operation symbols.</p>
+<p>The native build returns the native operation-catalog projection and routes
+execution through the same native dispatcher used by executable IPC. The WASM
+build returns the portable projection and routes execution through the portable
+dispatcher. Operation identities, request/result DTOs, attachment declarations,
+and governed outcomes remain identical wherever both projections advertise an
+operation.</p>
 <h2 id="declarations">Declarations</h2>
 <p>The reviewed header shape is:</p>
 <pre><code class="language-c">#include &lt;stdint.h&gt;
@@ -336,11 +339,15 @@ for this C ABI generation:</p>
 <p>Lengths and sums are validated with overflow-safe arithmetic before copying or
 allocating. Zero-length data may use a null pointer; nonzero data may not.</p>
 <h2 id="threading">Threading</h2>
-<p>The ABI adds no concurrent-execution or reentrancy guarantee. Callers and
-generated adapters must serialize catalog and execute calls. Result access and
-freeing must not race with another access or free of the same handle. A caller
-must not infer that OCCT operations can overlap merely because separate result
-handles exist. A later concurrency guarantee requires a reviewed ABI policy.</p>
+<p>Native execution calls are synchronous and acquire the process-wide Geometer
+execution lane in the common native dispatcher. Calls through the native C ABI
+therefore cannot overlap geometry or topology work invoked through executable
+IPC or another supported native adapter in the same process. Acquisition order
+between concurrent callers is unspecified. Catalog reads and access to distinct
+completed result handles do not acquire the execution lane.</p>
+<p>WASM execution is serialized by each module/Worker adapter. Parallel browser
+execution requires separate Worker/module instances. Result access and freeing
+must not race with another access or free of the same handle on any target.</p>
 <h2 id="emscripten-requirements">Emscripten requirements</h2>
 <p>The full browser target exports every declaration above plus existing
 allocation/free functions. The generated TypeScript adapter owns descriptor

@@ -450,6 +450,7 @@ export type ProjectedSegment = readonly [number, number, number, number];
 
 export type HlrVector2 = readonly [number, number];
 
+/** A circular arc expressed in the requested view-plane XY frame. */
 export interface ProjectedArc {
   readonly start: HlrVector2;
   readonly end: HlrVector2;
@@ -460,6 +461,7 @@ export interface ProjectedArc {
   readonly full_circle: boolean;
 }
 
+/** Axis-aligned bounds in the requested view-plane XY frame. */
 export interface ProjectionBounds {
   readonly min_x: number;
   readonly min_y: number;
@@ -469,6 +471,7 @@ export interface ProjectionBounds {
   readonly height: number;
 }
 
+/** Segments, arcs, and bounds expressed in the requested view-plane XY frame. */
 export interface ProjectedGeometry {
   readonly segments: readonly ProjectedSegment[];
   readonly arcs: readonly ProjectedArc[];
@@ -482,6 +485,13 @@ export interface HlrProjectionModes {
   readonly bbox: ProjectedGeometry;
 }
 
+/** Projection output in the view plane defined by direction and up. For
+up=[0,1,0], direction=[0,0,1] maps model (x,y) to view (x,y), while
+direction=[0,0,-1] maps it to (-x,y). To place footprint-local output on a
+board, use board_point = occurrence_transform * view_to_model * view_point;
+the axial bottom view_to_model is diag(-1,1) in 2D and is distinct from the
+physical bottom-side occurrence transform. This frame applies equally to
+silhouette/detail/outline segments, arcs, and bounds. */
 export interface HlrProjectedView {
   readonly id: string;
   readonly direction: HlrVector3;
@@ -491,9 +501,18 @@ export interface HlrProjectedView {
 
 export type HlrProjectionAlgorithm = "poly" | "exact" | "fast";
 
+/** An orthographic view whose output coordinates lie in its own view plane.
+Geometer sets Z = normalize(direction), removes the Z component from up and
+normalizes the remainder as Y, then sets X = Y cross Z. Direction points
+along positive view depth, from the model toward the observer: greater
+dot(point, Z) is closer and an outward normal with positive dot(normal, Z)
+is front-facing. The basis origin is model-coordinate [0,0,0]; projection
+does not recenter on source bounds. */
 export interface HlrViewSpec {
   readonly id: string;
+  /** Positive view-depth direction from the model toward the observer. */
   readonly direction: HlrVector3;
+  /** Preferred positive view Y; its component along direction is removed. */
   readonly up: HlrVector3;
 }
 
@@ -503,6 +522,9 @@ export interface HlrProjectionOptionsA0 {
   readonly output_outline?: boolean;
   readonly output_detail?: boolean;
   readonly output_bbox?: boolean;
+  /** Row-major affine transform applied to source points before view projection.
+Translation is retained and projection remains anchored at [0,0,0]; no
+source-bounds recentering occurs. */
   readonly model_transform?: HlrMatrix4x4;
   readonly strip_root_placement?: boolean;
   readonly curve_mode?: HlrCurveMode;

@@ -1,0 +1,96 @@
+---
+# yamllint disable rule:line-length
+name: Operation Transport Baseline
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  CARGO_BUILD_JOBS: "1"
+  CMAKE_BUILD_PARALLEL_LEVEL: "2"
+
+jobs:
+  sibling-process:
+    name: sibling process (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows-x64
+            compiler: msvc
+            executable: dist/native/windows-x64/geometer.exe
+          - os: macos-15
+            platform: macos-arm64
+            compiler: apple-clang
+            executable: dist/native/macos-arm64/geometer
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.2.0
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Prove clean checkout before build
+        shell: bash
+        run: test -z "$(git status --porcelain)"
+      - name: Read dependency versions
+        id: dependency_versions
+        run: uv run --no-project python scripts/dependency_versions.py --github-output
+      - name: Set up MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+      - name: Install macOS build tools
+        if: runner.os == 'macOS'
+        run: brew list ninja >/dev/null 2>&1 || brew install ninja
+      - name: Cache OCCT
+        uses: actions/cache@v5
+        with:
+          path: |
+            .deps/occt-src
+            .deps/native/${{ matrix.platform }}/occt-build
+            .deps/native/${{ matrix.platform }}/occt-install
+          key: occt-v2-native-${{ matrix.platform }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-${{ hashFiles('scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
+          restore-keys: |
+            occt-v2-native-${{ matrix.platform }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-
+      - name: Build and validate sibling executable
+        run: uv run --group dev python scripts/validate_native.py
+      - name: Benchmark small, medium, and large operations
+        shell: bash
+        run: |
+          uv run python scripts/benchmark_operation_transport.py \
+            --executable "${{ matrix.executable }}" \
+            --fixture tests/fixtures/step/embedded_models/SOT-23.STEP \
+            --runs 3 --warmup 2 --repeat 10 --workers 4 --pool-jobs 20 \
+            --minimum-batch-seconds 5 --source-revision "$GITHUB_SHA" \
+            --output "out/operation-transport-performance/sibling-process-${{ matrix.platform }}-small.json"
+          uv run python scripts/benchmark_operation_transport.py \
+            --executable "${{ matrix.executable }}" \
+            --fixture tests/fixtures/step/embedded_models/BGA90-8X13mm.step \
+            --runs 3 --warmup 2 --repeat 10 --workers 4 --pool-jobs 20 \
+            --minimum-batch-seconds 5 --source-revision "$GITHUB_SHA" \
+            --output "out/operation-transport-performance/sibling-process-${{ matrix.platform }}-medium.json"
+          uv run python scripts/benchmark_operation_transport.py \
+            --executable "${{ matrix.executable }}" \
+            --fixture tests/fixtures/step/embedded_models/XF2M_6015_1AH.step \
+            --runs 3 --warmup 2 --repeat 10 --workers 4 --pool-jobs 20 \
+            --minimum-batch-seconds 5 --source-revision "$GITHUB_SHA" \
+            --output "out/operation-transport-performance/sibling-process-${{ matrix.platform }}-large.json"
+      - name: Upload controlled baseline evidence
+        id: baseline_upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: operation-transport-baseline-${{ matrix.platform }}
+          path: out/operation-transport-performance/sibling-process-${{ matrix.platform }}-*.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Record evidence identity
+        shell: bash
+        run: |
+          echo "### ${{ matrix.platform }} operation transport baseline" >> "$GITHUB_STEP_SUMMARY"
+          echo "Artifact ID: ${{ steps.baseline_upload.outputs.artifact-id }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Artifact digest: ${{ steps.baseline_upload.outputs.artifact-digest }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Source revision: $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"

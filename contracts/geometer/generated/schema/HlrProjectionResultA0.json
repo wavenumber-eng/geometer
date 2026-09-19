@@ -82,7 +82,8 @@
       ],
       "unevaluatedProperties": {
         "not": {}
-      }
+      },
+      "description": "Projection output in the view plane defined by direction and up. For\nup=[0,1,0], direction=[0,0,1] maps model (x,y) to view (x,y), while\ndirection=[0,0,-1] maps it to (-x,y). To place footprint-local output on a\nboard, use board_point = occurrence_transform * view_to_model * view_point;\nthe axial bottom view_to_model is diag(-1,1) in 2D and is distinct from the\nphysical bottom-side occurrence transform. This frame applies equally to\nsilhouette/detail/outline segments, arcs, and bounds."
     },
     "HlrProjectionTimings": {
       "type": "object",
@@ -180,7 +181,8 @@
       ],
       "unevaluatedProperties": {
         "not": {}
-      }
+      },
+      "description": "Segments, arcs, and bounds expressed in the requested view-plane XY frame."
     },
     "ProjectedSegment": {
       "type": "array",
@@ -229,7 +231,8 @@
       ],
       "unevaluatedProperties": {
         "not": {}
-      }
+      },
+      "description": "A circular arc expressed in the requested view-plane XY frame."
     },
     "ProjectionBounds": {
       "type": "object",
@@ -265,7 +268,8 @@
       ],
       "unevaluatedProperties": {
         "not": {}
-      }
+      },
+      "description": "Axis-aligned bounds in the requested view-plane XY frame."
     },
     "HlrVector2": {
       "type": "array",

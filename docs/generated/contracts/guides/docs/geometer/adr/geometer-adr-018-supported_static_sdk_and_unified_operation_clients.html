@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="91d0158e37d9a999b010d14f79e7537f2b9ccb0b03619b2143ec0d96343690ed">
+  <title>ADR-018: Ship A Supported Static SDK And Unified Operation Clients — Geometer</title>
+  <link rel="stylesheet" href="../../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="91d0158e37d9a999b010d14f79e7537f2b9ccb0b03619b2143ec0d96343690ed" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/geometer/adr/geometer-adr-018-supported_static_sdk_and_unified_operation_clients.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="adr-018-ship-a-supported-static-sdk-and-unified-operation-clients">ADR-018: Ship A Supported Static SDK And Unified Operation Clients</h1></header>
+<h2 id="status">Status</h2>
+<p>Accepted on 2026-09-18. Independent review approved the exact normative file
+content with SHA-256
+<code>96078714432f4cfbc60fa821d07106acdc0f14cb39146e0d0f359ee76722305d</code> at
+review head <code>03e0c5c14ce29c38e51ba50b34c4a3020e5762d1</code>, with no remaining
+blockers. Status and review-record edits do not change that normative content.</p>
+<p>This decision implements the future-SDK conditions recorded by ADR-015 and
+depends on the accepted 2026-09-18 ADR-011 amendment.
+Work is tracked by <a href="https://github.com/wavenumber-eng/geometer/issues/38">GitHub issue
+#38</a>.</p>
+<h2 id="context">Context</h2>
+<p>Geometer already builds a static C++ library, but that build-tree archive is not
+a supported SDK. It has no installed public-header set, relocatable CMake
+target, non-CMake native link manifest, complete static OCCT closure, consumer
+toolchain profile, SDK attestation, or external-consumer release test. ADR-015
+therefore correctly classifies native static libraries as generated build
+outputs and excludes them from native runtime archives.</p>
+<p>Rust applications currently use the persistent executable IPC client. That
+boundary provides bounded queues, hard process replacement, crash containment,
+and process-level parallelism, but packaging a second executable is undesirable
+for desktop applications. A statically linked application should be able to
+use the same Geometer operations directly or spawn copies of itself as
+contained stdio workers without exposing OCCT or creating a second typed API.</p>
+<h2 id="decision">Decision</h2>
+<h3 id="supported-boundary">Supported boundary</h3>
+<p>Ship a separately named and versioned native static <strong>C ABI SDK</strong> in every
+supported native release. The SDK supports the generic catalog-governed
+operation ABI. It does not support the Geometer C++ ABI or the OCCT ABI.</p>
+<p>The semantic interface remains operation identity plus generated request JSON,
+named byte attachments, a governed outcome, and named result attachments. The
+native static C ABI, browser WASM C ABI, browser Worker, executable IPC, and
+self-hosted IPC are transport adapters over that interface. Generated Rust,
+TypeScript, and Python conveniences must share operation declarations and
+codecs rather than fork operation semantics.</p>
+<p>The SDK installs only Geometer-owned public C headers. OCCT headers, objects,
+handles, and ownership rules do not cross the supported boundary. Static OCCT
+archives remain private implementation dependencies included only to complete
+the final native link.</p>
+<h3 id="sdk-contents-and-profiles">SDK contents and profiles</h3>
+<p>Each SDK artifact contains:</p>
+<ul>
+<li>the supported public C headers;</li>
+<li>the Geometer static archive and exact required static OCCT archive closure;</li>
+<li>a relocatable exported <code>Geometer::c_api_static</code> CMake target;</li>
+<li>a generated, ordered native-link manifest for Cargo and other non-CMake
+consumers, including system libraries, frameworks, link groups, and options;</li>
+<li>a canonical SDK manifest and attestation covering every packaged file,
+catalog digest, release, date-based C ABI generation, source revision, target
+triple, architecture, compiler family/version, C and C++ runtime profile,
+deployment baseline, dependency profile, and license; and</li>
+<li>all required Geometer and third-party notices and licenses.</li>
+</ul>
+<p>The supported matrix and initial ABI profiles are:</p>
+<ul>
+<li>Windows x64: <code>x86_64-pc-windows-msvc</code>, MSVC v143 Release, static
+<code>MultiThreaded</code> (<code>/MT</code>) CRT, and Rust <code>crt-static</code>;</li>
+<li>Linux x64: <code>x86_64-unknown-linux-gnu</code>, the release-qualified GCC/libstdc++
+profile, and a glibc 2.35 minimum;</li>
+<li>Linux ARM64: <code>aarch64-unknown-linux-gnu</code>, the release-qualified
+GCC/libstdc++ profile, and a glibc 2.35 minimum; and</li>
+<li>macOS ARM64: <code>aarch64-apple-darwin</code>, the release-qualified Apple
+Clang/libc++ profile, and a macOS 11.0 minimum deployment target.</li>
+</ul>
+<p>Each target publishes one explicitly named and attested supported profile per
+release. A different compiler ABI, Windows CRT selection, architecture,
+deployment baseline, or OCCT profile is a different SDK profile and is
+unsupported unless separately built, attested, and qualified. The Windows
+static-CRT OCCT build has a distinct recipe, install path, marker, and cache key
+and must never restore <code>/MD</code> objects. Intel macOS and Universal 2 remain new
+targets.</p>
+<p>The SDK does not claim that a final executable has no dynamic dependencies.
+Normal operating-system libraries and platform frameworks remain dynamic. On
+Windows, the selected MSVC CRT profile must match every Rust, Geometer, OCCT,
+and other native object in the final link; the release attestation makes that
+selection explicit rather than inferring it from an archive filename.</p>
+<h3 id="rust-client-and-process-embedding">Rust client and process embedding</h3>
+<p>Rust exposes one maintained typed operation facade. Process-backed and direct
+static execution are internal backend choices with transport capabilities, not
+separate generated operation clients. Unsafe declarations and raw ownership
+live in one narrow <code>geometer-sys</code> crate; safe clients retain their unsafe-code
+prohibition. Its build script consumes an explicit verified SDK location and
+does not download release assets during <code>cargo build</code>.</p>
+<p>The direct backend follows ADR-011's bounded dedicated executor and process-
+wide serialization contract. It does not promise active cancellation, crash
+containment, memory containment, or independent topology-session lifetime.</p>
+<p>The SDK also exports the process-terminal <code>geometer_serve_stdio()</code> bootstrap
+specified by ADR-011. A statically linked application may expose a hidden
+worker command and spawn its own executable. The child then hosts the unchanged
+executable IPC protocol, preserving process pools, queue-only cancellation,
+hard replacement, and crash isolation while allowing distribution of one
+application binary. The bootstrap is not a second operation interface.</p>
+<h3 id="release-candidate-qualification-and-promotion">Release-candidate qualification and promotion</h3>
+<p>Static SDK archives are GitHub Release assets, not committed repository files
+and not members of native runtime archives. Runtime archives continue to reject
+<code>.lib</code> and <code>.a</code> files. SDK asset names distinguish release, target, and profile
+from runtime assets.</p>
+<p>A release candidate is promotable only when all of the following pass from the
+downloaded candidate assets, outside the Geometer source and build trees:</p>
+<ol>
+<li>Every supported target has an SDK archive, checksum, canonical manifest,
+internal attestation, external archive-binding sidecar, build provenance,
+and complete license set.</li>
+<li>The archive relocates and builds clean external C, C++, and Cargo consumers.</li>
+<li>Consumers query and validate the expected catalog, execute representative
+byte-in/byte-out operations, and start the embedded stdio server.</li>
+<li>The native static catalog and executable IPC welcome catalog have the same
+canonical native projection and digest.</li>
+<li>Platform inspection finds no Geometer or OCCT shared-library dependency and
+confirms the declared CRT, system-library, architecture, and deployment
+profile.</li>
+<li>Windows x64 and macOS ARM64 downstream trials statically link KiCad Cruncher,
+execute representative Toon work with one and four self-hosted workers,
+preserve failure replacement and output parity, and package no sibling
+Geometer executable.</li>
+<li>Performance, memory, final-binary size, and SDK-size evidence satisfies the
+reviewed promotion budgets.</li>
+<li>Static-link licensing evidence identifies the exact OCCT corresponding
+source, modifications and build scripts, provides durable source access or
+the required offer, and documents downstream relink obligations.</li>
+</ol>
+<p>Promotion publishes the already-qualified bytes to the dated GitHub Release;
+the release job does not rebuild different SDK bytes after qualification. The
+release fails closed when an asset, checksum, attestation, profile, or
+downloaded-asset validation is missing. Large SDK and OCCT archives remain
+generated state locally and are never an authoritative Git cache.</p>
+<h2 id="non-goals">Non-goals</h2>
+<ul>
+<li>Do not expose or support Geometer C++ or OCCT headers, types, handles, or ABI.</li>
+<li>Do not create per-operation Rust FFI functions or a second contract catalog.</li>
+<li>Do not create separate typed operation method sets for direct and process
+clients.</li>
+<li>Do not qualify concurrent OCCT execution inside one native process.</li>
+<li>Do not claim hard cancellation, crash containment, or hard memory containment
+for direct in-process calls.</li>
+<li>Do not replace executable IPC where process isolation, hard deadlines, or
+parallel worker pools are required.</li>
+<li>Do not merge SDK archives into runtime archives or restore committed static
+libraries under <code>dist/</code>.</li>
+<li>Do not promise a universally dependency-free executable.</li>
+<li>Do not add KiCad-, Altium-, board-, renderer-, or application-specific policy
+to Geometer.</li>
+</ul>
+<h2 id="consequences">Consequences</h2>
+<ul>
+<li>Every supported native release has both a runtime distribution and a
+separately governed static SDK distribution.</li>
+<li>Applications can ship one binary while retaining the proven executable IPC
+worker model by spawning themselves.</li>
+<li>Direct calls avoid framing and pipe copies but retain JSON/attachment contract
+validation and sacrifice process containment.</li>
+<li>Process-level pools remain the supported native parallelism mechanism until a
+separate OCCT concurrency qualification is accepted.</li>
+<li>Static consumers inherit a larger and more toolchain-sensitive link closure;
+manifests, profiles, attestations, and external-consumer tests become release
+obligations.</li>
+<li>ADR-015 remains correct for ordinary build outputs and runtime archives; this
+ADR establishes the separately named supported SDK that ADR-015 anticipated.</li>
+</ul>
+<h2 id="review-gate">Review gate</h2>
+<p>Independent review approved this ADR together with the ADR-011 amendment on
+2026-09-18. The reviewed file hash and review head are recorded in Status; the
+review reported no remaining blockers. Any normative change to the supported
+interface, concurrency boundary, SDK profile model, or release-candidate
+promotion rules returns this gate to pending.</p>
+
+</main>
+</body>
+</html>

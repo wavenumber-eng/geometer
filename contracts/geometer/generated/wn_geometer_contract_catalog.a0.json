@@ -3788,7 +3788,7 @@
     {
       "name": "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectedView",
       "kind": "model",
-      "doc": "",
+      "doc": "Projection output in the view plane defined by direction and up. For\nup=[0,1,0], direction=[0,0,1] maps model (x,y) to view (x,y), while\ndirection=[0,0,-1] maps it to (-x,y). To place footprint-local output on a\nboard, use board_point = occurrence_transform * view_to_model * view_point;\nthe axial bottom view_to_model is diag(-1,1) in 2D and is distinct from the\nphysical bottom-side occurrence transform. This frame applies equally to\nsilhouette/detail/outline segments, arcs, and bounds.",
       "annotations": {},
       "constraints": {},
       "model_kind": "object",
@@ -3978,7 +3978,7 @@
         {
           "name": "model_transform",
           "optional": true,
-          "doc": "",
+          "doc": "Row-major affine transform applied to source points before view projection.\nTranslation is retained and projection remains anchored at [0,0,0]; no\nsource-bounds recentering occurs.",
           "type": {
             "kind": "reference",
             "target": "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrMatrix4x4"
@@ -4524,7 +4524,7 @@
     {
       "name": "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrViewSpec",
       "kind": "model",
-      "doc": "",
+      "doc": "An orthographic view whose output coordinates lie in its own view plane.\nGeometer sets Z = normalize(direction), removes the Z component from up and\nnormalizes the remainder as Y, then sets X = Y cross Z. Direction points\nalong positive view depth, from the model toward the observer: greater\ndot(point, Z) is closer and an outward normal with positive dot(normal, Z)\nis front-facing. The basis origin is model-coordinate [0,0,0]; projection\ndoes not recenter on source bounds.",
       "annotations": {},
       "constraints": {},
       "model_kind": "object",
@@ -4548,7 +4548,7 @@
         {
           "name": "direction",
           "optional": false,
-          "doc": "",
+          "doc": "Positive view-depth direction from the model toward the observer.",
           "type": {
             "kind": "reference",
             "target": "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrVector3"
@@ -4559,7 +4559,7 @@
         {
           "name": "up",
           "optional": false,
-          "doc": "",
+          "doc": "Preferred positive view Y; its component along direction is removed.",
           "type": {
             "kind": "reference",
             "target": "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrVector3"
@@ -4572,7 +4572,7 @@
     {
       "name": "Wavenumber.Geometer.Contracts.HlrProjectionA0.ProjectedArc",
       "kind": "model",
-      "doc": "",
+      "doc": "A circular arc expressed in the requested view-plane XY frame.",
       "annotations": {},
       "constraints": {},
       "model_kind": "object",
@@ -4666,7 +4666,7 @@
     {
       "name": "Wavenumber.Geometer.Contracts.HlrProjectionA0.ProjectedGeometry",
       "kind": "model",
-      "doc": "",
+      "doc": "Segments, arcs, and bounds expressed in the requested view-plane XY frame.",
       "annotations": {},
       "constraints": {},
       "model_kind": "object",
@@ -4738,7 +4738,7 @@
     {
       "name": "Wavenumber.Geometer.Contracts.HlrProjectionA0.ProjectionBounds",
       "kind": "model",
-      "doc": "",
+      "doc": "Axis-aligned bounds in the requested view-plane XY frame.",
       "annotations": {},
       "constraints": {},
       "model_kind": "object",

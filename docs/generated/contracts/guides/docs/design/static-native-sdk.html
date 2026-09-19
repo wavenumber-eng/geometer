@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="91d0158e37d9a999b010d14f79e7537f2b9ccb0b03619b2143ec0d96343690ed">
+  <title>Static Native SDK — Geometer</title>
+  <link rel="stylesheet" href="../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="91d0158e37d9a999b010d14f79e7537f2b9ccb0b03619b2143ec0d96343690ed" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/static-native-sdk.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="static-native-sdk">Static Native SDK</h1></header>
+<h2 id="status">Status</h2>
+<p>Proposed for the release governed by Geometer issue 38. Build-tree static
+archives are not a supported SDK until the package, external-consumer,
+attestation, release-candidate, and downstream qualification gates in this
+document pass.</p>
+<h2 id="supported-boundary">Supported boundary</h2>
+<p>The SDK exposes the Geometer C ABI only. Its operation-growth surface consists
+of:</p>
+<ul>
+<li>release and date-based C ABI generation queries;</li>
+<li>the normalized operation catalog query;</li>
+<li>generic operation execution using request JSON and named byte attachments;</li>
+<li>opaque operation-result access and destruction;</li>
+<li>Geometer-owned string destruction; and</li>
+<li>the native worker-process <code>geometer_serve_stdio()</code> bootstrap.</li>
+</ul>
+<p>The focused C functions already declared in <code>c_api.h</code> retain their existing
+compatibility status, but new operations are added only through the generic
+operation ABI. Installing that header does not promote the C++ or OCCT ABI.</p>
+<p>Geometer C++ APIs and OCCT headers, classes, symbols, allocation, and ABI are
+implementation details. Static archives necessarily contain implementation
+symbols, but their presence does not make them supported consumer APIs.</p>
+<h2 id="one-operation-model">One operation model</h2>
+<p>TypeSpec and the normalized operation catalog remain the structural authority.
+Native C ABI, native executable IPC, direct browser WASM, and browser Worker
+adapters share operation identities, request/result DTOs, attachment
+declarations, and governed operation outcomes wherever an operation is
+advertised.</p>
+<p>The catalog has generated artifact projections:</p>
+<ul>
+<li>native static C ABI and native IPC advertise the identical native operation
+projection and canonical digest; and</li>
+<li>direct WASM and browser Worker advertise the portable projection.</li>
+</ul>
+<p>Transport limits and local failures are not operation contracts. Invalid
+pointers, malformed frames, queue saturation, process exit, Worker termination,
+and cancellation may differ by adapter. Cross-transport equality applies to
+well-formed accepted operation requests and their governed outcomes.</p>
+<h2 id="concurrency-and-lifecycle">Concurrency and lifecycle</h2>
+<p>One native process owns one supported-operation execution lane. The common
+native dispatcher serializes geometry and topology execution below every
+supported native adapter. Catalog reads and access to distinct completed result
+handles do not acquire the execution gate. Acquisition order between concurrent
+callers is unspecified.</p>
+<p>Direct C ABI execution is synchronous and cannot be force-cancelled. The Rust
+direct backend uses one dedicated executor thread and a bounded FIFO queue.
+Queued work may be removed; after work becomes active, timeout or future
+abandonment is observational and the native operation continues until it can
+release all result/error resources.</p>
+<p><code>geometer_serve_stdio()</code> is a worker-process main entry point. It requires a
+dedicated child with exclusive stdin/stdout/stderr ownership and must run before
+unrelated application initialization or threads. Protocol-fatal and deadline
+paths may terminate the child without unwinding. It is not an in-process
+background-service API.</p>
+<p>Its production process-status contract is <code>0</code> for graceful completion, <code>2</code> for
+bootstrap, protocol, I/O, or caught-exception failure, and <code>124</code> for the hard
+shutdown deadline. Any other status or signal describes parent or operating-
+system termination, not a status returned by Geometer.</p>
+<p>Parallel native geometry uses a process pool in the first SDK generation.
+Parallel browser geometry uses separate Worker/module instances. Parallel OCCT
+execution inside one runtime instance is not supported.</p>
+<h2 id="platform-profiles">Platform profiles</h2>
+<p>Each SDK declares exactly one compatible ABI profile:</p>
+<table>
+<thead>
+<tr>
+<th>Platform</th>
+<th>Profile</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Windows x64</td>
+<td><code>x86_64-pc-windows-msvc</code>, MSVC v143, Release, <code>/MT</code>; Rust requires <code>crt-static</code></td>
+</tr>
+<tr>
+<td>macOS ARM64</td>
+<td>Apple Clang and libc++, ARM64, macOS 11.0 minimum</td>
+</tr>
+<tr>
+<td>Linux x64</td>
+<td>Qualified GCC major/libstdc++ ABI, x86-64, glibc 2.35 minimum</td>
+</tr>
+<tr>
+<td>Linux ARM64</td>
+<td>Qualified GCC major/libstdc++ ABI, AArch64, glibc 2.35 minimum</td>
+</tr>
+</tbody>
+</table>
+<p>Windows SDK OCCT objects use a separate build/install/cache profile from the
+normal <code>/MD</code> executable and wheel build. Target, architecture, compiler family,
+runtime, or platform-baseline mismatch is a hard consumer error.</p>
+<h2 id="package-layout">Package layout</h2>
+<p>The logical archive layout is:</p>
+<pre><code class="language-text">include/geometer/c_api.h
+lib/geometer.lib                 # Windows
+lib/libgeometer.a                # Unix
+lib/occt/&lt;required archives&gt;
+lib/cmake/Geometer/GeometerConfig.cmake
+lib/cmake/Geometer/GeometerConfigVersion.cmake
+lib/cmake/Geometer/GeometerTargets.cmake
+share/geometer/geometer-sdk.json
+share/geometer/geometer-sdk.schema.json
+share/geometer/geometer-sdk-payload.json
+share/geometer/geometer-sdk-payload.schema.json
+share/geometer/geometer-sdk-attestation.json
+licenses/...
+</code></pre>
+<p>The CMake package exports the relocatable <code>Geometer::c_api_static</code> target. OCCT
+and other implementation include directories remain private. Package-relative
+link-only imported targets carry the exact static dependency closure without
+requiring OCCT headers in a C ABI consumer.</p>
+<p>The versioned SDK JSON schema records target/profile identity, ordered archive
+entries, rescan/group boundaries, system libraries, Apple frameworks, and the
+minimum platform baseline. Cargo consumers validate this manifest using
+Cargo's <code>TARGET</code> and applicable target features/runtime profile before emitting
+link directives. Windows also requires <code>CARGO_CFG_TARGET_FEATURE</code> to contain
+<code>crt-static</code>. Cargo build scripts never download the SDK.</p>
+<h2 id="integrity-and-provenance">Integrity and provenance</h2>
+<p>The internal canonical payload inventory lists every payload member name, size,
+and SHA-256 except the inventory itself and binds the release, C ABI generation,
+catalog digest, toolchain, runtime, dependency profile, schemas, and link
+manifest. The archive member set must equal the inventory member plus exactly
+its declared payload. Undeclared members fail validation.</p>
+<p>An external release sidecar binds the final SDK archive SHA-256, Git tag, source
+revision, workflow/run identity, and internal-manifest digest. GitHub build
+provenance and detached checksums accompany the sidecar. An unsigned checksum
+alone is not provenance.</p>
+<p>SDK packing uses sorted paths and canonical metadata. Two clean builds of the
+same source/toolchain profile must produce identical archive digests. Producers
+must normalize or eliminate nondeterministic inputs; run-specific provenance
+stays outside the deterministic archive.</p>
+<h2 id="static-link-compliance">Static-link compliance</h2>
+<p>The SDK includes Geometer and third-party licenses and notices, exact OCCT
+source identity and checksum, modification status, build scripts, and durable
+corresponding-source access or a compliant source offer. The reviewed release
+posture also documents downstream static-link/relink obligations and any
+commercial-licensing alternative. Build metadata does not determine legal
+compliance by itself.</p>
+<h2 id="release-lifecycle">Release lifecycle</h2>
+<p>SDK archives are external GitHub Release assets and are not committed under
+<code>dist/</code>. Runtime archives continue to reject <code>.lib</code> and <code>.a</code> members.</p>
+<ol>
+<li>The four-platform matrix builds deterministic candidate archives and their
+provenance.</li>
+<li>Clean relocated CMake and Cargo consumers validate the exact candidate
+bytes, including a direct operation and the embedded stdio server.</li>
+<li>KiCad Cruncher consumes those same bytes for Windows x64 and macOS ARM64
+one/four-worker Toon qualification with no Geometer sidecar.</li>
+<li>Full review and release signoff approve an exact expected asset inventory.</li>
+<li>The candidate bytes are published immutably without <code>--clobber</code>.</li>
+<li>CI downloads the public assets and repeats inventory, provenance, and clean
+consumer verification.</li>
+</ol>
+<p>Issue 38 closes only after the downloaded public SDK—not a build-tree archive
+or rebuilt candidate—passes these gates.</p>
+
+</main>
+</body>
+</html>

@@ -19,6 +19,7 @@ measurements and abandoned approaches live in [research](../research/README.md).
 - [CLI commands](cli.md)
 - [Executable IPC consumer guide](executable-ipc.md) and [A0 wire protocol](executable-ipc-a0.md)
 - [C ABI](c-abi.md) and [generic operation C ABI](generic-operation-c-abi.md)
+- [Static native SDK](static-native-sdk.md)
 - [WASM](wasm.md), [TypeScript clients](typescript-client.md), and [Rust client](rust-client.md)
 - [HLR projection and browser illustration](hlr-projection-a0.md)
 - [Contract semantics](contract-semantics.md)

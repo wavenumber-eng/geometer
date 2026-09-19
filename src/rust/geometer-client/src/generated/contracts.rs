@@ -20,7 +20,7 @@
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 pub const NORMALIZED_CATALOG_SHA256: &str =
-    "0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d";
+    "91d0158e37d9a999b010d14f79e7537f2b9ccb0b03619b2143ec0d96343690ed";
 
 #[derive(Debug, thiserror::Error)]
 pub enum ContractError {

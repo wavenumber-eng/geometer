@@ -33,7 +33,7 @@ mesh HLR are implemented typed surfaces. Release promotion remains separately
 gated on independent review, demo acceptance, hosted Windows, Linux x64, Linux
 ARM64, and macOS ARM64 evidence.
 
-The crate carries a local `wn-dev-std` 2026.8.12 Rust profile. Its stable
+The crate carries a local `wn-dev-std` 2026.9.8 Rust profile. Its stable
 toolchain components, denied Rust/Clippy lints, declared Cargo signoff commands,
 and strict Tree-sitter hygiene policy are enforced from the repository Rust
 Rack stratum.

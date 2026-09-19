@@ -41,9 +41,20 @@ model HlrVector3 is float64[];
 @maxItems(16)
 model HlrMatrix4x4 is float64[];
 
+/**
+ * An orthographic view whose output coordinates lie in its own view plane.
+ * Geometer sets Z = normalize(direction), removes the Z component from up and
+ * normalizes the remainder as Y, then sets X = Y cross Z. Direction points
+ * along positive view depth, from the model toward the observer: greater
+ * dot(point, Z) is closer and an outward normal with positive dot(normal, Z)
+ * is front-facing. The basis origin is model-coordinate [0,0,0]; projection
+ * does not recenter on source bounds.
+ */
 model HlrViewSpec {
   @minLength(1) @maxLength(128) id: string;
+  /** Positive view-depth direction from the model toward the observer. */
   direction: HlrVector3;
+  /** Preferred positive view Y; its component along direction is removed. */
   up: HlrVector3;
 }
 
@@ -86,6 +97,11 @@ model HlrProjectionOptionsA0 {
   output_outline?: boolean = true;
   output_detail?: boolean = true;
   output_bbox?: boolean = true;
+  /**
+   * Row-major affine transform applied to source points before view projection.
+   * Translation is retained and projection remains anchored at [0,0,0]; no
+   * source-bounds recentering occurs.
+   */
   @extension("x-wn-default-intent", "identity_4x4")
   model_transform?: HlrMatrix4x4;
   strip_root_placement?: boolean = false;
@@ -128,6 +144,7 @@ model ProjectedSegment is float64[];
 @maxItems(2)
 model HlrVector2 is float64[];
 
+/** A circular arc expressed in the requested view-plane XY frame. */
 model ProjectedArc {
   start: HlrVector2;
   end: HlrVector2;
@@ -138,6 +155,7 @@ model ProjectedArc {
   full_circle: boolean;
 }
 
+/** Axis-aligned bounds in the requested view-plane XY frame. */
 model ProjectionBounds {
   min_x: float64;
   min_y: float64;
@@ -147,6 +165,7 @@ model ProjectionBounds {
   @minValue(0) height: float64;
 }
 
+/** Segments, arcs, and bounds expressed in the requested view-plane XY frame. */
 model ProjectedGeometry {
   @maxItems(4000000) segments: ProjectedSegment[];
   @maxItems(4000000) arcs: ProjectedArc[];
@@ -160,6 +179,15 @@ model HlrProjectionModes {
   bbox: ProjectedGeometry;
 }
 
+/**
+ * Projection output in the view plane defined by direction and up. For
+ * up=[0,1,0], direction=[0,0,1] maps model (x,y) to view (x,y), while
+ * direction=[0,0,-1] maps it to (-x,y). To place footprint-local output on a
+ * board, use board_point = occurrence_transform * view_to_model * view_point;
+ * the axial bottom view_to_model is diag(-1,1) in 2D and is distinct from the
+ * physical bottom-side occurrence transform. This frame applies equally to
+ * silhouette/detail/outline segments, arcs, and bounds.
+ */
 model HlrProjectedView {
   @minLength(1) @maxLength(128) id: string;
   direction: HlrVector3;

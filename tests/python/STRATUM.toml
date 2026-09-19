@@ -21,6 +21,7 @@ objectives = [
     "Verify canonical indexed-mesh packets and the typed Fast HLR IPC path.",
     "Verify colored native STEP tessellation through generated mesh attachments and typed clients.",
     "Verify direct file-backed and analytic model illustration through the governed one-pass boundary.",
+    "Benchmark executable IPC startup, persistent operation latency, process-pool throughput, and memory before transport changes.",
 ]
 
 [[subtests]]
@@ -196,4 +197,11 @@ id = "PY_025"
 file = "test_ci_scope.py"
 name = "Selective CI Scope"
 description = "Checks that documentation skips expensive lanes and material changes select only affected production subsystems."
+test_case_type = "unit"
+
+[[subtests]]
+id = "PY_026"
+file = "test_operation_transport_benchmark.py"
+name = "Operation Transport Baseline Harness"
+description = "Checks nearest-rank transport statistics and the representative governed native operation request used for standalone and embedded comparisons."
 test_case_type = "unit"

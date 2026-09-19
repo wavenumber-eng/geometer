@@ -1,7 +1,7 @@
 {
   "artifact": {
     "name": "geometer.exe",
-    "sha256": "c48dcb52f342d10dde99d14add02a7da76b973aa68ca1bc1bf0cc7255df85908"
+    "sha256": "e68d27b6d0dd662e969361ec67945692bf9db75572532bb1ac8088b48fc127a0"
   },
   "build": {
     "arch": "x64",
@@ -10,13 +10,13 @@
     "compiler": {
       "authority": "cmake_compiler_id_and_version",
       "id": "MSVC",
-      "version": "19.44.35228.0"
+      "version": "19.44.35221.0"
     },
     "generator": "Ninja",
     "geometer_version": "2026.9.13",
     "occt": {
-      "authority": "geometer_occt_profile_verified",
-      "profile_sha256": "ea7f8ee34be29ac8d46f00e6a2d8a989a6c47fd8df6fcfa44c93a2488518f525",
+      "authority": "occt_profile_unverified",
+      "profile_sha256": "unavailable",
       "repo": "https://github.com/Open-Cascade-SAS/OCCT.git",
       "tag": "V8_0_1",
       "version": "8.0.1"
@@ -24,7 +24,7 @@
     "platform": "windows",
     "source": {
       "authority": "git_head_and_source_worktree_excluding_dist_build_deps_out",
-      "revision": "a097875ca0acd42af3677ed376c18cd9fb7b7ba4",
+      "revision": "03e0c5c14ce29c38e51ba50b34c4a3020e5762d1",
       "tree_state": "dirty"
     }
   },

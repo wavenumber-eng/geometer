@@ -43,7 +43,7 @@ jobs:
       - name: Run release signoff gate
         run: uv run --group dev rack run L99_release
       - name: Run standards check
-        run: uvx --from git+https://github.com/wavenumber-eng/wn-dev-std wn-dev-std check . --format json
+        run: uvx --from wn-dev-std==2026.9.8 wn-dev-std check . --format json
 
   build:
     name: build (${{ matrix.platform }}, py3.12)
@@ -127,7 +127,7 @@ jobs:
           GEOMETER_REQUIRE_NATIVE_TEST_SERVERS: "1"
           GEOMETER_TEST_PROFILE: production
         run: |
-          uv tool install git+https://github.com/wavenumber-eng/wn-dev-std
+          uv tool install wn-dev-std==2026.9.8
           uv run --group dev rack run python
           uv run --group dev rack run rust
           uv run --group dev rack run typescript

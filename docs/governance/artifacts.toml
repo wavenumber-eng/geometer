@@ -26,3 +26,48 @@ tracked = "required"
 produced_by = "scripts/write_analytic_packet_vectors.py and governed contract-vector writers"
 included_in_release = "source and test distributions"
 retention = "committed as deterministic cross-language regression evidence"
+
+[[artifacts]]
+id = "native-static-sdk-candidates"
+kind = "transient_output"
+paths = ["out/sdk-candidate/**"]
+tracked = "forbidden"
+produced_by = "the four-platform static SDK candidate workflow from one authoritative clean source revision"
+included_in_release = "never directly; only the exact candidate bytes that pass external consumers and the KiCad Cruncher trial may be promoted"
+retention = "untracked CI or draft-release evidence retained through the candidate review and immutable promotion decision"
+
+[[artifacts]]
+id = "operation-transport-performance-baselines"
+kind = "release_evidence"
+paths = ["docs/research/evidence/operation-transport/**"]
+tracked = "required"
+produced_by = "controlled clean Windows x64 and macOS ARM64 baseline workflows followed by maintainer review"
+included_in_release = "source and documentation distributions as the durable pre-implementation comparison authority"
+retention = "committed raw JSON and inventory records permanently bind workflow run URLs, artifact digests, executable attestations, source revision, and reviewed budgets"
+
+[[artifacts]]
+id = "native-static-sdk-release-assets"
+kind = "package_distribution"
+paths = ["out/sdk-release/**"]
+tracked = "forbidden"
+produced_by = "byte-for-byte promotion of deterministic SDK candidates that already passed qualification; promotion never rebuilds or repackages them"
+included_in_release = "four platform SDK archives with checksums, external sidecars, provenance, licenses, and corresponding-source material"
+retention = "authoritative on the dated GitHub Release; local downloaded or staged copies remain generated state"
+
+[[artifacts]]
+id = "native-static-sdk-qualification-evidence"
+kind = "release_evidence"
+paths = ["out/sdk-evidence/qualification/**"]
+tracked = "forbidden"
+produced_by = "pre-promotion clean CMake and Cargo consumers plus the Windows/macOS KiCad Cruncher trial against exact SDK candidate bytes"
+included_in_release = "compact external-consumer and KiCad trial reports are immutable dated GitHub Release assets whose digests are bound by the release inventory and block promotion"
+retention = "owned by geometer-maintainers and retained with the immutable dated release for that release's support lifetime; local downloaded copies remain generated state"
+
+[[artifacts]]
+id = "native-static-sdk-post-release-verification"
+kind = "release_evidence"
+paths = ["out/sdk-evidence/post-release/**"]
+tracked = "forbidden"
+produced_by = "post-publication download, inventory, provenance, relocation, link, runtime, capability, and dependency verification"
+included_in_release = "never added back to the immutable dated release; it gates issue closure and references the released inventory digest"
+retention = "owned by geometer-maintainers and stored append-only under artifacts.wavenumber.net/geometer/release-verification/<tag>/ for the release support lifetime"

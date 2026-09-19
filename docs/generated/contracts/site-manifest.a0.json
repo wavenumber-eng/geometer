@@ -3,7 +3,7 @@
   "generation": "a0",
   "catalog_identity": "wn.geometer.contract_catalog",
   "catalog_generation": "a0",
-  "catalog_sha256": "0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d",
+  "catalog_sha256": "91d0158e37d9a999b010d14f79e7537f2b9ccb0b03619b2143ec0d96343690ed",
   "contracts": {
     "geometry.analytic_planar_boolean_batch.request.a0": "contracts/geometry-analytic-planar-boolean-batch-request-a0.html",
     "geometry.analytic_planar_boolean_batch.result.a0": "contracts/geometry-analytic-planar-boolean-batch-result-a0.html",
@@ -116,6 +116,7 @@
     "guides/docs/design/planar-geometry.html",
     "guides/docs/design/python-package.html",
     "guides/docs/design/rust-client.html",
+    "guides/docs/design/static-native-sdk.html",
     "guides/docs/design/step-geometry.html",
     "guides/docs/design/step-topology-contract-a0.html",
     "guides/docs/design/step-topology-contract-slice-b.html",
@@ -161,6 +162,7 @@
     "guides/docs/geometer/adr/geometer-adr-015-native_static_libraries_are_build_outputs.html",
     "guides/docs/geometer/adr/geometer-adr-016-fast_hlr_and_illustration_boundaries.html",
     "guides/docs/geometer/adr/geometer-adr-017-retain_analytic_planar_boolean_as_experimental.html",
+    "guides/docs/geometer/adr/geometer-adr-018-supported_static_sdk_and_unified_operation_clients.html",
     "guides/docs/geometer/requirements/README.html",
     "guides/docs/geometer/requirements/geometer-req-001-native_cli_and_library.html",
     "guides/docs/geometer/requirements/geometer-req-002-step_geometry_operations.html",
@@ -172,6 +174,7 @@
     "guides/docs/geometer/requirements/geometer-req-008-generated_cross_language_contracts.html",
     "guides/docs/geometer/requirements/geometer-req-009-browser_demo_distribution.html",
     "guides/docs/geometer/requirements/geometer-req-010-fast_hlr_and_illustration.html",
+    "guides/docs/geometer/requirements/geometer-req-011-supported_static_sdk_and_unified_runtime.html",
     "guides/examples/README.html",
     "guides.html"
   ]

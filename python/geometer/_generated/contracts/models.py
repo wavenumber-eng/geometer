@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Literal, TypeAlias
 
-NORMALIZED_CATALOG_SHA256 = "0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d"
+NORMALIZED_CATALOG_SHA256 = "91d0158e37d9a999b010d14f79e7537f2b9ccb0b03619b2143ec0d96343690ed"
 
 JobId: TypeAlias = int
 
@@ -521,6 +521,7 @@ ProjectedSegment: TypeAlias = tuple[float, float, float, float]
 HlrVector2: TypeAlias = tuple[float, float]
 
 
+# A circular arc expressed in the requested view-plane XY frame.
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ProjectedArc:
     start: HlrVector2
@@ -532,6 +533,7 @@ class ProjectedArc:
     full_circle: bool
 
 
+# Axis-aligned bounds in the requested view-plane XY frame.
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ProjectionBounds:
     min_x: float
@@ -542,6 +544,7 @@ class ProjectionBounds:
     height: float
 
 
+# Segments, arcs, and bounds expressed in the requested view-plane XY frame.
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ProjectedGeometry:
     segments: tuple[ProjectedSegment, ...]
@@ -557,6 +560,7 @@ class HlrProjectionModes:
     bbox: ProjectedGeometry
 
 
+# Projection output in the view plane defined by direction and up. For up=[0,1,0], direction=[0,0,1] maps model (x,y) to view (x,y), while direction=[0,0,-1] maps it to (-x,y). To place footprint-local output on a board, use board_point = occurrence_transform * view_to_model * view_point; the axial bottom view_to_model is diag(-1,1) in 2D and is distinct from the physical bottom-side occurrence transform. This frame applies equally to silhouette/detail/outline segments, arcs, and bounds.
 @dataclass(frozen=True, slots=True, kw_only=True)
 class HlrProjectedView:
     id: str
@@ -571,10 +575,13 @@ class HlrProjectionAlgorithm(str, Enum):
     FAST = "fast"
 
 
+# An orthographic view whose output coordinates lie in its own view plane. Geometer sets Z = normalize(direction), removes the Z component from up and normalizes the remainder as Y, then sets X = Y cross Z. Direction points along positive view depth, from the model toward the observer: greater dot(point, Z) is closer and an outward normal with positive dot(normal, Z) is front-facing. The basis origin is model-coordinate [0,0,0]; projection does not recenter on source bounds.
 @dataclass(frozen=True, slots=True, kw_only=True)
 class HlrViewSpec:
     id: str
+    # Positive view-depth direction from the model toward the observer.
     direction: HlrVector3
+    # Preferred positive view Y; its component along direction is removed.
     up: HlrVector3
 
 
@@ -585,6 +592,7 @@ class HlrProjectionOptionsA0:
     output_outline: bool | None = None
     output_detail: bool | None = None
     output_bbox: bool | None = None
+    # Row-major affine transform applied to source points before view projection. Translation is retained and projection remains anchored at [0,0,0]; no source-bounds recentering occurs.
     model_transform: HlrMatrix4x4 | None = None
     strip_root_placement: bool | None = None
     curve_mode: HlrCurveMode | None = None

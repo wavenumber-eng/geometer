@@ -24,6 +24,7 @@
     },
     "model_transform": {
       "$ref": "#/$defs/HlrMatrix4x4",
+      "description": "Row-major affine transform applied to source points before view projection.\nTranslation is retained and projection remains anchored at [0,0,0]; no\nsource-bounds recentering occurs.",
       "x-wn-default-intent": "identity_4x4"
     },
     "strip_root_placement": {
@@ -148,10 +149,12 @@
           "maxLength": 128
         },
         "direction": {
-          "$ref": "#/$defs/HlrVector3"
+          "$ref": "#/$defs/HlrVector3",
+          "description": "Positive view-depth direction from the model toward the observer."
         },
         "up": {
-          "$ref": "#/$defs/HlrVector3"
+          "$ref": "#/$defs/HlrVector3",
+          "description": "Preferred positive view Y; its component along direction is removed."
         }
       },
       "required": [
@@ -161,7 +164,8 @@
       ],
       "unevaluatedProperties": {
         "not": {}
-      }
+      },
+      "description": "An orthographic view whose output coordinates lie in its own view plane.\nGeometer sets Z = normalize(direction), removes the Z component from up and\nnormalizes the remainder as Y, then sets X = Y cross Z. Direction points\nalong positive view depth, from the model toward the observer: greater\ndot(point, Z) is closer and an outward normal with positive dot(normal, Z)\nis front-facing. The basis origin is model-coordinate [0,0,0]; projection\ndoes not recenter on source bounds."
     },
     "HlrMatrix4x4": {
       "type": "array",

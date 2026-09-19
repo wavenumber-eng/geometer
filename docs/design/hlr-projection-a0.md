@@ -34,6 +34,89 @@ and [indexed-mesh operation](../generated/contracts/operations/geometry-mesh-hlr
 Runtime consumers should also inspect the negotiated operation catalog instead
 of assuming a particular executable or WASM build exposes an operation.
 
+## View-plane coordinate frame
+
+Every projected XY value belongs to the requested view plane. It is not model
+XY or board XY merely because a caller names the view `top` or `bottom`. This
+applies uniformly to outline and detail segments, silhouette edges, native
+arcs, layer bounds, and the `bbox` geometry.
+
+For a view with `direction = D` and `up = U`, Geometer constructs an
+orthonormal basis at the model-coordinate origin:
+
+1. `Z = normalize(D)`;
+2. `Y = normalize(U - Z * dot(U, Z))`; and
+3. `X = Y cross Z`.
+
+`D` therefore names the positive view-depth direction, from the model toward
+the observer; it is not a camera ray pointing into the model. A point `P` has
+view coordinates `(dot(P, X), dot(P, Y), dot(P, Z))`. Greater view Z is closer
+to the observer and can occlude smaller view Z. Correspondingly, an outward
+face normal with a positive dot product against `Z` is front-facing. A
+silhouette separates incident faces on opposite sides of that facing test,
+including its defined grazing tolerance.
+
+The view origin is `(0, 0, 0)` in the coordinates presented to projection.
+Geometer does not recenter a shape on its bounding box. `model_transform` is a
+row-major affine 4x4 applied to source points before the view basis, so the
+complete point mapping is:
+
+```text
+transformed_point = model_transform * model_point
+view_point = [dot(transformed_point, X),
+              dot(transformed_point, Y),
+              dot(transformed_point, Z)]
+```
+
+Translations in `model_transform` are consequently retained. Translation
+along X or Y moves the projected result; translation along Z changes depth.
+
+With `up = [0, 1, 0]`, the two axial board-style views make the reflection
+explicit:
+
+| Direction | View basis `(X, Y, Z)` | Emitted XY |
+|---|---|---|
+| `[0, 0, 1]` | `([1,0,0], [0,1,0], [0,0,1])` | `(x_model, y_model)` |
+| `[0, 0, -1]` | `([-1,0,0], [0,1,0], [0,0,-1])` | `(-x_model, y_model)` |
+
+Here `x_model` and `y_model` mean coordinates after `model_transform`. The
+negative-Z result is already expressed in a reflected view frame.
+
+### Reconstructing model and board coordinates
+
+A consumer that places footprint-local projection geometry on a board must
+first convert view-plane coordinates back to model-local coordinates and only
+then apply the occurrence placement:
+
+```text
+board_point = occurrence_transform * view_to_model * view_point
+```
+
+For the axial views above, the top 2D `view_to_model` is identity and the
+bottom 2D `view_to_model` is `diag(-1, 1)`. The bottom conversion is not the
+physical bottom-side occurrence transform. Omitting it leaves view XY mirrored;
+applying it after occurrence placement or adding a renderer-specific
+counter-mirror mixes distinct coordinate frames.
+
+For example, consider the asymmetric model-local triangle
+`A=(-2,0)`, `B=(1,0)`, `C=(1,1)`. The top view emits the same coordinates. The
+bottom view emits `A=(2,0)`, `B=(-1,0)`, `C=(-1,1)`. Applying the bottom
+`view_to_model = diag(-1,1)` reconstructs the original model-local triangle,
+after which `occurrence_transform` gives its one correct board placement.
+
+`ProjectedArc.start`, `end`, `center`, and `ccw` likewise describe the emitted
+view plane. Carrying `view_to_model` and `occurrence_transform` as affine
+transforms preserves the arc without rewriting it. A consumer that instead
+bakes a reflection into arc coordinates must also reverse its clockwise/
+counterclockwise interpretation when the applied 2D linear transform has a
+negative determinant.
+
+View selection and coordinate reconstruction are separate decisions. A caller
+chooses `direction` according to the geometry frame it submits and the faces it
+wants visible. A `top`, `bottom`, or layer label does not establish whether the
+model is footprint-local or already board-placed, and Geometer does not infer
+an occurrence transform from that label.
+
 ## Algorithm selection
 
 | Selection | Geometry source | Detail behavior | Curve output | Performance posture |

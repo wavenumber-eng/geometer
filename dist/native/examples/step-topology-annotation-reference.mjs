@@ -30847,7 +30847,7 @@ function decodeOperationOutcomeA0Json(data) {
 }
 
 // src/ts/geometer/generated/operations.ts
-var NORMALIZED_CONTRACT_CATALOG_SHA256 = "0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d";
+var NORMALIZED_CONTRACT_CATALOG_SHA256 = "91d0158e37d9a999b010d14f79e7537f2b9ccb0b03619b2143ec0d96343690ed";
 var operationCatalog = {
   "geometry.analytic_planar_boolean_batch.a0": {
     identity: "geometry.analytic_planar_boolean_batch.a0",

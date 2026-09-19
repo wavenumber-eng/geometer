@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 import importlib.util
 import shutil
@@ -271,6 +273,26 @@ def test_transport_baseline_can_target_one_cached_platform() -> None:
     assert "inputs.target == 'windows-x64'" in baseline
     assert "inputs.target == 'macos-arm64'" in baseline
     assert "occt-${{ matrix.os }}-${{ runner.arch }}-${{ matrix.compiler }}" in baseline
+
+
+def test_governed_transport_evidence_preserves_reviewed_bytes() -> None:
+    attributes = (ROOT / ".gitattributes").read_text(encoding="utf-8")
+    assert "docs/research/evidence/**/*.json binary" in attributes
+
+    root = (
+        ROOT
+        / "docs"
+        / "research"
+        / "evidence"
+        / "operation-transport"
+        / "sibling-baseline-2026-09-19"
+    )
+    inventory = json.loads((root / "inventory.json").read_text(encoding="utf-8"))
+    for platform in ("windows_x64", "macos_arm64"):
+        for report in inventory[platform]["reports"]:
+            payload = (root / report["path"]).read_bytes()
+            assert len(payload) == report["bytes"]
+            assert hashlib.sha256(payload).hexdigest() == report["sha256"]
 
 
 def test_experimental_qualification_is_outside_normal_ci_and_release() -> None:

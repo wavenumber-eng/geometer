@@ -43,6 +43,9 @@ dist/wasm/demos/**/_headers text eol=lf
 *.ttf binary
 *.wasm binary
 
+# Governed performance evidence must retain the exact reviewed artifact bytes.
+docs/research/evidence/**/*.json binary
+
 # Preserve the upstream OFL text byte-for-byte, including its authored spacing.
 docs/design/assets/fonts/Cousine/OFL.txt whitespace=-blank-at-eol
 

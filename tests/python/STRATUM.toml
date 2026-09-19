@@ -194,13 +194,6 @@ test_case_type = "integration"
 
 [[subtests]]
 id = "PY_025"
-file = "test_ci_scope.py"
-name = "Selective CI Scope"
-description = "Checks that documentation skips expensive lanes and material changes select only affected production subsystems."
-test_case_type = "unit"
-
-[[subtests]]
-id = "PY_026"
 file = "test_operation_transport_benchmark.py"
 name = "Operation Transport Baseline Harness"
 description = "Checks nearest-rank transport statistics and the representative governed native operation request used for standalone and embedded comparisons."

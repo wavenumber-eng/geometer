@@ -1,10 +1,9 @@
 ---
 # yamllint disable rule:line-length
-name: CI
+name: Full Validation (Manual)
 
 "on":
   workflow_dispatch:
-  pull_request:
 
 permissions:
   contents: read
@@ -19,30 +18,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  scope:
-    name: Change scope
-    runs-on: ubuntu-24.04
-    outputs:
-      docs_only: ${{ steps.scope.outputs.docs_only }}
-      material: ${{ steps.scope.outputs.material }}
-      native: ${{ steps.scope.outputs.native }}
-      python: ${{ steps.scope.outputs.python }}
-      rust: ${{ steps.scope.outputs.rust }}
-      typescript: ${{ steps.scope.outputs.typescript }}
-      wasm: ${{ steps.scope.outputs.wasm }}
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 2
-      - name: Classify changed paths
-        id: scope
-        run: python scripts/ci_scope.py
-
   standards:
     name: wn-dev-std
-    needs: scope
-    if: needs.scope.outputs.material == 'true'
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v8.2.0
@@ -66,9 +45,8 @@ jobs:
 
   native:
     name: native (linux-x64, py3.12)
-    needs: scope
-    if: needs.scope.outputs.native == 'true'
     runs-on: ubuntu-22.04
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v8.2.0
@@ -128,9 +106,8 @@ jobs:
 
   python:
     name: Python package
-    needs: scope
-    if: needs.scope.outputs.python == 'true'
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v8.2.0
@@ -147,9 +124,8 @@ jobs:
 
   rust:
     name: Rust client
-    needs: scope
-    if: needs.scope.outputs.rust == 'true'
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v8.2.0
@@ -164,9 +140,8 @@ jobs:
 
   typescript:
     name: TypeScript client
-    needs: scope
-    if: needs.scope.outputs.typescript == 'true'
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v8.2.0
@@ -188,9 +163,8 @@ jobs:
 
   wasm:
     name: Production WASM
-    needs: scope
-    if: needs.scope.outputs.wasm == 'true'
     runs-on: ubuntu-24.04
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v8.2.0
@@ -263,26 +237,3 @@ jobs:
           name: ci-wasm-dist
           path: dist/wasm/**
           if-no-files-found: error
-
-  policy:
-    name: CI policy
-    if: always()
-    needs: [scope, standards, native, python, rust, typescript, wasm]
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Require every selected lane
-        env:
-          SCOPE_RESULT: ${{ needs.scope.result }}
-          STANDARDS_RESULT: ${{ needs.standards.result }}
-          NATIVE_RESULT: ${{ needs.native.result }}
-          PYTHON_RESULT: ${{ needs.python.result }}
-          RUST_RESULT: ${{ needs.rust.result }}
-          TYPESCRIPT_RESULT: ${{ needs.typescript.result }}
-          WASM_RESULT: ${{ needs.wasm.result }}
-        run: |
-          for result in "$SCOPE_RESULT" "$STANDARDS_RESULT" "$NATIVE_RESULT" "$PYTHON_RESULT" "$RUST_RESULT" "$TYPESCRIPT_RESULT" "$WASM_RESULT"; do
-            if [ "$result" != "success" ] && [ "$result" != "skipped" ]; then
-              echo "Selected CI lane ended with: $result"
-              exit 1
-            fi
-          done

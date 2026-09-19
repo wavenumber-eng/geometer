@@ -194,7 +194,7 @@ def test_normal_builds_use_public_dependency_cache_without_r2_secrets() -> None:
     assert "R2_SECRET_ACCESS_KEY" in producer_workflow
 
 
-def test_ci_routes_languages_independently_and_release_integrates_once() -> None:
+def test_ci_is_manual_only_and_release_integrates_once() -> None:
     ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
     release = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
 
@@ -204,11 +204,17 @@ def test_ci_routes_languages_independently_and_release_integrates_once() -> None
         assert 'GEOMETER_REQUIRE_NATIVE_TEST_SERVERS: "1"' in workflow
         assert "cargo test --locked" not in workflow
 
-    assert "name: Change scope" in ci
-    assert "python scripts/ci_scope.py" in ci
-    assert "name: CI policy" in ci
+    assert "name: Full Validation (Manual)" in ci
+    assert "workflow_dispatch:" in ci
+    assert "pull_request:" not in ci
+    assert "release:" not in ci
     assert ci.count("GEOMETER_TEST_PROFILE: production") == 4
     assert "push:" not in ci
+
+    assert 'name: Publish' in release
+    assert "release:" in release
+    assert "workflow_dispatch:" not in release
+    assert "pull_request:" not in release
 
     assert release.count("uv run --group dev rack run python") == 1
     assert release.count("uv run --group dev rack run typescript") == 1
@@ -219,6 +225,52 @@ def test_ci_routes_languages_independently_and_release_integrates_once() -> None
     assert "python -m build --wheel --outdir out/wheelhouse" not in release
     assert "twine check out/wheelhouse/*.whl" in release
     assert "path: out/wheelhouse/*.whl" in release
+
+
+def test_publish_is_the_only_automatically_triggered_workflow() -> None:
+    workflows = ROOT / ".github" / "workflows"
+    automatic_triggers = ("pull_request:", "push:", "schedule:", "release:")
+
+    for path in workflows.glob("*.yml"):
+        workflow = path.read_text(encoding="utf-8")
+        if path.name == "release.yml":
+            assert "release:" in workflow
+            assert all(trigger not in workflow for trigger in automatic_triggers[:-1])
+        else:
+            assert "workflow_dispatch:" in workflow
+            assert all(trigger not in workflow for trigger in automatic_triggers)
+
+
+def test_every_workflow_job_has_a_cost_timeout() -> None:
+    workflows = ROOT / ".github" / "workflows"
+
+    for path in workflows.glob("*.yml"):
+        lines = path.read_text(encoding="utf-8").splitlines()
+        jobs_index = lines.index("jobs:")
+        job_starts = [
+            index
+            for index, line in enumerate(lines[jobs_index + 1 :], jobs_index + 1)
+            if line.startswith("  ")
+            and not line.startswith("    ")
+            and line.endswith(":")
+        ]
+        for position, start in enumerate(job_starts):
+            end = job_starts[position + 1] if position + 1 < len(job_starts) else len(lines)
+            job = lines[start:end]
+            assert any(line.startswith("    timeout-minutes:") for line in job), (
+                f"{path.name}:{lines[start].strip(':')} has no timeout-minutes"
+            )
+
+
+def test_transport_baseline_can_target_one_cached_platform() -> None:
+    baseline = (
+        ROOT / ".github" / "workflows" / "operation-transport-baseline.yml"
+    ).read_text(encoding="utf-8")
+
+    assert "Platform baseline to record." in baseline
+    assert "inputs.target == 'windows-x64'" in baseline
+    assert "inputs.target == 'macos-arm64'" in baseline
+    assert "occt-${{ matrix.os }}-${{ runner.arch }}-${{ matrix.compiler }}" in baseline
 
 
 def test_experimental_qualification_is_outside_normal_ci_and_release() -> None:

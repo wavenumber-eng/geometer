@@ -1,33 +1,41 @@
-# CI Strategy
+# Build Automation Strategy
 
-Geometer CI validates the code that a change can affect. Cross-platform package
-production remains a release responsibility, while experimental geometry is
-qualified on an explicit or scheduled workflow.
+Geometer does not run GitHub Actions for pushes or pull requests. In particular,
+documentation changes trigger no automation. Developers run the affected
+checks locally before pushing and record important validation in the pull
+request. The only automatic GitHub Actions workflow is `Publish`, triggered by
+publishing a GitHub release; it builds and validates every supported release
+platform.
 
-## Pull requests
+## Local development gate
 
-The `CI` workflow first classifies the exact base-to-head pull-request diff. Its stable
-`CI policy` job is the branch-protection boundary; it succeeds only when every
-selected lane succeeds or is intentionally skipped.
+Choose checks in proportion to the change, using the commands in the canonical
+[developer guide](README.md). Before a release, run the complete local gate:
 
-| Change | Pull-request validation |
-| --- | --- |
-| Markdown, documentation assets, demo HTML/CSS | Scope and policy only |
-| Python package or Python tests | Standards, production Python tests, wheel validation |
-| Rust client | Standards and production Rust validation |
-| TypeScript, TypeSpec, contracts | Standards and production TypeScript validation |
-| C++ or native build code | Standards, Linux x64 production native/client validation, production WASM |
-| WASM build/runtime code | Standards and production WASM |
-| CI or release workflow | All production lanes |
+```powershell
+uv sync --group dev
+cmake --preset default
+cmake --build build --config Release
+ctest --test-dir build -C Release --output-on-failure
+uv run --group dev rack run --all
+uv run pytest tests\L99_release -q
+npm run check:contracts
+npm run check:docs
+uvx --from wn-dev-std==2026.9.8 wn-dev-std check . --format json
+```
 
-Normal CI has no `push` trigger. Merging an already validated pull request does
-not repeat the same build on `main`. A manual CI dispatch selects all production
-lanes.
+The native build runs CTest's `production` label by default. Set
+`GEOMETER_TEST_PROFILE=production` for client strata when a focused production
+run should omit retained analytic-solver and STEP topology research suites.
 
-The production native lane builds explicitly promoted targets and runs CTest's
-`production` label. The Python, Rust, and TypeScript strata use
-`GEOMETER_TEST_PROFILE=production` to omit retained analytic-solver and STEP
-topology research suites.
+## Manual workflows
+
+The `Full Validation (Manual)` workflow is an explicit diagnostic fallback. It
+never runs automatically. The experimental, macOS wheel, dependency-cache, and
+operation-transport workflows are likewise manual-only. Dispatch one only when
+its specific remote environment or controlled evidence is required. Every job
+has an explicit timeout so a stalled runner or test cannot consume minutes
+indefinitely.
 
 ## Experimental qualification
 
@@ -43,9 +51,10 @@ Run all native research tests locally with:
 uv run python scripts/validate_native.py --include-experimental-tests
 ```
 
-## Releases
+## Release automation
 
-Publishing a GitHub release builds and packages Windows x64, Linux x64, Linux
+Publishing a GitHub release is the only automatic CI event. It builds and
+packages Windows x64, Linux x64, Linux
 arm64, macOS arm64, and WASM. Each native platform runs the production C++
 suite. Python, Rust, and TypeScript integration runs once against Linux x64;
 the other platforms concentrate on native and wheel packaging. Experimental
@@ -76,11 +85,11 @@ the first run they avoid a cold OCCT compile and cause `actions/cache` to save
 the restored content under the new exact key. New caches are always written
 with the canonical key.
 
-## Measured baseline
+## Historical cost baseline
 
-Before this split, a production C++ pull request ran four native matrices plus
-WASM, standards, and experimental cross-transport qualification. The observed
-job times on issue #34 were:
+Before pull-request CI was retired, a production C++ pull request ran four
+native matrices plus WASM, standards, and experimental cross-transport
+qualification. The observed job times on issue #34 were:
 
 | Job | Time |
 | --- | ---: |
@@ -98,4 +107,6 @@ OCCT from source. The first production run with this strategy completed in
 1m21s in parallel. Linux migrated its legacy GitHub OCCT cache to the canonical
 key. WASM restored OCCT from the public binary cache and populated its canonical
 GitHub caches. The measured run and cache evidence are recorded on
-[issue #34](https://github.com/wavenumber-eng/geometer/issues/34).
+[issue #34](https://github.com/wavenumber-eng/geometer/issues/34). These figures
+explain why pull-request automation is intentionally disabled; they are not a
+current PR validation budget.

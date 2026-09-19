@@ -4,8 +4,16 @@ name: Operation Transport Baseline
 
 "on":
   workflow_dispatch:
-  pull_request:
-    types: [opened, synchronize]
+    inputs:
+      target:
+        description: Platform baseline to record.
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - windows-x64
+          - macos-arm64
 
 permissions:
   contents: read
@@ -19,22 +27,12 @@ jobs:
   sibling-process:
     name: sibling process (${{ matrix.platform }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            platform: windows-x64
-            compiler: msvc
-            executable: dist/native/windows-x64/geometer.exe
-          - os: macos-15
-            platform: macos-arm64
-            compiler: apple-clang
-            executable: dist/native/macos-arm64/geometer
+      matrix: ${{ fromJSON(inputs.target == 'windows-x64' && '{"include":[{"os":"windows-latest","platform":"windows-x64","compiler":"msvc","executable":"dist/native/windows-x64/geometer.exe"}]}' || inputs.target == 'macos-arm64' && '{"include":[{"os":"macos-15","platform":"macos-arm64","compiler":"apple-clang","executable":"dist/native/macos-arm64/geometer"}]}' || '{"include":[{"os":"windows-latest","platform":"windows-x64","compiler":"msvc","executable":"dist/native/windows-x64/geometer.exe"},{"os":"macos-15","platform":"macos-arm64","compiler":"apple-clang","executable":"dist/native/macos-arm64/geometer"}]}') }}
     steps:
       - uses: actions/checkout@v6
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: astral-sh/setup-uv@v8.2.0
       - name: Set up Python
         run: uv python install 3.12
@@ -60,6 +58,7 @@ jobs:
           key: occt-v2-native-${{ matrix.platform }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-${{ hashFiles('scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
           restore-keys: |
             occt-v2-native-${{ matrix.platform }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-
+            occt-${{ matrix.os }}-${{ runner.arch }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-
       - name: Build and validate sibling executable
         run: uv run --group dev python scripts/validate_native.py
       - name: Benchmark small, medium, and large operations

@@ -18,6 +18,7 @@ jobs:
   verify:
     name: release metadata
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v8.2.0
@@ -49,6 +50,7 @@ jobs:
     name: build (${{ matrix.platform }}, py3.12)
     needs: verify
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
@@ -159,6 +161,7 @@ jobs:
     name: wasm dist
     needs: verify
     runs-on: ubuntu-24.04
+    timeout-minutes: 90
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
@@ -253,6 +256,7 @@ jobs:
     name: GitHub release assets
     needs: [build, wasm]
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     permissions:
       contents: write
     steps:
@@ -272,6 +276,7 @@ jobs:
     name: PyPI trusted publish
     needs: [build, wasm]
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     environment:
       name: pypi
       url: https://pypi.org/p/wn-geometer

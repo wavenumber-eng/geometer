@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import platform
+import re
 import subprocess
 import sys
 import tomllib
@@ -44,9 +45,9 @@ def validate_windows_static_runtime(build_dir: Path) -> None:
     ]
     if not geometer_commands:
         raise RuntimeError("No Geometer compile commands were available for CRT validation")
-    if any(" /MD" in command for command in geometer_commands):
+    if any(re.search(r"(?:^|\s)[/-]MDd?(?:\s|$)", command) for command in geometer_commands):
         raise RuntimeError("Windows SDK objects contain dynamic-CRT /MD compilation")
-    if any(" /MT" not in command for command in geometer_commands):
+    if any(not re.search(r"(?:^|\s)[/-]MTd?(?:\s|$)", command) for command in geometer_commands):
         raise RuntimeError("Windows SDK objects are not uniformly compiled with /MT")
 
 

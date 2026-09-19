@@ -114,6 +114,7 @@ def test_windows_static_occt_recipe_is_isolated() -> None:
     assert "occt-static-crt-build" in source
     assert "occt-static-crt-install" in source
     assert 'definition("CMAKE_MSVC_RUNTIME_LIBRARY", "MultiThreaded")' in source
+    assert 'definition("CMAKE_CXX_FLAGS_RELEASE", "/MT /O2 /Ob2 /DNDEBUG")' in source
     assert 'GEOMETER_MSVC_RUNTIME STREQUAL "Static"' in cmake
     assert "occt-static-crt-install" in cmake
 
@@ -134,7 +135,7 @@ def test_windows_sdk_rejects_dynamic_crt_compile_commands(tmp_path: Path) -> Non
         raise AssertionError("dynamic CRT compile command was accepted")
 
     compile_commands.write_text(
-        json.dumps([{"file": "C:\\work\\src\\cpp\\lib\\c_api.cpp", "command": "cl /MT /c c_api.cpp"}]),
+        json.dumps([{"file": "C:\\work\\src\\cpp\\lib\\c_api.cpp", "command": "cl -MT /c c_api.cpp"}]),
         encoding="utf-8",
     )
     validate_windows_static_runtime(build)

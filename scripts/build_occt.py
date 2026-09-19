@@ -337,7 +337,16 @@ def native_occt_cmake_definitions(
         definition("CMAKE_POLICY_VERSION_MINIMUM", "3.5"),
     ]
     if platform_name.startswith("windows-") and msvc_runtime == "Static":
-        definitions.append(definition("CMAKE_MSVC_RUNTIME_LIBRARY", "MultiThreaded"))
+        definitions.extend(
+            (
+                definition("CMAKE_POLICY_DEFAULT_CMP0091", "NEW"),
+                definition("CMAKE_MSVC_RUNTIME_LIBRARY", "MultiThreaded"),
+                # OCCT 8.0 still seeds the legacy flags directly despite CMP0091.
+                # Pin both languages so no /MD object can enter the static SDK profile.
+                definition("CMAKE_C_FLAGS_RELEASE", "/MT /O2 /Ob2 /DNDEBUG"),
+                definition("CMAKE_CXX_FLAGS_RELEASE", "/MT /O2 /Ob2 /DNDEBUG"),
+            )
+        )
     if platform_name.startswith("macos-"):
         target = macos_deployment_target(macos_deployment_target_value)
         definitions.append(definition("CMAKE_OSX_DEPLOYMENT_TARGET", target))

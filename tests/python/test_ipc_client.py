@@ -321,6 +321,16 @@ def test_persistent_client_repeats_nonempty_solve_on_one_connection() -> None:
     assert first == second
 
 
+def test_public_c_bootstrap_serves_the_existing_ipc_protocol() -> None:
+    server = _native_test_server("geometer_c_api_stdio_test_server")
+    if not server.is_file():
+        pytest.skip("native C bootstrap test server is unavailable")
+    with GeometerIpcClient(server, client_name="python-c-bootstrap-test") as client:
+        result = client.analytic_planar_boolean_batch(_nonempty_request(), timeout=5)
+        assert result.job_results
+        assert client.welcome.catalog_sha256 == NORMALIZED_CATALOG_SHA256
+
+
 def test_timeout_is_typed_and_prevents_reuse_while_native_fake_server_drains() -> None:
     server = _native_test_server("geometer_ipc_a0_deadline_test_server")
     if not server.is_file():

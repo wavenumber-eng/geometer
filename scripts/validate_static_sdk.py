@@ -29,6 +29,7 @@ REQUIRED_SDK_FILES = {
     "share/geometer/geometer-sdk.schema.json",
 }
 FORBIDDEN_PRIVATE_IMPORTS = re.compile(r"^(?:geometer|TK[A-Za-z0-9_]+)\.dll$", re.IGNORECASE)
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def sha256_bytes(value: bytes) -> str:
@@ -143,9 +144,64 @@ def consumer_source() -> str:
     return r'''#include <geometer/c_api.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-int main(void) {
+static int execute_model_bounds(const char* path) {
+    FILE* stream = fopen(path, "rb");
+    if (stream == NULL || fseek(stream, 0, SEEK_END) != 0) {
+        fputs("could not open model fixture\n", stderr);
+        return 20;
+    }
+    const long length = ftell(stream);
+    if (length <= 0 || fseek(stream, 0, SEEK_SET) != 0) {
+        fclose(stream);
+        fputs("could not size model fixture\n", stderr);
+        return 21;
+    }
+    unsigned char* model = (unsigned char*)malloc((size_t)length);
+    if (model == NULL || fread(model, 1, (size_t)length, stream) != (size_t)length) {
+        free(model);
+        fclose(stream);
+        fputs("could not read model fixture\n", stderr);
+        return 22;
+    }
+    fclose(stream);
+    GeometerAttachmentView attachment = {0};
+    attachment.struct_size = sizeof(attachment);
+    attachment.name = "model";
+    attachment.name_size = 5;
+    attachment.media_type = "application/step";
+    attachment.media_type_size = 16;
+    attachment.data = model;
+    attachment.data_size = (uint32_t)length;
+    GeometerOperationResult* result = NULL;
+    char* error = NULL;
+    const char* operation = "geometry.model_bounds.a0";
+    const unsigned char request[] = "{}";
+    const int code = geometer_operation_execute(
+        operation, (uint32_t)strlen(operation), request, 2, &attachment, 1, &result, &error);
+    free(model);
+    if (code != GEOMETER_OPERATION_ABI_OK || result == NULL ||
+        geometer_operation_result_json_size(result) == 0 ||
+        geometer_operation_result_attachment_count(result) != 0) {
+        fprintf(stderr, "model bounds failed: code=%d error=%s\n", code, error == NULL ? "" : error);
+        geometer_operation_result_free(result);
+        geometer_free_string(error);
+        return 23;
+    }
+    geometer_operation_result_free(result);
+    geometer_free_string(error);
+    return 0;
+}
+
+int main(int argc, char** argv) {
+    if (argc == 3 && strcmp(argv[1], "serve") == 0 && strcmp(argv[2], "--stdio") == 0) {
+        return geometer_serve_stdio();
+    }
+    if (argc == 2) {
+        return execute_model_bounds(argv[1]);
+    }
     char* catalog = NULL;
     char* error = NULL;
     const char* version = geometer_version_string();
@@ -216,6 +272,12 @@ def validate_external_consumer(archive_path: Path, manifest: dict[str, Any], kee
         run(["cmake", "--build", str(build), "--config", "Release"], cwd=root)
         executable = build / ("geometer_sdk_consumer.exe" if sys.platform == "win32" else "geometer_sdk_consumer")
         run([str(executable)], cwd=root)
+        run([str(executable), str(ROOT / "tests/fixtures/step/embedded_models/SOT-23.STEP")], cwd=root)
+        from geometer._ipc_client import GeometerIpcClient
+
+        with GeometerIpcClient(executable, client_name="static-sdk-qualification") as client:
+            if not client.welcome.operation_catalog.operations:
+                raise ValueError("embedded stdio server returned an empty operation catalog")
         imports = imported_libraries(executable)
         forbidden = sorted(name for name in imports if FORBIDDEN_PRIVATE_IMPORTS.match(name))
         if forbidden:

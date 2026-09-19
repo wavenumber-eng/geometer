@@ -4,6 +4,25 @@ All notable changes to geometer are documented here.
 
 ## [Unreleased]
 
+## [2026.9.18] - 2026-09-18
+
+### Added
+
+- Added a supported, deterministic static C ABI SDK profile for Windows x64,
+  Linux x64, Linux ARM64, and macOS ARM64 release production.
+- Added the process-terminal `geometer_serve_stdio()` C bootstrap so a native
+  application can self-host Geometer's existing IPC protocol in worker children.
+
+### Changed
+
+- Unified native generic C ABI and executable IPC dispatch behind one native
+  operation catalog and one process-wide serialized execution lane.
+- Release production now qualifies an exact immutable inventory containing all
+  four native runtimes, all four install-tested PyPI wheels, WASM, and all four
+  static SDKs before GitHub and PyPI publication.
+- Advanced the C ABI generation for the static SDK, concurrency guarantee, and
+  embedded stdio bootstrap.
+
 ## [2026.9.13] - 2026-09-13
 
 ### Added

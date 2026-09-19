@@ -1,5 +1,6 @@
 #include "geometer/ipc_a0_server.h"
 
+#include "geometer/c_api.h"
 #include "geometer/generated/contracts/contracts.h"
 #include "geometer/ipc_a0_frame.h"
 #include "geometer/operation_registry.h"
@@ -21,6 +22,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <deque>
+#include <exception>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -894,3 +896,23 @@ int serve_stdio(const ServerOptions& options)
 } // namespace testing
 
 } // namespace geometer::ipc_a0
+
+extern "C" int geometer_serve_stdio(void)
+{
+    try
+    {
+        return geometer::ipc_a0::serve_stdio();
+    }
+    catch (const std::exception& error)
+    {
+        std::fprintf(stderr, "Geometer IPC bootstrap failure: %s\n", error.what());
+        std::fflush(stderr);
+        return 2;
+    }
+    catch (...)
+    {
+        std::fprintf(stderr, "Geometer IPC bootstrap failed with an unknown exception.\n");
+        std::fflush(stderr);
+        return 2;
+    }
+}

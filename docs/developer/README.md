@@ -666,8 +666,8 @@ date-based ABI generation, for example `20260907`.
 ## Versioning
 
 Geometer follows [ADR 006](../geometer/adr/geometer-adr-006-date_based_versioning_policy.md).
-The current release identity is `v2026-09-13`; the CMake/PyPI package version
-is `2026.9.13`; the C ABI generation is `20260913`.
+The current release identity is `v2026-09-18`; the CMake/PyPI package version
+is `2026.9.18`; the C ABI generation is `20260918`.
 
 The root `CMakeLists.txt` declares `GEOMETER_RELEASE_DATE`,
 `GEOMETER_RELEASE_VERSION`, and `GEOMETER_ABI_VERSION`. The root

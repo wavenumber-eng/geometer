@@ -84,6 +84,14 @@ extern "C"
                                               uint32_t* size);
     GEOMETER_C_API void geometer_operation_result_free(GeometerOperationResult* result);
 
+#if !defined(__EMSCRIPTEN__)
+    // Process-terminal bootstrap for the executable IPC A0 server. The caller
+    // must dedicate the child process and exclusive stdio ownership to this
+    // function. Returns 0 after graceful shutdown or 2 for a caught bootstrap,
+    // protocol, or I/O failure; a hard shutdown deadline terminates with 124.
+    GEOMETER_C_API int geometer_serve_stdio(void);
+#endif
+
     GEOMETER_C_API GeometerStringResult geometer_step_hlr_projection_json(GeometerBuffer step_data,
                                                                           const char* options_json);
 

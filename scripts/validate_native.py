@@ -31,6 +31,7 @@ PRODUCTION_VALIDATION_TARGETS = (
     "geometer_mesh_illustration_test",
     "geometer_operation_contract_test",
     "geometer_ipc_a0_frame_test",
+    "geometer_c_api_stdio_test_server",
     "geometer_ipc_a0_deadline_test_server",
     "geometer_ipc_a0_unexpected_exit_test_server",
     "geometer_ipc_a0_writer_failure_test_server",

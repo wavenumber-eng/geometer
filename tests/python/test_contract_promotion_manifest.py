@@ -335,7 +335,7 @@ def test_manifest_sources_and_identities_are_complete() -> None:
         assert design_review["reviewed_adr_sha256"] == (
             "d4905bda88727fadeb221a3b6c5bfb392f5e062bb6033b0cded29f59fb492de0"
         )
-        assert "## Status\n\nAccepted." in adr
+        assert "## Status\n\nAccepted" in adr
     _assert_documentation_manifest(manifest)
 
 

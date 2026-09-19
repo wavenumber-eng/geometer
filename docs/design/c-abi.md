@@ -78,6 +78,8 @@ const unsigned char* geometer_operation_result_attachment_data(
 );
 void geometer_operation_result_free(GeometerOperationResult* result);
 
+int geometer_serve_stdio(void); /* native targets only */
+
 GeometerStringResult geometer_step_hlr_projection_json(
     GeometerBuffer step_data,
     const char* options_json
@@ -183,3 +185,13 @@ transport validates the generated JSON against the 32 MiB response limit and
 validates output attachment count, unique/nonempty names, media types,
 declarations, UTF-8, individual sizes, and native/WASM aggregate sizes. This
 keeps every accessor conversion to `uint32_t` inside a proven range.
+
+`geometer_serve_stdio()` is the native, process-terminal bootstrap for the same
+IPC A0 server used by `geometer serve --stdio`. It does not introduce another
+operation interface. Call it only from the main path of a dedicated child,
+before unrelated initialization or threads, with exclusive ownership of
+standard input, output, and error. It catches C++ exceptions before they cross
+the C boundary. A return value of `0` means graceful shutdown and `2` means a
+bootstrap, protocol, I/O, or caught-exception failure. A hard shutdown deadline
+terminates the child with status `124`; callers must not expect stack unwinding
+on fatal protocol or deadline paths.

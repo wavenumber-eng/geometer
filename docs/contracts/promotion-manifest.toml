@@ -532,8 +532,8 @@ review_head = "b86a065c5926c35f1eee23a9ba1cef890689c7d7"
 packet = "docs/research/history/transport-design-review.md"
 packet_sha256 = "865964402ff6258151b199f748ae0754c9fc4908021af01ffc6abdb47f2013ea"
 reviewed_adr_sha256 = "d4905bda88727fadeb221a3b6c5bfb392f5e062bb6033b0cded29f59fb492de0"
-adr_sha256 = "2a69d9e05baa7894be3677d2a9c250098bd45915a7cc9d083639650d3151d7d8"
-generic_c_abi_sha256 = "0a2f4b83e3e7ca473c0c0e73911bcd12e11121e3f19aa7b752ed73ee80bc4fa6"
+adr_sha256 = "9aa613eb6c3f1f21a37c626578befbe86fe06e042d4f3053d60a7bb46614e777"
+generic_c_abi_sha256 = "00e68ea95f6db2e33dbd6f755fced9708916ebdbb803d7d7010e3e82f238cad9"
 executable_ipc_sha256 = "ff537447705d8bd7d54347c2bb5627f15729faa848e3e733dac5ba9ae336643e"
 reviewer = "independent-reviewer"
 review_date = "2026-08-12"
@@ -601,7 +601,7 @@ sha256 = "87e16b5b2453ad1f9263d92953d5741a30780db02eeea0d59d61f10967c4537b"
 status = "vendored"
 
 [c_abi]
-generation = 20260913
+generation = 20260918
 source = "src/cpp/lib/geometer/c_api.h"
 symbols = [
   "geometer_operation_catalog_json",
@@ -613,6 +613,7 @@ symbols = [
   "geometer_operation_result_attachment_media_type",
   "geometer_operation_result_attachment_data",
   "geometer_operation_result_free",
+  "geometer_serve_stdio",
   "geometer_step_hlr_projection_json",
   "geometer_step_hlr_projection_json_bytes",
   "geometer_step_to_glb",
@@ -1675,7 +1676,7 @@ performance_qualification_default_request = "tests/contracts/vectors/analytic/cr
 real_board_packet_provenance = "docs/contracts/analytic-real-board-packet-provenance.toml"
 real_board_packet_provenance_sha256 = "3e465a113fb4edb7667b9b76e684337f1062f76e3456b7a5ef0404f82034d7c2"
 real_board_packet_provenance_test = "tests/python/test_contract_promotion_manifest.py"
-real_board_packet_provenance_test_sha256 = "b32d573fadd875afc6f0ec80f4724cf2e1f8b8b32b5eb09608ac686ae2584c1c"
+real_board_packet_provenance_test_sha256 = "f24be20448b1a7a1a0e712bab5285bad1c26ea5d614b6cb3a719e0220392dc94"
 real_board_packet_provenance_status = "public_mit_redistribution_authorized_rt_generated_local_qualified_loz_pending"
 real_board_packet_case_ids = ["rt_super_c1_pwr4", "loz_old_man_curved_copper"]
 real_board_packet_source_sha256 = ["90545409b6ce16e0b636fce3176c90b73be301d03f0a9e32c4ab21a42ad14aca", "377d5a05ed24137ea603d11c663d52ae48849b378534b346010936b826eb2375"]

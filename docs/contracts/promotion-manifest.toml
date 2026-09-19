@@ -94,13 +94,13 @@ local_ctest_count = 10
 local_rack_passed = 66
 catalog_sha256 = "c93e41a3aa0d64ab4dab905cea82aaeb3b3792155d1f5b2850673567a699d59c"
 vector_manifest_sha256 = "30f697bf63e6ca1ba28e0b9617a061b59a90115ea4ef06a06761d09ea68301a5"
-# Current distributable lock, refreshed from the local 2026.9.13 release build.
+# Current distributable lock, refreshed from the local 2026.9.19 release build.
 # Build provenance is recorded alongside the grouped WASM artifacts.
 # The original model-bounds promotion and historical review evidence above/below remain unchanged.
-browser_js_sha256 = "21a6c619dc6b2011fe9e30697decce8a88901990cadb999bad0cd999f143084e"
+browser_js_sha256 = "478e01886aaaabe867fa816ba479a10a46dd53083781469f47d10be074027ea2"
 historical_reviewed_browser_js_sha256 = "5c9f0594465cdb5732911777e2ca38cc2814c1ef9cb52b7672022df6a50bf937"
 browser_js_lock_remediation = "historical_worktree_bytes_unretained_relocked_to_committed_distributable"
-browser_wasm_sha256 = "cd253fa224182ecb8f0ad4ee74acace91641c3c22b3e51aeb7e6e35597ce3171"
+browser_wasm_sha256 = "63db9a72a9a2c2d8ed6f88b3fdc4c870d53cef8f45a2e78cecd6cf749283a9ec"
 independent_review = "accepted"
 acceptance_packet = "reviewer-019ffcd8-e5bb-7531-934f-b9e50e73d2b2ab7"
 review_packet = "reviewer-019ffcc0-0b9f-73e9-85e9-928e32f54cfd"
@@ -1940,10 +1940,10 @@ font_license = "docs/design/assets/fonts/JetBrainsMono/OFL.txt"
 font_license_sha256 = "60d55f23c6ce05a81099a762cb67ca2c9b6ea251c7912720998b4c89ebfd4faa"
 distribution = "dist/wasm/demos/analytic-polygon-pour/index.html"
 asset_manifest = "dist/wasm/demos/analytic-polygon-pour/asset-manifest.json"
-distribution_sha256 = "1537d5039dbbff4a9af88bc0f0fdb492e6c9e2ad9b9b812b79d36f21d3a190e7"
+distribution_sha256 = "fd906562838878d497d089eff6842ed0bb5e5cd1c7a5e69977a3312d39081127"
 headers = "dist/wasm/demos/analytic-polygon-pour/_headers"
 standalone_distribution = "dist/wasm/demos/analytic_polygon_pour_demo.html"
-standalone_sha256 = "76a77b7e6f9ab48e519dea926eca14e4db6beaaad44eef82e8c335d68337899f"
+standalone_sha256 = "f91fee982a8f1287a31012b597fb33066ab7e8ac91fde01f53ae7c5e01d76e24"
 owning_operation = "geometry.analytic_planar_boolean_batch.a0"
 status = "generated_typescript_worker_client_static_and_single_html_file_url_validated_local"
 
@@ -1962,10 +1962,10 @@ font_license = "docs/design/assets/fonts/JetBrainsMono/OFL.txt"
 font_license_sha256 = "60d55f23c6ce05a81099a762cb67ca2c9b6ea251c7912720998b4c89ebfd4faa"
 distribution = "dist/wasm/demos/pcb-polygon-pour/index.html"
 asset_manifest = "dist/wasm/demos/pcb-polygon-pour/asset-manifest.json"
-distribution_sha256 = "380a3d683042078b13abdb8a7a45b71a518cb4801f78b7a21547d76a1343001f"
+distribution_sha256 = "44d7377e33a777576055d4524feb32ecb2d3e784a9433815e4b4d9920d4ed0ec"
 headers = "dist/wasm/demos/pcb-polygon-pour/_headers"
 standalone_distribution = "dist/wasm/demos/pcb_polygon_pour_demo.html"
-standalone_sha256 = "418f4f45c6444f58901f806e00d3109e8f0ec2bd8217d7ef1616298a119526e0"
+standalone_sha256 = "571dceefa6922f71feee8032531859193c069767f009f0b6b41d59da7f1afa35"
 owning_operation = "geometry.analytic_planar_boolean_batch.a0"
 status = "generated_typescript_worker_client_static_and_single_html_file_url_validated_local"
 

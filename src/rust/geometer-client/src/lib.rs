@@ -4,6 +4,8 @@ mod analytic_client;
 pub mod analytic_packet_a0;
 pub mod client;
 mod client_lifecycle;
+#[cfg(feature = "direct-static")]
+mod direct;
 pub mod generated;
 mod hlr;
 mod illustration;
@@ -23,6 +25,8 @@ pub use analytic_packet_a0::{
     encode_analytic_planar_boolean_batch_request_a0_packet,
 };
 pub use client::{GeometerClient, GeometerClientError, OperationCall, OperationResponse, Welcome};
+#[cfg(feature = "direct-static")]
+pub use direct::GeometerDirectClient;
 pub use generated::contracts;
 pub use generated::contracts::NORMALIZED_CATALOG_SHA256;
 pub use hlr::{MeshHlrProjectionRequest, ModelHlrProjectionRequest};

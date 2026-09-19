@@ -59,9 +59,7 @@ def validate_archive_paths(names: list[str]) -> None:
         raise ValueError("static SDK is missing required files: " + ", ".join(sorted(missing)))
 
 
-def validate_payload_inventory(
-    archive: zipfile.ZipFile, names: list[str], payload: dict[str, Any]
-) -> None:
+def validate_payload_inventory(archive: zipfile.ZipFile, names: list[str], payload: dict[str, Any]) -> None:
     inventory = payload.get("entries")
     if not isinstance(inventory, list):
         raise ValueError("static SDK payload entries must be an array")
@@ -145,7 +143,7 @@ target_link_libraries(geometer_sdk_consumer PRIVATE Geometer::c_api_static)
 
 
 def consumer_source() -> str:
-    return r'''#include <geometer/c_api.h>
+    return r"""#include <geometer/c_api.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -227,7 +225,7 @@ int main(int argc, char** argv) {
     geometer_free_string(catalog);
     return 0;
 }
-'''
+"""
 
 
 def run(command: list[str], *, cwd: Path) -> str:
@@ -264,15 +262,15 @@ def validate_cargo_consumer(sdk: Path, root: Path) -> None:
     source.mkdir()
     crate_path = (sdk / "rust/geometer-sys").as_posix().replace("'", "\\'")
     (source / "Cargo.toml").write_text(
-        f'''[package]\nname = "geometer-sdk-consumer"\nversion = "0.0.0"\nedition = "2024"\n\n'''
-        f'''[dependencies]\ngeometer-sys = {{ path = '{crate_path}' }}\n''',
+        f"""[package]\nname = "geometer-sdk-consumer"\nversion = "0.0.0"\nedition = "2024"\n\n"""
+        f"""[dependencies]\ngeometer-sys = {{ path = '{crate_path}' }}\n""",
         encoding="utf-8",
         newline="\n",
     )
     rust_source = source / "src"
     rust_source.mkdir()
     (rust_source / "main.rs").write_text(
-        '''use std::ffi::{CStr, c_char};\n\nfn main() {\n    let mut value: *mut c_char = std::ptr::null_mut();\n    let mut error: *mut c_char = std::ptr::null_mut();\n    // SAFETY: output holders are distinct and Geometer owns returned strings.\n    let code = unsafe { geometer_sys::geometer_operation_catalog_json(&mut value, &mut error) };\n    assert_eq!(code, 0);\n    assert!(error.is_null());\n    assert!(!value.is_null());\n    // SAFETY: successful catalog output is a Geometer-owned NUL-terminated string.\n    let catalog = unsafe { CStr::from_ptr(value) }.to_str().expect("catalog UTF-8");\n    assert!(catalog.contains("geometry.model_bounds.a0"));\n    // SAFETY: value was returned by Geometer and has not previously been freed.\n    unsafe { geometer_sys::geometer_free_string(value) };\n}\n''',
+        """fn main() {\n    let catalog = geometer_sys::operation_catalog_json().expect("operation catalog");\n    assert!(String::from_utf8(catalog).expect("catalog UTF-8").contains("geometry.model_bounds.a0"));\n    let model = std::fs::read(std::env::args_os().nth(1).expect("STEP path")).expect("STEP bytes");\n    let output = geometer_sys::operation_execute(\n        "geometry.model_bounds.a0",\n        b"{}",\n        &[geometer_sys::Attachment {\n            name: "model",\n            media_type: "application/step",\n            data: &model,\n        }],\n    ).expect("direct model bounds");\n    assert!(!output.json.is_empty());\n    assert!(output.attachments.is_empty());\n}\n""",
         encoding="utf-8",
         newline="\n",
     )
@@ -283,9 +281,10 @@ def validate_cargo_consumer(sdk: Path, root: Path) -> None:
         environment["RUSTFLAGS"] = f"{flags} -C target-feature=+crt-static".strip()
     print("  > cargo generate-lockfile", flush=True)
     subprocess.check_call([cargo, "generate-lockfile"], cwd=source, env=environment)
-    print("  > cargo run --release --locked", flush=True)
+    fixture = ROOT / "tests/fixtures/step/embedded_models/SOT-23.STEP"
+    print("  > cargo run --release --locked -- <STEP fixture>", flush=True)
     result = subprocess.run(
-        [cargo, "run", "--release", "--locked"],
+        [cargo, "run", "--release", "--locked", "--", str(fixture)],
         cwd=source,
         env=environment,
         text=True,
@@ -297,11 +296,43 @@ def validate_cargo_consumer(sdk: Path, root: Path) -> None:
     if result.stderr:
         print(result.stderr, end="", file=sys.stderr)
     if result.returncode != 0:
-        raise subprocess.CalledProcessError(result.returncode, [cargo, "run", "--release", "--locked"])
-    executable = source / "target/release" / ("geometer-sdk-consumer.exe" if sys.platform == "win32" else "geometer-sdk-consumer")
+        raise subprocess.CalledProcessError(
+            result.returncode, [cargo, "run", "--release", "--locked", "--", str(fixture)]
+        )
+    executable = (
+        source
+        / "target/release"
+        / ("geometer-sdk-consumer.exe" if sys.platform == "win32" else "geometer-sdk-consumer")
+    )
     forbidden = sorted(name for name in imported_libraries(executable) if FORBIDDEN_PRIVATE_IMPORTS.match(name))
     if forbidden:
         raise ValueError("Cargo consumer imports private Geometer DLLs: " + ", ".join(forbidden))
+
+
+def validate_direct_rust_client(sdk: Path) -> None:
+    cargo = shutil.which("cargo")
+    if cargo is None:
+        raise RuntimeError("cargo is required to qualify the Geometer direct Rust client")
+    environment = os.environ.copy()
+    environment["GEOMETER_SDK_DIR"] = str(sdk)
+    if sys.platform == "win32":
+        flags = environment.get("RUSTFLAGS", "")
+        environment["RUSTFLAGS"] = f"{flags} -C target-feature=+crt-static".strip()
+    manifest = ROOT / "src/rust/geometer-client/Cargo.toml"
+    command = [
+        cargo,
+        "test",
+        "--release",
+        "--locked",
+        "--manifest-path",
+        str(manifest),
+        "--features",
+        "direct-static",
+        "--test",
+        "direct_static",
+    ]
+    print("  > cargo test --release --locked --features direct-static --test direct_static", flush=True)
+    subprocess.check_call(command, cwd=ROOT, env=environment)
 
 
 def validate_external_consumer(archive_path: Path, manifest: dict[str, Any], keep_work: bool = False) -> None:
@@ -331,6 +362,7 @@ def validate_external_consumer(archive_path: Path, manifest: dict[str, Any], kee
             if not client.welcome.operation_catalog.operations:
                 raise ValueError("embedded stdio server returned an empty operation catalog")
         validate_cargo_consumer(sdk, root)
+        validate_direct_rust_client(sdk)
         imports = imported_libraries(executable)
         forbidden = sorted(name for name in imports if FORBIDDEN_PRIVATE_IMPORTS.match(name))
         if forbidden:

@@ -14,11 +14,10 @@ use crate::client_lifecycle::{
 };
 use crate::generated::contracts::{
     self, DiagnosticCategory, IpcCancelRejectedA0, IpcCancelledA0, IpcHelloA0, IpcRequestA0,
-    IpcRequestValueA0, IpcRuntimeDispatchA0, IpcWelcomeA0, OperationOutcomeA0,
-    PackedAttachmentProjectionA0,
+    IpcWelcomeA0, OperationOutcomeA0,
 };
 use crate::ipc::{self, Attachment, Frame, FrameKind};
-use crate::operation_validation::{validate_operation_request, validate_operation_response};
+use crate::operation_validation::{decode_and_validate_request, validate_operation_response};
 use crate::process::{
     BoxAsyncRead, BoxAsyncWrite, GeometerClientOptions, GeometerProcess, GeometerProcessController,
     GeometerProcessExit, spawn_default,
@@ -62,6 +61,8 @@ pub enum GeometerClientError {
     Timeout { queued_cancelled: bool },
     #[error("Geometer client is closing or closed")]
     Closed,
+    #[error("Geometer static backend failed: {0}")]
+    Static(String),
 }
 
 #[derive(Clone, Debug)]
@@ -421,18 +422,7 @@ impl GeometerClient {
                     "operation {operation} is absent from the negotiated catalog"
                 ))
             })?;
-        let request = match declaration.runtime_dispatch {
-            IpcRuntimeDispatchA0::LogicalDto => crate::generated::dispatch::decode_logical_request(
-                &declaration.request_contract,
-                request_json,
-            )?,
-            IpcRuntimeDispatchA0::PackedAttachment => {
-                IpcRequestValueA0::PackedAttachment(contracts::decode_json::<
-                    PackedAttachmentProjectionA0,
-                >(request_json)?)
-            }
-        };
-        validate_operation_request(declaration, &request, &attachments)?;
+        let request = decode_and_validate_request(declaration, request_json, &attachments)?;
         let json = contracts::encode_ipc_request_a0_json(&IpcRequestA0 {
             operation: operation.to_owned(),
             request,

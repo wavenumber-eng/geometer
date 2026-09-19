@@ -76,11 +76,19 @@ dependencies = [
 name = "geometer-client"
 version = "2026.9.18"
 dependencies = [
+ "geometer-sys",
  "serde",
  "serde_json",
  "sha2",
  "thiserror",
  "tokio",
+]
+
+[[package]]
+name = "geometer-sys"
+version = "2026.9.18"
+dependencies = [
+ "serde_json",
 ]
 
 [[package]]

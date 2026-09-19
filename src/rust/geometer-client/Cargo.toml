@@ -7,6 +7,10 @@ description = "Generated contracts and persistent executable IPC client for Geom
 license = "MIT"
 repository = "https://github.com/wavenumber-eng/geometer"
 
+[features]
+default = []
+direct-static = ["dep:geometer-sys"]
+
 [lints.rust]
 unsafe_code = "forbid"
 
@@ -17,6 +21,7 @@ cognitive_complexity = "deny"
 allow_attributes_without_reason = "deny"
 
 [dependencies]
+geometer-sys = { path = "../geometer-sys", version = "2026.9.18", optional = true }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["raw_value"] }
 sha2 = "0.10"

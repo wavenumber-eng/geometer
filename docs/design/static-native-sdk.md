@@ -58,9 +58,9 @@ destruction remain outside it.
 
 Direct C ABI execution is synchronous and cannot be force-cancelled. The Rust
 direct backend uses one dedicated executor thread and a bounded FIFO queue.
-Queued work may be removed; after work becomes active, timeout or future
-abandonment is observational and the native operation continues until it can
-release all result/error resources.
+Queue saturation fails locally. Dropping a client or timing out a future does
+not remove queued work; timeout and future abandonment are observational, and
+the executor continues until it can release all result/error resources.
 
 `geometer_serve_stdio()` is a worker-process main entry point. It requires a
 dedicated child with exclusive stdin/stdout/stderr ownership and must run before
@@ -124,7 +124,10 @@ The packaged `geometer-sys` crate is the only reviewed Rust unsafe FFI owner.
 Its build script requires an explicit `GEOMETER_SDK_DIR`, validates the Cargo
 target and SDK release/profile, requires `crt-static` for Windows, and emits the
 ordered archive/system-library/framework closure from the SDK manifest. It
-does not download dependencies or SDK artifacts.
+does not download dependencies or SDK artifacts. Its safe ownership helpers
+copy output bytes into Rust values and release every Geometer-owned handle;
+`geometer-client`'s optional `direct-static` feature builds the shared
+catalog/contract validation and bounded executor on top.
 
 The versioned SDK JSON schema records target/profile identity, ordered archive
 entries, rescan/group boundaries, system libraries, Apple frameworks, and the

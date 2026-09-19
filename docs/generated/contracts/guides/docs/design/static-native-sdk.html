@@ -59,9 +59,9 @@ lane at their operation boundary; metadata/version queries and owned-result
 destruction remain outside it.</p>
 <p>Direct C ABI execution is synchronous and cannot be force-cancelled. The Rust
 direct backend uses one dedicated executor thread and a bounded FIFO queue.
-Queued work may be removed; after work becomes active, timeout or future
-abandonment is observational and the native operation continues until it can
-release all result/error resources.</p>
+Queue saturation fails locally. Dropping a client or timing out a future does
+not remove queued work; timeout and future abandonment are observational, and
+the executor continues until it can release all result/error resources.</p>
 <p><code>geometer_serve_stdio()</code> is a worker-process main entry point. It requires a
 dedicated child with exclusive stdin/stdout/stderr ownership and must run before
 unrelated application initialization or threads. Protocol-fatal and deadline
@@ -132,7 +132,10 @@ requiring OCCT headers in a C ABI consumer.</p>
 Its build script requires an explicit <code>GEOMETER_SDK_DIR</code>, validates the Cargo
 target and SDK release/profile, requires <code>crt-static</code> for Windows, and emits the
 ordered archive/system-library/framework closure from the SDK manifest. It
-does not download dependencies or SDK artifacts.</p>
+does not download dependencies or SDK artifacts. Its safe ownership helpers
+copy output bytes into Rust values and release every Geometer-owned handle;
+<code>geometer-client</code>'s optional <code>direct-static</code> feature builds the shared
+catalog/contract validation and bounded executor on top.</p>
 <p>The versioned SDK JSON schema records target/profile identity, ordered archive
 entries, rescan/group boundaries, system libraries, Apple frameworks, and the
 minimum platform baseline. Cargo consumers validate this manifest using

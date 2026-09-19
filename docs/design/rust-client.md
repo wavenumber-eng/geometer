@@ -15,6 +15,15 @@ release/target/runtime compatibility, and never downloads an SDK. Applications
 should keep operation contracts and codecs in the safe generated client layer;
 they must not create per-operation extern declarations or bind OCCT directly.
 
+With the `direct-static` feature, `GeometerDirectClient` sends the same
+catalog-governed request JSON and named attachments through the static C ABI.
+All direct clients share one bounded FIFO and one dedicated executor thread for
+the process. Queue saturation fails locally. Dropped clients do not cancel
+queued work; an active timeout is observational and the executor continues to
+copy/free every Geometer-owned result before starting the next request. Use
+self-hosted worker processes when hard cancellation or crash containment is
+required.
+
 Since 2026.9.6, the client additionally provides typed `model_tessellation` and
 `mesh_illustration` methods using generated A0 values. Optional
 `mesh_illustration_with_hlr(input, hlr)` returns the native composed SVG with

@@ -53,6 +53,37 @@ pub(crate) fn validate_operation_request(
     }
 }
 
+pub(crate) fn decode_and_validate_request(
+    declaration: &IpcOperationDeclarationA0,
+    request_json: &[u8],
+    attachments: &[Attachment],
+) -> Result<IpcRequestValueA0, GeometerClientError> {
+    let request = match declaration.runtime_dispatch {
+        IpcRuntimeDispatchA0::LogicalDto => crate::generated::dispatch::decode_logical_request(
+            &declaration.request_contract,
+            request_json,
+        )?,
+        IpcRuntimeDispatchA0::PackedAttachment => {
+            IpcRequestValueA0::PackedAttachment(contracts::decode_json::<
+                PackedAttachmentProjectionA0,
+            >(request_json)?)
+        }
+    };
+    validate_operation_request(declaration, &request, attachments)?;
+    Ok(request)
+}
+
+#[cfg(feature = "direct-static")]
+pub(crate) fn encode_direct_request(
+    request: &IpcRequestValueA0,
+) -> Result<Vec<u8>, GeometerClientError> {
+    serde_json::to_vec(request).map_err(|error| {
+        GeometerClientError::Protocol(format!(
+            "could not encode direct operation request: {error}"
+        ))
+    })
+}
+
 pub(crate) fn validate_operation_response(
     welcome: &IpcWelcomeA0,
     operation: &str,
@@ -60,6 +91,15 @@ pub(crate) fn validate_operation_response(
     attachments: &[Attachment],
 ) -> Result<(), GeometerClientError> {
     let declaration = operation_declaration(welcome, operation)?;
+    validate_operation_response_declaration(declaration, outcome, attachments)
+}
+
+pub(crate) fn validate_operation_response_declaration(
+    declaration: &IpcOperationDeclarationA0,
+    outcome: &OperationOutcomeA0,
+    attachments: &[Attachment],
+) -> Result<(), GeometerClientError> {
+    let operation = declaration.identity.as_str();
     match outcome {
         OperationOutcomeA0::Failure(_) => validate_failure_attachments(attachments),
         OperationOutcomeA0::Success(success) => {

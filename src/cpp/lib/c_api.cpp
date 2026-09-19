@@ -1,6 +1,9 @@
 #include "geometer/c_api.h"
 
 #include "geometer/clipper2_bytes.h"
+#ifndef __EMSCRIPTEN__
+#include "geometer/native_operation_execution_gate.h"
+#endif
 #include "geometer/planar_solve.h"
 #include "geometer/planar_triangulate.h"
 #include "geometer/projection.h"
@@ -83,6 +86,9 @@ int geometer_step_hlr_projection_json_bytes(const unsigned char* step_data, std:
     *value = nullptr;
     *error = nullptr;
 
+#ifndef __EMSCRIPTEN__
+    geometer::NativeOperationExecutionGuard execution_guard;
+#endif
     geometer::HlrProjectionOptions projection_options;
     geometer::Status status;
     int code =
@@ -138,6 +144,9 @@ int geometer_step_to_glb_bytes(const unsigned char* step_data, std::size_t step_
     *value_size = 0;
     *error = nullptr;
 
+#ifndef __EMSCRIPTEN__
+    geometer::NativeOperationExecutionGuard execution_guard;
+#endif
     geometer::StepToGlbOptions options;
     geometer::Status status;
     int code = geometer::parse_step_to_glb_options_json(options_json, &options, &status);
@@ -182,6 +191,9 @@ int geometer_planar_batch_solve_bytes(const unsigned char* request_data, std::si
     *value_size = 0;
     *error = nullptr;
 
+#ifndef __EMSCRIPTEN__
+    geometer::NativeOperationExecutionGuard execution_guard;
+#endif
     geometer::Status status;
     std::vector<unsigned char> response;
     const int code =
@@ -218,6 +230,9 @@ int geometer_planar_batch_solve_json_bytes(const unsigned char* request_data,
     *value = nullptr;
     *error = nullptr;
 
+#ifndef __EMSCRIPTEN__
+    geometer::NativeOperationExecutionGuard execution_guard;
+#endif
     geometer::Status status;
     std::string response;
     const int code = geometer::solve_planar_batch_json_from_bytes(request_data, request_size,
@@ -262,6 +277,9 @@ int geometer_planar_triangulate_bytes(const unsigned char* request_data, std::si
     *value_size = 0;
     *error = nullptr;
 
+#ifndef __EMSCRIPTEN__
+    geometer::NativeOperationExecutionGuard execution_guard;
+#endif
     geometer::Status status;
     std::vector<unsigned char> response;
     const int code =
@@ -300,6 +318,9 @@ int geometer_clipper2_boolean_bytes(const unsigned char* request_data, std::size
     *value_size = 0;
     *error = nullptr;
 
+#ifndef __EMSCRIPTEN__
+    geometer::NativeOperationExecutionGuard execution_guard;
+#endif
     geometer::Status status;
     std::vector<unsigned char> response;
     const int code =
@@ -339,6 +360,9 @@ int geometer_clipper2_inflate_open_bytes(const unsigned char* request_data,
     *value_size = 0;
     *error = nullptr;
 
+#ifndef __EMSCRIPTEN__
+    geometer::NativeOperationExecutionGuard execution_guard;
+#endif
     geometer::Status status;
     std::vector<unsigned char> response;
     const int code =

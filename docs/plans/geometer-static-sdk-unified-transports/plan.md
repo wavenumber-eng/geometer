@@ -42,13 +42,13 @@ depends_on = ["transport-architecture-review", "performance-baseline"]
 [[steps]]
 id = "concurrency-gate"
 title = "Enforce and test one serialized execution lane per Geometer runtime instance"
-status = "active"
+status = "done"
 depends_on = ["dispatcher-unification"]
 
 [[steps]]
 id = "static-sdk-packaging"
 title = "Build and validate the supported relocatable static C ABI SDK"
-status = "pending"
+status = "active"
 depends_on = ["dispatcher-unification", "concurrency-gate"]
 
 [[steps]]

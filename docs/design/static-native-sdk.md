@@ -52,7 +52,9 @@ One native process owns one supported-operation execution lane. The common
 native dispatcher serializes geometry and topology execution below every
 supported native adapter. Catalog reads and access to distinct completed result
 handles do not acquire the execution gate. Acquisition order between concurrent
-callers is unspecified.
+callers is unspecified. Retained focused native C operations acquire the same
+lane at their operation boundary; metadata/version queries and owned-result
+destruction remain outside it.
 
 Direct C ABI execution is synchronous and cannot be force-cancelled. The Rust
 direct backend uses one dedicated executor thread and a bounded FIFO queue.

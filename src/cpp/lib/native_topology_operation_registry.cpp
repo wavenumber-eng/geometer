@@ -1,5 +1,6 @@
 #include "geometer/operation_registry.h"
 
+#include "geometer/native_operation_execution_gate.h"
 #include "geometer/operation_transport.h"
 #include "geometer/sha256.h"
 #include "geometer/step_topology_session.h"
@@ -980,6 +981,7 @@ void execute_native_operation(const std::string& operation_id, const unsigned ch
                               const std::vector<OperationAttachmentView>& attachments,
                               OperationExecution* execution)
 {
+    NativeOperationExecutionGuard execution_guard;
     if (operation_id == kOpenOperation)
     {
         execute_open(request_json, request_json_size, attachments, execution);

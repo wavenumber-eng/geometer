@@ -668,6 +668,16 @@ configure_geometer_fixture_test(geometer_operation_contract_test
 add_test(NAME geometer_operation_contract_test COMMAND geometer_operation_contract_test)
 
 if(NOT EMSCRIPTEN)
+    add_executable(geometer_native_operation_execution_gate_test
+        native_operation_execution_gate_test.cpp
+    )
+
+    target_link_libraries(geometer_native_operation_execution_gate_test PRIVATE geometer_lib)
+
+    add_test(NAME geometer_native_operation_execution_gate_test
+        COMMAND geometer_native_operation_execution_gate_test)
+    set_tests_properties(geometer_native_operation_execution_gate_test PROPERTIES TIMEOUT 10)
+
     add_executable(geometer_ipc_a0_frame_test
         ipc_a0_frame_test.cpp
     )
@@ -895,6 +905,7 @@ if(WIN32 AND OpenCASCADE_BINARY_DIR)
         geometer_model_bounds_test
         geometer_model_illustration_native_test
         geometer_operation_contract_test
+        geometer_native_operation_execution_gate_test
         geometer_ipc_a0_frame_test
         geometer_projection_options_json_test
         geometer_projection_model_transform_test

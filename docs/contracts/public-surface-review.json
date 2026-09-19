@@ -120,7 +120,7 @@
     },
     {
       "path": "src/cpp/lib/CMakeLists.txt",
-      "sha256": "c82a62f92050b34288dd60eb074fceb386c668d2c595e34d8506fa09598735b0"
+      "sha256": "6962209878c62ff0f534d9608dd63867b86b2590b46dc41df1847ef396f25425"
     },
     {
       "path": "src/cpp/lib/geometer.h",
@@ -347,6 +347,10 @@
       "sha256": "2b8aebd7f191d6fe6ea53fa8d24cc2a2d3a06bba2fbe57120b9caa48de58e2f8"
     },
     {
+      "path": "src/cpp/lib/geometer/native_operation_execution_gate.h",
+      "sha256": "4eaafd3bfb9b56e4976e610c89f30394f0fe7984312b440c9d46b252895acf73"
+    },
+    {
       "path": "src/cpp/lib/geometer/operation_registry.h",
       "sha256": "5f75c439b212717186cbd5c785ca42d35f9187d848a0c814b27a7e71f079b950"
     },
@@ -416,7 +420,7 @@
     },
     {
       "path": "src/cpp/lib/native_topology_operation_registry.cpp",
-      "sha256": "fcd7f01555faa42952d7dad1f750ac79c3b977317872685b7933cd88dbbd1f5a"
+      "sha256": "a6d6c219581829290d29b04230eaf27ed1c369e5b0e58dcb431547d94a38208a"
     },
     {
       "path": "src/cpp/lib/operation_registry.cpp",

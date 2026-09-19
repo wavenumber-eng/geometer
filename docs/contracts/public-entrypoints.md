@@ -48,6 +48,10 @@ extend or reinterpret the existing SVG result. Planar-only WASM is unsupported.
 - Model/status/version/SHA utilities, allocation/free functions, frame codecs,
   Worker hosts and process supervision are support APIs. They retain their
   explicit ownership/lifecycle contracts; they are not geometry jobs.
+- `native_operation_execution_gate.h` is an internal support boundary, not an
+  installed SDK or operation API. The native generic C ABI and IPC dispatcher,
+  plus retained focused C operation functions, acquire its single process-wide
+  execution lane; catalog/version queries and owned-result destruction do not.
 - Python `run_batch`, `GeometerBatchRunner` and batch dataclasses compose the
   legacy batch file protocol. CLI `init-request` is a request-file authoring
   utility. Their file schema/alias normalization belongs to wave 3.

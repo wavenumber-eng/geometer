@@ -143,6 +143,7 @@ if(NOT EMSCRIPTEN)
     list(APPEND GEOMETER_LIB_SOURCES
         ipc_a0_frame.cpp
         ipc_a0_server.cpp
+        native_operation_execution_gate.cpp
         native_topology_operation_registry.cpp
         step_topology_edit_journal.cpp
         step_topology_inspection.cpp

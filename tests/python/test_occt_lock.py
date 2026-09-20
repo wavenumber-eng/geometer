@@ -100,6 +100,28 @@ def test_restore_uses_only_the_exact_locked_object(tmp_path: Path) -> None:
     assert not occt_lock.install_matches_lock(install_dir, occt_lock.load_lock(lock_path), profile)
 
 
+def test_restore_stages_on_the_install_volume(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    lock_path, profile, artifact_root = _make_test_lock(tmp_path)
+    install_dir = tmp_path / "dependency-state" / "install"
+    original = occt_lock.tempfile.TemporaryDirectory
+    staging_parents: list[Path] = []
+
+    def temporary_directory(*args: Any, **kwargs: Any) -> Any:
+        staging_parents.append(Path(kwargs["dir"]))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(occt_lock.tempfile, "TemporaryDirectory", temporary_directory)
+    occt_lock.restore_locked_install(
+        profile,
+        install_dir,
+        lock_path=lock_path,
+        base_url=artifact_root.as_uri(),
+    )
+
+    assert staging_parents == [install_dir.parent]
+    assert occt_lock.install_matches_lock(install_dir, occt_lock.load_lock(lock_path), profile)
+
+
 def test_restore_rejects_wrong_locked_bytes(tmp_path: Path) -> None:
     lock_path, profile, artifact_root = _make_test_lock(tmp_path)
     artifact = artifact_root / profile["archive"]["object_key"]

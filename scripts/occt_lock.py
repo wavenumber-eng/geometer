@@ -134,7 +134,8 @@ def restore_locked_install(
     quoted_key = urllib.parse.quote(archive["object_key"].lstrip("/"), safe="/-_.~")
     url = f"{resolved_base}/{quoted_key}"
     print(f"Restoring locked OCCT profile {profile['id']} from {url}")
-    with tempfile.TemporaryDirectory(prefix="geometer-occt-lock-") as temp_name:
+    install_dir.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=".geometer-occt-lock-", dir=install_dir.parent) as temp_name:
         archive_path = Path(temp_name) / "occt-install.zip"
         _download_verified(url, archive_path, archive["sha256"], archive["size"])
         extracted = Path(temp_name) / "install"
@@ -161,7 +162,11 @@ def validate_lock(lock: Any) -> None:
         raise LockError("OCCT source commit and tag object must be lowercase Git SHA-1 values")
     _validate_archive(source["archive"], "dependency.source.archive", require_profile=False)
     license_files = source["archive"].get("license_files")
-    if not isinstance(license_files, list) or not license_files or not all(_safe_relative_path(v) for v in license_files):
+    if (
+        not isinstance(license_files, list)
+        or not license_files
+        or not all(_safe_relative_path(v) for v in license_files)
+    ):
         raise LockError("OCCT source archive license_files must be safe relative paths")
 
     profiles = lock["profiles"]
@@ -253,9 +258,7 @@ def _download_verified(url: str, path: Path, expected_sha256: str, expected_size
                 digest.update(chunk)
                 size += len(chunk)
                 if size > expected_size:
-                    raise LockError(
-                        f"Locked OCCT object exceeds expected size {expected_size}: {url}"
-                    )
+                    raise LockError(f"Locked OCCT object exceeds expected size {expected_size}: {url}")
     except urllib.error.HTTPError as exc:
         raise LockError(f"Locked OCCT object is unavailable ({exc.code}): {url}") from exc
     except (urllib.error.URLError, TimeoutError) as exc:

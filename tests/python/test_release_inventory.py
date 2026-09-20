@@ -7,7 +7,8 @@ import zipfile
 
 import pytest
 
-from ci_release_metadata import package_version, release_tag
+from candidate_root import candidate_root_sha256, create_candidate_root
+from ci_release_metadata import package_version, release_date, release_tag
 from validate_release_inventory import (
     collect_assets,
     expected_asset_names,
@@ -19,6 +20,18 @@ from verify_release_inventory import verify_release
 
 TEST_VERSION = package_version()
 TEST_TAG = release_tag(TEST_VERSION)
+
+
+def candidate_value(revision: str = "7" * 40) -> dict[str, object]:
+    date_value = release_date(TEST_VERSION)
+    return create_candidate_root(
+        source_revision=revision,
+        release_version=TEST_VERSION,
+        release_date=date_value,
+        abi_generation=int(date_value.replace("-", "")),
+        expected_tag=TEST_TAG,
+        occt_lock_sha256="5" * 64,
+    )
 
 
 def write_downloaded_release(root: Path, tag: str) -> tuple[Path, dict[str, object]]:
@@ -33,11 +46,14 @@ def write_downloaded_release(root: Path, tag: str) -> tuple[Path, dict[str, obje
                 "size": len(payload),
             }
         )
+    candidate = candidate_value()
     inventory: dict[str, object] = {
         "assets": entries,
+        "candidate_root": candidate,
+        "candidate_root_sha256": candidate_root_sha256(candidate),
         "release_tag": tag,
         "release_version": release_version(tag),
-        "schema": "wn.geometer.release_inventory.a0",
+        "schema": "wn.geometer.release_inventory.b0",
     }
     inventory_path = root / f"geometer-release-inventory-{tag}.json"
     inventory_path.write_text(
@@ -140,6 +156,23 @@ def test_downloaded_release_rejects_inconsistent_metadata(tmp_path: Path) -> Non
         newline="\n",
     )
     with pytest.raises(ValueError, match="invalid recorded SHA-256"):
+        verify_release(tmp_path, tag)
+
+
+def test_downloaded_release_is_bound_to_candidate_source(tmp_path: Path) -> None:
+    tag = TEST_TAG
+    inventory_path, inventory = write_downloaded_release(tmp_path, tag)
+    verify_release(tmp_path, tag, "7" * 40)
+    with pytest.raises(ValueError, match="source revision mismatch"):
+        verify_release(tmp_path, tag, "8" * 40)
+
+    inventory["candidate_root_sha256"] = "0" * 64
+    inventory_path.write_text(
+        json.dumps(inventory, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    with pytest.raises(ValueError, match="candidate-root digest mismatch"):
         verify_release(tmp_path, tag)
 
 

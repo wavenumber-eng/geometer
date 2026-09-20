@@ -10,11 +10,15 @@ import json
 import os
 from pathlib import Path
 import re
+import subprocess
 import tempfile
 from typing import Any, Sequence
 
+from ci_release_metadata import check_notes, check_surfaces, package_version, release_date, release_tag
+
 
 SCHEMA = "wn.geometer.release_candidate_root.a0"
+ROOT = Path(__file__).resolve().parents[1]
 SHA256_RE = re.compile(r"[0-9a-f]{64}")
 REVISION_RE = re.compile(r"[0-9a-f]{40}")
 VERSION_RE = re.compile(
@@ -154,6 +158,32 @@ def create_candidate_root(
     return validate_candidate_root(value)
 
 
+def create_candidate_root_from_checkout(root: Path = ROOT) -> dict[str, Any]:
+    """Derive the minimal candidate identity from one checked-out commit."""
+
+    if root != ROOT:
+        raise CandidateRootError(f"candidate checkout root must be {ROOT}")
+    check_surfaces()
+    check_notes()
+    completed = subprocess.run(
+        ["git", "rev-parse", "--verify", "HEAD"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    version = package_version()
+    date_value = release_date(version)
+    return create_candidate_root(
+        source_revision=completed.stdout.strip(),
+        release_version=version,
+        release_date=date_value,
+        abi_generation=int(date_value.replace("-", "")),
+        expected_tag=release_tag(version),
+        occt_lock_sha256=file_sha256(root / "dependencies" / "occt-lock.json"),
+    )
+
+
 def load_candidate_root(path: Path) -> dict[str, Any]:
     """Load a candidate root and require its exact canonical encoding."""
     try:
@@ -224,6 +254,8 @@ def _parser() -> argparse.ArgumentParser:
     create.add_argument("--abi-generation", required=True, type=int)
     create.add_argument("--expected-tag", required=True)
     _add_digest_options(create, "occt-lock")
+    create_checkout = commands.add_parser("create-checkout", help="create a candidate root from the current checkout")
+    create_checkout.add_argument("output", type=Path)
     validate = commands.add_parser("validate", help="validate a canonical candidate-root document")
     validate.add_argument("input", type=Path)
     return parser
@@ -241,6 +273,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                 expected_tag=args.expected_tag,
                 occt_lock_sha256=_digest(args.occt_lock_sha256, args.occt_lock_file, "occt-lock"),
             )
+            write_candidate_root(args.output, value)
+            path = args.output
+        elif args.command == "create-checkout":
+            value = create_candidate_root_from_checkout()
             write_candidate_root(args.output, value)
             path = args.output
         else:

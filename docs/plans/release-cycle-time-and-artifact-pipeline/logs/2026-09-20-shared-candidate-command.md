@@ -29,3 +29,12 @@ These keys are direct immutable identities, not inferred recipes.
 This completes the shared-command portion of the candidate workflow. The plan
 step remains pending until the four native lanes and WASM are combined into the
 canonical candidate-root-bound inventory and stored without publication.
+
+The existing aggregate release inventory has also moved to its B0 envelope. It
+embeds the minimal candidate root plus its canonical digest, and every draft,
+PyPI, and public verification compares the embedded source revision with the
+checked-out tag revision. This closes cross-commit assembly in the current
+workflow without introducing another recipe or toolchain identity. Candidate
+production remains coupled to publication until the R2 intake and promotion
+workflows are implemented, so the overall candidate-workflow step remains
+pending.

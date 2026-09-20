@@ -9,10 +9,11 @@ from pathlib import Path
 import re
 from typing import Any
 
+from candidate_root import candidate_root_sha256, validate_candidate_root
 from validate_release_inventory import collect_assets, expected_asset_names, release_version
 
 
-SCHEMA = "wn.geometer.release_inventory.a0"
+SCHEMA = "wn.geometer.release_inventory.b0"
 
 
 def sha256_file(path: Path) -> str:
@@ -37,14 +38,33 @@ def load_inventory(path: Path) -> dict[str, Any]:
     return value
 
 
-def verify_release(root: Path, tag: str) -> dict[str, Any]:
+def validate_candidate_binding(inventory: dict[str, Any], tag: str, source_revision: str | None) -> None:
+    candidate = validate_candidate_root(inventory["candidate_root"])
+    if candidate_root_sha256(candidate) != inventory["candidate_root_sha256"]:
+        raise ValueError("release inventory candidate-root digest mismatch")
+    if candidate["release"]["expected_tag"] != tag:
+        raise ValueError("release inventory candidate-root tag mismatch")
+    if candidate["release"]["version"] != inventory["release_version"]:
+        raise ValueError("release inventory candidate-root version mismatch")
+    if source_revision is not None and candidate["source"]["revision"] != source_revision:
+        raise ValueError("release inventory candidate-root source revision mismatch")
+
+
+def verify_release(root: Path, tag: str, source_revision: str | None = None) -> dict[str, Any]:
     inventory_name = f"geometer-release-inventory-{tag}.json"
     assets = collect_assets(root)
     if inventory_name not in assets:
         raise ValueError(f"release inventory is missing: {inventory_name}")
 
     inventory = load_inventory(assets[inventory_name])
-    if set(inventory) != {"assets", "release_tag", "release_version", "schema"}:
+    if set(inventory) != {
+        "assets",
+        "candidate_root",
+        "candidate_root_sha256",
+        "release_tag",
+        "release_version",
+        "schema",
+    }:
         raise ValueError("release inventory has unexpected root fields")
     if inventory["schema"] != SCHEMA:
         raise ValueError(f"unsupported release inventory schema: {inventory['schema']!r}")
@@ -52,6 +72,7 @@ def verify_release(root: Path, tag: str) -> dict[str, Any]:
         raise ValueError(f"release inventory tag does not match {tag}")
     if inventory["release_version"] != release_version(tag):
         raise ValueError(f"release inventory version does not match {tag}")
+    validate_candidate_binding(inventory, tag, source_revision)
 
     entries = inventory["assets"]
     if not isinstance(entries, list):
@@ -99,8 +120,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("root", type=Path)
     parser.add_argument("--tag", required=True)
+    parser.add_argument("--source-revision")
     args = parser.parse_args()
-    inventory = verify_release(args.root.resolve(), args.tag)
+    inventory = verify_release(args.root.resolve(), args.tag, args.source_revision)
     print(f"verified {len(inventory['assets'])} downloaded release assets for {args.tag}")
 
 

@@ -9,10 +9,11 @@ import re
 from pathlib import Path
 from typing import Any
 
+from candidate_root import candidate_root_sha256, validate_candidate_root
 from validate_release_inventory import release_version
 
 
-RELEASE_INVENTORY_SCHEMA = "wn.geometer.release_inventory.a0"
+RELEASE_INVENTORY_SCHEMA = "wn.geometer.release_inventory.b0"
 CHANNEL_INVENTORY_SCHEMA = "wn.geometer.release_channel_inventory.a0"
 PROMOTION_PLAN_SCHEMA = "wn.geometer.release_promotion_plan.a0"
 ASSET_FIELDS = {"name", "sha256", "size"}
@@ -74,7 +75,14 @@ def validate_release_inventory(inventory: Any) -> dict[str, Any]:
 
     if not isinstance(inventory, dict):
         raise ValueError("expected release inventory root must be an object")
-    if set(inventory) != {"assets", "release_tag", "release_version", "schema"}:
+    if set(inventory) != {
+        "assets",
+        "candidate_root",
+        "candidate_root_sha256",
+        "release_tag",
+        "release_version",
+        "schema",
+    }:
         raise ValueError("expected release inventory has unexpected root fields")
     if inventory["schema"] != RELEASE_INVENTORY_SCHEMA:
         raise ValueError(f"unsupported release inventory schema: {inventory['schema']!r}")
@@ -85,6 +93,11 @@ def validate_release_inventory(inventory: Any) -> dict[str, Any]:
     version = release_version(tag)
     if inventory["release_version"] != version:
         raise ValueError(f"expected release inventory version does not match {tag}")
+    candidate = validate_candidate_root(inventory["candidate_root"])
+    if candidate_root_sha256(candidate) != inventory["candidate_root_sha256"]:
+        raise ValueError("expected release inventory candidate-root digest mismatch")
+    if candidate["release"]["expected_tag"] != tag or candidate["release"]["version"] != version:
+        raise ValueError("expected release inventory candidate root disagrees with release")
 
     assets = _index_assets(
         inventory["assets"],
@@ -93,6 +106,8 @@ def validate_release_inventory(inventory: Any) -> dict[str, Any]:
     )
     return {
         "assets": [assets[name] for name in sorted(assets)],
+        "candidate_root": candidate,
+        "candidate_root_sha256": inventory["candidate_root_sha256"],
         "release_tag": tag,
         "release_version": version,
         "schema": RELEASE_INVENTORY_SCHEMA,

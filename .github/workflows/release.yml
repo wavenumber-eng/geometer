@@ -303,11 +303,13 @@ jobs:
           path: out/release-candidate
 
       - name: Validate exact release inventory
-        run: >-
-          uv run --no-project python scripts/validate_release_inventory.py
-          out/release-candidate
-          --tag "$RELEASE_TAG"
-          --output "out/geometer-release-inventory-${RELEASE_TAG}.json"
+        run: |
+          uv run --no-project python scripts/candidate_root.py create-checkout out/candidate-root.json
+          uv run --no-project python scripts/validate_release_inventory.py \
+            out/release-candidate \
+            --tag "$RELEASE_TAG" \
+            --candidate-root out/candidate-root.json \
+            --output "out/geometer-release-inventory-${RELEASE_TAG}.json"
 
       - name: Attest the qualified static SDK archives
         uses: actions/attest@v4
@@ -372,7 +374,7 @@ jobs:
         run: |
           mkdir -p out/draft-release
           gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir out/draft-release
-          python scripts/verify_release_inventory.py out/draft-release --tag "$RELEASE_TAG"
+          python scripts/verify_release_inventory.py out/draft-release --tag "$RELEASE_TAG" --source-revision "$(git rev-parse HEAD)"
 
   pypi:
     name: PyPI trusted publish
@@ -399,7 +401,7 @@ jobs:
 
       - name: Verify payload and select the four qualified platform wheels
         run: |
-          python scripts/verify_release_inventory.py out/qualified-release --tag "$RELEASE_TAG"
+          python scripts/verify_release_inventory.py out/qualified-release --tag "$RELEASE_TAG" --source-revision "$(git rev-parse HEAD)"
           mkdir dist-pypi
           find out/qualified-release -type f -name '*.whl' -exec cp '{}' dist-pypi/ \;
           test "$(find dist-pypi -maxdepth 1 -type f -name '*.whl' | wc -l)" -eq 4
@@ -429,7 +431,7 @@ jobs:
           test "$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = "true"
           mkdir -p out/draft-release
           gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir out/draft-release
-          python scripts/verify_release_inventory.py out/draft-release --tag "$RELEASE_TAG"
+          python scripts/verify_release_inventory.py out/draft-release --tag "$RELEASE_TAG" --source-revision "$(git rev-parse HEAD)"
           gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false
 
   verify-public:
@@ -453,7 +455,7 @@ jobs:
           test "$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = "false"
           mkdir -p out/public-release
           gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir out/public-release
-          python scripts/verify_release_inventory.py out/public-release --tag "$RELEASE_TAG"
+          python scripts/verify_release_inventory.py out/public-release --tag "$RELEASE_TAG" --source-revision "$(git rev-parse HEAD)"
           mapfile -d '' attestable_archives < <(find out/public-release -maxdepth 1 -type f -name 'geometer-sdk-*.zip' -print0)
           test "${#attestable_archives[@]}" -eq 4
           for asset in "${attestable_archives[@]}"; do

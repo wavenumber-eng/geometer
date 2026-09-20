@@ -214,7 +214,7 @@ test_case_type = "unit"
 id = "PY_027"
 file = "test_release_inventory.py"
 name = "Immutable Release Inventory"
-description = "Checks exact multi-platform native, wheel, WASM, static SDK, checksum, and provenance asset naming plus fail-closed post-download metadata and digest verification."
+description = "Checks the B0 candidate-root binding plus exact multi-platform native, wheel, WASM, static SDK, checksum, provenance, and post-download verification."
 test_case_type = "unit"
 
 [[subtests]]
@@ -242,7 +242,7 @@ test_case_type = "unit"
 id = "PY_031"
 file = "test_release_promotion_plan.py"
 name = "Non-Mutating Release Promotion Plan"
-description = "Checks exact asset identity, safe names, deterministic resume classification, and rejection of mismatched or unexpected release-channel state without publishing."
+description = "Checks B0 candidate-root and exact asset identity, safe names, deterministic resume classification, and rejection of mismatched or unexpected channel state without publishing."
 test_case_type = "unit"
 
 [[subtests]]

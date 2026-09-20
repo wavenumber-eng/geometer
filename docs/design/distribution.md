@@ -51,6 +51,14 @@ Release. PyPI receives exactly the four inventoried wheels. Only after trusted
 publishing succeeds is the GitHub Release made public, downloaded again, and
 checked against its inventory and GitHub attestations.
 
+The release inventory uses the B0 envelope. Besides exact asset names, sizes,
+and SHA-256 digests, it embeds the canonical candidate root and its digest. The
+candidate root contains only the exact Git commit, synchronized release
+identity, and SHA-256 of `dependencies/occt-lock.json`. Draft, PyPI, and public
+verification must match the candidate source revision to the checked-out
+release tag. Tool versions and workflow timings remain evidence rather than
+alternate cache or candidate identities.
+
 Browser and native Lab build scripts do not publish demo applications. See
 [Browser demo packaging and UI](../developer/browser-demos.md) for the local build, closure,
 review, and explicit publication boundary.

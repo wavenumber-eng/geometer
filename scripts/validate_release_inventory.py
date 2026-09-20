@@ -10,6 +10,7 @@ import zipfile
 from pathlib import Path
 from typing import Any
 
+from candidate_root import candidate_root_sha256, load_candidate_root, validate_candidate_root
 from validate_release_artifacts import validate_native, validate_sdk, validate_wasm, validate_wheel
 
 
@@ -20,6 +21,7 @@ WHEEL_SUFFIXES = {
     "linux-arm64": "manylinux_2_35_aarch64.whl",
     "macos-arm64": "macosx_11_0_arm64.whl",
 }
+SCHEMA = "wn.geometer.release_inventory.b0"
 
 
 def release_version(tag: str) -> str:
@@ -82,7 +84,12 @@ def validate_native_wheel_pair(native_path: Path, wheel_path: Path) -> None:
             raise ValueError(f"wheel attestation does not match its native archive: {wheel_path.name}")
 
 
-def validate_inventory(root: Path, tag: str) -> dict[str, Any]:
+def validate_inventory(root: Path, tag: str, candidate_root: dict[str, Any]) -> dict[str, Any]:
+    candidate = validate_candidate_root(candidate_root)
+    if candidate["release"]["expected_tag"] != tag:
+        raise ValueError("candidate root expected tag does not match release inventory")
+    if candidate["release"]["version"] != release_version(tag):
+        raise ValueError("candidate root version does not match release inventory")
     expected = expected_asset_names(tag)
     assets = collect_assets(root)
     missing = expected - set(assets)
@@ -105,7 +112,9 @@ def validate_inventory(root: Path, tag: str) -> dict[str, Any]:
     validate_wasm(assets["wasm-dist.zip"])
 
     return {
-        "schema": "wn.geometer.release_inventory.a0",
+        "schema": SCHEMA,
+        "candidate_root": candidate,
+        "candidate_root_sha256": candidate_root_sha256(candidate),
         "release_tag": tag,
         "release_version": release_version(tag),
         "assets": [
@@ -119,9 +128,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("root", type=Path)
     parser.add_argument("--tag", required=True)
+    parser.add_argument("--candidate-root", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    inventory = validate_inventory(args.root.resolve(), args.tag)
+    candidate = load_candidate_root(args.candidate_root.resolve())
+    inventory = validate_inventory(args.root.resolve(), args.tag, candidate)
     output = args.output.resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(inventory, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")

@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import subprocess
 import sys
 from typing import Any, Callable
 
@@ -100,6 +101,20 @@ def test_create_candidate_root_contains_only_build_inputs() -> None:
         occt_lock_sha256=value["occt_lock_sha256"],
     )
     assert created == value
+
+
+def test_checkout_candidate_root_uses_exact_commit_and_lock() -> None:
+    created = candidate_root.create_candidate_root_from_checkout()
+    revision = subprocess.run(
+        ["git", "rev-parse", "--verify", "HEAD"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    assert created["source"] == {"revision": revision}
+    assert created["occt_lock_sha256"] == candidate_root.file_sha256(ROOT / "dependencies" / "occt-lock.json")
+    assert created["release"]["expected_tag"] == candidate_root.release_tag(candidate_root.package_version())
 
 
 def test_load_rejects_valid_but_noncanonical_json(tmp_path: Path) -> None:

@@ -267,6 +267,9 @@ def test_ci_is_manual_only_and_release_uses_shared_candidate_command() -> None:
         assert implementation_detail not in release
     assert "scripts/validate_release_inventory.py" in release
     assert "scripts/verify_release_inventory.py" in release
+    assert "scripts/candidate_root.py create-checkout out/candidate-root.json" in release
+    assert "--candidate-root out/candidate-root.json" in release
+    assert release.count('--source-revision "$(git rev-parse HEAD)"') == 4
     assert release.count("mkdir -p out/draft-release") == 2
     assert release.count("mkdir -p out/public-release") == 1
     assert "mkdir out/draft-release" not in release

@@ -463,8 +463,9 @@ workflow rejects a dispatch ref and input-tag mismatch so GitHub provenance is
 bound to the source revision actually being released. It
 checks out the tag on every runner and rebuilds Windows x64, Linux x64, Linux
 ARM64, and macOS ARM64 native archives, platform wheels, and static SDKs, plus
-WASM. All outputs feed one exact digest inventory. The workflow uploads the
-qualified bytes to a draft GitHub Release and verifies the downloaded draft
+WASM. All outputs feed one exact B0 digest inventory bound to the source commit,
+release identity, and immutable OCCT lock through the canonical candidate root.
+The workflow uploads the qualified bytes to a draft GitHub Release and verifies the downloaded draft
 before PyPI trusted publishing receives exactly the four rebuilt wheels. Only a
 successful PyPI publication permits the GitHub Release to become public; a
 final job downloads every public asset and verifies its digest and GitHub

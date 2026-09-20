@@ -10,7 +10,8 @@ from typing import Any
 
 import pytest
 
-from ci_release_metadata import package_version, release_tag
+from candidate_root import candidate_root_sha256, create_candidate_root
+from ci_release_metadata import package_version, release_date, release_tag
 from plan_release_promotion import (
     CHANNEL_INVENTORY_SCHEMA,
     PROMOTION_PLAN_SCHEMA,
@@ -28,11 +29,22 @@ def asset(name: str, payload: bytes) -> dict[str, Any]:
 
 
 def expected_inventory() -> dict[str, Any]:
+    date_value = release_date(TEST_VERSION)
+    candidate = create_candidate_root(
+        source_revision="7" * 40,
+        release_version=TEST_VERSION,
+        release_date=date_value,
+        abi_generation=int(date_value.replace("-", "")),
+        expected_tag=TEST_TAG,
+        occt_lock_sha256="5" * 64,
+    )
     return {
         "assets": [asset("native-windows-x64.zip", b"native"), asset("wasm-dist.zip", b"wasm")],
+        "candidate_root": candidate,
+        "candidate_root_sha256": candidate_root_sha256(candidate),
         "release_tag": TEST_TAG,
         "release_version": TEST_VERSION,
-        "schema": "wn.geometer.release_inventory.a0",
+        "schema": "wn.geometer.release_inventory.b0",
     }
 
 

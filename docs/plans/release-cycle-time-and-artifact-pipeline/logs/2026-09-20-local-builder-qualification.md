@@ -126,3 +126,24 @@ The native binary reports `2026.9.19` with ABI generation `20260919`; all 20
 production CTests passed. The `/MT` static-SDK path remains intentionally
 blocked rather than accepting the Visual Studio 18 archive under a false v143
 identity.
+
+## Portable SDK/native graph consolidation
+
+Linux and macOS SDK builds now compile `geometer_lib` in the platform's native
+build directory. Native validation reconfigures that same graph and builds the
+remaining CLI, test, and preview targets without recompiling Geometer's 99
+library objects. Windows remains a fixed exception because its supported SDK is
+`/MT` and its executable/wheel are `/MD`.
+
+A clean isolated Linux x64 proof at
+`868933639a92e5d9def44ed9d9ade7e6aeadc565` produced these results:
+
+| Work | Wall time | Result |
+| --- | ---: | --- |
+| SDK dependency restore/configure/library compile/package | 97.39 sec | pass; clean source, 99 Geometer objects compiled once |
+| Native configure/remaining build/smoke/20 CTests | 34.72 sec | pass; Geometer library objects reused |
+| Relocated C/Rust SDK qualification | 74.90 sec | pass |
+
+The relocated qualification still recompiles the Rust graph for its direct test
+and packaged example. That separate measured duplication remains assigned to
+the test-lane audit.

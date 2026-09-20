@@ -32,7 +32,7 @@ concurrency:
 
 jobs:
   native:
-    name: native OCCT (${{ matrix.platform }})
+    name: native OCCT (${{ matrix.platform }}, ${{ matrix.profile }})
     if: inputs.target == 'all' || inputs.target == 'native'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
@@ -43,15 +43,43 @@ jobs:
           - os: windows-latest
             platform: windows-x64
             compiler: msvc
+            profile: default
+            cache_suffix: ""
+            build_path: .deps/native/windows-x64/occt-build
+            install_path: .deps/native/windows-x64/occt-install
+            build_args: ""
+          - os: windows-latest
+            platform: windows-x64
+            compiler: msvc
+            profile: static-crt
+            cache_suffix: -static-crt
+            build_path: .deps/native/windows-x64/occt-static-crt-build
+            install_path: .deps/native/windows-x64/occt-static-crt-install
+            build_args: --msvc-runtime Static
           - os: ubuntu-22.04
             platform: linux-x64
             compiler: gcc
+            profile: default
+            cache_suffix: ""
+            build_path: .deps/native/linux-x64/occt-build
+            install_path: .deps/native/linux-x64/occt-install
+            build_args: ""
           - os: ubuntu-22.04-arm
             platform: linux-arm64
             compiler: gcc
+            profile: default
+            cache_suffix: ""
+            build_path: .deps/native/linux-arm64/occt-build
+            install_path: .deps/native/linux-arm64/occt-install
+            build_args: ""
           - os: macos-15
             platform: macos-arm64
             compiler: apple-clang
+            profile: default
+            cache_suffix: ""
+            build_path: .deps/native/macos-arm64/occt-build
+            install_path: .deps/native/macos-arm64/occt-install
+            build_args: --macos-deployment-target 11.0
     env:
       R2_BUCKET: ${{ vars.R2_BUCKET || secrets.R2_BUCKET }}
       R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL || vars.R2_ENDPOINT_URL }}
@@ -82,17 +110,16 @@ jobs:
         with:
           path: |
             .deps/occt-src
-            .deps/native/${{ matrix.platform }}/occt-build
-            .deps/native/${{ matrix.platform }}/occt-install
-          key: occt-v2-native-${{ matrix.platform }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-${{ hashFiles('scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
+            ${{ matrix.build_path }}
+            ${{ matrix.install_path }}
+          key: occt-v2-native-${{ matrix.platform }}-${{ matrix.compiler }}${{ matrix.cache_suffix }}-${{ steps.dependency_versions.outputs.occt_tag }}-${{ hashFiles('scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
           restore-keys: |
-            occt-v2-native-${{ matrix.platform }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-
-            occt-${{ matrix.os }}-${{ runner.arch }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-
+            occt-v2-native-${{ matrix.platform }}-${{ matrix.compiler }}${{ matrix.cache_suffix }}-${{ steps.dependency_versions.outputs.occt_tag }}-
       - name: Build or restore OCCT and upload to R2
         shell: pwsh
         run: |
           $mode = if ("${{ inputs.force_source_build }}" -eq "true") { "off" } else { "auto" }
-          uv run python scripts/build_occt.py --platform-tag "${{ matrix.platform }}" --binary-cache $mode --upload-binary-cache
+          uv run python scripts/build_occt.py --platform-tag "${{ matrix.platform }}" --binary-cache $mode --upload-binary-cache ${{ matrix.build_args }}
 
   wasm:
     name: wasm OCCT

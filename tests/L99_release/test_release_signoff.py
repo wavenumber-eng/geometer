@@ -354,6 +354,13 @@ def test_occt_cache_consumers_share_platform_keys() -> None:
     assert "occt-v2-native-linux-x64-gcc-" in workflows["wasm.yml"]
     assert "occt-v2-native-macos-arm64-apple-clang-" in workflows["macos-wheel.yml"]
 
+    producer = workflows["occt-deps.yml"]
+    assert "profile: static-crt" in producer
+    assert "cache_suffix: -static-crt" in producer
+    assert "occt-static-crt-build" in producer
+    assert "occt-static-crt-install" in producer
+    assert "build_args: --msvc-runtime Static" in producer
+
     wasm_key = "occt-v2-wasm-linux-x64-emscripten-"
     for name in ("ci.yml", "release.yml", "wasm.yml", "occt-deps.yml"):
         assert wasm_key in workflows[name]

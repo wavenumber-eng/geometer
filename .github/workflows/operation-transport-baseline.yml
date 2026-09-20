@@ -30,7 +30,7 @@ jobs:
     timeout-minutes: 90
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(inputs.target == 'windows-x64' && '{"include":[{"os":"windows-latest","platform":"windows-x64","compiler":"msvc","executable":"dist/native/windows-x64/geometer.exe"}]}' || inputs.target == 'macos-arm64' && '{"include":[{"os":"macos-15","platform":"macos-arm64","compiler":"apple-clang","executable":"dist/native/macos-arm64/geometer"}]}' || '{"include":[{"os":"windows-latest","platform":"windows-x64","compiler":"msvc","executable":"dist/native/windows-x64/geometer.exe"},{"os":"macos-15","platform":"macos-arm64","compiler":"apple-clang","executable":"dist/native/macos-arm64/geometer"}]}') }}
+      matrix: ${{ fromJSON(inputs.target == 'windows-x64' && '{"include":[{"os":"windows-2022","platform":"windows-x64","compiler":"msvc","executable":"dist/native/windows-x64/geometer.exe"}]}' || inputs.target == 'macos-arm64' && '{"include":[{"os":"macos-15","platform":"macos-arm64","compiler":"apple-clang","executable":"dist/native/macos-arm64/geometer"}]}' || '{"include":[{"os":"windows-2022","platform":"windows-x64","compiler":"msvc","executable":"dist/native/windows-x64/geometer.exe"},{"os":"macos-15","platform":"macos-arm64","compiler":"apple-clang","executable":"dist/native/macos-arm64/geometer"}]}') }}
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v8.2.0

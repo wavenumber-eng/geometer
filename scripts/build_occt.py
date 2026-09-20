@@ -197,11 +197,18 @@ def native_toolchain_abi(platform_name: str) -> str | None:
             return "clang-cl" if "clang-cl" in compiler else "clang"
         tools_version = os.environ.get("VCToolsVersion", "")
         match = re.match(r"14\.(\d+)", tools_version)
-        if match and int(match.group(1)) < 30:
-            return "msvc-v142"
+        if match:
+            tools_minor = int(match.group(1))
+            if tools_minor < 30:
+                return "msvc-v142"
+            if tools_minor >= 50:
+                return "msvc-v145"
+            return "msvc-v143"
         cl_path = (shutil.which("cl") or "").lower()
         if "\\2019\\" in cl_path:
             return "msvc-v142"
+        if "\\visual studio\\18\\" in cl_path:
+            return "msvc-v145"
         return "msvc-v143"
     return nonwindows_toolchain_abi(platform_name)
 

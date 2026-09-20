@@ -86,3 +86,26 @@ and STEP-to-GLB.
 - Run three clean and three warm measurements for the final command; the
   measurements above are implementation qualification, not the final p50/worst
   acceptance set.
+
+## Windows lock correction discovered during qualification
+
+Restoring a Windows OCCT archive into the `D:` worktree initially failed
+because the verified archive was staged in the user's `C:` temporary directory
+and `Path.replace` cannot rename across Windows volumes. Locked restores now
+stage under the target install parent. A focused regression test requires that
+same-volume rule; no copy fallback or additional identity was introduced.
+
+The `/MT` archive then failed its link probe under local MSVC 19.44 with missing
+`__std_max_element_d_` and `__std_min_element_4i` symbols. Producer run
+`35477956256` proves that archive was built by Visual Studio 18 / MSVC 19.51
+(`VCToolsVersion=14.51.36231`) even though its internal profile claims
+`msvc-v143-crt-static`. The old producer collapsed every MSVC version newer
+than 14.30 to `v143`, so the archive's ABI evidence is false.
+
+The producer now identifies 14.50+ as `msvc-v145`, which makes the current lock
+reject that toolchain before OCCT configure/build. Windows producer, release,
+and transport-baseline workflows are pinned to `windows-2022`, matching the
+governed `msvc-v143` lock and this workstation's Visual Studio 2022 toolchain.
+The mislabeled `/MT` object remains immutable historical input; it must be
+replaced by a newly built Windows-2022 candidate and the lock must move to that
+new digest before Windows SDK qualification can complete.

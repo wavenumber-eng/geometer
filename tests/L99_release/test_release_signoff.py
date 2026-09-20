@@ -179,6 +179,14 @@ def test_linux_wheel_builds_use_glibc_235_baseline() -> None:
     assert '"linux_glibc_baseline": resolved_linux_glibc' in build_occt
 
 
+def test_windows_builds_use_the_locked_msvc_v143_runner() -> None:
+    workflow_names = ("release.yml", "occt-deps.yml", "operation-transport-baseline.yml")
+    for workflow_name in workflow_names:
+        workflow = (ROOT / ".github" / "workflows" / workflow_name).read_text(encoding="utf-8")
+        assert "windows-latest" not in workflow
+        assert "windows-2022" in workflow
+
+
 def test_normal_builds_use_public_dependency_cache_without_r2_secrets() -> None:
     lock_script = (ROOT / "scripts" / "occt_lock.py").read_text(encoding="utf-8")
     assert 'DEFAULT_BASE_URL = "https://artifacts.wavenumber.net"' in lock_script
@@ -213,7 +221,7 @@ def test_ci_is_manual_only_and_release_rebuilds_every_output_once() -> None:
     assert ci.count("GEOMETER_TEST_PROFILE: production") == 4
     assert "push:" not in ci
 
-    assert 'name: Publish' in release
+    assert "name: Publish" in release
     release_triggers = release.split("\npermissions:", 1)[0]
     assert "workflow_dispatch:" in release_triggers
     assert "\n  release:" not in release_triggers
@@ -289,9 +297,7 @@ def test_every_workflow_job_has_a_cost_timeout() -> None:
         job_starts = [
             index
             for index, line in enumerate(lines[jobs_index + 1 :], jobs_index + 1)
-            if line.startswith("  ")
-            and not line.startswith("    ")
-            and line.endswith(":")
+            if line.startswith("  ") and not line.startswith("    ") and line.endswith(":")
         ]
         for position, start in enumerate(job_starts):
             end = job_starts[position + 1] if position + 1 < len(job_starts) else len(lines)
@@ -302,9 +308,7 @@ def test_every_workflow_job_has_a_cost_timeout() -> None:
 
 
 def test_transport_baseline_can_target_one_cached_platform() -> None:
-    baseline = (
-        ROOT / ".github" / "workflows" / "operation-transport-baseline.yml"
-    ).read_text(encoding="utf-8")
+    baseline = (ROOT / ".github" / "workflows" / "operation-transport-baseline.yml").read_text(encoding="utf-8")
 
     assert "Platform baseline to record." in baseline
     assert "inputs.target == 'windows-x64'" in baseline
@@ -316,14 +320,7 @@ def test_governed_transport_evidence_preserves_reviewed_bytes() -> None:
     attributes = (ROOT / ".gitattributes").read_text(encoding="utf-8")
     assert "docs/research/evidence/**/*.json binary" in attributes
 
-    root = (
-        ROOT
-        / "docs"
-        / "research"
-        / "evidence"
-        / "operation-transport"
-        / "sibling-baseline-2026-09-19"
-    )
+    root = ROOT / "docs" / "research" / "evidence" / "operation-transport" / "sibling-baseline-2026-09-19"
     inventory = json.loads((root / "inventory.json").read_text(encoding="utf-8"))
     for platform in ("windows_x64", "macos_arm64"):
         for report in inventory[platform]["reports"]:

@@ -31,9 +31,7 @@ def _make_install_tree(root: Path, version: str = "8.0.1") -> None:
     cmake_dir = root / "lib" / "cmake" / "opencascade"
     cmake_dir.mkdir(parents=True)
     (cmake_dir / "OpenCASCADEConfig.cmake").write_text("# test config\n", encoding="utf-8")
-    (cmake_dir / "OpenCASCADEConfigVersion.cmake").write_text(
-        f'set(PACKAGE_VERSION "{version}")\n', encoding="utf-8"
-    )
+    (cmake_dir / "OpenCASCADEConfigVersion.cmake").write_text(f'set(PACKAGE_VERSION "{version}")\n', encoding="utf-8")
     (root / "lib" / "libTKTest.a").write_bytes(b"test")
 
 
@@ -109,9 +107,9 @@ def test_source_identity_resolves_annotated_tag_and_peeled_commit(tmp_path: Path
 
     tag_object, commit = occt_producer.source_identity(checkout, "V1_0_0")
 
-    assert tag_object == subprocess.check_output(
-        ["git", "rev-parse", "refs/tags/V1_0_0"], cwd=checkout, text=True
-    ).strip()
+    assert (
+        tag_object == subprocess.check_output(["git", "rev-parse", "refs/tags/V1_0_0"], cwd=checkout, text=True).strip()
+    )
     assert commit == subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=checkout, text=True).strip()
 
 
@@ -140,9 +138,25 @@ def test_producer_records_compiler_family_and_major(
     assert build_occt.nonwindows_toolchain_abi("linux-x64") == expected
 
 
-def test_publish_candidate_uses_content_addressed_conditional_create(
-    monkeypatch: MonkeyPatch, tmp_path: Path
+@pytest.mark.parametrize(
+    ("tools_version", "expected"),
+    [
+        ("14.29.30133", "msvc-v142"),
+        ("14.44.35207", "msvc-v143"),
+        ("14.51.36231", "msvc-v145"),
+    ],
+)
+def test_windows_producer_rejects_a_different_msvc_abi(
+    monkeypatch: MonkeyPatch, tools_version: str, expected: str
 ) -> None:
+    monkeypatch.setenv("VCToolsVersion", tools_version)
+    monkeypatch.delenv("CMAKE_GENERATOR", raising=False)
+    monkeypatch.delenv("CXX", raising=False)
+
+    assert build_occt.native_toolchain_abi("windows-x64") == expected
+
+
+def test_publish_candidate_uses_content_addressed_conditional_create(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
     install = tmp_path / "install"
     _set_github_identity(monkeypatch)
     _make_install_tree(install)
@@ -177,9 +191,7 @@ def test_publish_candidate_uses_content_addressed_conditional_create(
     ]
 
 
-def test_secret_free_package_handoff_is_closed_and_tamper_evident(
-    monkeypatch: MonkeyPatch, tmp_path: Path
-) -> None:
+def test_secret_free_package_handoff_is_closed_and_tamper_evident(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
     install = tmp_path / "install"
     _set_github_identity(monkeypatch)
     _make_install_tree(install)
@@ -204,9 +216,7 @@ def test_secret_free_package_handoff_is_closed_and_tamper_evident(
         occt_producer.publish_candidate(package)
 
 
-def test_concurrent_identical_candidate_publication_is_idempotent(
-    monkeypatch: MonkeyPatch, tmp_path: Path
-) -> None:
+def test_concurrent_identical_candidate_publication_is_idempotent(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
     install = tmp_path / "install"
     _set_github_identity(monkeypatch)
     _make_install_tree(install)
@@ -227,18 +237,14 @@ def test_concurrent_identical_candidate_publication_is_idempotent(
     monkeypatch.setattr(
         occt_producer,
         "_r2_put_object_if_absent",
-        lambda *_args: (_ for _ in ()).throw(
-            urllib.error.HTTPError("url", 412, "exists", Message(), None)
-        ),
+        lambda *_args: (_ for _ in ()).throw(urllib.error.HTTPError("url", 412, "exists", Message(), None)),
     )
     monkeypatch.setattr(occt_producer, "_r2_get_object", lambda *_args: archive_bytes)
 
     occt_producer.publish_candidate(package)
 
 
-def test_publisher_rejects_forged_run_identity_and_checksum(
-    monkeypatch: MonkeyPatch, tmp_path: Path
-) -> None:
+def test_publisher_rejects_forged_run_identity_and_checksum(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
     _set_github_identity(monkeypatch)
     install = tmp_path / "install"
     _make_install_tree(install)
@@ -264,9 +270,7 @@ def test_publisher_rejects_forged_run_identity_and_checksum(
         occt_producer.publish_candidate(package)
 
 
-def test_publisher_rejects_rehashed_unsafe_archive(
-    monkeypatch: MonkeyPatch, tmp_path: Path
-) -> None:
+def test_publisher_rejects_rehashed_unsafe_archive(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
     _set_github_identity(monkeypatch)
     install = tmp_path / "install"
     _make_install_tree(install)
@@ -286,16 +290,12 @@ def test_publisher_rejects_rehashed_unsafe_archive(
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     manifest["archive"] = {
         "name": occt_producer.ARCHIVE_NAME,
-        "object_key": (
-            f"dependencies/occt/{package.name}/{archive_sha}/{occt_producer.ARCHIVE_NAME}"
-        ),
+        "object_key": (f"dependencies/occt/{package.name}/{archive_sha}/{occt_producer.ARCHIVE_NAME}"),
         "sha256": archive_sha,
         "size": archive_path.stat().st_size,
     }
     manifest_path.write_bytes((json.dumps(manifest, indent=2, sort_keys=True) + "\n").encode())
-    (package / occt_producer.SHA256_NAME).write_bytes(
-        f"{archive_sha}  {occt_producer.ARCHIVE_NAME}\n".encode("ascii")
-    )
+    (package / occt_producer.SHA256_NAME).write_bytes(f"{archive_sha}  {occt_producer.ARCHIVE_NAME}\n".encode("ascii"))
     monkeypatch.setattr(
         occt_producer,
         "config_from_env",
@@ -334,9 +334,7 @@ def test_producer_profile_requires_exact_version(tmp_path: Path) -> None:
     assert not occt_producer.install_matches_profile(install, profile)
 
 
-def test_candidate_publication_rejects_source_identity_outside_lock(
-    monkeypatch: MonkeyPatch, tmp_path: Path
-) -> None:
+def test_candidate_publication_rejects_source_identity_outside_lock(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
     install = tmp_path / "install"
     _make_install_tree(install)
     profile = dataclasses.replace(_profile(), source_commit="0" * 40)

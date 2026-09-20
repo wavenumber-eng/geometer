@@ -99,7 +99,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: windows-latest
+          - os: windows-2022
             platform: windows-x64
             compiler: msvc
           - os: ubuntu-22.04

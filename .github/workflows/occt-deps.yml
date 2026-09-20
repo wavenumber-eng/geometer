@@ -38,11 +38,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: windows-latest
+          - os: windows-2022
             platform: windows-x64
             profile: default
             build_args: ""
-          - os: windows-latest
+          - os: windows-2022
             platform: windows-x64
             profile: static-crt
             build_args: --msvc-runtime Static
@@ -89,7 +89,7 @@ jobs:
   native-one:
     name: native OCCT (${{ inputs.profile }})
     if: github.ref_name == github.event.repository.default_branch && inputs.profile != 'all' && inputs.profile != 'wasm-emscripten-3.1.56-static'
-    runs-on: ${{ (startsWith(inputs.profile, 'windows-') && 'windows-latest') || (inputs.profile == 'linux-x64-gcc11-static' && 'ubuntu-22.04') || (inputs.profile == 'linux-arm64-gcc11-static' && 'ubuntu-22.04-arm') || 'macos-15' }}
+    runs-on: ${{ (startsWith(inputs.profile, 'windows-') && 'windows-2022') || (inputs.profile == 'linux-x64-gcc11-static' && 'ubuntu-22.04') || (inputs.profile == 'linux-arm64-gcc11-static' && 'ubuntu-22.04-arm') || 'macos-15' }}
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v6

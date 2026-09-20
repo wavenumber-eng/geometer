@@ -30,6 +30,21 @@ int illustrate_mesh_geometry(const contracts::MeshIllustrationGeometryInputA0& i
                              contracts::MeshIllustrationGeometryA0* result,
                              Status* status = nullptr);
 
+/// B0 direct-value geometry API. Affine transforms and ordered clipping planes
+/// are applied before bounds, visibility, projection, and painter ordering.
+int illustrate_mesh_geometry(const contracts::MeshIllustrationGeometryInputB0& input,
+                             contracts::MeshIllustrationGeometryB0* result,
+                             Status* status = nullptr);
+int illustrate_mesh_geometry(const contracts::MeshIllustrationGeometryInputB0& input,
+                             const contracts::HlrProjectionResultB0& hlr,
+                             contracts::MeshIllustrationGeometryB0* result,
+                             Status* status = nullptr);
+int illustrate_mesh_geometry(const contracts::MeshIllustrationGeometryInputB0& input,
+                             const contracts::HlrProjectionResultB0* hlr,
+                             const MeshIllustrationExecutionLimits& limits,
+                             contracts::MeshIllustrationGeometryB0* result,
+                             Status* status = nullptr);
+
 /// Render the governed A0 illustration input without a JavaScript/WASM runtime.
 /// This direct value API shares the browser renderer's production styling policy.
 /// Returns 102 on native resource limits; errors clear the result (no partial SVG).
@@ -49,4 +64,16 @@ int illustrate_mesh(const contracts::MeshIllustrationInputA0& input,
                     const contracts::HlrProjectionResultA0* hlr,
                     const MeshIllustrationExecutionLimits& limits,
                     contracts::MeshIllustrationResultA0* result, Status* status = nullptr);
+
+/// Render the governed B0 input directly. Empty clipped fragments are successful
+/// results; supplied B0 HLR must identify the exact transformed/clipped fragment.
+int illustrate_mesh(const contracts::MeshIllustrationInputB0& input,
+                    contracts::MeshIllustrationResultB0* result, Status* status = nullptr);
+int illustrate_mesh(const contracts::MeshIllustrationInputB0& input,
+                    const contracts::HlrProjectionResultB0& hlr,
+                    contracts::MeshIllustrationResultB0* result, Status* status = nullptr);
+int illustrate_mesh(const contracts::MeshIllustrationInputB0& input,
+                    const contracts::HlrProjectionResultB0* hlr,
+                    const MeshIllustrationExecutionLimits& limits,
+                    contracts::MeshIllustrationResultB0* result, Status* status = nullptr);
 } // namespace geometer

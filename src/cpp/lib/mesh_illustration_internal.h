@@ -230,5 +230,6 @@ std::vector<Surface> fuse_triangles(const std::vector<TriangleCommand>& commands
                                     const Bounds& bounds, bool layer_materials, WorkBudget& budget);
 Commands render_commands(const Scene& scene, const Style& style, WorkBudget& budget);
 std::string render_svg(const Scene& scene, const Style& style, const Commands& commands,
-                       const contracts::MeshIllustrationSvgOptions& options);
+                       const contracts::MeshIllustrationSvgOptions& options,
+                       const char* result_schema = "geometry.mesh_illustration.result.a0");
 } // namespace geometer::illustration_detail

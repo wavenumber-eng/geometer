@@ -1,4 +1,4 @@
-# Rust Contracts And Executable IPC Client
+# Rust Contracts And Native Clients
 
 ## Current status
 
@@ -8,13 +8,50 @@ TypeSpec catalog. The live client spawns one persistent native
 `geometer(.exe) serve --stdio` process and executes model bounds, model/mesh
 HLR, and analytic planar Boolean through their governed attachments.
 
-Since 2026.9.6, the client additionally provides typed `model_tessellation` and
-`mesh_illustration` methods using generated A0 values. Optional
+The separate `src/rust/geometer-sys` crate is the narrow unsafe boundary for
+the static C ABI SDK. Release SDK archives carry that crate beside their link
+manifest. Its build script requires an explicit extracted SDK path, validates
+release/target/runtime compatibility, and never downloads an SDK. Applications
+should keep operation contracts and codecs in the safe generated client layer;
+they must not create per-operation extern declarations or bind OCCT directly.
+
+With the `direct-static` feature, `GeometerDirectClient` sends the same
+catalog-governed request JSON and named attachments through the static C ABI.
+The process and direct client types expose the same typed operation methods;
+their request construction, generated validation, result decoding, attachment
+integrity checks, and protocol-error handling are implemented once over the
+shared safe backend boundary.
+All direct clients share one bounded FIFO and one dedicated executor thread for
+the process. Queue saturation fails locally. Dropped clients do not cancel
+queued work; an active timeout is observational and the executor continues to
+copy/free every Geometer-owned result before starting the next request. Use
+self-hosted worker processes when hard cancellation or crash containment is
+required.
+
+The feature also re-exports the safe `serve_stdio()` bootstrap. A statically
+linked application can reserve a hidden `serve --stdio` mode, spawn copies of
+its own executable through the ordinary `GeometerClient`, and retain the
+multi-process concurrency/crash boundary without distributing a second
+`geometer` executable.
+
+The
+[`direct_static_illustration`](../../src/rust/geometer-client/examples/direct_static_illustration.rs)
+example is the release qualification sample for the in-process path. Static SDK
+validation builds it with `direct-static`, copies only the resulting application
+binary into an unrelated package directory, removes Geometer executable
+discovery variables and the normal executable search path, and runs a complete
+STEP-to-SVG illustration. Qualification also rejects dynamic Geometer or OCCT
+imports. This is distinct from `mesh_illustration`, which deliberately exercises
+the sibling-process client.
+
+The client provides typed `model_tessellation` and B0 `mesh_illustration`
+methods using generated values. Optional
 `mesh_illustration_with_hlr(input, hlr)` returns the native composed SVG with
 visibility-filtered outline/detail; consumers do not arrange SVG layers. The complete
 [native STEP-to-SVG example](mesh-illustration-native.md) needs no JS/WASM runtime
 or handwritten subprocess protocol. These additions require a matching catalog
-and a compatible 2026.9.6 or later executable.
+and an exactly matching catalog/C ABI generation. Explicit `*_a0` methods are
+retained only for compatibility tests and controlled migration.
 
 The analytic operation is experimental and not production-ready. It may fail
 closed on valid inputs and is not the dependable path for whole-board or
@@ -33,7 +70,7 @@ mesh HLR are implemented typed surfaces. Release promotion remains separately
 gated on independent review, demo acceptance, hosted Windows, Linux x64, Linux
 ARM64, and macOS ARM64 evidence.
 
-The crate carries a local `wn-dev-std` 2026.8.12 Rust profile. Its stable
+The crate carries a local `wn-dev-std` 2026.9.8 Rust profile. Its stable
 toolchain components, denied Rust/Clippy lints, declared Cargo signoff commands,
 and strict Tree-sitter hygiene policy are enforced from the repository Rust
 Rack stratum.
@@ -147,10 +184,13 @@ connection and resolve every pending call. Negotiated response frame limits are
 checked before payload allocation.
 
 `GeometerClient::model_hlr_projection()` accepts STEP bytes and canonical HLR
-options. `mesh_hlr_projection()` accepts an indexed-mesh A0 packet;
-`MeshHlrProjectionRequest::from_mesh()` encodes a structured mesh. Omitted
-selectors choose Fast detail and Fast Mesh Shadow for both operations. The model
-operation also accepts the older algorithms when explicitly requested.
+options. Canonical `mesh_hlr_projection()` accepts a `MeshCollectionA0` and the
+complete generated `MeshHlrProjectionRequestB0`, then returns correlated B0
+fragment identity for illustration composition. The explicit
+`mesh_hlr_projection_a0()` compatibility method accepts an indexed-mesh A0
+packet; `MeshHlrProjectionRequestA0::from_mesh()` encodes a structured mesh.
+The model operation also accepts the older algorithms when explicitly
+requested.
 
 `OperationCall::cancel()` requests queue-only cancellation. `wait_timeout()` is
 a local timeout: it sends a cancellation request and reports whether the server
@@ -190,8 +230,11 @@ close/request race resolution, repeated real STEP work through one child,
 repeated nonempty typed analytic work through one child, native-produced packet
 corpus parity, mutation rejection, normative standalone job digests, graceful
 shutdown, and empty plus nontrivial friendly analytic IPC calls from a clean
-packaged-crate consumer against the platform executable in
-`dist/native/<platform>/`.
+Cargo-listed source staging against the platform executable in
+`dist/native/<platform>/`. The staging carries `geometer-sys` beside
+`geometer-client`, matching the static SDK layout; crates.io publication is not
+part of this release model. Static direct-link qualification separately builds
+and runs the packaged illustration sample from the relocated SDK.
 The external-process suite additionally proves a caller-supplied lifecycle
 controller through model tessellation, Fast HLR and HLR-composed illustration;
 last-handle drop, handshake timeout and cancelled construction must terminate,

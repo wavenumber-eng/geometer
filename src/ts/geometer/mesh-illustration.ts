@@ -2255,7 +2255,7 @@ export interface MeshIllustratorA0 {
 }
 
 /** Prepare one governed illustration input once, then render multiple styles or targets. */
-export function createIllustrator(
+export function createIllustratorA0(
   input: MeshIllustrationInputA0,
   linework: MeshIllustrationLinework = {},
 ): MeshIllustratorA0 {
@@ -2445,8 +2445,8 @@ export function createIllustrator(
 }
 
 /** Prepare and render one governed mesh-illustration A0 input to SVG. */
-export function illustrateMesh(input: MeshIllustrationInputA0): MeshIllustrationResultA0 {
-  const illustrator = createIllustrator(input);
+export function illustrateMeshA0(input: MeshIllustrationInputA0): MeshIllustrationResultA0 {
+  const illustrator = createIllustratorA0(input);
   try {
     return illustrator.renderSvg();
   } finally {
@@ -2455,12 +2455,12 @@ export function illustrateMesh(input: MeshIllustrationInputA0): MeshIllustration
 }
 
 /** Prepare and shade millimeter meshes without constructing SVG or Canvas commands. */
-export function illustrateMeshGeometry(
+export function illustrateMeshGeometryA0(
   input: MeshIllustrationGeometryInputA0,
   linework: MeshIllustrationLinework = {},
 ): MeshIllustrationGeometryA0 {
   encodeMeshIllustrationGeometryInputA0Json(input);
-  const illustrator = createIllustrator(
+  const illustrator = createIllustratorA0(
     {
       schema: "geometry.mesh_illustration.input.a0",
       meshes: input.meshes,

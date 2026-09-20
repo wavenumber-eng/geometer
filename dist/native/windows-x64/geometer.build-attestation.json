@@ -1,19 +1,19 @@
 {
   "artifact": {
     "name": "geometer.exe",
-    "sha256": "c48dcb52f342d10dde99d14add02a7da76b973aa68ca1bc1bf0cc7255df85908"
+    "sha256": "521f3dfd853fe2dbd2299f8e53ee3b681e548f1267de761d0c1f41099f7c9814"
   },
   "build": {
     "arch": "x64",
     "build_type": "Release",
-    "c_abi_version": 20260913,
+    "c_abi_version": 20260919,
     "compiler": {
       "authority": "cmake_compiler_id_and_version",
       "id": "MSVC",
-      "version": "19.44.35228.0"
+      "version": "19.44.35221.0"
     },
     "generator": "Ninja",
-    "geometer_version": "2026.9.13",
+    "geometer_version": "2026.9.19",
     "occt": {
       "authority": "geometer_occt_profile_verified",
       "profile_sha256": "ea7f8ee34be29ac8d46f00e6a2d8a989a6c47fd8df6fcfa44c93a2488518f525",
@@ -24,14 +24,14 @@
     "platform": "windows",
     "source": {
       "authority": "git_head_and_source_worktree_excluding_dist_build_deps_out",
-      "revision": "a097875ca0acd42af3677ed376c18cd9fb7b7ba4",
+      "revision": "52d8979d466680da72f603d75096c5d42a0dabe6",
       "tree_state": "dirty"
     }
   },
   "producer": {
     "identity": "wn.geometer.native_build_attestation_generator.a1",
     "source": "scripts/native_build_attestation.py",
-    "source_sha256": "2907109513ccf73f488c50bf50f9e9861d24e03adf53593d5ef7e1b34bd09a85"
+    "source_sha256": "a8680d84ec3fdfb1bb0df5f830bd352c7064e37e06b52336ac4483bccf7da627"
   },
   "schema": "wn.geometer.native_build_attestation.a1"
 }

@@ -1,10 +1,9 @@
 ---
 # yamllint disable rule:line-length
-name: CI
+name: Full Validation (Manual)
 
 "on":
   workflow_dispatch:
-  pull_request:
 
 permissions:
   contents: read
@@ -19,30 +18,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  scope:
-    name: Change scope
-    runs-on: ubuntu-24.04
-    outputs:
-      docs_only: ${{ steps.scope.outputs.docs_only }}
-      material: ${{ steps.scope.outputs.material }}
-      native: ${{ steps.scope.outputs.native }}
-      python: ${{ steps.scope.outputs.python }}
-      rust: ${{ steps.scope.outputs.rust }}
-      typescript: ${{ steps.scope.outputs.typescript }}
-      wasm: ${{ steps.scope.outputs.wasm }}
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 2
-      - name: Classify changed paths
-        id: scope
-        run: python scripts/ci_scope.py
-
   standards:
     name: wn-dev-std
-    needs: scope
-    if: needs.scope.outputs.material == 'true'
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v8.2.0
@@ -62,13 +41,12 @@ jobs:
       - name: Run release signoff gate
         run: uv run --group dev rack run L99_release
       - name: Run standards check
-        run: uvx --from git+https://github.com/wavenumber-eng/wn-dev-std wn-dev-std check . --format json
+        run: uvx --from wn-dev-std==2026.9.8 wn-dev-std check . --format json
 
   native:
     name: native (linux-x64, py3.12)
-    needs: scope
-    if: needs.scope.outputs.native == 'true'
     runs-on: ubuntu-22.04
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v8.2.0
@@ -91,25 +69,15 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential ninja-build libgl1-mesa-dev libdbus-1-dev libudev-dev libx11-dev libxcursor-dev libxext-dev libxi-dev libxinerama-dev libxkbcommon-dev libxrandr-dev libwayland-dev wayland-protocols
-      - name: Cache OCCT
-        uses: actions/cache@v5
-        with:
-          path: |
-            .deps/occt-src
-            .deps/native/linux-x64/occt-build
-            .deps/native/linux-x64/occt-install
-          key: occt-v2-native-linux-x64-gcc-${{ steps.dependency_versions.outputs.occt_tag }}-${{ hashFiles('scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
-          restore-keys: |
-            occt-v2-native-linux-x64-gcc-${{ steps.dependency_versions.outputs.occt_tag }}-
-            occt-ubuntu-22.04-X64-gcc-${{ steps.dependency_versions.outputs.occt_tag }}-
       - name: Build and test production native code
         run: uv run --group dev python scripts/validate_native.py
       - name: Run production client strata against the native build
         env:
           GEOMETER_REQUIRE_NATIVE_TEST_SERVERS: "1"
           GEOMETER_TEST_PROFILE: production
+          GEOMETER_TYPESCRIPT_SCOPE: host
         run: |
-          uv tool install git+https://github.com/wavenumber-eng/wn-dev-std
+          uv tool install wn-dev-std==2026.9.8
           uv run --group dev rack run python
           uv run --group dev rack run rust
           uv run --group dev rack run typescript
@@ -126,71 +94,10 @@ jobs:
             dist/native/linux-x64/*
           if-no-files-found: error
 
-  python:
-    name: Python package
-    needs: scope
-    if: needs.scope.outputs.python == 'true'
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v8.2.0
-      - name: Set up Python
-        run: uv python install 3.12
-      - name: Run production Python tests
-        env:
-          GEOMETER_TEST_PROFILE: production
-        run: uv run --group dev rack run python
-      - name: Validate Python package
-        run: uv run --group dev python scripts/validate_python_package.py --skip-native-validation --wheelhouse out/wheelhouse
-      - name: Check wheel
-        run: uv run --group dev twine check out/wheelhouse/*.whl
-
-  rust:
-    name: Rust client
-    needs: scope
-    if: needs.scope.outputs.rust == 'true'
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v8.2.0
-      - name: Set up Python
-        run: uv python install 3.12
-      - name: Install standards CLI
-        run: uv tool install git+https://github.com/wavenumber-eng/wn-dev-std
-      - name: Run production Rust validation
-        env:
-          GEOMETER_TEST_PROFILE: production
-        run: uv run --group dev rack run rust
-
-  typescript:
-    name: TypeScript client
-    needs: scope
-    if: needs.scope.outputs.typescript == 'true'
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v8.2.0
-      - name: Set up Python
-        run: uv python install 3.12
-      - name: Set up Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: "24"
-          cache: npm
-      - name: Install Node toolchain
-        run: |
-          npm install --global npm@11.16.0
-          npm ci
-      - name: Run production TypeScript validation
-        env:
-          GEOMETER_TEST_PROFILE: production
-        run: uv run --group dev rack run typescript
-
   wasm:
     name: Production WASM
-    needs: scope
-    if: needs.scope.outputs.wasm == 'true'
     runs-on: ubuntu-24.04
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v8.2.0
@@ -218,27 +125,11 @@ jobs:
         with:
           path: .deps/emsdk
           key: emsdk-v2-linux-x64-${{ steps.dependency_versions.outputs.emsdk_version }}
-          restore-keys: |
-            emsdk-Linux-X64-${{ steps.dependency_versions.outputs.emsdk_version }}
-      - name: Cache WASM OCCT
-        uses: actions/cache@v5
-        with:
-          path: |
-            .deps/occt-src
-            .deps/occt-wasm-build
-            .deps/occt-wasm-install
-          key: occt-v2-wasm-linux-x64-emscripten-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-${{ hashFiles('scripts/build_wasm.py', 'scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
-          restore-keys: |
-            occt-v2-wasm-linux-x64-emscripten-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-
-            wasm-occt-install-Linux-X64-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-
       - name: Cache Geometer WASM build
         uses: actions/cache@v5
         with:
           path: build-wasm
-          key: geometer-wasm-v2-linux-x64-${{ hashFiles('CMakeLists.txt', 'CMakePresets.json', 'src/cpp/**', 'third_party/clipper2/**') }}
-          restore-keys: |
-            geometer-wasm-v2-linux-x64-
-            geometer-wasm-build-Linux-X64-
+          key: geometer-wasm-v3-linux-x64-${{ github.sha }}
       - name: Build WASM artifacts
         run: uv run python scripts/build_wasm.py
       - name: Build production browser demos
@@ -248,13 +139,14 @@ jobs:
           uv run python scripts/build_illustration_site.py
           uv run python scripts/build_standalone_demos.py hlr
           uv run python scripts/build_standalone_demos.py illustration
-          node tests/typescript/hlr_static_site_validation.mjs
-          node tests/typescript/illustration_static_site_validation.mjs
           uv run pytest tests/wasm/test_hlr_static_site.py tests/wasm/test_illustration_static_site.py -q
-          uv run pytest tests/python/test_package_single_html_site.py -q
+      - name: Validate TypeScript package against candidate WASM
+        env:
+          GEOMETER_TEST_PROFILE: production
+          GEOMETER_TYPESCRIPT_SCOPE: wasm
+        run: uv run --group dev rack run typescript
       - name: Run production WASM validation
         run: |
-          node tests/typescript/wasm_client_validation.mjs
           node tests/wasm/planar_batch_solve_bytes_validation.js
           node tests/wasm/step_to_glb_bytes_validation.js
       - name: Upload WASM artifacts
@@ -263,26 +155,3 @@ jobs:
           name: ci-wasm-dist
           path: dist/wasm/**
           if-no-files-found: error
-
-  policy:
-    name: CI policy
-    if: always()
-    needs: [scope, standards, native, python, rust, typescript, wasm]
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Require every selected lane
-        env:
-          SCOPE_RESULT: ${{ needs.scope.result }}
-          STANDARDS_RESULT: ${{ needs.standards.result }}
-          NATIVE_RESULT: ${{ needs.native.result }}
-          PYTHON_RESULT: ${{ needs.python.result }}
-          RUST_RESULT: ${{ needs.rust.result }}
-          TYPESCRIPT_RESULT: ${{ needs.typescript.result }}
-          WASM_RESULT: ${{ needs.wasm.result }}
-        run: |
-          for result in "$SCOPE_RESULT" "$STANDARDS_RESULT" "$NATIVE_RESULT" "$PYTHON_RESULT" "$RUST_RESULT" "$TYPESCRIPT_RESULT" "$WASM_RESULT"; do
-            if [ "$result" != "success" ] && [ "$result" != "skipped" ]; then
-              echo "Selected CI lane ended with: $result"
-              exit 1
-            fi
-          done

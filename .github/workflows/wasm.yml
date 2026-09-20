@@ -27,6 +27,7 @@ jobs:
   wasm:
     name: Browser and Node WASM
     runs-on: ubuntu-24.04
+    timeout-minutes: 90
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
@@ -61,29 +62,13 @@ jobs:
         with:
           path: .deps/emsdk
           key: emsdk-v2-linux-x64-${{ steps.dependency_versions.outputs.emsdk_version }}
-          restore-keys: |
-            emsdk-Linux-X64-${{ steps.dependency_versions.outputs.emsdk_version }}
 
-      - name: Cache WASM OCCT install
-        uses: actions/cache@v5
-        with:
-          path: |
-            .deps/occt-src
-            .deps/occt-wasm-build
-            .deps/occt-wasm-install
-          key: occt-v2-wasm-linux-x64-emscripten-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-${{ hashFiles('scripts/build_wasm.py', 'scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
-          restore-keys: |
-            occt-v2-wasm-linux-x64-emscripten-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-
-            wasm-occt-install-Linux-X64-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-
 
       - name: Cache Geometer WASM build
         uses: actions/cache@v5
         with:
           path: build-wasm
-          key: geometer-wasm-v2-linux-x64-${{ hashFiles('CMakeLists.txt', 'CMakePresets.json', 'src/cpp/**', 'third_party/clipper2/**') }}
-          restore-keys: |
-            geometer-wasm-v2-linux-x64-
-            geometer-wasm-build-Linux-X64-
+          key: geometer-wasm-v3-linux-x64-${{ github.sha }}
 
       - name: Build WASM artifacts
         run: uv run python scripts/build_wasm.py
@@ -97,20 +82,19 @@ jobs:
           uv run python scripts/build_hlr_site.py
           uv run python scripts/build_illustration_site.py
           uv run python scripts/build_standalone_demos.py all
-          node tests/typescript/analytic_static_site_validation.mjs
-          node tests/typescript/hlr_static_site_validation.mjs
-          node tests/typescript/illustration_static_site_validation.mjs
-          node tests/typescript/analytic_self_contained_demo_validation.mjs
           uv run pytest tests/wasm/test_analytic_standalone_demo.py -q
           uv run pytest tests/wasm/test_pcb_standalone_demo.py -q
           uv run pytest tests/wasm/test_hlr_static_site.py -q
           uv run pytest tests/wasm/test_illustration_static_site.py -q
-          uv run pytest tests/python/test_package_single_html_site.py -q
           uv run pytest tests/python/test_contract_promotion_manifest.py -q
+
+      - name: Validate TypeScript package against candidate WASM
+        env:
+          GEOMETER_TYPESCRIPT_SCOPE: wasm
+        run: uv run --group dev rack run typescript
 
       - name: Run WASM validation tests
         run: |
-          node tests/typescript/wasm_client_validation.mjs
           node tests/wasm/planar_batch_solve_bytes_validation.js
           node tests/wasm/step_to_glb_bytes_validation.js
 
@@ -138,6 +122,7 @@ jobs:
     if: github.event_name == 'schedule' || inputs.extended_synthetic
     needs: wasm
     runs-on: ubuntu-22.04
+    timeout-minutes: 120
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
@@ -160,18 +145,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential ninja-build libgl1-mesa-dev libdbus-1-dev libudev-dev libx11-dev libxcursor-dev libxext-dev libxi-dev libxinerama-dev libxkbcommon-dev libxrandr-dev libwayland-dev wayland-protocols
-
-      - name: Cache native OCCT
-        uses: actions/cache@v5
-        with:
-          path: |
-            .deps/occt-src
-            .deps/native/linux-x64/occt-build
-            .deps/native/linux-x64/occt-install
-          key: occt-v2-native-linux-x64-gcc-${{ steps.dependency_versions.outputs.occt_tag }}-${{ hashFiles('scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
-          restore-keys: |
-            occt-v2-native-linux-x64-gcc-${{ steps.dependency_versions.outputs.occt_tag }}-
-            occt-ubuntu-22.04-X64-gcc-${{ steps.dependency_versions.outputs.occt_tag }}-
 
       - name: Download Emscripten harness
         uses: actions/download-artifact@v8
@@ -192,6 +165,7 @@ jobs:
     name: Analytic executable IPC/browser WASM parity
     needs: wasm
     runs-on: ubuntu-22.04
+    timeout-minutes: 120
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
@@ -214,18 +188,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential ninja-build libgl1-mesa-dev libdbus-1-dev libudev-dev libx11-dev libxcursor-dev libxext-dev libxi-dev libxinerama-dev libxkbcommon-dev libxrandr-dev libwayland-dev wayland-protocols
-
-      - name: Cache native OCCT
-        uses: actions/cache@v5
-        with:
-          path: |
-            .deps/occt-src
-            .deps/native/linux-x64/occt-build
-            .deps/native/linux-x64/occt-install
-          key: occt-v2-native-linux-x64-gcc-${{ steps.dependency_versions.outputs.occt_tag }}-${{ hashFiles('scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
-          restore-keys: |
-            occt-v2-native-linux-x64-gcc-${{ steps.dependency_versions.outputs.occt_tag }}-
-            occt-ubuntu-22.04-X64-gcc-${{ steps.dependency_versions.outputs.occt_tag }}-
 
       - name: Download current browser WASM artifacts
         uses: actions/download-artifact@v8

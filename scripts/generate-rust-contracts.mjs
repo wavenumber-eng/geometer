@@ -87,6 +87,8 @@ function generateDispatch() {
   };
   const requests = variantsFor("IpcRequestValueA0");
   const results = variantsFor("OperationResultValueA0");
+  const requestsB0 = variantsFor("IpcRequestValueB0");
+  const resultsB0 = variantsFor("OperationResultValueB0");
   const identityFunction = (name, type, variants) => `
 pub fn ${name}(value: &contracts::${type}) -> Option<&'static str> {
     match value {
@@ -118,8 +120,28 @@ ${requests
         }),
     }
 }
+pub fn decode_logical_request_b0(
+    contract: &str,
+    data: &[u8],
+) -> Result<contracts::IpcRequestValueB0, contracts::ContractError> {
+    match contract {
+${requestsB0
+  .filter((item) => item.contract)
+  .map(
+    (item) =>
+      `        ${JSON.stringify(item.contract)} => Ok(contracts::IpcRequestValueB0::${item.variant}(contracts::decode_json::<contracts::${item.type}>(data)?)),`,
+  )
+  .join("\n")}
+        _ => Err(contracts::ContractError::Validation {
+            path: "/request".to_owned(),
+            message: format!("no generated B0 logical request codec for {contract}"),
+        }),
+    }
+}
 ${identityFunction("logical_request_contract", "IpcRequestValueA0", requests)}
 ${identityFunction("logical_result_contract", "OperationResultValueA0", results)}
+${identityFunction("logical_request_contract_b0", "IpcRequestValueB0", requestsB0)}
+${identityFunction("logical_result_contract_b0", "OperationResultValueB0", resultsB0)}
 `;
 }
 

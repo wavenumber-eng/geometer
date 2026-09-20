@@ -1,27 +1,28 @@
 # Illustration drawing geometry
 
-`geometry.mesh_illustration_geometry.a0` returns colored, ordered 2D drawing
+`geometry.mesh_illustration_geometry.b0` returns colored, ordered 2D drawing
 geometry for applications that supply their own renderer. It shares native
 preparation, shading, visibility ordering, fusion and optional HLR composition
 with [SVG illustration](mesh-illustration-native.md), stopping before the SVG
 writer. It returns neither original 3D tessellation nor XML/path strings.
-The existing SVG A0 operation and its defaults remain compatible.
+The A0 geometry and SVG operations remain explicit compatibility surfaces.
 
 ## Contracts and calls
 
-TypeSpec owns the [values](../../src/tsp/geometer/operations/mesh-illustration-geometry-a0.tsp)
-and [operation](../../src/tsp/geometer/operations/mesh-illustration-geometry-operation-a0.tsp).
+TypeSpec owns the reusable [A0 values](../../src/tsp/geometer/operations/mesh-illustration-geometry-a0.tsp)
+and the canonical [B0 operation](../../src/tsp/geometer/operations/mesh-illustration-geometry-b0.tsp).
 The generated DTOs, codecs, schemas and catalogs define their structure.
 
 | Surface | Entry point |
 | --- | --- |
 | C++ owning value | `illustrate_mesh_geometry(input, result, status)`; overload accepts matching HLR |
-| Native IPC / generic C ABI / full WASM | `geometry.mesh_illustration_geometry.a0` |
+| Native IPC / generic C ABI / full WASM | `geometry.mesh_illustration_geometry.b0` |
 | Python persistent / one-shot | `client.mesh_illustration_geometry(input, hlr_projection=...)` / `geometer.mesh_illustration_geometry(...)` |
 | Rust persistent | `mesh_illustration_geometry(input)` / `mesh_illustration_geometry_with_hlr(input, hlr)` |
 | TypeScript local renderer | `illustrateMeshGeometry(input, linework)` / `createIllustrator(input).renderGeometry(style)` |
 
-Direct input `geometry.mesh_illustration_geometry.input.a0` explicitly requires
+The compatibility direct input `geometry.mesh_illustration_geometry.input.a0`
+and its B0 successor explicitly require
 millimeter mesh positions and matrix translations. Convert other units first.
 It has no SVG title/viewport options. The TypeScript prepared API's geometry
 method likewise requires millimeter source meshes. Existing SVG/Canvas
@@ -34,7 +35,7 @@ HLR or determines visibility for arbitrary supplied lines.
 
 The small IPC result contains statistics, warnings and a descriptor with name,
 schema, byte length and SHA-256. One required `illustration_geometry` attachment
-contains UTF-8 `geometry.mesh_illustration.geometry.a0` JSON, media type
+contains UTF-8 `geometry.mesh_illustration.geometry.b0` JSON, media type
 `application/vnd.wavenumber.geometer.illustration-geometry+json`, maximum 256 MiB.
 This uses existing attachments, outside the 32 MiB inline envelope; platform
 aggregate budgets still apply. Typed Python/Rust helpers validate integrity and

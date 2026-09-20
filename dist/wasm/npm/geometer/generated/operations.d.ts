@@ -1,4 +1,4 @@
-export declare const NORMALIZED_CONTRACT_CATALOG_SHA256: "0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d";
+export declare const NORMALIZED_CONTRACT_CATALOG_SHA256: "8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed";
 export declare const operationCatalog: {
     readonly "geometry.analytic_planar_boolean_batch.a0": {
         readonly identity: "geometry.analytic_planar_boolean_batch.a0";
@@ -47,6 +47,22 @@ export declare const operationCatalog: {
         readonly outputAttachments: readonly [];
         readonly documentation: "Project a synthesized indexed triangle mesh through the Fast HLR backend.";
     };
+    readonly "geometry.mesh_hlr_projection.b0": {
+        readonly identity: "geometry.mesh_hlr_projection.b0";
+        readonly requestContract: "geometry.mesh_hlr_projection.request.b0";
+        readonly resultContract: "geometry.hlr_projection.result.b0";
+        readonly runtimeAvailable: true;
+        readonly nativeRuntimeAvailable: false;
+        readonly runtimeDispatch: "logical_dto";
+        readonly inputAttachments: readonly [{
+            readonly name: "mesh_collection";
+            readonly required: true;
+            readonly media_types: readonly ["application/vnd.wavenumber.geometer.mesh-collection+json"];
+            readonly max_bytes: 268435456;
+        }];
+        readonly outputAttachments: readonly [];
+        readonly documentation: "Project a colored mesh collection through deterministic clipping and Fast HLR.";
+    };
     readonly "geometry.mesh_illustration_geometry.a0": {
         readonly identity: "geometry.mesh_illustration_geometry.a0";
         readonly requestContract: "geometry.mesh_illustration_geometry.request.a0";
@@ -73,6 +89,32 @@ export declare const operationCatalog: {
         }];
         readonly documentation: "Return ordered shaded illustration geometry without generating SVG. Does not compute HLR.";
     };
+    readonly "geometry.mesh_illustration_geometry.b0": {
+        readonly identity: "geometry.mesh_illustration_geometry.b0";
+        readonly requestContract: "geometry.mesh_illustration_geometry.request.b0";
+        readonly resultContract: "geometry.mesh_illustration_geometry.result.b0";
+        readonly runtimeAvailable: true;
+        readonly nativeRuntimeAvailable: false;
+        readonly runtimeDispatch: "logical_dto";
+        readonly inputAttachments: readonly [{
+            readonly name: "hlr_projection";
+            readonly required: false;
+            readonly media_types: readonly ["application/vnd.wavenumber.geometer.hlr-projection+json"];
+            readonly max_bytes: 67108864;
+        }, {
+            readonly name: "mesh_collection";
+            readonly required: true;
+            readonly media_types: readonly ["application/vnd.wavenumber.geometer.mesh-collection+json"];
+            readonly max_bytes: 268435456;
+        }];
+        readonly outputAttachments: readonly [{
+            readonly name: "illustration_geometry";
+            readonly required: true;
+            readonly media_types: readonly ["application/vnd.wavenumber.geometer.illustration-geometry+json"];
+            readonly max_bytes: 268435456;
+        }];
+        readonly documentation: "Return renderer-neutral B0 geometry for a colored mesh collection.";
+    };
     readonly "geometry.mesh_illustration.a0": {
         readonly identity: "geometry.mesh_illustration.a0";
         readonly requestContract: "geometry.mesh_illustration.request.a0";
@@ -93,6 +135,27 @@ export declare const operationCatalog: {
         }];
         readonly outputAttachments: readonly [];
         readonly documentation: "Render colored meshes to the existing deterministic A0 SVG result without JavaScript.";
+    };
+    readonly "geometry.mesh_illustration.b0": {
+        readonly identity: "geometry.mesh_illustration.b0";
+        readonly requestContract: "geometry.mesh_illustration.request.b0";
+        readonly resultContract: "geometry.mesh_illustration.result.b0";
+        readonly runtimeAvailable: true;
+        readonly nativeRuntimeAvailable: false;
+        readonly runtimeDispatch: "logical_dto";
+        readonly inputAttachments: readonly [{
+            readonly name: "hlr_projection";
+            readonly required: false;
+            readonly media_types: readonly ["application/vnd.wavenumber.geometer.hlr-projection+json"];
+            readonly max_bytes: 67108864;
+        }, {
+            readonly name: "mesh_collection";
+            readonly required: true;
+            readonly media_types: readonly ["application/vnd.wavenumber.geometer.mesh-collection+json"];
+            readonly max_bytes: 268435456;
+        }];
+        readonly outputAttachments: readonly [];
+        readonly documentation: "Render a colored mesh collection with optional deterministic half-space clipping.";
     };
     readonly "geometry.model_bounds.a0": {
         readonly identity: "geometry.model_bounds.a0";
@@ -147,6 +210,27 @@ export declare const operationCatalog: {
         }];
         readonly documentation: "Import or lower one source and return renderer-neutral illustration geometry.";
     };
+    readonly "geometry.model_illustration_geometry.b0": {
+        readonly identity: "geometry.model_illustration_geometry.b0";
+        readonly requestContract: "geometry.model_illustration_geometry.request.b0";
+        readonly resultContract: "geometry.model_illustration_geometry.result.b0";
+        readonly runtimeAvailable: true;
+        readonly nativeRuntimeAvailable: false;
+        readonly runtimeDispatch: "logical_dto";
+        readonly inputAttachments: readonly [{
+            readonly name: "model";
+            readonly required: false;
+            readonly media_types: readonly ["application/step", "model/step"];
+            readonly max_bytes: 268435456;
+        }];
+        readonly outputAttachments: readonly [{
+            readonly name: "illustration_geometry";
+            readonly required: true;
+            readonly media_types: readonly ["application/vnd.wavenumber.geometer.illustration-geometry+json"];
+            readonly max_bytes: 268435456;
+        }];
+        readonly documentation: "";
+    };
     readonly "geometry.model_illustration.a0": {
         readonly identity: "geometry.model_illustration.a0";
         readonly requestContract: "geometry.model_illustration.request.a0";
@@ -162,6 +246,22 @@ export declare const operationCatalog: {
         }];
         readonly outputAttachments: readonly [];
         readonly documentation: "Import or lower one source and return a complete deterministic SVG illustration.";
+    };
+    readonly "geometry.model_illustration.b0": {
+        readonly identity: "geometry.model_illustration.b0";
+        readonly requestContract: "geometry.model_illustration.request.b0";
+        readonly resultContract: "geometry.model_illustration.result.b0";
+        readonly runtimeAvailable: true;
+        readonly nativeRuntimeAvailable: false;
+        readonly runtimeDispatch: "logical_dto";
+        readonly inputAttachments: readonly [{
+            readonly name: "model";
+            readonly required: false;
+            readonly media_types: readonly ["application/step", "model/step"];
+            readonly max_bytes: 268435456;
+        }];
+        readonly outputAttachments: readonly [];
+        readonly documentation: "";
     };
     readonly "geometry.model_tessellation.a0": {
         readonly identity: "geometry.model_tessellation.a0";

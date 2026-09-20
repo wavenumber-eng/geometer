@@ -16,6 +16,7 @@ NODE = shutil.which("node")
 REQUIRE_NATIVE_TEST_SERVERS = os.environ.get("GEOMETER_REQUIRE_NATIVE_TEST_SERVERS") == "1"
 NATIVE_PROCESS_SCRIPTS = frozenset({"node_process_a0_validation.mjs", "native_illustration_parity.mjs"})
 TEST_PROFILE = os.environ.get("GEOMETER_TEST_PROFILE", "all")
+TYPESCRIPT_SCOPE = os.environ.get("GEOMETER_TYPESCRIPT_SCOPE", "all")
 EXPERIMENTAL_SCRIPTS = frozenset(
     {
         "analytic_arc_render_validation.mjs",
@@ -25,6 +26,41 @@ EXPERIMENTAL_SCRIPTS = frozenset(
         "analytic_static_site_validation.mjs",
     }
 )
+VALIDATION_SCRIPTS = (
+    "analytic_arc_render_validation.mjs",
+    "analytic_self_contained_demo_validation.mjs",
+    "analytic_static_site_validation.mjs",
+    "analytic_packet_codec_validation.mjs",
+    "analytic_cpp_vector_validation.mjs",
+    "contract_codec_validation.mjs",
+    "demo_tooling_validation.mjs",
+    "documentation_reference_validation.mjs",
+    "emitter_validation.mjs",
+    "hlr_static_site_validation.mjs",
+    "illustration_static_site_validation.mjs",
+    "ipc_a0_validation.mjs",
+    "ipc_client_a0_validation.mjs",
+    "node_process_a0_validation.mjs",
+    "package_consumer_validation.mjs",
+    "mesh_illustration_validation.mjs",
+    "native_illustration_parity.mjs",
+    "pcb_polygon_pour_artifact_validation.mjs",
+    "pcb_polygon_pour_model_validation.mjs",
+    "shared_demo_theme_validation.mjs",
+    "wasm_client_validation.mjs",
+    "worker_client_validation.mjs",
+    "worker_protocol_validation.mjs",
+)
+HOST_SCRIPTS = frozenset(
+    {
+        "documentation_reference_validation.mjs",
+        "emitter_validation.mjs",
+        "native_illustration_parity.mjs",
+        "node_process_a0_validation.mjs",
+        "shared_demo_theme_validation.mjs",
+    }
+)
+WASM_SCRIPTS = frozenset(VALIDATION_SCRIPTS) - HOST_SCRIPTS
 
 
 def _native_platform_directory(system: str, machine: str) -> str | None:
@@ -43,34 +79,15 @@ def _native_platform_directory(system: str, machine: str) -> str | None:
 
 @pytest.mark.parametrize(
     "script",
-    [
-        "analytic_arc_render_validation.mjs",
-        "analytic_self_contained_demo_validation.mjs",
-        "analytic_static_site_validation.mjs",
-        "analytic_packet_codec_validation.mjs",
-        "analytic_cpp_vector_validation.mjs",
-        "contract_codec_validation.mjs",
-        "demo_tooling_validation.mjs",
-        "documentation_reference_validation.mjs",
-        "emitter_validation.mjs",
-        "hlr_static_site_validation.mjs",
-        "illustration_static_site_validation.mjs",
-        "ipc_a0_validation.mjs",
-        "ipc_client_a0_validation.mjs",
-        "node_process_a0_validation.mjs",
-        "package_consumer_validation.mjs",
-        "mesh_illustration_validation.mjs",
-        "native_illustration_parity.mjs",
-        "pcb_polygon_pour_artifact_validation.mjs",
-        "pcb_polygon_pour_model_validation.mjs",
-        "shared_demo_theme_validation.mjs",
-        "wasm_client_validation.mjs",
-        "worker_client_validation.mjs",
-        "worker_protocol_validation.mjs",
-    ],
+    VALIDATION_SCRIPTS,
 )
 def test_generated_typescript_package(script: str) -> None:
     assert NODE is not None, "Node 24 is required for TypeScript validation."
+    assert TYPESCRIPT_SCOPE in {"all", "host", "wasm"}, "GEOMETER_TYPESCRIPT_SCOPE must be all, host, or wasm."
+    if TYPESCRIPT_SCOPE == "host" and script not in HOST_SCRIPTS:
+        pytest.skip("WASM-package validation runs against the candidate WASM build")
+    if TYPESCRIPT_SCOPE == "wasm" and script not in WASM_SCRIPTS:
+        pytest.skip("host and native-process validation runs in the Linux client lane")
     if TEST_PROFILE == "production" and script in EXPERIMENTAL_SCRIPTS:
         pytest.skip("experimental analytic validation is opt-in")
     if script in NATIVE_PROCESS_SCRIPTS and not REQUIRE_NATIVE_TEST_SERVERS:
@@ -88,6 +105,8 @@ def test_generated_typescript_package(script: str) -> None:
 
 def test_step_topology_annotation_reference_restarts_native_process() -> None:
     assert NODE is not None, "Node 24 is required for the native reference example."
+    if TYPESCRIPT_SCOPE == "wasm":
+        pytest.skip("native-process validation runs in the Linux client lane")
     if TEST_PROFILE == "production":
         pytest.skip("experimental STEP-topology validation is opt-in")
     if not REQUIRE_NATIVE_TEST_SERVERS:
@@ -132,3 +151,8 @@ def test_step_topology_annotation_reference_restarts_native_process() -> None:
 )
 def test_native_platform_directory_mapping(system: str, machine: str, expected: str | None) -> None:
     assert _native_platform_directory(system, machine) == expected
+
+
+def test_typescript_scope_assigns_every_script_once() -> None:
+    assert HOST_SCRIPTS.isdisjoint(WASM_SCRIPTS)
+    assert HOST_SCRIPTS | WASM_SCRIPTS == frozenset(VALIDATION_SCRIPTS)

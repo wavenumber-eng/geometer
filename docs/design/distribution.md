@@ -36,11 +36,39 @@ consumers must use grouped native, npm, and WASM paths.
 
 Native `.lib` and `.a` files remain ordinary build/cache outputs under the
 configured CMake build tree. They are not committed or included in native
-runtime releases. A future native SDK must be a separately designed package
-with public headers, exported CMake targets, ABI/toolchain metadata, licenses,
-and a complete dependency-link strategy; a bare static archive is not an SDK.
+runtime archives. Each dated release separately publishes one static SDK for
+Windows x64, Linux x64, Linux arm64, and macOS arm64. Those SDKs contain public
+C ABI headers, exported relocatable CMake targets, Geometer and the exact OCCT
+link closure, ABI/toolchain metadata, integrity/provenance records, and license
+material. See [Static native SDK](static-native-sdk.md).
 
-Demo build scripts do not publish. See
+`Publish` is a manual workflow dispatched at the exact tag also supplied as its
+input, which binds GitHub provenance to the released source revision. It
+rebuilds all four native archives,
+all four platform wheels, all four static SDKs, and WASM; validates a single
+fail-closed inventory; and stages the unchanged bytes on a draft GitHub
+Release. PyPI receives exactly the four inventoried wheels. Only after trusted
+publishing succeeds is the GitHub Release made public, downloaded again, and
+checked against its inventory and GitHub attestations.
+
+The release inventory uses the B0 envelope. Besides exact asset names, sizes,
+and SHA-256 digests, it embeds the canonical candidate root and its digest. The
+candidate root contains only the exact Git commit, synchronized release
+identity, and SHA-256 of `dependencies/occt-lock.json`. Draft, PyPI, and public
+verification must match the candidate source revision to the checked-out
+release tag. Tool versions and workflow timings remain evidence rather than
+alternate cache or candidate identities.
+
+`scripts/publish_release_candidate.py` implements the immutable candidate-store
+boundary. It freshly validates the complete B0 inventory and artifact contents,
+then conditionally creates
+`releases/candidates/<source-sha>/<inventory-sha256>/<asset-name>` objects and
+creates the inventory object last. An occupied key is accepted only when its
+bytes are identical. The tool is not invoked from a credentialed workflow until
+the protected hosted ingestion job can consume untrusted build artifacts
+without executing candidate-controlled code.
+
+Browser and native Lab build scripts do not publish demo applications. See
 [Browser demo packaging and UI](../developer/browser-demos.md) for the local build, closure,
 review, and explicit publication boundary.
 

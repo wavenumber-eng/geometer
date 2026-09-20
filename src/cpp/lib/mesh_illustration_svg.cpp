@@ -166,7 +166,8 @@ struct Svg
 } // namespace
 
 std::string render_svg(const Scene& scene, const Style& style, const Commands& commands,
-                       const contracts::MeshIllustrationSvgOptions& options)
+                       const contracts::MeshIllustrationSvgOptions& options,
+                       const char* result_schema)
 {
     const double width = std::max(scene.bounds.max_x - scene.bounds.min_x, 1e-9);
     const double height = std::max(scene.bounds.max_y - scene.bounds.min_y, 1e-9);
@@ -196,13 +197,12 @@ std::string render_svg(const Scene& scene, const Style& style, const Commands& c
             svg.append("<path class=\"" + svg.line_class(line) + "\" d=\"" + path + "\"/>");
         index = end;
     }
-    std::string result =
-        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 " +
-        svg_width + " " + svg_height + "\" role=\"img\">\n<title>" +
-        escape_xml(options.title.value_or("Geometer mesh illustration")) +
-        "</title>\n<metadata>geometry.mesh_illustration.result.a0</metadata>\n<style>" +
-        escape_xml(svg.rules) + "</style>\n";
+    std::string result = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                         "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 " +
+                         svg_width + " " + svg_height + "\" role=\"img\">\n<title>" +
+                         escape_xml(options.title.value_or("Geometer mesh illustration")) +
+                         "</title>\n<metadata>" + escape_xml(result_schema) +
+                         "</metadata>\n<style>" + escape_xml(svg.rules) + "</style>\n";
     append_bounded(result, svg.body, kMaxSvgBytes);
     append_bounded(result, "</svg>\n", kMaxSvgBytes);
     return result;

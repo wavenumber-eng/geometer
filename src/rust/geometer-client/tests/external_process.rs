@@ -112,7 +112,7 @@ async fn externally_launched_process_runs_composed_illustration_and_closes() {
         .await
         .unwrap();
     let illustration = client
-        .mesh_illustration_with_hlr(
+        .mesh_illustration_with_hlr_a0(
             MeshIllustrationInputA0 {
                 schema: "geometry.mesh_illustration.input.a0".to_owned(),
                 meshes: tessellation.mesh_collection.meshes,

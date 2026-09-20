@@ -37,22 +37,30 @@ hostname is the default read path for normal CI and developer machines. OCCT is
 the first Geometer dependency using it, but object layout must allow multiple
 projects, dependencies, versions, target kinds, and platforms.
 
-The cache consumer path is:
+The dependency consumer path is:
 
-1. Reuse an existing local `.deps/` install tree.
-2. Restore GitHub Actions cache when running in CI.
-3. Download a verified public OCCT binary archive from `artifacts.wavenumber.net`.
-4. Optionally try a signed R2 fallback when credentials are configured.
-5. Build OCCT from source as the fallback unless binary-only mode is requested.
+1. Select one explicit profile from `dependencies/occt-lock.json`.
+2. Reuse an existing local `.deps/` install only when its lock marker matches.
+3. Otherwise download the profile's one exact public R2 object.
+4. Verify its byte count, archive SHA-256, internal profile-marker SHA-256, and
+   installed OCCT version.
+5. Fail closed if any identity or object is absent or wrong.
+
+Normal consumers do not use GitHub Actions cache for OCCT, signed-cache
+fallbacks, legacy paths, aliases, nearest matches, recipe-derived keys, or
+source-build fallback. A developer may request a source build only with the
+explicit producer/debug option `--binary-cache off` (or
+`--occt-binary-cache off` for WASM).
 
 The producer path is a separate trusted workflow:
 
 - `.github/workflows/occt-deps.yml`
 - manual `workflow_dispatch`
-- target runner builds or restores OCCT for its platform
+- target runner always builds OCCT from source for its platform
 - packages `occt-install`
-- writes `manifest.json` and `occt-install.zip.sha256`
-- uploads immutable objects to R2
+- writes candidate `manifest.json` and `occt-install.zip.sha256` evidence
+- conditionally creates an archive-digest-addressed R2 object
+- requires a reviewed lock update before consumers select the new archive
 
 Normal CI and release workflows consume the public cache but do not receive R2
 credentials and do not publish dependency artifacts.
@@ -62,61 +70,44 @@ Upload-capable credentials are reserved for trusted producer workflows.
 
 ## Cache Layout
 
-New dependency cache objects use:
+Locked dependency objects use:
 
 ```text
-deps/v1/<project>/<dependency>/<dependency-version>/<target-kind>/<platform-tag>/<cache-key>/
-  manifest.json
-  <archive-name>.zip
-  <archive-name>.zip.sha256
+dependencies/occt/<stable-profile-id>/<archive-sha256>/occt-install.zip
+dependencies/occt/source/<source-commit>/<archive-sha256>/occt-source.tar.gz
 ```
 
 For Geometer OCCT 8:
 
 ```text
-deps/v1/geometer/occt/V8_0_1/native/windows-x64/<cache-key>/
-deps/v1/geometer/occt/V8_0_1/native/linux-x64/<cache-key>/
-deps/v1/geometer/occt/V8_0_1/native/linux-arm64/<cache-key>/
-deps/v1/geometer/occt/V8_0_1/native/macos-arm64/<cache-key>/
-deps/v1/geometer/occt/V8_0_1/wasm/wasm-emscripten/<cache-key>/
+dependencies/occt/windows-x64-msvc-v143-md-static/<sha256>/occt-install.zip
+dependencies/occt/linux-x64-gcc11-static/<sha256>/occt-install.zip
+dependencies/occt/linux-arm64-gcc11-static/<sha256>/occt-install.zip
+dependencies/occt/macos-arm64-appleclang17-static/<sha256>/occt-install.zip
+dependencies/occt/wasm-emscripten-3.1.56-static/<sha256>/occt-install.zip
 ```
 
-The legacy OCCT prefix `geometer/occt/<target-kind>/<platform-tag>/<cache-key>/`
-may be checked for compatibility with existing OCCT 7.8.1 cache objects.
+Legacy OCCT prefixes are migration evidence only and are never searched by a
+consumer.
 
 ## Cache Identity
 
-Each archive key includes:
+The archive SHA-256 is the consumer identity. The checked-in lock maps an
+explicit selector to a stable profile ID and records the platform/ABI facts,
+immutable object key, archive byte count and digest, internal marker digest,
+source identity, and qualification evidence. `scripts/dependency_versions.py`
+reads OCCT identity from the same lock.
 
-- native or WASM target kind
-- platform tag
-- OCCT tag
-- build configuration
-- OCCT library type
-- native compiler ABI when relevant
-- macOS deployment target when relevant
-- Emscripten version for WASM
-- a recipe hash derived from the build scripts and vendored RapidJSON inputs
-
-Changing the OCCT recipe produces a new object key rather than replacing an
-existing dependency silently. A generated local profile marker carries the
-same identity, so an existing install is not reused after its configuration,
-toolchain ABI, or recipe changes.
-
-An independently reviewed older archive may bridge intentional recipe-key
-churn only when its alias names the exact destination recipe hash and archive
-SHA-256. The alias is not considered for any later recipe, even when the OCCT
-tag, platform, and configuration still match.
+Build recipes, exact producer tools, and patches remain producer evidence.
+They do not participate in consumer selection, so changes to local scripts or
+compiler patch releases cannot cause an unexpected cache miss or silently
+select a nearby archive.
 
 ## Configuration
 
-Local and CI consumers use these public-read environment variables:
+Local and CI consumers may override only the public artifact host:
 
-- `GEOMETER_OCCT_CACHE_PUBLIC_BASE_URL`, default
-  `https://artifacts.wavenumber.net`
-- `GEOMETER_OCCT_PUBLIC_CACHE=off` or `GEOMETER_OCCT_CACHE_PUBLIC=off` to
-  disable public cache reads
-- `GEOMETER_OCCT_CACHE_PREFIX`, default `deps/v1/geometer/occt`
+- `WN_ARTIFACTS_BASE_URL`, default `https://artifacts.wavenumber.net`
 
 Signed R2 fallback and producer uploads use these environment variables:
 
@@ -129,17 +120,15 @@ Signed R2 fallback and producer uploads use these environment variables:
 The R2 endpoint should be the account-level S3 API endpoint. It should not
 include the bucket name in the URL path.
 
-Cache mode is controlled with `GEOMETER_OCCT_BINARY`:
-
-- `auto`: try public cache, then signed R2 when configured, then source
-- `off`: ignore binary caches and build from source
-- `only`: require a binary cache hit
+`GEOMETER_OCCT_BINARY=off` is an explicit source-producer/debug request.
+`auto` and `only` both use the fail-closed lock path; `auto` no longer means
+"compile after a miss."
 
 ## Consequences
 
-- Fresh CI and developer setup can avoid repeated OCCT source builds.
+- Fresh CI and developer setup avoid repeated OCCT source builds.
 - R2 upload credentials are limited to the dependency producer workflow.
-- Consumers still validate archive manifests and SHA-256 checksums before use.
-- Source builds remain available for new platforms, cache misses, and debugging.
-- Binary archives must be rebuilt when toolchain, OCCT, deployment target, or
-  recipe inputs change.
+- Consumers verify one explicit lock entry and never search or fall back.
+- GitHub cache capacity and invalidation no longer affect OCCT consumption.
+- Source builds remain explicit producer/debug operations for reviewed changes.
+- A new binary becomes consumable only after immutable upload and lock review.

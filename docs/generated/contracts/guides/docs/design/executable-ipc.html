@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d">
+  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
   <title>Calling The Geometer Executable — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/executable-ipc.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="calling-the-geometer-executable">Calling The Geometer Executable</h1></header>
 <p>Use persistent IPC when an application wants to reuse one geometry process and
@@ -71,10 +71,13 @@ mesh = geometer.IndexedTriangleMeshA0(
     source_faces=(1,),
 )
 with geometer.GeometerClient() as client:
-    result = client.mesh_hlr_projection(mesh, timeout=30)
+    result = client.mesh_hlr_projection_a0(mesh, timeout=30)
     print(result.schema)
 </code></pre>
-<p>For STEP HLR, call <code>client.model_hlr_projection(step_bytes, options)</code>.
+<p>This snippet intentionally demonstrates the explicit A0 indexed-mesh
+compatibility operation. Canonical composed-mesh callers use
+<code>mesh_hlr_projection(collection, MeshHlrProjectionRequestB0(...))</code>. For STEP
+HLR, call <code>client.model_hlr_projection(step_bytes, options)</code>.
 Feature builds additionally expose typed <code>model_tessellation</code> in Rust and Python
 for <a href="model-tessellation-a0.html">colored model meshes</a>; use its matching catalog
 and executable, not the older released binary.

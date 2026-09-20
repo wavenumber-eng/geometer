@@ -1,5 +1,5 @@
 import { decodeAnalyticPlanarBooleanBatchResultA0Packet, encodeAnalyticPlanarBooleanBatchRequestA0Packet, } from "./analytic-packet-a0.js";
-import { decodeOperationOutcomeA0Json, encodeHlrProjectionOptionsA0Json, encodeModelBoundsOptionsA0Json, operationCatalog, } from "./generated/index.js";
+import { decodeOperationOutcomeA0Json, decodeOperationOutcomeB0Json, encodeHlrProjectionOptionsA0Json, encodeModelBoundsOptionsA0Json, operationCatalog, } from "./generated/index.js";
 import { encodeIndexedTriangleMeshA0Packet, INDEXED_TRIANGLE_MESH_MEDIA_TYPE, } from "./indexed-mesh-packet-a0.js";
 export class GeometerWasmTransportError extends Error {
     code;
@@ -167,7 +167,9 @@ function executeOperation(module, catalog, operation, requestJson, attachments) 
         const jsonPointer = module._geometer_operation_result_json_data(resultPointer);
         const jsonSize = module._geometer_operation_result_json_size(resultPointer);
         const jsonBytes = copyBytes(module, jsonPointer, jsonSize, "response JSON");
-        const outcome = decodeOperationOutcomeA0Json(jsonBytes);
+        const outcome = operation.endsWith(".b0")
+            ? decodeOperationOutcomeB0Json(jsonBytes)
+            : decodeOperationOutcomeA0Json(jsonBytes);
         const outputAttachments = copyResultAttachments(module, resultPointer, allocations);
         const declaration = catalog.operations.find((item) => item.identity === operation);
         if (declaration === undefined) {

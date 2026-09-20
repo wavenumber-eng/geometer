@@ -1,0 +1,220 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.mesh_illustration.result:b0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.mesh_illustration.result.b0"
+    },
+    "empty": {
+      "type": "boolean"
+    },
+    "svg": {
+      "type": "string"
+    },
+    "stats": {
+      "$ref": "#/$defs/MeshIllustrationRenderStats"
+    },
+    "fragment": {
+      "$ref": "#/$defs/FragmentMetadata"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 256
+    }
+  },
+  "required": [
+    "schema",
+    "empty",
+    "svg",
+    "stats",
+    "fragment",
+    "warnings"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "B0 SVG illustration result with explicit fragment emptiness and identity.",
+  "$defs": {
+    "MeshIllustrationRenderStats": {
+      "type": "object",
+      "properties": {
+        "triangles": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "surface_draws": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "layered_surfaces": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "outlines": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "details": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "creases": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "commands": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        }
+      },
+      "required": [
+        "triangles",
+        "surface_draws",
+        "layered_surfaces",
+        "outlines",
+        "details",
+        "creases",
+        "commands"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "FragmentMetadata": {
+      "type": "object",
+      "properties": {
+        "clipping": {
+          "$ref": "#/$defs/NormalizedClipping"
+        },
+        "input_triangles": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2000000
+        },
+        "output_triangles": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2000000
+        },
+        "fragment_sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "linework_geometry_sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "raw_attachment_sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "input_triangles",
+        "output_triangles",
+        "fragment_sha256",
+        "linework_geometry_sha256"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Deterministic identity and size summary for the prepared world-space fragment."
+    },
+    "NormalizedClipping": {
+      "type": "object",
+      "properties": {
+        "planes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/NormalizedHalfSpacePlane"
+          },
+          "minItems": 1,
+          "maxItems": 16
+        },
+        "cap_policy": {
+          "type": "string",
+          "const": "none"
+        },
+        "max_output_triangles": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "max_generated_vertices": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "max_intersections": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "max_edge_plane_tests": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        }
+      },
+      "required": [
+        "planes",
+        "cap_policy",
+        "max_output_triangles",
+        "max_generated_vertices",
+        "max_intersections",
+        "max_edge_plane_tests"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Fully resolved clipping values that participate in semantic identity."
+    },
+    "NormalizedHalfSpacePlane": {
+      "type": "object",
+      "properties": {
+        "normal": {
+          "$ref": "#/$defs/IllustrationVector3"
+        },
+        "distance_mm": {
+          "type": "number"
+        },
+        "tolerance_mm": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "normal",
+        "distance_mm",
+        "tolerance_mm"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Canonical unit-normal plane returned in fragment metadata."
+    },
+    "IllustrationVector3": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3
+    }
+  }
+}

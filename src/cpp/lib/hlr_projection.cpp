@@ -39,6 +39,7 @@
 #include <gp_Mat.hxx>
 #include <gp_Pnt.hxx>
 #include <gp_Trsf.hxx>
+#include <gp_Vec.hxx>
 #include <gp_XYZ.hxx>
 
 #include <algorithm>
@@ -467,9 +468,17 @@ ProjectedArc circle_arc_from_adaptor(const BRepAdaptor_Curve& adaptor, double fi
     arc.end = {end_point.X(), end_point.Y()};
     arc.center = {center.X(), center.Y()};
     arc.radius = circle.Radius();
-    arc.ccw = (last - first) >= 0.0;
 
     const double raw_extent = last - first;
+    gp_Pnt tangent_point;
+    gp_Vec tangent;
+    adaptor.D1(first, tangent_point, tangent);
+    const double traversal = raw_extent >= 0.0 ? 1.0 : -1.0;
+    const double view_cross = ((start_point.X() - center.X()) * tangent.Y() -
+                               (start_point.Y() - center.Y()) * tangent.X()) *
+                              traversal;
+    arc.ccw = view_cross >= 0.0;
+
     double extent = std::fmod(std::fabs(raw_extent), 2.0 * kPi);
     if (extent < 1.0e-9 && std::fabs(raw_extent) > 1.0e-6)
     {

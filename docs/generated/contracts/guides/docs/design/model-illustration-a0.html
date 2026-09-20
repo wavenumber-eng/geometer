@@ -4,26 +4,30 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d">
-  <title>Model illustration A0 — Geometer</title>
+  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
+  <title>Model illustration operations — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="guide" data-authority="authored-markdown">
 <main>
-<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/model-illustration-a0.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="model-illustration-a0">Model illustration A0</h1></header>
+<nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/model-illustration-a0.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="model-illustration-operations">Model illustration operations</h1></header>
 <p>Model illustration completes import or analytic lowering, Fast vector linework,
 technical shading, surface fusion, and output construction in one Geometer
 operation. Consumers do not transfer an intermediate triangle-mesh JSON value.</p>
-<p>The TypeSpec authority is
+<p>The reusable source, view, and style authority is
 <a href="../../../../../../src/tsp/geometer/operations/model-illustration-a0.tsp"><code>model-illustration-a0.tsp</code></a>.
-The operation and attachment projections are declared in
-<a href="../../../../../../src/tsp/geometer/operations/model-illustration-operation-a0.tsp"><code>model-illustration-operation-a0.tsp</code></a>.
+Canonical operation roots and attachment projections are declared by the B0
+TypeSpec sources described in <a href="illustration-clipping-b0.html">illustration clipping B0</a>;
+the A0 operation declaration remains the compatibility authority.
 Generated schemas and styled contract pages are the field-level reference.</p>
 <h2 id="operations">Operations</h2>
-<p><code>geometry.model_illustration.a0</code> returns an inline deterministic SVG result.
-<code>geometry.model_illustration_geometry.a0</code> runs the same source preparation and
-rendering policy, then returns the existing renderer-neutral
-<code>geometry.mesh_illustration.geometry.a0</code> value in one governed JSON attachment.
+<p><code>geometry.model_illustration.b0</code> returns an inline deterministic SVG result.
+<code>geometry.model_illustration_geometry.b0</code> runs the same source preparation and
+rendering policy, then returns renderer-neutral
+<code>geometry.mesh_illustration.geometry.b0</code> in one governed JSON attachment. Both
+accept optional ordered half-spaces and report explicit empty/fragment metadata.
+The corresponding A0 identities remain strict compatibility operations without
+clipping fields.
 Use the latter when a Canvas, PDF, editor, or application renderer owns final
 drawing serialization.</p>
 <p>Both operations accept one of two source variants:</p>
@@ -131,7 +135,8 @@ request plus optional model attachment.</p>
 illustrates repeated analytic bodies, a cylinder, and a sphere.</li>
 <li><a href="../../../../../../examples/python/illustration_geometry_canvas.py"><code>illustration_geometry_canvas.py</code></a>
 sends STEP once and draws returned raw geometry on Canvas.</li>
-<li><a href="../../../../../../src/rust/geometer-client/examples/mesh_illustration.rs"><code>mesh_illustration.rs</code></a>
+<li><a href="../../../../../../src/rust/geometer-client/examples/mesh_illustration.rs"><code>mesh_illustration.rs</code></a></li>
+<li><a href="../../../../../../src/rust/geometer-client/examples/direct_static_illustration.rs"><code>direct_static_illustration.rs</code></a>
 sends STEP once and writes the returned SVG.</li>
 </ul>
 

@@ -29,6 +29,12 @@ struct ModelIllustrationGeometry
     contracts::MeshIllustrationGeometryA0 geometry;
 };
 
+struct ModelIllustrationGeometryB0
+{
+    contracts::ModelIllustrationGeometryResultB0 metadata;
+    contracts::MeshIllustrationGeometryB0 geometry;
+};
+
 /// Import or lower one model source and produce a complete SVG illustration.
 /// A model source requires one STEP attachment; an analytic source requires null.
 /// STEP tessellation, Fast detail, Fast Mesh Shadow, visibility and fusion execute
@@ -36,9 +42,15 @@ struct ModelIllustrationGeometry
 int illustrate_model(const contracts::ModelIllustrationRequestA0& request,
                      const ModelIllustrationAttachmentView* model,
                      contracts::ModelIllustrationResultA0* result, Status* status = nullptr);
+int illustrate_model(const contracts::ModelIllustrationRequestB0& request,
+                     const ModelIllustrationAttachmentView* model,
+                     contracts::ModelIllustrationResultB0* result, Status* status = nullptr);
 
 /// Run the same one-pass pipeline and return owning renderer-neutral geometry.
 int illustrate_model_geometry(const contracts::ModelIllustrationGeometryRequestA0& request,
                               const ModelIllustrationAttachmentView* model,
                               ModelIllustrationGeometry* result, Status* status = nullptr);
+int illustrate_model_geometry(const contracts::ModelIllustrationGeometryRequestB0& request,
+                              const ModelIllustrationAttachmentView* model,
+                              ModelIllustrationGeometryB0* result, Status* status = nullptr);
 } // namespace geometer

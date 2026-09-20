@@ -1,5 +1,6 @@
 #include "geometer/operation_registry.h"
 
+#include "geometer/native_operation_execution_gate.h"
 #include "geometer/operation_transport.h"
 #include "geometer/sha256.h"
 #include "geometer/step_topology_session.h"
@@ -320,7 +321,7 @@ int validate_mutation_publication(const std::string& operation, Result result, S
     succeed(&preview, operation, std::move(result));
     std::string json;
     contracts::ContractError error;
-    if (!contracts::encode_json(preview.outcome, &json, &error))
+    if (!encode_operation_outcome(preview.outcome, &json, &error))
     {
         if (status != nullptr)
         {
@@ -980,6 +981,7 @@ void execute_native_operation(const std::string& operation_id, const unsigned ch
                               const std::vector<OperationAttachmentView>& attachments,
                               OperationExecution* execution)
 {
+    NativeOperationExecutionGuard execution_guard;
     if (operation_id == kOpenOperation)
     {
         execute_open(request_json, request_json_size, attachments, execution);

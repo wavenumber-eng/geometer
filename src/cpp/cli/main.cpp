@@ -3,7 +3,7 @@
 #include "mesh_hlr_command.h"
 #include "projection_cli_options.h"
 #ifndef __EMSCRIPTEN__
-#include "geometer/ipc_a0_server.h"
+#include "geometer/c_api.h"
 #endif
 
 #include <rapidjson/document.h>
@@ -952,7 +952,7 @@ int main(int argc, char* argv[])
             std::fprintf(stderr, "serve requires exactly --stdio.\n");
             return 1;
         }
-        clean_exit(geometer::ipc_a0::serve_stdio());
+        clean_exit(geometer_serve_stdio());
     }
 #endif
 

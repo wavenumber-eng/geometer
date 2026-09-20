@@ -1,0 +1,64 @@
+{
+  "schema": "geometer.operation_transport_evidence_inventory.a0",
+  "review_state": "accepted",
+  "review": {
+    "reviewed_at": "2026-09-19",
+    "reviewer": "independent release and performance review",
+    "disposition": "approved_without_blocking_findings"
+  },
+  "windows_x64": {
+    "source_revision": "1563422c035aa8399f7262b94eefb9f763a60248",
+    "workflow_run_id": 35411030723,
+    "workflow_url": "https://github.com/wavenumber-eng/geometer/actions/runs/35411030723",
+    "job_id": 105810557995,
+    "job_conclusion": "success",
+    "run_conclusion": "cancelled_after_windows_success_to_stop_an_uncached_macos_build",
+    "artifact_id": 10574483627,
+    "artifact_digest": "sha256:a6bcb48257a6d1c4dad2a3983b5aced873267b02e74b3e74cba571568b08818a",
+    "reports": [
+      {
+        "path": "windows-x64/sibling-process-windows-x64-large.json",
+        "bytes": 41272,
+        "sha256": "f6b85faa8c17481b94d95237d326f1537b035d6bacd6098f8e0b5ac503c152ab"
+      },
+      {
+        "path": "windows-x64/sibling-process-windows-x64-medium.json",
+        "bytes": 41231,
+        "sha256": "e6081f3e27a55729261ba959c460fa9edcb450dcffe0b05dd08480f12abb2975"
+      },
+      {
+        "path": "windows-x64/sibling-process-windows-x64-small.json",
+        "bytes": 173352,
+        "sha256": "12804ddb9a9c3683962dce2b6dfeb20a601972a49808fe5be264962dab1093f8"
+      }
+    ]
+  },
+  "macos_arm64": {
+    "source_revision": "f4039933a581d2f80b0e6b8a35501f2658228085",
+    "workflow_run_id": 35412675064,
+    "workflow_url": "https://github.com/wavenumber-eng/geometer/actions/runs/35412675064",
+    "job_id": 105815225590,
+    "job_conclusion": "success",
+    "run_conclusion": "success",
+    "artifact_id": 10573689529,
+    "artifact_digest": "sha256:baf482c6b73f21ac89a932c5f623bc6c7ece66d59f78036e2b963de4cabf7900",
+    "reports": [
+      {
+        "path": "macos-arm64/sibling-process-macos-arm64-large.json",
+        "bytes": 40429,
+        "sha256": "7aad231b863e075dfb12910ce9b2e4bc60709fbebe20725f8acfe1e03c1a38e1"
+      },
+      {
+        "path": "macos-arm64/sibling-process-macos-arm64-medium.json",
+        "bytes": 46908,
+        "sha256": "bfd46baadacee690fdce69d3fda8a67c00171453d127f484cbacfb0a4b4f69b9"
+      },
+      {
+        "path": "macos-arm64/sibling-process-macos-arm64-small.json",
+        "bytes": 396060,
+        "sha256": "19e6aa81a9b16c0cc24ceb80415df4bd1da1ed59e21bc327fc7085d4918cf062"
+      }
+    ]
+  },
+  "revision_relationship": "The macOS revision differs only by CI policy, workflow, generated documentation, and CI-policy test changes; native source, contracts, fixtures, and build inputs are identical to the Windows revision."
+}

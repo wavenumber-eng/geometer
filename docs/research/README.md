@@ -7,6 +7,8 @@ authority and runtime exposure are described in [contracts](../contracts/README.
 
 - [STEP topology research synthesis](step-topology/step-topology-annotation-research.md)
 - [Illustration performance and drawing geometry qualification](illustration-performance.md)
+- [Operation transport performance baseline](operation-transport-performance.md)
+- [macOS topology-worker containment feasibility](macos-topology-worker-containment.md)
 - [STEP topology fixture measurements](step-topology/step-topology-fixture-baseline.md)
 - [XCAF persistence experiments](step-topology/step-topology-xcaf-persistence.md)
 - [AP242 persistence experiments](step-topology/step-topology-ap242-persistence.md)

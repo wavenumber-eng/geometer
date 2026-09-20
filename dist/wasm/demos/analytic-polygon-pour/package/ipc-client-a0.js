@@ -1,4 +1,4 @@
-import { decodeIpcCancelledA0Json, decodeIpcCancelRejectedA0Json, decodeIpcProtocolErrorA0Json, decodeIpcShutdownAckA0Json, decodeIpcWelcomeA0Json, decodeOperationOutcomeA0Json, encodeIpcHelloA0Json, encodeIpcReasonA0Json, encodeIpcRequestA0Json, } from "./generated/codecs.js";
+import { decodeIpcCancelledA0Json, decodeIpcCancelRejectedA0Json, decodeIpcProtocolErrorA0Json, decodeIpcShutdownAckA0Json, decodeIpcWelcomeA0Json, decodeOperationOutcomeA0Json, decodeOperationOutcomeB0Json, encodeIpcHelloA0Json, encodeIpcReasonA0Json, encodeIpcRequestA0Json, encodeIpcRequestB0Json, } from "./generated/codecs.js";
 import { NORMALIZED_CONTRACT_CATALOG_SHA256, operationCatalog, } from "./generated/operations.js";
 import { encodeIndexedTriangleMeshA0Packet, INDEXED_TRIANGLE_MESH_MEDIA_TYPE, } from "./indexed-mesh-packet-a0.js";
 import { encodeGeometerIpcFrame, GEOMETER_IPC_A0_LIMITS, GeometerIpcFrameDecoder, GeometerIpcProtocolError, validateIpcOutcomeOperationPair, validateIpcRequestOperationPair, } from "./ipc-a0.js";
@@ -80,13 +80,16 @@ export class GeometerIpcClientA0 {
             throw new GeometerIpcClientError("Geometer IPC connection is not accepting requests.");
         }
         const declaration = negotiatedOperation(this.welcome, operation);
-        const envelope = { operation, request };
-        validateIpcRequestOperationPair(envelope);
+        if (!operation.endsWith(".b0")) {
+            validateIpcRequestOperationPair({ operation, request: request });
+        }
         validateAttachments(attachments, declaration.input_attachments, "request");
         const requestId = this.allocateRequestId();
         const frame = {
             attachments,
-            json: encodeIpcRequestA0Json(envelope),
+            json: operation.endsWith(".b0")
+                ? encodeIpcRequestB0Json({ operation, request: request })
+                : encodeIpcRequestA0Json({ operation, request: request }),
             kind: 3,
             requestId,
         };
@@ -309,11 +312,15 @@ export class GeometerIpcClientA0 {
     }
     acceptResponse(frame) {
         const pending = requiredPending(this.pending, frame.requestId);
-        const outcome = decodeOperationOutcomeA0Json(frame.json);
+        const outcome = pending.operation.endsWith(".b0")
+            ? decodeOperationOutcomeB0Json(frame.json)
+            : decodeOperationOutcomeA0Json(frame.json);
         if (outcome.operation !== pending.operation) {
             throw new GeometerIpcProtocolError("Operation response identity does not match its request.");
         }
-        validateIpcOutcomeOperationPair(outcome);
+        if (!pending.operation.endsWith(".b0")) {
+            validateIpcOutcomeOperationPair(outcome);
+        }
         const declaration = negotiatedOperation(this.welcome, pending.operation);
         validateAttachments(frame.attachments, outcome.ok ? declaration.output_attachments : [], "response");
         this.releasePending(frame.requestId);

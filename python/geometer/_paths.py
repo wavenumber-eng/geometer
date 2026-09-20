@@ -11,8 +11,7 @@ def executable_path() -> Path:
     path = _find_executable_path()
     if path is None:
         raise FileNotFoundError(
-            "Could not find the Geometer executable. Build the geometer CLI "
-            "or set GEOMETER_EXE to the executable path."
+            "Could not find the Geometer executable. Build the geometer CLI or set GEOMETER_EXE to the executable path."
         )
     return path
 

@@ -64,18 +64,18 @@ def _analytic_source() -> geometer.AnalyticIllustrationSourceA0:
     return source
 
 
-def _analytic_request() -> geometer.ModelIllustrationRequestA0:
-    return geometer.ModelIllustrationRequestA0(
-        schema="geometry.model_illustration.request.a0",
+def _analytic_request() -> geometer.ModelIllustrationRequestB0:
+    return geometer.ModelIllustrationRequestB0(
+        schema="geometry.model_illustration.request.b0",
         source=_analytic_source(),
         view=geometer.MeshIllustrationView(direction=(0, 0, -1), up=(0, 1, 0)),
         style=geometer.MeshIllustrationStyleA0(show_hlr_detail=True),
     )
 
 
-def _analytic_geometry_request() -> geometer.ModelIllustrationGeometryRequestA0:
-    return geometer.ModelIllustrationGeometryRequestA0(
-        schema="geometry.model_illustration_geometry.request.a0",
+def _analytic_geometry_request() -> geometer.ModelIllustrationGeometryRequestB0:
+    return geometer.ModelIllustrationGeometryRequestB0(
+        schema="geometry.model_illustration_geometry.request.b0",
         source=_analytic_source(),
         view=geometer.MeshIllustrationView(direction=(0, 0, -1), up=(0, 1, 0)),
         style=geometer.MeshIllustrationStyleA0(show_hlr_detail=True),
@@ -128,8 +128,8 @@ def test_model_illustration_enforces_hidden_line_and_command_limits() -> None:
 
 def test_step_model_illustration_uses_one_model_attachment() -> None:
     step = (ROOT / "tests/fixtures/step/embedded_models/SOT-23.STEP").read_bytes()
-    request = geometer.ModelIllustrationRequestA0(
-        schema="geometry.model_illustration.request.a0",
+    request = geometer.ModelIllustrationRequestB0(
+        schema="geometry.model_illustration.request.b0",
         source=geometer.ModelAttachmentIllustrationSourceA0(kind="model", attachment="model"),
         view=geometer.MeshIllustrationView(direction=(0.4, 0.7, 1), up=(0, 1, 0)),
         style=geometer.MeshIllustrationStyleA0(show_hlr_detail=True),

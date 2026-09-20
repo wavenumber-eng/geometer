@@ -6,7 +6,7 @@ use geometer_client::{
 #[test]
 #[ignore = "requires matching GEOMETER_EXECUTABLE; opt-in RUST_002 GPU lane"]
 fn fill_only_job_skips_hlr_and_exports_original_svg() {
-    use crate::jobs::{Event, Export, Jobs, Model};
+    use crate::jobs::{Event, Export, Jobs, Model, SolveSettings};
     use std::{
         sync::Arc,
         time::{Duration, Instant},
@@ -40,9 +40,12 @@ fn fill_only_job_skips_hlr_and_exports_original_svg() {
         7,
         client.clone(),
         model,
-        view.clone(),
-        style,
-        crate::hlr::options(&view),
+        SolveSettings {
+            view: view.clone(),
+            style,
+            hlr: crate::hlr::options(&view),
+            clipping: None,
+        },
     );
     let deadline = Instant::now() + Duration::from_secs(15);
     loop {
@@ -101,13 +104,14 @@ fn native_lab_settings_and_raw_overlay_diagnosis() {
         );
 
         let view = crate::camera::Camera::default().view();
-        let mut input = MeshIllustrationInputA0 {
-            schema: "geometry.mesh_illustration.input.a0".into(),
+        let mut input = MeshIllustrationInputB0 {
+            schema: "geometry.mesh_illustration.input.b0".into(),
             meshes: balanced.mesh_collection.meshes,
             view: view.clone(),
             prepare: None,
             svg: None,
             style: Some(crate::settings::lab_style()),
+            clipping: None,
         };
         let clean = client.mesh_illustration(input.clone()).await.unwrap();
         assert_eq!(clean.stats.outlines + clean.stats.creases, 0);
@@ -123,12 +127,12 @@ fn native_lab_settings_and_raw_overlay_diagnosis() {
             .unwrap();
         std::io::Write::write_all(
             &mut oracle.stdin.take().unwrap(),
-            &encode_mesh_illustration_input_a0_json(&input).unwrap(),
+            &encode_mesh_illustration_input_b0_json(&input).unwrap(),
         )
         .unwrap();
         let output = oracle.wait_with_output().unwrap();
         assert!(output.status.success());
-        let reference = decode_mesh_illustration_result_a0_json(&output.stdout).unwrap();
+        let reference = decode_mesh_illustration_result_b0_json(&output.stdout).unwrap();
         assert_eq!(clean, reference);
 
         let style = input.style.as_mut().unwrap();

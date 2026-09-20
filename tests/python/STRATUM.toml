@@ -21,6 +21,11 @@ objectives = [
     "Verify canonical indexed-mesh packets and the typed Fast HLR IPC path.",
     "Verify colored native STEP tessellation through generated mesh attachments and typed clients.",
     "Verify direct file-backed and analytic model illustration through the governed one-pass boundary.",
+    "Benchmark executable IPC startup, persistent operation latency, process-pool throughput, and memory before transport changes.",
+    "Verify deterministic relocatable static SDK packaging, exact link manifests, payload inventories, external consumer qualification, a packaged direct-static Rust illustration app with no Geometer executable fallback, and isolated Windows CRT profiles.",
+    "Verify the immutable release inventory includes every native runtime, wheel, WASM archive, and static SDK sidecar exactly once and binds downloaded release bytes to strict canonical metadata.",
+    "Prevent maintained examples and scripts from selecting superseded A0 illustration operations and require durable docs to name B0 as canonical.",
+    "Verify canonical release-candidate identity, fail-closed execution timing records, and non-mutating idempotent promotion planning before expensive release matrices start.",
 ]
 
 [[subtests]]
@@ -39,9 +44,9 @@ test_case_type = "unit"
 
 [[subtests]]
 id = "PY_003"
-file = "test_occt_binary_cache.py"
-name = "OCCT Dependency And Qualification Helpers"
-description = "Checks OCCT cache keys, manifests, archives, exact-tag isolation, comparison normalization, and consumer artifact routing."
+file = "test_occt_dependency.py"
+name = "OCCT Producer And Qualification Helpers"
+description = "Checks isolated producer evidence, content-addressed conditional publication, exact-tag isolation, qualification normalization, and removal of consumer discovery APIs."
 test_case_type = "unit"
 
 [[subtests]]
@@ -193,7 +198,70 @@ test_case_type = "integration"
 
 [[subtests]]
 id = "PY_025"
-file = "test_ci_scope.py"
-name = "Selective CI Scope"
-description = "Checks that documentation skips expensive lanes and material changes select only affected production subsystems."
+file = "test_operation_transport_benchmark.py"
+name = "Operation Transport Baseline Harness"
+description = "Checks nearest-rank transport statistics and the representative governed native operation request used for standalone and embedded comparisons."
+test_case_type = "unit"
+
+[[subtests]]
+id = "PY_026"
+file = "test_static_sdk_packaging.py"
+name = "Static C ABI SDK Packaging"
+description = "Checks deterministic SDK archives, relocatable CMake metadata, authoritative link closure projection, payload integrity, provenance, external consumer qualification, and Windows static-CRT isolation."
+test_case_type = "unit"
+
+[[subtests]]
+id = "PY_027"
+file = "test_release_inventory.py"
+name = "Immutable Release Inventory"
+description = "Checks the B0 candidate-root binding plus exact multi-platform native, wheel, WASM, static SDK, checksum, provenance, and post-download verification."
+test_case_type = "unit"
+
+[[subtests]]
+id = "PY_028"
+file = "test_illustration_b0_migration.py"
+name = "Illustration B0 Consumer Migration"
+description = "Rejects live A0 illustration operation selection outside the reviewed compatibility inventory and checks canonical B0 documentation."
+test_case_type = "unit"
+
+[[subtests]]
+id = "PY_029"
+file = "test_candidate_root.py"
+name = "Release Candidate Root Identity"
+description = "Checks canonical closed candidate identity over source, release, and the single immutable OCCT lock digest."
+test_case_type = "unit"
+
+[[subtests]]
+id = "PY_030"
+file = "test_ci_execution_ledger.py"
+name = "CI Execution Ledger"
+description = "Checks fail-closed canonical command timing records, atomic updates, failure propagation, selected parallelism capture, and GitHub summary rendering."
+test_case_type = "unit"
+
+[[subtests]]
+id = "PY_031"
+file = "test_release_promotion_plan.py"
+name = "Non-Mutating Release Promotion Plan"
+description = "Checks B0 candidate-root and exact asset identity, safe names, deterministic resume classification, and rejection of mismatched or unexpected channel state without publishing."
+test_case_type = "unit"
+
+[[subtests]]
+id = "PY_032"
+file = "test_occt_lock.py"
+name = "Immutable OCCT Dependency Lock"
+description = "Checks the canonical explicit profile matrix, single version authority, exact digest-addressed restore, and fail-closed archive verification without derived cache identities or aliases."
+test_case_type = "unit"
+
+[[subtests]]
+id = "PY_033"
+file = "test_build_release_candidate.py"
+name = "Fixed Release Candidate Lane"
+description = "Checks one explicit build/test/package order per native or WASM lane, disjoint client ownership, isolated outputs, and fail-closed reruns."
+test_case_type = "unit"
+
+[[subtests]]
+id = "PY_034"
+file = "test_release_candidate_store.py"
+name = "Immutable R2 Candidate Store"
+description = "Checks exact source/inventory-addressed R2 paths, asset-before-inventory commit order, conditional creation, and byte-identical retries."
 test_case_type = "unit"

@@ -1,5 +1,6 @@
 #include "geometer/ipc_a0_server.h"
 
+#include "geometer/c_api.h"
 #include "geometer/generated/contracts/contracts.h"
 #include "geometer/ipc_a0_frame.h"
 #include "geometer/operation_registry.h"
@@ -21,6 +22,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <deque>
+#include <exception>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -391,17 +393,43 @@ bool parse_request(Frame* frame, QueuedRequest* request, std::string* diagnostic
         *diagnostic_code = "geometer.contract.invalid_json";
         return false;
     }
-    contracts::IpcRequestA0 envelope;
+    const auto operation_member = document.FindMember("operation");
+    if (operation_member == document.MemberEnd() || !operation_member->value.IsString())
+    {
+        *diagnostic_code = "geometer.contract.required";
+        *diagnostic_path = "/operation";
+        *error = "The IPC request operation is required and must be a string.";
+        return false;
+    }
+    const std::string operation(operation_member->value.GetString(),
+                                operation_member->value.GetStringLength());
     contracts::ContractError contract_error;
-    if (!contracts::decode_json(reinterpret_cast<const unsigned char*>(frame->json.data()),
-                                frame->json.size(), &envelope, &contract_error))
+    bool decoded = false;
+    bool payload_matches = false;
+    if (operation_uses_b0(operation))
+    {
+        contracts::IpcRequestB0 envelope;
+        decoded = contracts::decode_json(reinterpret_cast<const unsigned char*>(frame->json.data()),
+                                         frame->json.size(), &envelope, &contract_error);
+        payload_matches =
+            decoded && operation_request_value_matches(envelope.operation, envelope.request);
+    }
+    else
+    {
+        contracts::IpcRequestA0 envelope;
+        decoded = contracts::decode_json(reinterpret_cast<const unsigned char*>(frame->json.data()),
+                                         frame->json.size(), &envelope, &contract_error);
+        payload_matches =
+            decoded && operation_request_value_matches(envelope.operation, envelope.request);
+    }
+    if (!decoded)
     {
         *diagnostic_code = contract_error.code;
         *diagnostic_path = contract_error.path;
         *error = contract_error.message;
         return false;
     }
-    if (!operation_request_value_matches(envelope.operation, envelope.request))
+    if (!payload_matches)
     {
         *diagnostic_code = "geometer.contract.operation_payload_mismatch";
         *diagnostic_path = "/request";
@@ -424,7 +452,7 @@ bool parse_request(Frame* frame, QueuedRequest* request, std::string* diagnostic
     request->request_json.assign(buffer.GetString(), buffer.GetSize());
     request->id = frame->request_id;
     request->resident_bytes = encoded_size(*frame);
-    request->operation = std::move(envelope.operation);
+    request->operation = operation;
     request->attachments = std::move(frame->attachments);
     return true;
 }
@@ -446,7 +474,7 @@ Frame execute_request(const QueuedRequest& request)
     response.kind = FrameKind::response;
     response.request_id = request.id;
     contracts::ContractError error;
-    if (!contracts::encode_json(execution.outcome, &response.json, &error))
+    if (!encode_operation_outcome(execution.outcome, &response.json, &error))
     {
         return operation_failure(request.id, request.operation,
                                  "geometer.transport.response_encoding_failed", false,
@@ -894,3 +922,23 @@ int serve_stdio(const ServerOptions& options)
 } // namespace testing
 
 } // namespace geometer::ipc_a0
+
+extern "C" int geometer_serve_stdio(void)
+{
+    try
+    {
+        return geometer::ipc_a0::serve_stdio();
+    }
+    catch (const std::exception& error)
+    {
+        std::fprintf(stderr, "Geometer IPC bootstrap failure: %s\n", error.what());
+        std::fflush(stderr);
+        return 2;
+    }
+    catch (...)
+    {
+        std::fprintf(stderr, "Geometer IPC bootstrap failed with an unknown exception.\n");
+        std::fflush(stderr);
+        return 2;
+    }
+}

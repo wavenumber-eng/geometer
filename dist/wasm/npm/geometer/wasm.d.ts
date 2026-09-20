@@ -1,4 +1,4 @@
-import type { AnalyticPlanarBooleanBatchRequestA0, AnalyticPlanarBooleanBatchResultA0, DiagnosticA0, HlrProjectionOptionsA0, HlrProjectionResultA0, ModelBoundsInputMediaType, ModelBoundsOptionsA0, ModelBoundsResultA0, OperationOutcomeA0 } from "./generated/index.js";
+import type { AnalyticPlanarBooleanBatchRequestA0, AnalyticPlanarBooleanBatchResultA0, DiagnosticA0, HlrProjectionOptionsA0, HlrProjectionResultA0, HlrProjectionResultB0, MeshCollectionA0, MeshHlrProjectionRequestB0, MeshIllustrationGeometryB0, MeshIllustrationGeometryInputB0, MeshIllustrationInputB0, MeshIllustrationResultB0, ModelBoundsInputMediaType, ModelBoundsOptionsA0, ModelBoundsResultA0, OperationOutcomeA0, OperationOutcomeB0 } from "./generated/index.js";
 import type { IndexedTriangleMeshA0 } from "./indexed-mesh-packet-a0.js";
 export interface EmscriptenGeometerModule {
     readonly HEAPU8: Uint8Array;
@@ -25,7 +25,7 @@ export interface GeometerOperationAttachment {
 }
 export interface GeometerOperationResponse {
     readonly attachments: readonly GeometerOperationAttachment[];
-    readonly outcome: OperationOutcomeA0;
+    readonly outcome: OperationOutcomeA0 | OperationOutcomeB0;
 }
 export interface ModelBoundsRequest {
     readonly mediaType?: ModelBoundsInputMediaType;
@@ -38,8 +38,20 @@ export interface ModelHlrProjectionRequest {
     readonly options?: HlrProjectionOptionsA0;
 }
 export interface MeshHlrProjectionRequest {
+    readonly meshCollection: MeshCollectionA0;
+    readonly request: MeshHlrProjectionRequestB0;
+}
+export interface MeshHlrProjectionRequestA0 {
     readonly mesh: IndexedTriangleMeshA0 | Uint8Array;
     readonly options?: HlrProjectionOptionsA0;
+}
+export interface MeshIllustrationB0Request {
+    readonly input: MeshIllustrationInputB0;
+    readonly hlrProjection?: HlrProjectionResultB0;
+}
+export interface MeshIllustrationGeometryB0Request {
+    readonly input: MeshIllustrationGeometryInputB0;
+    readonly hlrProjection?: HlrProjectionResultB0;
 }
 export interface GeometerWasmCapabilityCatalog {
     readonly cAbiGeneration: number;
@@ -65,7 +77,11 @@ export declare class GeometerWasmClient {
     analyticPlanarBooleanBatch(request: AnalyticPlanarBooleanBatchRequestA0): Promise<AnalyticPlanarBooleanBatchResultA0>;
     modelBounds(request: ModelBoundsRequest): Promise<ModelBoundsResultA0>;
     modelHlrProjection(request: ModelHlrProjectionRequest): Promise<HlrProjectionResultA0>;
-    meshHlrProjection(request: MeshHlrProjectionRequest): Promise<HlrProjectionResultA0>;
+    meshHlrProjection(request: MeshHlrProjectionRequest): Promise<HlrProjectionResultB0>;
+    meshHlrProjectionB0(request: MeshHlrProjectionRequest): Promise<HlrProjectionResultB0>;
+    meshHlrProjectionA0(request: MeshHlrProjectionRequestA0): Promise<HlrProjectionResultA0>;
+    meshIllustration(request: MeshIllustrationB0Request): Promise<MeshIllustrationResultB0>;
+    meshIllustrationGeometry(request: MeshIllustrationGeometryB0Request): Promise<MeshIllustrationGeometryB0>;
     private hlrProjection;
     execute(operation: string, requestJson: string, attachments: readonly GeometerOperationAttachment[]): GeometerOperationResponse;
 }

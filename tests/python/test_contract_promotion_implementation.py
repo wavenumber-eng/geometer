@@ -43,6 +43,35 @@ def test_release_licenses_fall_back_to_the_cache_restored_occt_install(tmp_path:
     assert sources["OCCT_LGPL_EXCEPTION.txt"] == install / "OCCT_LGPL_EXCEPTION.txt"
 
 
+def test_release_licenses_find_cache_restored_unix_documentation(tmp_path: Path) -> None:
+    install = (
+        tmp_path
+        / ".deps"
+        / "native"
+        / "macos-arm64"
+        / "occt-install"
+        / "share"
+        / "doc"
+        / "opencascade"
+    )
+    install.mkdir(parents=True)
+    for name in ("LICENSE_LGPL_21.txt", "OCCT_LGPL_EXCEPTION.txt"):
+        (install / name).write_text(name, encoding="utf-8")
+    sources = release_license_sources(tmp_path, "macos-arm64")
+    assert sources["OCCT_LICENSE_LGPL_21.txt"] == install / "LICENSE_LGPL_21.txt"
+    assert sources["OCCT_LGPL_EXCEPTION.txt"] == install / "OCCT_LGPL_EXCEPTION.txt"
+
+
+def test_release_licenses_find_isolated_static_crt_install(tmp_path: Path) -> None:
+    install = tmp_path / ".deps" / "native" / "windows-x64" / "occt-static-crt-install"
+    install.mkdir(parents=True)
+    for name in ("LICENSE_LGPL_21.txt", "OCCT_LGPL_EXCEPTION.txt"):
+        (install / name).write_text(name, encoding="utf-8")
+    sources = release_license_sources(tmp_path, "windows-x64")
+    assert sources["OCCT_LICENSE_LGPL_21.txt"] == install / "LICENSE_LGPL_21.txt"
+    assert sources["OCCT_LGPL_EXCEPTION.txt"] == install / "OCCT_LGPL_EXCEPTION.txt"
+
+
 def test_exact_algebraic_backend_paths_exist() -> None:
     backend = _manifest()["analytic_exact_backend"]
     for key in (

@@ -28,9 +28,11 @@ import stat
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 import dependency_versions
-import occt_binary_cache
+import occt_lock
+import occt_producer
 
 ROOT = Path(__file__).resolve().parent.parent
 DEPS_DIR = ROOT / ".deps"
@@ -176,10 +178,12 @@ def clone_occt() -> None:
     )
 
 
-def occt_paths(platform_name: str, library_type: str) -> tuple[Path, Path]:
+def occt_paths(platform_name: str, library_type: str, msvc_runtime: str = "Dynamic") -> tuple[Path, Path]:
     platform_dir = NATIVE_DEPS_DIR / platform_name
     if library_type == "Shared":
         return platform_dir / "occt-shared-build", platform_dir / "occt-shared-install"
+    if platform_name.startswith("windows-") and msvc_runtime == "Static":
+        return platform_dir / "occt-static-crt-build", platform_dir / "occt-static-crt-install"
     return platform_dir / "occt-build", platform_dir / "occt-install"
 
 
@@ -193,11 +197,18 @@ def native_toolchain_abi(platform_name: str) -> str | None:
             return "clang-cl" if "clang-cl" in compiler else "clang"
         tools_version = os.environ.get("VCToolsVersion", "")
         match = re.match(r"14\.(\d+)", tools_version)
-        if match and int(match.group(1)) < 30:
-            return "msvc-v142"
+        if match:
+            tools_minor = int(match.group(1))
+            if tools_minor < 30:
+                return "msvc-v142"
+            if tools_minor >= 50:
+                return "msvc-v145"
+            return "msvc-v143"
         cl_path = (shutil.which("cl") or "").lower()
         if "\\2019\\" in cl_path:
             return "msvc-v142"
+        if "\\visual studio\\18\\" in cl_path:
+            return "msvc-v145"
         return "msvc-v143"
     return nonwindows_toolchain_abi(platform_name)
 
@@ -243,50 +254,74 @@ def nonwindows_toolchain_abi(platform_name: str) -> str:
     return f"{family}-{version_match.group(1)}-{runtime}-abi-{runtime_abi}"
 
 
-def occt_cache_profile(
+def occt_build_profile(
     platform_name: str,
     config: str,
     library_type: str,
     macos_deployment_target_value: str | None,
-) -> occt_binary_cache.OcctCacheProfile:
+    source_tag_object: str,
+    source_commit: str,
+    msvc_runtime: str = "Dynamic",
+) -> occt_producer.OcctBuildProfile:
     resolved_macos_target = None
     if platform_name.startswith("macos-"):
         resolved_macos_target = macos_deployment_target(macos_deployment_target_value)
     resolved_linux_glibc = linux_glibc_baseline(platform_name)
     toolchain_abi = native_toolchain_abi(platform_name)
+    static_msvc_runtime = platform_name.startswith("windows-") and msvc_runtime == "Static"
+    if static_msvc_runtime:
+        toolchain_abi = f"{toolchain_abi}-crt-static"
     definitions = native_occt_cmake_definitions(
         platform_name,
         config,
         library_type,
         macos_deployment_target_value,
+        msvc_runtime,
     )
-    recipe = occt_binary_cache.semantic_recipe_hash(
-        "native-install-a2",
+    recipe_inputs = {
+        "kind": "native",
+        "occt_repo": OCCT_REPO,
+        "occt_tag": OCCT_TAG,
+        "source_commit": source_commit,
+        "source_tag_object": source_tag_object,
+        "platform_tag": platform_name,
+        "config": config,
+        "library_type": library_type,
+        "toolchain_abi": toolchain_abi or "",
+        "macos_deployment_target": resolved_macos_target or "",
+        "linux_glibc_baseline": resolved_linux_glibc,
+        "rapidjson_patch": RAPIDJSON_PATCH_SENTINEL,
+        "rapidjson_content_sha256": occt_producer.directory_content_hash(RAPIDJSON_SRC),
+    }
+    if static_msvc_runtime:
+        recipe_inputs["msvc_runtime"] = "Static"
+    recipe = occt_producer.semantic_recipe_hash(
+        "native-install-a3" if static_msvc_runtime else "native-install-a2",
         definitions,
-        {
-            "kind": "native",
-            "occt_repo": OCCT_REPO,
-            "occt_tag": OCCT_TAG,
-            "platform_tag": platform_name,
-            "config": config,
-            "library_type": library_type,
-            "toolchain_abi": toolchain_abi or "",
-            "macos_deployment_target": resolved_macos_target or "",
-            "linux_glibc_baseline": resolved_linux_glibc,
-            "rapidjson_patch": RAPIDJSON_PATCH_SENTINEL,
-            "rapidjson_content_sha256": occt_binary_cache.directory_content_hash(RAPIDJSON_SRC),
-        },
+        recipe_inputs,
     )
-    return occt_binary_cache.OcctCacheProfile(
+    return occt_producer.OcctBuildProfile(
         kind="native",
         platform_tag=platform_name,
         config=config,
         library_type=library_type,
         occt_repo=OCCT_REPO,
         occt_tag=OCCT_TAG,
+        source_commit=source_commit,
+        source_tag_object=source_tag_object,
         recipe_hash=recipe,
         toolchain_abi=toolchain_abi,
         macos_deployment_target=resolved_macos_target,
+    )
+
+
+def locked_native_profile(platform_name: str, msvc_runtime: str = "Dynamic") -> dict[str, Any]:
+    runtime = msvc_runtime.lower() if platform_name.startswith("windows-") else "none"
+    return occt_lock.profile_for_selector(
+        occt_lock.load_lock(),
+        kind="native",
+        platform=platform_name,
+        msvc_runtime=runtime,
     )
 
 
@@ -305,9 +340,10 @@ def native_occt_cmake_definitions(
     config: str,
     library_type: str,
     macos_deployment_target_value: str | None,
-) -> tuple[occt_binary_cache.CMakeDefinition, ...]:
-    _, install_dir = occt_paths(platform_name, library_type)
-    definition = occt_binary_cache.CMakeDefinition
+    msvc_runtime: str = "Dynamic",
+) -> tuple[occt_producer.CMakeDefinition, ...]:
+    _, install_dir = occt_paths(platform_name, library_type, msvc_runtime)
+    definition = occt_producer.CMakeDefinition
     definitions = [
         definition("CMAKE_INSTALL_PREFIX", str(install_dir), include_in_recipe=False),
         definition("CMAKE_BUILD_TYPE", config),
@@ -325,6 +361,17 @@ def native_occt_cmake_definitions(
         definition("3RDPARTY_RAPIDJSON_DIR", str(RAPIDJSON_SRC), recipe_value="vendored-rapidjson"),
         definition("CMAKE_POLICY_VERSION_MINIMUM", "3.5"),
     ]
+    if platform_name.startswith("windows-") and msvc_runtime == "Static":
+        definitions.extend(
+            (
+                definition("CMAKE_POLICY_DEFAULT_CMP0091", "NEW"),
+                definition("CMAKE_MSVC_RUNTIME_LIBRARY", "MultiThreaded"),
+                # OCCT 8.0 still seeds the legacy flags directly despite CMP0091.
+                # Pin both languages so no /MD object can enter the static SDK profile.
+                definition("CMAKE_C_FLAGS_RELEASE", "/MT /O2 /Ob2 /DNDEBUG"),
+                definition("CMAKE_CXX_FLAGS_RELEASE", "/MT /O2 /Ob2 /DNDEBUG"),
+            )
+        )
     if platform_name.startswith("macos-"):
         target = macos_deployment_target(macos_deployment_target_value)
         definitions.append(definition("CMAKE_OSX_DEPLOYMENT_TARGET", target))
@@ -340,8 +387,9 @@ def configure_occt(
     config: str,
     library_type: str,
     macos_deployment_target: str | None,
+    msvc_runtime: str,
 ) -> None:
-    build_dir, _ = occt_paths(platform_name, library_type)
+    build_dir, _ = occt_paths(platform_name, library_type, msvc_runtime)
     print(f"Configuring OCCT ({config}, {library_type}) ...")
     build_dir.mkdir(parents=True, exist_ok=True)
     cmd = [
@@ -351,16 +399,16 @@ def configure_occt(
         str(OCCT_SRC),
         "-B",
         str(build_dir),
-        *occt_binary_cache.cmake_definition_args(
-            native_occt_cmake_definitions(platform_name, config, library_type, macos_deployment_target)
+        *occt_producer.cmake_definition_args(
+            native_occt_cmake_definitions(platform_name, config, library_type, macos_deployment_target, msvc_runtime)
         ),
     ]
 
     run(cmd)
 
 
-def build_occt(platform_name: str, config: str, library_type: str) -> None:
-    build_dir, _ = occt_paths(platform_name, library_type)
+def build_occt(platform_name: str, config: str, library_type: str, msvc_runtime: str = "Dynamic") -> None:
+    build_dir, _ = occt_paths(platform_name, library_type, msvc_runtime)
     print(f"Building OCCT ({config}, {library_type}) ...")
     run(
         [
@@ -375,8 +423,8 @@ def build_occt(platform_name: str, config: str, library_type: str) -> None:
     )
 
 
-def install_occt(platform_name: str, config: str, library_type: str) -> None:
-    build_dir, install_dir = occt_paths(platform_name, library_type)
+def install_occt(platform_name: str, config: str, library_type: str, msvc_runtime: str = "Dynamic") -> None:
+    build_dir, install_dir = occt_paths(platform_name, library_type, msvc_runtime)
     print(f"Installing OCCT to {install_dir} ...")
     run(
         [
@@ -399,8 +447,8 @@ def clean(platform_name: str, *, include_source: bool) -> None:
             remove_tree(d)
 
 
-def prepare_source_build(platform_name: str, library_type: str) -> None:
-    build_dir, install_dir = occt_paths(platform_name, library_type)
+def prepare_source_build(platform_name: str, library_type: str, msvc_runtime: str = "Dynamic") -> None:
+    build_dir, install_dir = occt_paths(platform_name, library_type, msvc_runtime)
     for path in (build_dir, install_dir):
         if path.exists():
             print(f"Removing stale OCCT path {path}")
@@ -414,6 +462,15 @@ def macos_deployment_target(configured: str | None) -> str:
         or os.environ.get("MACOSX_DEPLOYMENT_TARGET")
         or DEFAULT_MACOS_DEPLOYMENT_TARGET
     ).replace("_", ".")
+
+
+def candidate_mode(parser: argparse.ArgumentParser, args: argparse.Namespace, source_build: bool) -> bool:
+    enabled = args.upload_binary_cache or args.package_binary_cache
+    if args.upload_binary_cache and args.package_binary_cache:
+        parser.error("choose only one of --upload-binary-cache and --package-binary-cache")
+    if enabled and not source_build:
+        parser.error("OCCT candidate production requires the explicit mode --binary-cache off")
+    return enabled
 
 
 def main() -> None:
@@ -446,6 +503,12 @@ def main() -> None:
         default=None,
         help=f"Minimum macOS deployment target for native dependencies (default: {DEFAULT_MACOS_DEPLOYMENT_TARGET})",
     )
+    parser.add_argument(
+        "--msvc-runtime",
+        choices=["Dynamic", "Static"],
+        default="Dynamic",
+        help="MSVC runtime profile for Windows static libraries (default: Dynamic).",
+    )
     parser.add_argument("--clean", action="store_true", help="Remove all OCCT build artifacts")
     parser.add_argument(
         "--clean-source",
@@ -454,14 +517,19 @@ def main() -> None:
     )
     parser.add_argument(
         "--binary-cache",
-        choices=sorted(occt_binary_cache.VALID_MODES),
+        choices=sorted(occt_producer.VALID_MODES),
         default=None,
-        help="Use prebuilt OCCT binary cache: auto, off, or only (default: env/auto).",
+        help="OCCT mode: auto/only use the exact lock; off is an explicit source build (default: env/auto).",
     )
     parser.add_argument(
         "--upload-binary-cache",
         action="store_true",
         help="Package and upload the resulting OCCT install tree to the configured binary cache.",
+    )
+    parser.add_argument(
+        "--package-binary-cache",
+        action="store_true",
+        help="Package a source-built OCCT candidate without loading publication credentials.",
     )
     parser.add_argument(
         "--print-binary-cache-key",
@@ -478,43 +546,79 @@ def main() -> None:
         clean(args.platform_tag, include_source=args.clean_source)
         return
 
-    occt_binary_cache.load_dotenv(ROOT)
-    profile = occt_cache_profile(
-        args.platform_tag,
-        args.config,
-        args.library_type,
-        args.macos_deployment_target,
-    )
+    source_build = occt_producer.mode_from_value(args.binary_cache) == "off"
+    producer_mode = candidate_mode(parser, args, source_build)
+    if not source_build and (args.config != "Release" or args.library_type != "Static"):
+        parser.error("the OCCT lock contains Release static installs; use --binary-cache off for a source build")
+    if not source_build and args.occt_tag != dependency_versions.OCCT_TAG:
+        parser.error("locked OCCT consumers cannot override --occt-tag; use --binary-cache off for a source build")
+    locked_profile = None if source_build else locked_native_profile(args.platform_tag, args.msvc_runtime)
+    if locked_profile is not None and args.platform_tag.startswith("macos-"):
+        expected_target = locked_profile["abi"]["deployment_target"]
+        actual_target = macos_deployment_target(args.macos_deployment_target)
+        if actual_target != expected_target:
+            parser.error(
+                f"locked OCCT profile requires macOS deployment target {expected_target}; "
+                "use --binary-cache off for another target"
+            )
     if args.print_binary_cache_key:
-        print(profile.cache_key)
+        if locked_profile is None:
+            parser.error("--print-binary-cache-key is available only for locked consumer mode")
+        else:
+            print(locked_profile["archive"]["object_key"])
         return
 
     print(f"Using native dependency platform {args.platform_tag}")
     if args.platform_tag.startswith("macos-"):
         print(f"Using macOS deployment target {macos_deployment_target(args.macos_deployment_target)}")
     verify_vendored_rapidjson()
-    _, install_dir = occt_paths(args.platform_tag, args.library_type)
-    if occt_binary_cache.install_matches_or_migrates_profile(install_dir, profile):
-        print(f"OCCT install already present at {install_dir}")
-    elif not occt_binary_cache.restore_prebuilt_install(profile, install_dir, mode=args.binary_cache):
-        prepare_source_build(args.platform_tag, args.library_type)
+    _, install_dir = occt_paths(args.platform_tag, args.library_type, args.msvc_runtime)
+    if locked_profile is not None:
+        occt_lock.restore_locked_install(locked_profile, install_dir)
+    else:
+        prepare_source_build(args.platform_tag, args.library_type, args.msvc_runtime)
         clone_occt()
-        configure_occt(args.platform_tag, args.config, args.library_type, args.macos_deployment_target)
-        build_occt(args.platform_tag, args.config, args.library_type)
-        install_occt(args.platform_tag, args.config, args.library_type)
-        occt_binary_cache.write_install_profile(install_dir, profile)
+        source_tag_object, source_commit = occt_producer.source_identity(OCCT_SRC, OCCT_TAG)
+        profile = occt_build_profile(
+            args.platform_tag,
+            args.config,
+            args.library_type,
+            args.macos_deployment_target,
+            source_tag_object,
+            source_commit,
+            args.msvc_runtime,
+        )
+        if producer_mode:
+            lock = occt_lock.load_lock()
+            target_profile = locked_native_profile(args.platform_tag, args.msvc_runtime)
+            occt_producer.require_locked_source(profile, lock)
+            occt_producer.require_locked_profile(profile, target_profile)
+        configure_occt(
+            args.platform_tag,
+            args.config,
+            args.library_type,
+            args.macos_deployment_target,
+            args.msvc_runtime,
+        )
+        build_occt(args.platform_tag, args.config, args.library_type, args.msvc_runtime)
+        install_occt(args.platform_tag, args.config, args.library_type, args.msvc_runtime)
+        occt_producer.write_install_profile(install_dir, profile)
 
-    if not occt_binary_cache.install_matches_profile(install_dir, profile):
-        expected = occt_binary_cache.occt_version_from_tag(profile.occt_tag)
-        actual = occt_binary_cache.installed_occt_version(install_dir) or "unknown"
-        raise RuntimeError(f"OCCT install under {install_dir} is {actual}, expected {expected}.")
+        if not occt_producer.install_matches_profile(install_dir, profile):
+            expected = occt_producer.occt_version_from_tag(profile.occt_tag)
+            actual = occt_producer.installed_occt_version(install_dir) or "unknown"
+            raise RuntimeError(f"OCCT install under {install_dir} is {actual}, expected {expected}.")
 
-    if args.upload_binary_cache:
-        occt_binary_cache.upload_prebuilt_install(
+    if producer_mode:
+        package_dir = occt_producer.package_prebuilt_install(
             profile,
             install_dir,
             out_dir=ROOT / "out" / "occt-binary-cache",
+            locked_profile_id=locked_native_profile(args.platform_tag, args.msvc_runtime)["id"],
         )
+        if args.upload_binary_cache:
+            occt_producer.load_dotenv(ROOT)
+            occt_producer.publish_candidate(package_dir)
 
     print(f"\nOCCT installed to {install_dir}")
     if args.library_type == "Shared":

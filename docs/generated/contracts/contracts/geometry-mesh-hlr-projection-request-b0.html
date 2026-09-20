@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
+  <title>geometry.mesh_hlr_projection.request.b0 — Geometer</title>
+  <link rel="stylesheet" href="../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="contract" data-contract-identity="geometry.mesh_hlr_projection.request.b0" data-promotion-status="pilot_candidate">
+<main>
+<header>
+  <p class="page-type">Contract root</p>
+  <h1><code>geometry.mesh_hlr_projection.request.b0</code></h1>
+  <p class="lede">Fast-only HLR request over the governed colored mesh collection.</p>
+</header>
+<nav class="nav" aria-label="Contract navigation"><a href="../index.html">All contracts</a><a href="../../../../contracts/geometer/generated/schema/MeshHlrProjectionRequestB0.json">JSON Schema</a><a href="../../../../src/tsp/geometer/main.tsp">TypeSpec entry point</a><a href="../../../design/contract-semantics.md">Compatibility policy</a></nav>
+<aside class="callout"><strong>Generated, not authored.</strong> Edit TypeSpec and regenerate. Lifecycle evidence remains in the promotion manifest.</aside>
+
+<section><h2>Identity</h2><table><tbody>
+<tr><th>Contract</th><td><code>geometry.mesh_hlr_projection.request.b0</code></td></tr>
+<tr><th>Schema</th><td><code>urn:wavenumber:schema:geometer:geometry.mesh_hlr_projection.request:b0</code></td></tr>
+<tr><th>Declaration</th><td><code>Wavenumber.Geometer.Contracts.MeshHlrProjectionB0.MeshHlrProjectionRequestB0</code></td></tr>
+<tr><th>Lifecycle</th><td><span class="status">pilot_candidate</span></td></tr>
+<tr><th>Maturity</th><td>See interface support policy; promotion is not maturity</td></tr>
+<tr><th>Current authority</th><td><code>typespec_candidate</code></td></tr>
+</tbody></table></section>
+<section class="model-section"><h2>Declarations <span class="tag">10</span></h2><details open id="declaration-wavenumber-geometer-contracts-meshhlrprojectionb0-meshhlrprojectionrequestb0"><summary><h2><code>MeshHlrProjectionRequestB0</code> <span class="tag">model</span></h2></summary><p>Fast-only HLR request over the governed colored mesh collection.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>schema</code></td><td>required</td><td><code>&quot;geometry.mesh_hlr_projection.request.b0&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>views</code></td><td>optional</td><td><code><a href="#declaration-wavenumber-geometer-contracts-hlrprojectiona0-hlrviewspec">HlrViewSpec</a>[]</code></td><td>—</td><td><code>max_items=64</code></td><td></td></tr>
+<tr><td><code>output_outline</code></td><td>optional</td><td><code>boolean</code></td><td><code>true</code></td><td>none</td><td></td></tr>
+<tr><td><code>output_detail</code></td><td>optional</td><td><code>boolean</code></td><td><code>true</code></td><td>none</td><td></td></tr>
+<tr><td><code>output_bbox</code></td><td>optional</td><td><code>boolean</code></td><td><code>true</code></td><td>none</td><td></td></tr>
+<tr><td><code>model_transform</code></td><td>optional</td><td><code><a href="#declaration-wavenumber-geometer-contracts-hlrprojectiona0-hlrmatrix4x4">HlrMatrix4x4</a></code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>round_digits</code></td><td>optional</td><td><code>uint32</code></td><td><code>3</code></td><td><code>min_value=0</code> <code>max_value=9</code></td><td></td></tr>
+<tr><td><code>fast</code></td><td>optional</td><td><code><a href="#declaration-wavenumber-geometer-contracts-hlrprojectiona0-fasthlroptionsa0">FastHlrOptionsA0</a></code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>clipping</code></td><td>optional</td><td><code><a href="#declaration-wavenumber-geometer-contracts-illustrationclippingb0-illustrationclipping">IllustrationClipping</a></code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-hlrprojectiona0-fasthlrlimitsa0"><summary><h2><code>FastHlrLimitsA0</code> <span class="tag">model</span></h2></summary><p>Resource ceilings applied during Fast mesh preparation and projection.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>max_vertices</code></td><td>optional</td><td><code>uint32</code></td><td><code>2000000</code></td><td><code>min_value=1</code> <code>max_value=4294967295</code></td><td></td></tr>
+<tr><td><code>max_triangles</code></td><td>optional</td><td><code>uint32</code></td><td><code>2000000</code></td><td><code>min_value=1</code> <code>max_value=4294967295</code></td><td></td></tr>
+<tr><td><code>max_edges</code></td><td>optional</td><td><code>uint32</code></td><td><code>4000000</code></td><td><code>min_value=1</code> <code>max_value=4294967295</code></td><td></td></tr>
+<tr><td><code>max_grid_references</code></td><td>optional</td><td><code>uint32</code></td><td><code>64000000</code></td><td><code>min_value=1</code> <code>max_value=4294967295</code></td><td></td></tr>
+<tr><td><code>max_candidate_pairs</code></td><td>optional</td><td><code>uint32</code></td><td><code>100000000</code></td><td><code>min_value=1</code> <code>max_value=4294967295</code></td><td></td></tr>
+<tr><td><code>max_fragments</code></td><td>optional</td><td><code>uint32</code></td><td><code>8000000</code></td><td><code>min_value=1</code> <code>max_value=4294967295</code></td><td></td></tr>
+<tr><td><code>max_output_segments</code></td><td>optional</td><td><code>uint32</code></td><td><code>4000000</code></td><td><code>min_value=1</code> <code>max_value=4294967295</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-hlrprojectiona0-fasthlroptionsa0"><summary><h2><code>FastHlrOptionsA0</code> <span class="tag">model</span></h2></summary><p>Fast vector-HLR controls. Angles are radians and geometric tolerances use model units.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>include_boundaries</code></td><td>optional</td><td><code>boolean</code></td><td><code>true</code></td><td>none</td><td></td></tr>
+<tr><td><code>include_creases</code></td><td>optional</td><td><code>boolean</code></td><td><code>true</code></td><td>none</td><td></td></tr>
+<tr><td><code>include_silhouettes</code></td><td>optional</td><td><code>boolean</code></td><td><code>true</code></td><td>none</td><td></td></tr>
+<tr><td><code>include_hidden</code></td><td>optional</td><td><code>boolean</code></td><td><code>false</code></td><td>none</td><td></td></tr>
+<tr><td><code>suppress_coplanar_seams</code></td><td>optional</td><td><code>boolean</code></td><td><code>false</code></td><td>none</td><td></td></tr>
+<tr><td><code>crease_angle_rad</code></td><td>optional</td><td><code>float64</code></td><td><code>0.5235987755982988</code></td><td><code>min_value=0</code> <code>max_value=3.141592653589793</code></td><td></td></tr>
+<tr><td><code>weld_tolerance</code></td><td>optional</td><td><code>float64</code></td><td><code>1e-7</code></td><td><code>min_value_exclusive=0</code></td><td></td></tr>
+<tr><td><code>projected_tolerance</code></td><td>optional</td><td><code>float64</code></td><td><code>1e-8</code></td><td><code>min_value_exclusive=0</code></td><td></td></tr>
+<tr><td><code>depth_tolerance</code></td><td>optional</td><td><code>float64</code></td><td><code>1e-7</code></td><td><code>min_value=0</code></td><td></td></tr>
+<tr><td><code>coplanar_seam_angle_rad</code></td><td>optional</td><td><code>float64</code></td><td><code>0.017453292519943295</code></td><td><code>min_value=0</code> <code>max_value=1.5707963267948966</code></td><td></td></tr>
+<tr><td><code>coplanar_seam_depth_tolerance</code></td><td>optional</td><td><code>float64</code></td><td><code>0.000001</code></td><td><code>min_value=0</code></td><td></td></tr>
+<tr><td><code>coplanar_seam_lateral_tolerance</code></td><td>optional</td><td><code>float64</code></td><td><code>0.000001</code></td><td><code>min_value=0</code></td><td></td></tr>
+<tr><td><code>limits</code></td><td>optional</td><td><code><a href="#declaration-wavenumber-geometer-contracts-hlrprojectiona0-fasthlrlimitsa0">FastHlrLimitsA0</a></code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-hlrprojectiona0-hlrmatrix4x4"><summary><h2><code>HlrMatrix4x4</code> <span class="tag">model</span></h2></summary><p></p><p><span class="tag">array</span> element <code>float64</code>; <code>min_items=16</code> <code>max_items=16</code></p></details>
+<details open id="declaration-wavenumber-geometer-contracts-hlrprojectiona0-hlrvector3"><summary><h2><code>HlrVector3</code> <span class="tag">model</span></h2></summary><p></p><p><span class="tag">array</span> element <code>float64</code>; <code>min_items=3</code> <code>max_items=3</code></p></details>
+<details open id="declaration-wavenumber-geometer-contracts-hlrprojectiona0-hlrviewspec"><summary><h2><code>HlrViewSpec</code> <span class="tag">model</span></h2></summary><p>An orthographic view whose output coordinates lie in its own view plane.
+Geometer sets Z = normalize(direction), removes the Z component from up and
+normalizes the remainder as Y, then sets X = Y cross Z. Direction points
+along positive view depth, from the model toward the observer: greater
+dot(point, Z) is closer and an outward normal with positive dot(normal, Z)
+is front-facing. The basis origin is model-coordinate [0,0,0]; projection
+does not recenter on source bounds.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>direction</code></td><td>required</td><td><code><a href="#declaration-wavenumber-geometer-contracts-hlrprojectiona0-hlrvector3">HlrVector3</a></code></td><td>—</td><td>none</td><td>Positive view-depth direction from the model toward the observer.</td></tr>
+<tr><td><code>up</code></td><td>required</td><td><code><a href="#declaration-wavenumber-geometer-contracts-hlrprojectiona0-hlrvector3">HlrVector3</a></code></td><td>—</td><td>none</td><td>Preferred positive view Y; its component along direction is removed.</td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-illustrationclippingb0-clippinglimits"><summary><h2><code>ClippingLimits</code> <span class="tag">model</span></h2></summary><p>Independent hard work budgets for deterministic triangle clipping.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>max_output_triangles</code></td><td>optional</td><td><code>uint32</code></td><td><code>2000000</code></td><td><code>min_value=1</code> <code>max_value=2000000</code></td><td></td></tr>
+<tr><td><code>max_generated_vertices</code></td><td>optional</td><td><code>uint32</code></td><td><code>6000000</code></td><td><code>min_value=1</code> <code>max_value=6000000</code></td><td></td></tr>
+<tr><td><code>max_intersections</code></td><td>optional</td><td><code>uint32</code></td><td><code>8000000</code></td><td><code>min_value=1</code> <code>max_value=8000000</code></td><td></td></tr>
+<tr><td><code>max_edge_plane_tests</code></td><td>optional</td><td><code>uint32</code></td><td><code>32000000</code></td><td><code>min_value=1</code> <code>max_value=32000000</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-illustrationclippingb0-halfspaceplane"><summary><h2><code>HalfSpacePlane</code> <span class="tag">model</span></h2></summary><p>One world-space half-space. The kept side satisfies dot(normal, point) - distance_mm &gt;= -tolerance_mm.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>normal</code></td><td>required</td><td><code><a href="#declaration-wavenumber-geometer-contracts-meshillustrationa0-illustrationvector3">IllustrationVector3</a></code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>distance_mm</code></td><td>required</td><td><code>float64</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>tolerance_mm</code></td><td>optional</td><td><code>float64</code></td><td><code>0</code></td><td><code>min_value=0</code></td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-illustrationclippingb0-illustrationclipping"><summary><h2><code>IllustrationClipping</code> <span class="tag">model</span></h2></summary><p>Optional B0 clipping request. The first generation deliberately creates no section caps.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>planes</code></td><td>required</td><td><code><a href="#declaration-wavenumber-geometer-contracts-illustrationclippingb0-halfspaceplane">HalfSpacePlane</a>[]</code></td><td>—</td><td><code>min_items=1</code> <code>max_items=16</code></td><td></td></tr>
+<tr><td><code>cap_policy</code></td><td>required</td><td><code>&quot;none&quot;</code></td><td>—</td><td>none</td><td></td></tr>
+<tr><td><code>limits</code></td><td>optional</td><td><code><a href="#declaration-wavenumber-geometer-contracts-illustrationclippingb0-clippinglimits">ClippingLimits</a></code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details>
+<details open id="declaration-wavenumber-geometer-contracts-meshillustrationa0-illustrationvector3"><summary><h2><code>IllustrationVector3</code> <span class="tag">model</span></h2></summary><p></p><p><span class="tag">array</span> element <code>float64</code>; <code>min_items=3</code> <code>max_items=3</code></p></details></section>
+</main>
+</body>
+</html>

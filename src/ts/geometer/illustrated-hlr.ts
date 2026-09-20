@@ -7,19 +7,19 @@ import type {
 } from "./generated/contracts.js";
 import type { IndexedTriangleMeshA0 } from "./indexed-mesh-packet-a0.js";
 import {
-  createIllustrator,
+  createIllustratorA0,
   type MeshIllustrationLinework,
   type MeshIllustratorA0,
 } from "./mesh-illustration.js";
 
-export interface MeshHlrProjector {
-  meshHlrProjection(request: {
+export interface MeshHlrProjectorA0 {
+  meshHlrProjectionA0(request: {
     readonly mesh: IndexedTriangleMeshA0 | Uint8Array;
     readonly options?: HlrProjectionOptionsA0;
   }): Promise<HlrProjectionResultA0>;
 }
 
-export interface FastHlrIllustrationRequest {
+export interface FastHlrIllustrationRequestA0 {
   /** Illustration positions and transforms are interpreted as millimeters. */
   readonly illustration: MeshIllustrationInputA0;
   /** Fast controls and output layers; the facade owns views, algorithms, and transforms. */
@@ -33,12 +33,12 @@ export interface FastHlrIllustrationRequest {
   >;
 }
 
-export interface PreparedFastHlrIllustration {
+export interface PreparedFastHlrIllustrationA0 {
   readonly hlr: HlrProjectionResultA0;
   readonly illustrator: MeshIllustratorA0;
 }
 
-export interface FastHlrIllustrationResult {
+export interface FastHlrIllustrationResultA0 {
   readonly hlr: HlrProjectionResultA0;
   readonly illustration: MeshIllustrationResultA0;
 }
@@ -71,7 +71,7 @@ const ILLUSTRATION_HLR_OPTION_KEYS = [
 ] as const satisfies readonly (keyof HlrProjectionOptionsA0)[];
 
 function illustrationHlrOptions(
-  options: FastHlrIllustrationRequest["hlr"],
+  options: FastHlrIllustrationRequestA0["hlr"],
 ): HlrProjectionOptionsA0 {
   if (options === undefined) return {};
   return Object.fromEntries(
@@ -82,12 +82,12 @@ function illustrationHlrOptions(
 }
 
 /** Prepare Fast vector linework and the colorized scene once for repeated rendering. */
-export async function createFastHlrIllustrator(
-  projector: MeshHlrProjector,
-  request: FastHlrIllustrationRequest,
-): Promise<PreparedFastHlrIllustration> {
+export async function createFastHlrIllustratorA0(
+  projector: MeshHlrProjectorA0,
+  request: FastHlrIllustrationRequestA0,
+): Promise<PreparedFastHlrIllustrationA0> {
   const input = request.illustration;
-  const hlr = await projector.meshHlrProjection({
+  const hlr = await projector.meshHlrProjectionA0({
     mesh: indexedMeshFromIllustrationInput(input),
     options: {
       ...illustrationHlrOptions(request.hlr),
@@ -106,16 +106,16 @@ export async function createFastHlrIllustrator(
   if (view === undefined) throw new Error("Fast HLR returned no illustration view.");
   return {
     hlr,
-    illustrator: createIllustrator(input, lineworkFromHlr(view, input.view.mirror_x === true)),
+    illustrator: createIllustratorA0(input, lineworkFromHlr(view, input.view.mirror_x === true)),
   };
 }
 
 /** Project Fast vector linework, colorize the mesh, and return one SVG result. */
-export async function illustrateMeshWithFastHlr(
-  projector: MeshHlrProjector,
-  request: FastHlrIllustrationRequest,
-): Promise<FastHlrIllustrationResult> {
-  const prepared = await createFastHlrIllustrator(projector, request);
+export async function illustrateMeshWithFastHlrA0(
+  projector: MeshHlrProjectorA0,
+  request: FastHlrIllustrationRequestA0,
+): Promise<FastHlrIllustrationResultA0> {
+  const prepared = await createFastHlrIllustratorA0(projector, request);
   try {
     return { hlr: prepared.hlr, illustration: prepared.illustrator.renderSvg() };
   } finally {

@@ -8,14 +8,29 @@ import type {
   DiagnosticA0,
   HlrProjectionOptionsA0,
   HlrProjectionResultA0,
+  HlrProjectionResultB0,
+  MeshCollectionA0,
+  MeshHlrProjectionRequestB0,
+  MeshIllustrationGeometryB0,
+  MeshIllustrationGeometryInputB0,
+  MeshIllustrationInputB0,
+  MeshIllustrationResultB0,
   ModelBoundsInputMediaType,
   ModelBoundsOptionsA0,
   ModelBoundsResultA0,
   OperationOutcomeA0,
+  OperationOutcomeB0,
 } from "./generated/index.js";
 import {
+  decodeMeshIllustrationGeometryB0Json,
   decodeOperationOutcomeA0Json,
+  decodeOperationOutcomeB0Json,
   encodeHlrProjectionOptionsA0Json,
+  encodeHlrProjectionResultB0Json,
+  encodeMeshCollectionA0Json,
+  encodeMeshHlrProjectionRequestB0Json,
+  encodeMeshIllustrationGeometryRequestB0Json,
+  encodeMeshIllustrationRequestB0Json,
   encodeModelBoundsOptionsA0Json,
   operationCatalog,
 } from "./generated/index.js";
@@ -76,7 +91,7 @@ export interface GeometerOperationAttachment {
 
 export interface GeometerOperationResponse {
   readonly attachments: readonly GeometerOperationAttachment[];
-  readonly outcome: OperationOutcomeA0;
+  readonly outcome: OperationOutcomeA0 | OperationOutcomeB0;
 }
 
 export interface ModelBoundsRequest {
@@ -92,8 +107,23 @@ export interface ModelHlrProjectionRequest {
 }
 
 export interface MeshHlrProjectionRequest {
+  readonly meshCollection: MeshCollectionA0;
+  readonly request: MeshHlrProjectionRequestB0;
+}
+
+export interface MeshHlrProjectionRequestA0 {
   readonly mesh: IndexedTriangleMeshA0 | Uint8Array;
   readonly options?: HlrProjectionOptionsA0;
+}
+
+export interface MeshIllustrationB0Request {
+  readonly input: MeshIllustrationInputB0;
+  readonly hlrProjection?: HlrProjectionResultB0;
+}
+
+export interface MeshIllustrationGeometryB0Request {
+  readonly input: MeshIllustrationGeometryInputB0;
+  readonly hlrProjection?: HlrProjectionResultB0;
 }
 
 export interface GeometerWasmCapabilityCatalog {
@@ -251,7 +281,7 @@ export class GeometerWasmClient {
     if (!("bounds" in response.outcome.result)) {
       throw new GeometerWasmTransportError(0, "model_bounds returned an incompatible result DTO.");
     }
-    return response.outcome.result;
+    return response.outcome.result as ModelBoundsResultA0;
   }
 
   async modelHlrProjection(request: ModelHlrProjectionRequest): Promise<HlrProjectionResultA0> {
@@ -264,7 +294,38 @@ export class GeometerWasmClient {
     );
   }
 
-  async meshHlrProjection(request: MeshHlrProjectionRequest): Promise<HlrProjectionResultA0> {
+  async meshHlrProjection(request: MeshHlrProjectionRequest): Promise<HlrProjectionResultB0> {
+    const response = this.execute(
+      "geometry.mesh_hlr_projection.b0",
+      encodeMeshHlrProjectionRequestB0Json({
+        ...request.request,
+        output_detail: request.request.output_detail ?? true,
+      }),
+      [
+        {
+          name: "mesh_collection",
+          mediaType: "application/vnd.wavenumber.geometer.mesh-collection+json",
+          data: new TextEncoder().encode(encodeMeshCollectionA0Json(request.meshCollection)),
+        },
+      ],
+    );
+    if (!response.outcome.ok) {
+      throw new GeometerOperationError(response.outcome.operation, response.outcome.diagnostics);
+    }
+    if (
+      response.outcome.operation !== "geometry.mesh_hlr_projection.b0" ||
+      response.attachments.length !== 0
+    ) {
+      throw new GeometerWasmTransportError(0, "B0 mesh HLR returned an incompatible result.");
+    }
+    return response.outcome.result as HlrProjectionResultB0;
+  }
+
+  async meshHlrProjectionB0(request: MeshHlrProjectionRequest): Promise<HlrProjectionResultB0> {
+    return this.meshHlrProjection(request);
+  }
+
+  async meshHlrProjectionA0(request: MeshHlrProjectionRequestA0): Promise<HlrProjectionResultA0> {
     const packet =
       request.mesh instanceof Uint8Array
         ? request.mesh
@@ -276,6 +337,60 @@ export class GeometerWasmClient {
       INDEXED_TRIANGLE_MESH_MEDIA_TYPE,
       packet,
     );
+  }
+
+  async meshIllustration(request: MeshIllustrationB0Request): Promise<MeshIllustrationResultB0> {
+    const { input } = request;
+    const response = this.execute(
+      "geometry.mesh_illustration.b0",
+      encodeMeshIllustrationRequestB0Json({
+        schema: "geometry.mesh_illustration.request.b0",
+        view: input.view,
+        ...(input.prepare === undefined ? {} : { prepare: input.prepare }),
+        ...(input.style === undefined ? {} : { style: input.style }),
+        ...(input.svg === undefined ? {} : { svg: input.svg }),
+        ...(input.clipping === undefined ? {} : { clipping: input.clipping }),
+      }),
+      meshIllustrationAttachments(input.meshes, request.hlrProjection),
+    );
+    if (!response.outcome.ok) {
+      throw new GeometerOperationError(response.outcome.operation, response.outcome.diagnostics);
+    }
+    if (response.outcome.operation !== "geometry.mesh_illustration.b0") {
+      throw new GeometerWasmTransportError(0, "Mesh illustration returned an incompatible result.");
+    }
+    return response.outcome.result as MeshIllustrationResultB0;
+  }
+
+  async meshIllustrationGeometry(
+    request: MeshIllustrationGeometryB0Request,
+  ): Promise<MeshIllustrationGeometryB0> {
+    const { input } = request;
+    const response = this.execute(
+      "geometry.mesh_illustration_geometry.b0",
+      encodeMeshIllustrationGeometryRequestB0Json({
+        schema: "geometry.mesh_illustration_geometry.request.b0",
+        view: input.view,
+        ...(input.prepare === undefined ? {} : { prepare: input.prepare }),
+        ...(input.style === undefined ? {} : { style: input.style }),
+        ...(input.clipping === undefined ? {} : { clipping: input.clipping }),
+      }),
+      meshIllustrationAttachments(input.meshes, request.hlrProjection),
+    );
+    if (!response.outcome.ok) {
+      throw new GeometerOperationError(response.outcome.operation, response.outcome.diagnostics);
+    }
+    const geometry = response.attachments.find((item) => item.name === "illustration_geometry");
+    if (
+      response.outcome.operation !== "geometry.mesh_illustration_geometry.b0" ||
+      geometry === undefined
+    ) {
+      throw new GeometerWasmTransportError(
+        0,
+        "Mesh illustration geometry returned an incompatible result.",
+      );
+    }
+    return decodeMeshIllustrationGeometryB0Json(geometry.data);
   }
 
   private async hlrProjection(
@@ -297,7 +412,7 @@ export class GeometerWasmClient {
     if (response.attachments.length !== 0) {
       throw new GeometerWasmTransportError(0, `${operation} returned unexpected attachments.`);
     }
-    return response.outcome.result;
+    return response.outcome.result as HlrProjectionResultA0;
   }
 
   execute(
@@ -334,6 +449,10 @@ function executeOperation(
   let resultPointer = 0;
   let localErrorPointer = 0;
   try {
+    const declaration = catalog.operations.find((item) => item.identity === operation);
+    if (declaration === undefined) {
+      throw new GeometerWasmTransportError(0, `Operation ${operation} is absent from the catalog.`);
+    }
     const operationBytes = encodeText(operation);
     const requestBytes = encodeText(requestJson);
     const operationPointer = allocate(module, operationBytes, allocations);
@@ -390,15 +509,10 @@ function executeOperation(
     const jsonPointer = module._geometer_operation_result_json_data(resultPointer);
     const jsonSize = module._geometer_operation_result_json_size(resultPointer);
     const jsonBytes = copyBytes(module, jsonPointer, jsonSize, "response JSON");
-    const outcome = decodeOperationOutcomeA0Json(jsonBytes);
+    const outcome = resultContractUsesB0(declaration.result_contract)
+      ? decodeOperationOutcomeB0Json(jsonBytes)
+      : decodeOperationOutcomeA0Json(jsonBytes);
     const outputAttachments = copyResultAttachments(module, resultPointer, allocations);
-    const declaration = catalog.operations.find((item) => item.identity === operation);
-    if (declaration === undefined) {
-      throw new GeometerWasmTransportError(
-        0,
-        `Operation ${operation} disappeared during execution.`,
-      );
-    }
     validateOutputAttachments(declaration, outputAttachments, outcome);
     return { attachments: outputAttachments, outcome };
   } finally {
@@ -406,6 +520,45 @@ function executeOperation(
     if (resultPointer) module._geometer_operation_result_free(resultPointer);
     for (const pointer of allocations.reverse()) module._free(pointer);
   }
+}
+
+function meshIllustrationAttachments(
+  meshes: MeshIllustrationInputB0["meshes"],
+  hlr: HlrProjectionResultB0 | undefined,
+): readonly GeometerOperationAttachment[] {
+  const encoder = new TextEncoder();
+  return [
+    {
+      name: "mesh_collection",
+      mediaType: "application/vnd.wavenumber.geometer.mesh-collection+json",
+      data: encoder.encode(
+        encodeMeshCollectionA0Json({
+          schema: "geometry.mesh_collection.a0",
+          length_unit: "millimeter",
+          meshes,
+        }),
+      ),
+    },
+    ...(hlr === undefined
+      ? []
+      : [
+          {
+            name: "hlr_projection",
+            mediaType: "application/vnd.wavenumber.geometer.hlr-projection+json",
+            data: encoder.encode(encodeHlrProjectionResultB0Json(hlr)),
+          },
+        ]),
+  ];
+}
+
+function resultContractUsesB0(contract: string): boolean {
+  return new Set([
+    "geometry.model_illustration.result.b0",
+    "geometry.model_illustration_geometry.result.b0",
+    "geometry.mesh_illustration.result.b0",
+    "geometry.mesh_illustration_geometry.result.b0",
+    "geometry.hlr_projection.result.b0",
+  ]).has(contract);
 }
 
 function copyResultAttachments(
@@ -704,7 +857,7 @@ function validateInputAttachments(
 function validateOutputAttachments(
   operation: RuntimeCatalog["operations"][number],
   attachments: readonly GeometerOperationAttachment[],
-  outcome: OperationOutcomeA0,
+  outcome: OperationOutcomeA0 | OperationOutcomeB0,
 ): void {
   if (outcome.operation !== operation.identity) {
     throw new GeometerWasmTransportError(

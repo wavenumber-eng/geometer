@@ -1,7 +1,7 @@
 // Generated from wn_geometer_contract_catalog.a0.json. Do not edit.
 
 export const NORMALIZED_CONTRACT_CATALOG_SHA256 =
-  "0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d" as const;
+  "8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" as const;
 
 export const operationCatalog = {
   "geometry.analytic_planar_boolean_batch.a0": {
@@ -58,6 +58,24 @@ export const operationCatalog = {
     outputAttachments: [],
     documentation: "Project a synthesized indexed triangle mesh through the Fast HLR backend.",
   },
+  "geometry.mesh_hlr_projection.b0": {
+    identity: "geometry.mesh_hlr_projection.b0",
+    requestContract: "geometry.mesh_hlr_projection.request.b0",
+    resultContract: "geometry.hlr_projection.result.b0",
+    runtimeAvailable: true,
+    nativeRuntimeAvailable: false,
+    runtimeDispatch: "logical_dto",
+    inputAttachments: [
+      {
+        name: "mesh_collection",
+        required: true,
+        media_types: ["application/vnd.wavenumber.geometer.mesh-collection+json"],
+        max_bytes: 268435456,
+      },
+    ],
+    outputAttachments: [],
+    documentation: "Project a colored mesh collection through deterministic clipping and Fast HLR.",
+  },
   "geometry.mesh_illustration_geometry.a0": {
     identity: "geometry.mesh_illustration_geometry.a0",
     requestContract: "geometry.mesh_illustration_geometry.request.a0",
@@ -90,6 +108,37 @@ export const operationCatalog = {
     documentation:
       "Return ordered shaded illustration geometry without generating SVG. Does not compute HLR.",
   },
+  "geometry.mesh_illustration_geometry.b0": {
+    identity: "geometry.mesh_illustration_geometry.b0",
+    requestContract: "geometry.mesh_illustration_geometry.request.b0",
+    resultContract: "geometry.mesh_illustration_geometry.result.b0",
+    runtimeAvailable: true,
+    nativeRuntimeAvailable: false,
+    runtimeDispatch: "logical_dto",
+    inputAttachments: [
+      {
+        name: "hlr_projection",
+        required: false,
+        media_types: ["application/vnd.wavenumber.geometer.hlr-projection+json"],
+        max_bytes: 67108864,
+      },
+      {
+        name: "mesh_collection",
+        required: true,
+        media_types: ["application/vnd.wavenumber.geometer.mesh-collection+json"],
+        max_bytes: 268435456,
+      },
+    ],
+    outputAttachments: [
+      {
+        name: "illustration_geometry",
+        required: true,
+        media_types: ["application/vnd.wavenumber.geometer.illustration-geometry+json"],
+        max_bytes: 268435456,
+      },
+    ],
+    documentation: "Return renderer-neutral B0 geometry for a colored mesh collection.",
+  },
   "geometry.mesh_illustration.a0": {
     identity: "geometry.mesh_illustration.a0",
     requestContract: "geometry.mesh_illustration.request.a0",
@@ -114,6 +163,31 @@ export const operationCatalog = {
     outputAttachments: [],
     documentation:
       "Render colored meshes to the existing deterministic A0 SVG result without JavaScript.",
+  },
+  "geometry.mesh_illustration.b0": {
+    identity: "geometry.mesh_illustration.b0",
+    requestContract: "geometry.mesh_illustration.request.b0",
+    resultContract: "geometry.mesh_illustration.result.b0",
+    runtimeAvailable: true,
+    nativeRuntimeAvailable: false,
+    runtimeDispatch: "logical_dto",
+    inputAttachments: [
+      {
+        name: "hlr_projection",
+        required: false,
+        media_types: ["application/vnd.wavenumber.geometer.hlr-projection+json"],
+        max_bytes: 67108864,
+      },
+      {
+        name: "mesh_collection",
+        required: true,
+        media_types: ["application/vnd.wavenumber.geometer.mesh-collection+json"],
+        max_bytes: 268435456,
+      },
+    ],
+    outputAttachments: [],
+    documentation:
+      "Render a colored mesh collection with optional deterministic half-space clipping.",
   },
   "geometry.model_bounds.a0": {
     identity: "geometry.model_bounds.a0",
@@ -177,6 +251,31 @@ export const operationCatalog = {
     ],
     documentation: "Import or lower one source and return renderer-neutral illustration geometry.",
   },
+  "geometry.model_illustration_geometry.b0": {
+    identity: "geometry.model_illustration_geometry.b0",
+    requestContract: "geometry.model_illustration_geometry.request.b0",
+    resultContract: "geometry.model_illustration_geometry.result.b0",
+    runtimeAvailable: true,
+    nativeRuntimeAvailable: false,
+    runtimeDispatch: "logical_dto",
+    inputAttachments: [
+      {
+        name: "model",
+        required: false,
+        media_types: ["application/step", "model/step"],
+        max_bytes: 268435456,
+      },
+    ],
+    outputAttachments: [
+      {
+        name: "illustration_geometry",
+        required: true,
+        media_types: ["application/vnd.wavenumber.geometer.illustration-geometry+json"],
+        max_bytes: 268435456,
+      },
+    ],
+    documentation: "",
+  },
   "geometry.model_illustration.a0": {
     identity: "geometry.model_illustration.a0",
     requestContract: "geometry.model_illustration.request.a0",
@@ -195,6 +294,24 @@ export const operationCatalog = {
     outputAttachments: [],
     documentation:
       "Import or lower one source and return a complete deterministic SVG illustration.",
+  },
+  "geometry.model_illustration.b0": {
+    identity: "geometry.model_illustration.b0",
+    requestContract: "geometry.model_illustration.request.b0",
+    resultContract: "geometry.model_illustration.result.b0",
+    runtimeAvailable: true,
+    nativeRuntimeAvailable: false,
+    runtimeDispatch: "logical_dto",
+    inputAttachments: [
+      {
+        name: "model",
+        required: false,
+        media_types: ["application/step", "model/step"],
+        max_bytes: 268435456,
+      },
+    ],
+    outputAttachments: [],
+    documentation: "",
   },
   "geometry.model_tessellation.a0": {
     identity: "geometry.model_tessellation.a0",

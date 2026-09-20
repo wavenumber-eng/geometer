@@ -1,6 +1,6 @@
 # Public Entry-Point Reconciliation
 
-Release target `v2026-09-07`. This maps semantic operations separately from
+Release target `v2026-09-19`. This maps semantic operations separately from
 aliases, byte projections and implementation helpers. The
 [generated inventory](../generated/contracts/coverage.html) supplies individual
 operation/root identities; the [source review lock](public-surface-review.json)
@@ -21,13 +21,14 @@ in that boundary requires documentation review, not automatic promotion.
 | Analytic Boolean batch | `analytic_filtered_batch.h`, generic dispatch; packed request/result projections | Python/TS/Rust analytic convenience calls | Logical candidate generated; packed codec remains handwritten. Wave 0 inventory and wave 4 codec assessment, never a production-promotion claim. |
 | Topology sessions and mutations | `step_topology_session.h`; nine native IPC operations and three structural-only declarations | Generic generated clients plus native Node research reference | Wave 0 preserves each operation's availability. Save/analyze-recovery/apply-hierarchy are not executable capabilities. |
 | Colored model tessellation | `model_tessellation.h`; governed native IPC operation since 2026.9.6 | Typed Rust/Python executable methods and Python one-shot helper | Generated mesh collection/request/result/operation. |
-| Mesh illustration | Browser renderer; direct C++ `mesh_illustration.h` and `geometry.mesh_illustration.a0` native operation since 2026.9.6 | Browser exports, typed Rust/Python executable methods and Python one-shot helper | Existing generated A0 input/style/result reused; generated settings plus mesh attachment and optional bounded HLR-result attachment. Native composition handles selected detail/outline ordering. See [native boundary](../design/mesh-illustration-native.md). |
-| Model illustration | Direct C++ `model_illustration.h`; `geometry.model_illustration.a0` and `geometry.model_illustration_geometry.a0` generic operations | Typed Python, TypeScript, Rust, Worker, and WASM methods; Python one-shot helpers | Generated file/analytic source union, reusable definitions/occurrences, bounded extrusion/cylinder/sphere input, Fast linework controls, SVG result, and renderer-neutral geometry attachment. STEP import, tessellation, linework, fusion, and rendering stay inside one operation. See [combined boundary](../design/model-illustration-a0.md). |
+| Mesh illustration | Browser renderer; direct C++ `mesh_illustration.h`; B0 SVG/geometry operations with A0 compatibility adapters | Browser exports, typed Rust/Python executable methods, Worker/full WASM, and Python one-shot helper | B0 adds ordered post-transform half-spaces, explicit empty results, fragment identity, and matching composed-mesh Fast HLR. See [clipping B0](../design/illustration-clipping-b0.md). |
+| Model illustration | Direct C++ `model_illustration.h`; B0 SVG/geometry operations with A0 compatibility adapters | Typed Python, TypeScript, Rust, Worker, and WASM methods; Python one-shot helpers | STEP/analytic lowering and transforms precede the shared B0 clipper; bounds, HLR, outlines, and projection consume the resulting fragment. See [clipping B0](../design/illustration-clipping-b0.md). |
 
 ## Helpers, Aliases And Ownership Are Not Additional Wire Operations
 
-The additive `geometry.mesh_illustration_geometry.a0` operation shares the mesh
-illustration pipeline and returns an owning colored drawing DTO without SVG.
+The canonical `geometry.mesh_illustration_geometry.b0` operation shares the
+mesh illustration pipeline and returns an owning colored drawing DTO without
+SVG; the A0 identity remains an explicit compatibility operation.
 Its direct C++ value API, generic C ABI/full WASM operation, Python/Rust typed
 helpers and TypeScript prepared/one-shot methods are specified in
 [illustration drawing geometry](../design/mesh-illustration-geometry.md).
@@ -48,6 +49,10 @@ extend or reinterpret the existing SVG result. Planar-only WASM is unsupported.
 - Model/status/version/SHA utilities, allocation/free functions, frame codecs,
   Worker hosts and process supervision are support APIs. They retain their
   explicit ownership/lifecycle contracts; they are not geometry jobs.
+- `native_operation_execution_gate.h` is an internal support boundary, not an
+  installed SDK or operation API. The native generic C ABI and IPC dispatcher,
+  plus retained focused C operation functions, acquire its single process-wide
+  execution lane; catalog/version queries and owned-result destruction do not.
 - Python `run_batch`, `GeometerBatchRunner` and batch dataclasses compose the
   legacy batch file protocol. CLI `init-request` is a request-file authoring
   utility. Their file schema/alias normalization belongs to wave 3.
@@ -56,11 +61,14 @@ extend or reinterpret the existing SVG result. Planar-only WASM is unsupported.
   `./node-process-a0`, `./wasm`, `./worker`, and `./worker-host` export
   mappings are owned by the package manifest. Root wildcard re-exports do not
   create new semantic operations.
-- Rust exposes generated contracts, model-bounds/HLR request conveniences,
-  analytic and indexed-mesh codecs, IPC and its client. Its process-support
-  surface includes both an easy Tokio launcher and caller-supervised async
-  streams plus lifecycle-controller adoption; both retain one client-owned A0
-  connection and do not create another wire operation. Python's public
+- Rust exposes generated contracts, model-bounds/HLR/illustration request
+  conveniences, analytic and indexed-mesh codecs, IPC and its client. Its
+  process-support surface includes both an easy Tokio launcher and
+  caller-supervised async streams plus lifecycle-controller adoption; both
+  retain one client-owned A0 connection and do not create another wire
+  operation. The optional `direct-static` client routes those same typed
+  methods through the SDK's generic C ABI and keeps unsafe declarations in the
+  packaged `geometer-sys` crate. Python's public
   `__all__` and TypeScript/Rust export sources remain review boundaries, not
   evidence that every client implementation is generated.
 

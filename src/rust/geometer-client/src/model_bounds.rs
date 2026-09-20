@@ -1,5 +1,7 @@
-//! Typed model-bounds request facade over the generic executable IPC client.
+//! Typed model-bounds request facade over the shared operation backend.
 
+#[cfg(feature = "direct-static")]
+use crate::GeometerDirectClient;
 use crate::client::{GeometerClient, GeometerClientError};
 use crate::generated::contracts::{
     self, ModelBoundsOptionsA0, ModelBoundsResultA0, OperationOutcomeA0, OperationResultValueA0,
@@ -26,35 +28,50 @@ impl ModelBoundsRequest {
     }
 }
 
-impl GeometerClient {
-    pub async fn model_bounds(
-        &self,
-        request: ModelBoundsRequest,
-    ) -> Result<ModelBoundsResultA0, GeometerClientError> {
-        let options = contracts::encode_model_bounds_options_a0_json(&request.options)?;
-        let response = self
-            .execute(
-                "geometry.model_bounds.a0",
-                &options,
-                vec![Attachment {
-                    name: "model".to_owned(),
-                    media_type: request.media_type,
-                    data: request.model,
-                }],
-            )
-            .await?;
-        if !response.attachments.is_empty() {
-            return Err(GeometerClientError::Protocol(
-                "model_bounds returned unexpected attachments".to_owned(),
-            ));
+macro_rules! impl_model_bounds_client {
+    ($client:ty) => {
+        impl $client {
+            pub async fn model_bounds(
+                &self,
+                request: ModelBoundsRequest,
+            ) -> Result<ModelBoundsResultA0, GeometerClientError> {
+                run_model_bounds(self, request).await
+            }
         }
-        match response.outcome {
-            OperationOutcomeA0::Success(success) => model_bounds_result(success.result),
-            OperationOutcomeA0::Failure(failure) => Err(GeometerClientError::Operation {
-                operation: failure.operation,
-                diagnostics: failure.diagnostics,
-            }),
-        }
+    };
+}
+
+impl_model_bounds_client!(GeometerClient);
+#[cfg(feature = "direct-static")]
+impl_model_bounds_client!(GeometerDirectClient);
+
+async fn run_model_bounds<B: crate::backend::OperationBackend>(
+    backend: &B,
+    request: ModelBoundsRequest,
+) -> Result<ModelBoundsResultA0, GeometerClientError> {
+    let options = contracts::encode_model_bounds_options_a0_json(&request.options)?;
+    let response = backend
+        .execute_operation(
+            "geometry.model_bounds.a0",
+            &options,
+            vec![Attachment {
+                name: "model".to_owned(),
+                media_type: request.media_type,
+                data: request.model,
+            }],
+        )
+        .await?;
+    if !response.attachments.is_empty() {
+        return Err(GeometerClientError::Protocol(
+            "model_bounds returned unexpected attachments".to_owned(),
+        ));
+    }
+    match response.outcome.into_a0()? {
+        OperationOutcomeA0::Success(success) => model_bounds_result(success.result),
+        OperationOutcomeA0::Failure(failure) => Err(GeometerClientError::Operation {
+            operation: failure.operation,
+            diagnostics: failure.diagnostics,
+        }),
     }
 }
 

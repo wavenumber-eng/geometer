@@ -8,7 +8,7 @@
 namespace geometer::illustration_detail
 {
 std::string render_svg(const Scene&, const Style&, const Commands&,
-                       const contracts::MeshIllustrationSvgOptions&)
+                       const contracts::MeshIllustrationSvgOptions&, const char*)
 {
     throw std::runtime_error("SVG writer tripwire");
 }

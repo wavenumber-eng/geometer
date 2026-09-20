@@ -1751,7 +1751,7 @@ export function toMeshIllustrationStyleA0(style) {
     };
 }
 /** Prepare one governed illustration input once, then render multiple styles or targets. */
-export function createIllustrator(input, linework = {}) {
+export function createIllustratorA0(input, linework = {}) {
     const baseStyle = { ...input.style };
     const baseSvg = { ...input.svg };
     const preparedView = {
@@ -1916,8 +1916,8 @@ export function createIllustrator(input, linework = {}) {
     };
 }
 /** Prepare and render one governed mesh-illustration A0 input to SVG. */
-export function illustrateMesh(input) {
-    const illustrator = createIllustrator(input);
+export function illustrateMeshA0(input) {
+    const illustrator = createIllustratorA0(input);
     try {
         return illustrator.renderSvg();
     }
@@ -1926,9 +1926,9 @@ export function illustrateMesh(input) {
     }
 }
 /** Prepare and shade millimeter meshes without constructing SVG or Canvas commands. */
-export function illustrateMeshGeometry(input, linework = {}) {
+export function illustrateMeshGeometryA0(input, linework = {}) {
     encodeMeshIllustrationGeometryInputA0Json(input);
-    const illustrator = createIllustrator({
+    const illustrator = createIllustratorA0({
         schema: "geometry.mesh_illustration.input.a0",
         meshes: input.meshes,
         view: input.view,

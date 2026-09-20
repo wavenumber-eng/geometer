@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d">
+  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
   <title>Native illustration API readiness — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/developer/native-api-readiness.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="native-illustration-api-readiness">Native illustration API readiness</h1></header>
-<p>Native illustration API and consumer handoff for <code>2026.9.7</code>. The user accepted
+<p>Native illustration API and consumer handoff through <code>2026.9.19</code>. The user accepted
 the Windows Rust demo as proof of the workflow; further GUI polish is deferred.
 Release qualification is separate from those earlier feature-build observations.</p>
 <h2 id="callable-surfaces">Callable surfaces</h2>
@@ -34,8 +34,8 @@ Release qualification is separate from those earlier feature-build observations.
 <tr>
 <td>Mesh illustration</td>
 <td><code>GeometerClient.mesh_illustration</code>; one-shot <code>geometer.mesh_illustration</code></td>
-<td><code>mesh_illustration(MeshIllustrationInputA0)</code></td>
-<td><code>illustrate_mesh(input, result, status)</code>; IPC <code>geometry.mesh_illustration.a0</code></td>
+<td>B0 <code>mesh_illustration(...)</code>; explicit <code>mesh_illustration_a0(...)</code> compatibility</td>
+<td>B0/A0 <code>illustrate_mesh</code> overloads; canonical IPC <code>geometry.mesh_illustration.b0</code></td>
 </tr>
 <tr>
 <td>Illustration with visible HLR</td>
@@ -61,8 +61,8 @@ same negotiation, typed operations and lifecycle implementation.</p>
 <p>Use the complete <a href="../design/mesh-illustration-native.html">STEP-to-SVG examples and limits</a>,
 <a href="../design/python-package.html">Python API guide</a>, and <a href="../design/rust-client.html">Rust guide</a>.
 Clients and executable catalogs must match. The externally supervised Rust
-boundary requires 2026.9.7 or later compatible client sources; released
-2026.9.6 has the geometry operations but not that adoption API.</p>
+boundary and B0 clipping require the matching generated client, catalog, and C
+ABI generation; package version alone is not a compatibility signal.</p>
 <p><code>fuse_surfaces</code> defaults to true. Native composition handles SVG layer order;
 callers supply visible-only polyline HLR for the same millimeter model,
 placement and view. Arbitrary 2D lines cannot authenticate those relationships.

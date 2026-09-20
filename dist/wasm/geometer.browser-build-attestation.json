@@ -2,15 +2,15 @@
   "artifacts": {
     "dist/wasm/browser/geometer.js": {
       "bytes": 163460,
-      "sha256": "21a6c619dc6b2011fe9e30697decce8a88901990cadb999bad0cd999f143084e"
+      "sha256": "478e01886aaaabe867fa816ba479a10a46dd53083781469f47d10be074027ea2"
     },
     "dist/wasm/browser/geometer.wasm": {
-      "bytes": 19526701,
-      "sha256": "cd253fa224182ecb8f0ad4ee74acace91641c3c22b3e51aeb7e6e35597ce3171"
+      "bytes": 19721060,
+      "sha256": "63db9a72a9a2c2d8ed6f88b3fdc4c870d53cef8f45a2e78cecd6cf749283a9ec"
     },
     "dist/wasm/npm/geometer/README.md": {
-      "bytes": 6042,
-      "sha256": "72402bc9f5dd33ce45ce6eb16697ceda1f54de96e42578e81d510f7ab204daeb"
+      "bytes": 6830,
+      "sha256": "c844d94f38ee3f35dcb2e2509557892afa50a39aada1fcd0c3c4f4f7079b985d"
     },
     "dist/wasm/npm/geometer/analytic-packet-a0-common.d.ts": {
       "bytes": 4160,
@@ -61,16 +61,16 @@
       "sha256": "fa949ab7bb094df35c3fb5bb90dc050a2e2ea72ad0b5e824ff334834a9c74cae"
     },
     "dist/wasm/npm/geometer/generated/codecs.d.ts": {
-      "bytes": 13513,
-      "sha256": "102c8a210379fff4294829af0b6776fc8a1adfb7537508956c18f9b78b9b3ae4"
+      "bytes": 17258,
+      "sha256": "b1a62336fe799e319572c77bd9d55623d7d8958bddf123ee2a6a652b8a5eab28"
     },
     "dist/wasm/npm/geometer/generated/codecs.js": {
-      "bytes": 276682,
-      "sha256": "e7316cb5fda6aba62e9d5b4f2d189de08c26cd0b5ab44cc7d8ea7386fc3842ea"
+      "bytes": 325741,
+      "sha256": "7c03b90b213c70492b4df70a3eef92eb7166f91494409773138389062f8ec230"
     },
     "dist/wasm/npm/geometer/generated/contracts.d.ts": {
-      "bytes": 68603,
-      "sha256": "93d6c3b9da7d961e517d992c1a7f3f80a6f63abd01eeca8ca1b150f17fdb56e9"
+      "bytes": 79012,
+      "sha256": "7d62f7fdaa1fd9ea16468a99ff45001055777fc500bcfeef2da75c3ead7d6ad8"
     },
     "dist/wasm/npm/geometer/generated/contracts.js": {
       "bytes": 80,
@@ -85,28 +85,28 @@
       "sha256": "6e4731631af8b7473f72ecb2d014453cfa89d93f2b3d4b4b6a14f7d9be60145a"
     },
     "dist/wasm/npm/geometer/generated/operations.d.ts": {
-      "bytes": 18789,
-      "sha256": "7d67c6475935a38ce864de69f8934e5492e089bca993c7b27344deed162371db"
+      "bytes": 23899,
+      "sha256": "2dad4364949871503f17642a464e1515767f9f98bbab0664dcafdbca96b66e0e"
     },
     "dist/wasm/npm/geometer/generated/operations.js": {
-      "bytes": 16232,
-      "sha256": "1e7f306aa631b903ebc980d185fa057030ab8cde6f9696c7697ecc4f1a3405ac"
+      "bytes": 20762,
+      "sha256": "dae558ab1f79978f7c37192eba926581bf752854e2d3b2127091b866ca9ec95f"
     },
     "dist/wasm/npm/geometer/illustrated-hlr.d.ts": {
       "bytes": 1891,
       "sha256": "c471a0bcc4d6809e538ebeaa261a3ecd69bf2ad96ca7e92255c3690791bbf3d0"
     },
     "dist/wasm/npm/geometer/illustrated-hlr.js": {
-      "bytes": 4376,
-      "sha256": "6af909f706e6e386e49b97d8ddb3a55f59875b101a3f6b22c20ad04761819ade"
+      "bytes": 4380,
+      "sha256": "1a960f2e2fe6aeec0c5231e67474e25f4dbb677f0023192b438a3ecc97043134"
     },
     "dist/wasm/npm/geometer/index.d.ts": {
-      "bytes": 775,
-      "sha256": "3ef21fc40e9917fa1f23ae6f6e7466fe9762efdd49942bcd2c0a471c6bb7683d"
+      "bytes": 781,
+      "sha256": "dbadad599e9265e31f6c941352523b5412c4fa9adb640ac227a61ec5a19aa01b"
     },
     "dist/wasm/npm/geometer/index.js": {
-      "bytes": 570,
-      "sha256": "d5f68a36ef73650d4d774641aa18daec26092a4f494f235094913eb36cd96fb7"
+      "bytes": 576,
+      "sha256": "ca263920238345fc7fb988631a7c8c73553246a6d56f9531ccfc8ce787cada07"
     },
     "dist/wasm/npm/geometer/indexed-mesh-packet-a0.d.ts": {
       "bytes": 1015,
@@ -125,12 +125,12 @@
       "sha256": "c09a8039fac8439bc781629bdfa5795baed2f3cc8ec149b1cdcd64d51e832bc7"
     },
     "dist/wasm/npm/geometer/ipc-client-a0.d.ts": {
-      "bytes": 3531,
-      "sha256": "d63eb8ac90cb8c580b0499c2ac40e870c8abb52d1da3ca7271c027de6a1f2c5e"
+      "bytes": 3631,
+      "sha256": "289e9963418f05ecc1d017a45a3f9d9dfc16d075103f0d816a16b452e10cfda1"
     },
     "dist/wasm/npm/geometer/ipc-client-a0.js": {
-      "bytes": 20735,
-      "sha256": "ba54270f01db22d92fbd595932495bf5931dbbc60fe643dfbffab0dd421a9317"
+      "bytes": 22124,
+      "sha256": "ad1fec5e9ec20f5e941dae276fe7738a74ea15032eedc5c5ad82e6d3bf1c46b8"
     },
     "dist/wasm/npm/geometer/mesh-illustration-ao-experimental.d.ts": {
       "bytes": 962,
@@ -141,12 +141,12 @@
       "sha256": "23e5e1f045b62ac004339f274936d6e1d0c60880f026023c199cae25cdfd2a6d"
     },
     "dist/wasm/npm/geometer/mesh-illustration.d.ts": {
-      "bytes": 6289,
-      "sha256": "dd292df43b59dc13b32b21433608475e486e26bf007daf1073e6afe01b2b3666"
+      "bytes": 6295,
+      "sha256": "d8dc845f1a9c9adde28de848f42d5ef09587b411dfbac62eda9d3915e56a8234"
     },
     "dist/wasm/npm/geometer/mesh-illustration.js": {
-      "bytes": 85309,
-      "sha256": "b7c3490a567ce2e3cb52823100c4af33a5e6729cd9e5738789dda8c52338adea"
+      "bytes": 85319,
+      "sha256": "091778d1ff5aa747243c3a2518af02c875d785c9ff9d1c760debde810e66056d"
     },
     "dist/wasm/npm/geometer/node-process-a0.d.ts": {
       "bytes": 1069,
@@ -166,7 +166,7 @@
     },
     "dist/wasm/npm/geometer/package.json": {
       "bytes": 1438,
-      "sha256": "35021f3c442ebba41c2a7d21c22f44f6cc91595b188ed75d054d4af7113eea74"
+      "sha256": "0bbfb67144e10bf2a170002455e5f3e017ccca6832061c9ce7e34a90fcd2758f"
     },
     "dist/wasm/npm/geometer/step-topology-validation.d.ts": {
       "bytes": 3832,
@@ -177,28 +177,28 @@
       "sha256": "bed2fd31af416ebcacf3375892fe49b1fd2e509ad515fc5e9796813df6deb167"
     },
     "dist/wasm/npm/geometer/wasm.d.ts": {
-      "bytes": 3993,
-      "sha256": "d50ebbf1f227d3204ed36f6383bf51d9f7c17ac16b2589cb8620ff20101ff734"
+      "bytes": 4677,
+      "sha256": "c4140361ead4bf56668e01352d0fee37024e4da23cf8e29eb288a3d5010b5273"
     },
     "dist/wasm/npm/geometer/wasm.js": {
-      "bytes": 23867,
-      "sha256": "46006031695ba25d772bebc2d7c77b56e83d28e44357d81ac7dad0830f5bbef8"
+      "bytes": 27570,
+      "sha256": "452b0f3792c2efddd6ca7fd8d349e02d56d44c59e185d704a9888057741527b1"
     },
     "dist/wasm/npm/geometer/worker-host.d.ts": {
       "bytes": 827,
       "sha256": "ffa3c1e5686bdab2b3e3236f1c3f97d0c755efc7f531cf3864d802b07e75b078"
     },
     "dist/wasm/npm/geometer/worker-host.js": {
-      "bytes": 6187,
-      "sha256": "46ea3572f5fa6217782b887bc9de706c75a0b3549a3f6baa975a4585b255ceca"
+      "bytes": 6342,
+      "sha256": "52a72a8c0dc70c0d4fcaee167a573ea915fb697c757fdb54180fdd7d69e75b21"
     },
     "dist/wasm/npm/geometer/worker.d.ts": {
       "bytes": 3891,
       "sha256": "97bb77d504c9176380e755ed450253520980fd73a3fe34933d94ceec2e87b618"
     },
     "dist/wasm/npm/geometer/worker.js": {
-      "bytes": 16567,
-      "sha256": "8873281ab798318b116994f5a48e882e6f8055fdb484e508dc1f3b40e61dda32"
+      "bytes": 16702,
+      "sha256": "1f7eaec874aca806e5e9c973a5872b8792fa2ede392fcac0422f8833118536ff"
     },
     "dist/wasm/planar-browser/geometer-planar-browser.js": {
       "bytes": 24214,
@@ -206,7 +206,7 @@
     },
     "dist/wasm/planar-browser/geometer-planar-browser.wasm": {
       "bytes": 308969,
-      "sha256": "5d2bc6e46d9d4be2a126bb67a21dfa37e7d89b0a2610e6ef19336c295b5a526c"
+      "sha256": "0e7f96ac536ceb89509e0faf44b9bd6d4fd56867f1064459c750726feaa8bd7d"
     }
   },
   "build": {
@@ -214,10 +214,10 @@
     "contract_check_status": "passed",
     "source": {
       "authority": "git_head_and_source_worktree_excluding_dist_build_deps_out",
-      "revision": "a097875ca0acd42af3677ed376c18cd9fb7b7ba4",
+      "revision": "ffb250b7cab66bdbfec3fc2a255dad7f8fe8902c",
       "tree_state": "dirty"
     },
-    "source_content_sha256": "68a31994eaead099d497683766274d94d4d2a0da9893e8649f503bd46552b810",
+    "source_content_sha256": "350507d4f291003ed7c8954ea2b4230f656fe33e326b67cff2b73755538ca8be",
     "toolchain": {
       "emscripten": {
         "executable": ".deps/emsdk/upstream/emscripten/emcc.bat",
@@ -225,7 +225,7 @@
         "version": "3.1.56",
         "version_text": "emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 3.1.56 (cf90417346b78455089e64eb909d71d091ecc055)"
       },
-      "node": "v24.18.0",
+      "node": "v24.12.0",
       "npm": "11.16.0",
       "occt": {
         "profile": ".deps/occt-wasm-install/.geometer-occt-profile.json",

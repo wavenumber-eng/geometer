@@ -1,21 +1,24 @@
 export function renderNativeGeometrySvg(geometry, title) {
+    const bounds = geometry.bounds;
+    if (bounds === undefined)
+        throw new Error("Cannot render an empty illustration fragment.");
     const namespace = "http://www.w3.org/2000/svg";
     const root = document.createElementNS(namespace, "svg");
     root.setAttribute("xmlns", namespace);
-    const width = Math.max(geometry.bounds.max[0] - geometry.bounds.min[0], 1e-9);
-    const height = Math.max(geometry.bounds.max[1] - geometry.bounds.min[1], 1e-9);
+    const width = Math.max(bounds.max[0] - bounds.min[0], 1e-9);
+    const height = Math.max(bounds.max[1] - bounds.min[1], 1e-9);
     const pad = geometry.presentation.padding;
-    root.setAttribute("viewBox", `${geometry.bounds.min[0] - pad} ${-geometry.bounds.max[1] - pad} ${width + 2 * pad} ${height + 2 * pad}`);
+    root.setAttribute("viewBox", `${bounds.min[0] - pad} ${-bounds.max[1] - pad} ${width + 2 * pad} ${height + 2 * pad}`);
     const titleElement = document.createElementNS(namespace, "title");
     titleElement.textContent = title;
     root.append(titleElement);
     const metadata = document.createElementNS(namespace, "metadata");
-    metadata.textContent = "geometry.mesh_illustration.geometry.a0";
+    metadata.textContent = "geometry.mesh_illustration.geometry.b0";
     root.append(metadata);
     if (!geometry.presentation.transparent_background) {
         const background = document.createElementNS(namespace, "rect");
-        background.setAttribute("x", String(geometry.bounds.min[0] - pad));
-        background.setAttribute("y", String(-geometry.bounds.max[1] - pad));
+        background.setAttribute("x", String(bounds.min[0] - pad));
+        background.setAttribute("y", String(-bounds.max[1] - pad));
         background.setAttribute("width", String(width + 2 * pad));
         background.setAttribute("height", String(height + 2 * pad));
         background.setAttribute("fill", geometry.presentation.background);
@@ -53,14 +56,17 @@ export function renderNativeGeometrySvg(geometry, title) {
     return `<?xml version="1.0" encoding="UTF-8"?>\n${new XMLSerializer().serializeToString(root)}`;
 }
 export function renderNativeGeometryCanvas(context, geometry) {
+    const bounds = geometry.bounds;
+    if (bounds === undefined)
+        throw new Error("Cannot render an empty illustration fragment.");
     const canvas = context.canvas;
     context.clearRect(0, 0, canvas.width, canvas.height);
-    const width = Math.max(geometry.bounds.max[0] - geometry.bounds.min[0], 1e-9);
-    const height = Math.max(geometry.bounds.max[1] - geometry.bounds.min[1], 1e-9);
+    const width = Math.max(bounds.max[0] - bounds.min[0], 1e-9);
+    const height = Math.max(bounds.max[1] - bounds.min[1], 1e-9);
     const pad = geometry.presentation.padding;
     const scale = Math.min(canvas.width / (width + 2 * pad), canvas.height / (height + 2 * pad));
-    const offsetX = (canvas.width - width * scale) / 2 - geometry.bounds.min[0] * scale;
-    const offsetY = (canvas.height - height * scale) / 2 + geometry.bounds.max[1] * scale;
+    const offsetX = (canvas.width - width * scale) / 2 - bounds.min[0] * scale;
+    const offsetY = (canvas.height - height * scale) / 2 + bounds.max[1] * scale;
     const point = (value) => [
         offsetX + value[0] * scale,
         offsetY - value[1] * scale,
@@ -77,7 +83,10 @@ export function renderNativeGeometryCanvas(context, geometry) {
             for (const ring of layer.rings) {
                 if (ring.points.length === 0)
                     continue;
-                context.moveTo(...point(ring.points[0]));
+                const first = ring.points[0];
+                if (first === undefined)
+                    continue;
+                context.moveTo(...point(first));
                 for (const value of ring.points.slice(1))
                     context.lineTo(...point(value));
                 context.closePath();

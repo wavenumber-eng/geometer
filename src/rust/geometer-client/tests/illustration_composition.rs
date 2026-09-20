@@ -126,7 +126,7 @@ async fn native_composition_matches_browser_for_views_mirror_and_line_toggles() 
                 style.show_hlr_outline = Some(outline);
                 style.show_hlr_detail = Some(detail);
                 let result = client
-                    .mesh_illustration_with_hlr(input.clone(), hlr.clone())
+                    .mesh_illustration_with_hlr_a0(input.clone(), hlr.clone())
                     .await
                     .unwrap();
                 assert_geometry(&client, &input, &hlr, &result).await;
@@ -155,14 +155,14 @@ async fn native_composition_matches_browser_for_views_mirror_and_line_toggles() 
                 assert_eq!(
                     result,
                     client
-                        .mesh_illustration_with_hlr(input.clone(), hlr.clone())
+                        .mesh_illustration_with_hlr_a0(input.clone(), hlr.clone())
                         .await
                         .unwrap()
                 );
                 if !outline && !detail {
                     assert_eq!(
                         result,
-                        client.mesh_illustration(input.clone()).await.unwrap()
+                        client.mesh_illustration_a0(input.clone()).await.unwrap()
                     );
                 }
             }
@@ -187,7 +187,7 @@ async fn assert_geometry(
         style: input.style.clone(),
     };
     let geometry = client
-        .mesh_illustration_geometry_with_hlr(geometry_input.clone(), hlr.clone())
+        .mesh_illustration_geometry_with_hlr_a0(geometry_input.clone(), hlr.clone())
         .await
         .unwrap();
     assert_eq!(geometry.stats, result.stats);
@@ -208,7 +208,7 @@ async fn assert_geometry(
         assert_eq!(
             geometry,
             client
-                .mesh_illustration_geometry(geometry_input)
+                .mesh_illustration_geometry_a0(geometry_input)
                 .await
                 .unwrap()
         );
@@ -224,7 +224,7 @@ async fn rejects_mismatches(
     wrong.views[0].direction = [1.0, 0.0, 0.0];
     assert!(matches!(
         client
-            .mesh_illustration_with_hlr(input.clone(), wrong)
+            .mesh_illustration_with_hlr_a0(input.clone(), wrong)
             .await,
         Err(GeometerClientError::Operation { .. })
     ));
@@ -232,7 +232,7 @@ async fn rejects_mismatches(
     wrong.views.push(wrong.views[0].clone());
     assert!(matches!(
         client
-            .mesh_illustration_with_hlr(input.clone(), wrong)
+            .mesh_illustration_with_hlr_a0(input.clone(), wrong)
             .await,
         Err(GeometerClientError::Operation { .. })
     ));
@@ -248,7 +248,7 @@ async fn rejects_mismatches(
     });
     assert!(matches!(
         client
-            .mesh_illustration_with_hlr(input.clone(), wrong)
+            .mesh_illustration_with_hlr_a0(input.clone(), wrong)
             .await,
         Err(GeometerClientError::Operation { .. })
     ));
@@ -256,13 +256,13 @@ async fn rejects_mismatches(
     wrong.units = "meters".into();
     assert!(matches!(
         client
-            .mesh_illustration_with_hlr(input.clone(), wrong)
+            .mesh_illustration_with_hlr_a0(input.clone(), wrong)
             .await,
         Err(GeometerClientError::Contract(_))
     ));
     assert!(
         client
-            .mesh_illustration_with_hlr(input.clone(), hlr.clone())
+            .mesh_illustration_with_hlr_a0(input.clone(), hlr.clone())
             .await
             .is_ok()
     );

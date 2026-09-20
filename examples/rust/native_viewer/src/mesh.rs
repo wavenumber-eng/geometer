@@ -80,7 +80,12 @@ pub fn prepare(collection: &MeshCollectionA0) -> Result<MeshData, String> {
     }
     Ok(MeshData {
         vertices,
-        bounds: Bounds { center, radius },
+        bounds: Bounds {
+            minimum,
+            maximum,
+            center,
+            radius,
+        },
     })
 }
 

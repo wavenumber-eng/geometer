@@ -8,8 +8,8 @@ import pytest
 
 import geometer
 from geometer._generated.contracts.codecs import (
-    decode_mesh_illustration_result_a0_json,
-    encode_mesh_illustration_result_a0_json,
+    decode_mesh_illustration_result_b0_json,
+    encode_mesh_illustration_result_b0_json,
 )
 from geometer._ipc_a0 import Attachment
 
@@ -30,8 +30,8 @@ def test_public_one_shot_helpers_match_persistent_and_close_processes(monkeypatc
     monkeypatch.setattr(subprocess, "Popen", capture)
     model = (ROOT / "tests/fixtures/step/embedded_models/SOT-23.STEP").read_bytes()
     meshes = geometer.model_tessellation(model)
-    input = geometer.MeshIllustrationInputA0(
-        schema="geometry.mesh_illustration.input.a0",
+    input = geometer.MeshIllustrationInputB0(
+        schema="geometry.mesh_illustration.input.b0",
         meshes=meshes.mesh_collection.meshes,
         view=geometer.MeshIllustrationView(direction=(0.4, 0.7, 1.0), up=(0.0, 1.0, 0.0)),
     )
@@ -48,22 +48,22 @@ def test_native_hlr_composition_and_optional_attachment_validation() -> None:
     with geometer.GeometerClient() as client:
         meshes = client.model_tessellation(model).mesh_collection.meshes
         view = geometer.MeshIllustrationView(direction=(0.4, 0.7, 1.0), up=(0.0, 1.0, 0.0))
-        hlr = client.model_hlr_projection(
-            model,
-            geometer.HlrProjectionOptionsA0(
+        collection = geometer.MeshCollectionA0(
+            schema="geometry.mesh_collection.a0", length_unit="millimeter", meshes=meshes
+        )
+        hlr = client.mesh_hlr_projection(
+            collection,
+            geometer.MeshHlrProjectionRequestB0(
+                schema="geometry.mesh_hlr_projection.request.b0",
                 views=(geometer.HlrViewSpec(id="preview", direction=view.direction, up=view.up),),
-                projection_algorithm=geometer.HlrProjectionAlgorithm.FAST,
-                outline_algorithm=geometer.HlrOutlineAlgorithm.FAST_MESH_SHADOW,
-                curve_mode=geometer.HlrCurveMode.POLYLINE,
-                strip_root_placement=True,
                 output_outline=True,
                 output_detail=True,
                 output_bbox=False,
                 fast=geometer.FastHlrOptionsA0(include_hidden=False),
             ),
         )
-        input = geometer.MeshIllustrationInputA0(
-            schema="geometry.mesh_illustration.input.a0",
+        input = geometer.MeshIllustrationInputB0(
+            schema="geometry.mesh_illustration.input.b0",
             meshes=meshes,
             view=view,
             style=geometer.MeshIllustrationStyleA0(show_outlines=False, show_creases=False),
@@ -76,7 +76,7 @@ def test_native_hlr_composition_and_optional_attachment_validation() -> None:
             assert result.stats.outlines == (len(hlr.views[0].modes.outline.segments) if outline else 0)
             assert result.stats.details == (len(hlr.views[0].modes.detail.segments) if detail else 0)
             assert ET.fromstring(result.svg).tag == "{http://www.w3.org/2000/svg}svg"
-            assert decode_mesh_illustration_result_a0_json(encode_mesh_illustration_result_a0_json(result)) == result
+            assert decode_mesh_illustration_result_b0_json(encode_mesh_illustration_result_b0_json(result)) == result
         with pytest.raises(geometer.GeometerOperationError):
             client.mesh_illustration(
                 input, hlr_projection=replace(hlr, views=(replace(hlr.views[0], up=(1.0, 0.0, 0.0)),))
@@ -94,9 +94,9 @@ def test_native_hlr_composition_and_optional_attachment_validation() -> None:
                 ),
             ),
         )
-        request = geometer.MeshIllustrationRequestA0(schema="geometry.mesh_illustration.request.a0", view=view)
+        request = geometer.MeshIllustrationRequestB0(schema="geometry.mesh_illustration.request.b0", view=view)
         bad = client.execute(
-            "geometry.mesh_illustration.a0",
+            "geometry.mesh_illustration.b0",
             request,
             (
                 *attachments,
@@ -110,7 +110,7 @@ def test_native_hlr_composition_and_optional_attachment_validation() -> None:
         assert not bad.outcome.ok
         with pytest.raises(geometer.GeometerIpcProtocolError):
             client.execute(
-                "geometry.mesh_illustration.a0",
+                "geometry.mesh_illustration.b0",
                 request,
                 (
                     *attachments,
@@ -128,8 +128,8 @@ def test_native_step_illustration_is_typed_deterministic_and_recoverable() -> No
     model = (ROOT / "tests/fixtures/step/embedded_models/SOT-23.STEP").read_bytes()
     with geometer.GeometerClient() as client:
         meshes = client.model_tessellation(model).mesh_collection.meshes
-        input = geometer.MeshIllustrationInputA0(
-            schema="geometry.mesh_illustration.input.a0",
+        input = geometer.MeshIllustrationInputB0(
+            schema="geometry.mesh_illustration.input.b0",
             meshes=meshes,
             view=geometer.MeshIllustrationView(direction=(0.4, 0.7, 1.0), up=(0.0, 1.0, 0.0)),
             svg=geometer.MeshIllustrationSvgOptions(title="Native STEP illustration"),
@@ -138,15 +138,15 @@ def test_native_step_illustration_is_typed_deterministic_and_recoverable() -> No
         assert result == client.mesh_illustration(input)
         assert result.stats.triangles > 0 and result.stats.surface_draws > 0
         assert ET.fromstring(result.svg).tag == "{http://www.w3.org/2000/svg}svg"
-        assert decode_mesh_illustration_result_a0_json(encode_mesh_illustration_result_a0_json(result)) == result
+        assert decode_mesh_illustration_result_b0_json(encode_mesh_illustration_result_b0_json(result)) == result
         with pytest.raises(geometer.GeometerOperationError) as limited:
             client.mesh_illustration(replace(input, prepare=geometer.MeshIllustrationPrepareOptions(max_triangles=1)))
         assert limited.value.diagnostics[0].code == "geometer.operation.resource_limit_exceeded"
         with pytest.raises(geometer.GeometerOperationError):
             client.mesh_illustration(replace(input, view=replace(input.view, direction=(0.0, 1.0, 0.0))))
         bad = client.execute(
-            "geometry.mesh_illustration.a0",
-            geometer.MeshIllustrationRequestA0(schema="geometry.mesh_illustration.request.a0", view=input.view),
+            "geometry.mesh_illustration.b0",
+            geometer.MeshIllustrationRequestB0(schema="geometry.mesh_illustration.request.b0", view=input.view),
             (
                 Attachment(
                     name="mesh_collection",
@@ -162,8 +162,8 @@ def test_native_step_illustration_is_typed_deterministic_and_recoverable() -> No
         ]:
             with pytest.raises(geometer.GeometerIpcProtocolError):
                 client.execute(
-                    "geometry.mesh_illustration.a0",
-                    geometer.MeshIllustrationRequestA0(schema="geometry.mesh_illustration.request.a0", view=input.view),
+                    "geometry.mesh_illustration.b0",
+                    geometer.MeshIllustrationRequestB0(schema="geometry.mesh_illustration.request.b0", view=input.view),
                     attachments,
                 )
         assert client.mesh_illustration(input) == result
@@ -187,8 +187,8 @@ def test_oversized_inline_svg_returns_failure_without_killing_the_server() -> No
             0.0,
         )
     )
-    input = geometer.MeshIllustrationInputA0(
-        schema="geometry.mesh_illustration.input.a0",
+    input = geometer.MeshIllustrationInputB0(
+        schema="geometry.mesh_illustration.input.b0",
         meshes=(
             geometer.MeshIllustrationMesh(
                 id="grid", positions=positions, materials=(geometer.MeshIllustrationMaterial(color=(0.5, 0.5, 0.5)),)

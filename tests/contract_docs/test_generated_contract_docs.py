@@ -70,7 +70,7 @@ def test_generated_contract_docs_are_complete_and_offline() -> None:
         assert 'data-generated="true"' in text
         assert 'data-wn-watermark="true"' in text
         assert site_manifest["catalog_sha256"] in text
-        assert "file:" not in text
+        assert re.search(r"file://", text, re.IGNORECASE) is None
         for attribute, reference in _html_references(path):
             parsed = urlsplit(reference)
             if parsed.scheme or parsed.netloc:

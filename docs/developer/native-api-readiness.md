@@ -1,6 +1,6 @@
 # Native illustration API readiness
 
-Native illustration API and consumer handoff for `2026.9.7`. The user accepted
+Native illustration API and consumer handoff through `2026.9.19`. The user accepted
 the Windows Rust demo as proof of the workflow; further GUI polish is deferred.
 Release qualification is separate from those earlier feature-build observations.
 
@@ -9,7 +9,7 @@ Release qualification is separate from those earlier feature-build observations.
 | Capability | Public Python API | Rust executable client | Direct C++ / native process |
 | --- | --- | --- | --- |
 | Colored STEP tessellation | `GeometerClient.model_tessellation`; one-shot `geometer.model_tessellation` | `model_tessellation(ModelTessellationRequest)` | `model_tessellation_from_bytes`; IPC `geometry.model_tessellation.a0` |
-| Mesh illustration | `GeometerClient.mesh_illustration`; one-shot `geometer.mesh_illustration` | `mesh_illustration(MeshIllustrationInputA0)` | `illustrate_mesh(input, result, status)`; IPC `geometry.mesh_illustration.a0` |
+| Mesh illustration | `GeometerClient.mesh_illustration`; one-shot `geometer.mesh_illustration` | B0 `mesh_illustration(...)`; explicit `mesh_illustration_a0(...)` compatibility | B0/A0 `illustrate_mesh` overloads; canonical IPC `geometry.mesh_illustration.b0` |
 | Illustration with visible HLR | Either Python illustration entry point with `hlr_projection=` | `mesh_illustration_with_hlr(input, hlr)` | C++ overload with HLR result; same IPC operation plus optional governed HLR attachment |
 | Independent HLR geometry | `GeometerClient.model_hlr_projection` / `mesh_hlr_projection` | Typed model/mesh HLR methods | Existing model/mesh operations and file CLI remain unchanged |
 
@@ -24,8 +24,8 @@ same negotiation, typed operations and lifecycle implementation.
 Use the complete [STEP-to-SVG examples and limits](../design/mesh-illustration-native.md),
 [Python API guide](../design/python-package.md), and [Rust guide](../design/rust-client.md).
 Clients and executable catalogs must match. The externally supervised Rust
-boundary requires 2026.9.7 or later compatible client sources; released
-2026.9.6 has the geometry operations but not that adoption API.
+boundary and B0 clipping require the matching generated client, catalog, and C
+ABI generation; package version alone is not a compatibility signal.
 
 `fuse_surfaces` defaults to true. Native composition handles SVG layer order;
 callers supply visible-only polyline HLR for the same millimeter model,

@@ -70,12 +70,13 @@ transport integration, and operation-by-operation promotion; applications
 should prefer the typed method for a promoted operation.
 
 `modelHlrProjection()` accepts STEP bytes and preserves the established `poly`
-default. `meshHlrProjection()` accepts either an encoded indexed-mesh A0 packet
-or a structured `IndexedTriangleMeshA0`; because that source has no OCCT
-topology, omitted selectors choose Fast detail and Fast mesh-shadow. Both
-return `HlrProjectionResultA0` with independent outline, detail, and bbox
-layers. The direct WASM, dedicated Worker, and persistent IPC clients expose
-the same typed method names.
+default. Canonical `meshHlrProjection()` accepts a governed `MeshCollectionA0`
+plus the complete `MeshHlrProjectionRequestB0` operation request and returns
+`HlrProjectionResultB0`, including the fragment digest required for B0
+illustration composition. `meshHlrProjectionA0()` explicitly retains the
+indexed-mesh packet compatibility operation. The direct WASM, dedicated Worker,
+and persistent IPC clients expose the same generation policy; `*B0` is only a
+generation-explicit alias for the canonical method.
 
 `analyticPlanarBooleanBatch()` accepts the generated logical request, encodes
 its packed request attachment, executes the experimental C++ solver, strictly
@@ -160,7 +161,8 @@ embed a second copy of the geometry kernel.
 ## Dedicated Worker client
 
 `createGeometerWorkerClient()` exposes the same typed `modelBounds()`,
-`modelHlrProjection()`, `meshHlrProjection()`, and
+`modelHlrProjection()`, canonical B0 `meshHlrProjection()`, explicit
+`meshHlrProjectionA0()`, and
 `analyticPlanarBooleanBatch()` operations
 without running synchronous OCCT work on the window event loop. The A0 Worker
 protocol is package-local and has the identity

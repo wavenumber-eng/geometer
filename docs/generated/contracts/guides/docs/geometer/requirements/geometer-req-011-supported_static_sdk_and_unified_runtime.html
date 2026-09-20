@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
+  <title>REQ-011: Supported Static SDK And Unified Runtime — Geometer</title>
+  <link rel="stylesheet" href="../../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/geometer/requirements/geometer-req-011-supported_static_sdk_and_unified_runtime.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="req-011-supported-static-sdk-and-unified-runtime">REQ-011: Supported Static SDK And Unified Runtime</h1></header>
+<h2 id="summary">Summary</h2>
+<p>Every native Geometer release provides a supported static C ABI SDK without
+creating a second operation interface. Native static callers, browser WASM,
+Web Workers, executable IPC, self-hosted application workers, and generated
+language clients use the same catalog-governed operations, JSON values, and
+named byte attachments. OCCT remains a private implementation dependency.</p>
+<h2 id="requirements">Requirements</h2>
+<ol>
+<li>Treat authored TypeSpec, the normalized operation catalog, and the governed
+attachment model as the single semantic operation interface. Transports and
+language packages may adapt invocation and ownership, but must not fork
+operation identities, operation-declared validation, diagnostics, limits,
+or governed outcomes. An adapter may impose stricter pointer, framing,
+queue, resident-memory, aggregate-byte, process, or lifecycle limits and
+must report those effective limits honestly.</li>
+<li>Support only Geometer's C ABI from the native static SDK. Do not publish or
+support Geometer's C++ ABI, OCCT headers, OCCT types, OCCT ownership, or the
+OCCT ABI as downstream interfaces.</li>
+<li>Keep the generic operation boundary byte-oriented: operation identity and
+request JSON enter as bounded bytes, model and binary inputs use named byte
+attachments, and governed outcome JSON and named byte attachments leave
+through an opaque Geometer-owned result handle.</li>
+<li>Route the native generic C ABI and executable IPC through one target-aware
+dispatcher. The full browser WASM target must use the same dispatcher for
+its compiled operation subset. Every artifact's catalog must omit operations
+that the artifact cannot execute.</li>
+<li>Keep focused legacy C functions and CLI commands as compatibility adapters.
+Do not add a per-operation Rust FFI surface or a second static-library
+catalog.</li>
+<li>Provide <code>geometer_serve_stdio()</code> as a native C ABI bootstrap for the
+existing executable IPC server. It is a transport entry point, not a new
+operation interface, and must catch C++ exceptions before they cross the C
+boundary. It is process-terminal: call it only as the main path of a
+dedicated child, before unrelated application initialization or threads,
+with exclusive ownership of standard input, output, and error. Existing
+fatal protocol and deadline paths may terminate the child through <code>_Exit</code>
+without stack unwinding. The production bootstrap's process statuses are
+stable: <code>0</code> means graceful completion; <code>2</code> means bootstrap, protocol, I/O,
+or caught-exception failure; and <code>124</code> means the hard shutdown deadline
+expired. Other statuses or signals represent parent/operating-system
+termination, not a returned Geometer status. Tests must assert this mapping.</li>
+<li>Enforce one serialized geometry-execution lane per loaded Geometer runtime
+instance. Put the gate in the common native dispatcher below the generic C
+ABI, executable IPC, embedded server, and every maintained native operation
+adapter so foreign-thread calls through different boundaries cannot overlap
+geometry dispatch within one process.</li>
+<li>Keep direct native calls synchronous. A direct-call timeout is observation
+only and must not claim that the active native call was cancelled. Hard
+cancellation and crash containment require terminating and replacing a
+worker process.</li>
+<li>Support geometry parallelism through multiple process or Worker instances
+until an independently reviewed qualification explicitly permits concurrent
+OCCT execution within one runtime instance.</li>
+<li>Report serialization, queued cancellation, hard active-operation
+termination, process replacement, and topology-session invalidation as
+transport capabilities. A platform must not advertise hard containment
+that it has not proven, including macOS containment tracked by issue 25.</li>
+<li>Implement the direct Rust backend as one process-wide bounded FIFO and one
+dedicated executor thread shared by every direct client. Permit removal
+only while a request remains queued. An active timeout or abandoned future
+is observational; execution continues and must free every native result and
+error buffer. Closing or dropping clients must have explicit bounded
+behavior while queued or active work remains, and must not imply an
+independent topology-session lifetime.</li>
+<li>Advance the date-based C ABI generation when the native catalog projection,
+execution-threading guarantee, or <code>geometer_serve_stdio()</code> surface ships;
+regenerate catalog digests and every generated binding/reference together.</li>
+<li>Publish the SDK separately from native runtime archives. Do not commit SDK
+archives, OCCT archives, or candidate SDK output to Git or place them in
+<code>dist/native/&lt;platform&gt;/</code>.</li>
+<li>Include the public C header, Geometer static archive, exact private OCCT
+archive closure, relocatable CMake package, ordered Cargo native-link
+manifest, SDK manifest and schema, licenses, notices, and internal SDK
+attestation in each platform SDK archive.</li>
+<li>Export a relocatable <code>Geometer::c_api_static</code> CMake target and exact-version
+package configuration. Installed files must contain no source-tree,
+build-tree, <code>.deps</code>, runner-home, or producer-specific absolute paths.</li>
+<li>Make all OCCT, RapidJSON, and Clipper include directories private to the
+build. C ABI consumers must compile without OCCT or other implementation
+headers.</li>
+<li>Generate the Cargo link manifest from the authoritative CMake link graph.
+It must preserve archive order, rescan/group boundaries, system libraries,
+Apple frameworks, C++ runtime, target triple, compiler/runtime profile, and
+deployment baseline without a handwritten duplicate closure.</li>
+<li>Provide a narrow <code>geometer-sys</code> crate as the sole Rust unsafe FFI owner.
+Its build script must consume an explicit verified SDK location, reject a
+target or runtime mismatch, emit the governed link closure, and never
+download an SDK during <code>cargo build</code>.</li>
+<li>Keep generated Rust contracts, codecs, and ergonomic operation methods in
+one safe layer shared by process and static backends. Safe crates retain
+their unsafe-code prohibition; the exact <code>geometer-sys</code> FFI boundary must
+have a reviewed, value-bounded standards exception.</li>
+<li>Support these four native ABI profiles:
+<ul>
+<li><code>windows-x64</code>: <code>x86_64-pc-windows-msvc</code>, MSVC v143, Release, static
+<code>MultiThreaded</code> (<code>/MT</code>) CRT, and Rust <code>crt-static</code>;</li>
+<li><code>linux-x64</code>: <code>x86_64-unknown-linux-gnu</code>, the release-pinned GCC/libstdc++
+profile, and glibc 2.35 minimum;</li>
+<li><code>linux-arm64</code>: <code>aarch64-unknown-linux-gnu</code>, the release-pinned
+GCC/libstdc++ profile, and glibc 2.35 minimum; and</li>
+<li><code>macos-arm64</code>: <code>aarch64-apple-darwin</code>, the release-pinned Apple
+Clang/libc++ profile, and macOS 11.0 minimum deployment target.</li>
+</ul>
+</li>
+<li>Give the Windows static-CRT OCCT build a distinct semantic recipe, install
+path, cache key, and attested profile. Never restore <code>/MD</code> OCCT objects into
+the <code>/MT</code> SDK, and make Rust SDK consumption fail when <code>crt-static</code> is not
+enabled.</li>
+<li>Record the exact compiler version, C++ runtime and ABI mode, architecture,
+target triple, deployment baseline, OCCT identity, Geometer release and C
+ABI generation in each SDK. Do not claim that ordinary operating-system
+libraries and platform frameworks are statically linked.</li>
+<li>Make SDK archives deterministic and relocatable. A clean external CMake
+consumer and a clean external Cargo consumer must build and run after the
+SDK is moved to an unrelated path containing spaces on every supported
+platform.</li>
+<li>Exercise catalog lookup, a direct model operation, model illustration
+geometry, and the embedded stdio server from external consumers. Inspect
+the final executable on each platform and reject shared Geometer or OCCT
+dependencies, a mismatched Windows CRT, or a deployment requirement newer
+than the declared baseline.</li>
+<li>Put a canonical payload inventory in the SDK archive that binds every
+payload member name, size and SHA-256 except the inventory itself, plus the
+catalog, ABI, link/profile manifest, schema set, toolchain profile, license
+set, and stable build-recipe/tool identity. Workflow run identity remains
+external. Require the archive member set to equal the one inventory member
+plus exactly its declared payload; reject undeclared, duplicate, escaping,
+or non-canonical archive members.</li>
+<li>Publish an external sidecar that binds the complete final archive SHA-256, internal
+manifest digest, release tag, source revision, and workflow identity.
+Produce and verify GitHub build provenance for each final SDK archive;
+detached checksums alone are not provenance.</li>
+<li>Treat static-link licensing as a release gate. Ship the exact Geometer and
+third-party licenses, prominent OCCT-use notice, exact OCCT corresponding
+source identity and durable source access or offer, modification status,
+and build scripts. Document downstream LGPL static-link/relink obligations
+and record a reviewed compliance disposition before promotion.</li>
+<li>Build a release-candidate SDK matrix outside Git and before public release
+promotion. Candidate bytes are temporary CI or draft-release evidence and
+must not become authoritative merely because a build job succeeded.</li>
+<li>Gate promotion on a clean KiCad Cruncher trial using the candidate SDK, not
+Geometer build-tree paths. On Windows x64 and macOS ARM64, statically link
+Geometer, invoke <code>geometer_serve_stdio()</code> from a hidden self-hosted command,
+preserve the serial-worker process pool, and run representative Toon work
+with one and four workers.</li>
+<li>Run the downstream trial with <code>GEOMETER_EXE</code> unset, no Geometer on <code>PATH</code>,
+and no sibling Geometer executable or shared Geometer/OCCT library. Prove
+that child processes execute the relocated Cruncher binary, compare output
+with the sibling-Geometer baseline, inject one worker failure, and preserve
+required licenses and notices in the application release.</li>
+<li>Promote exactly the candidate archives that passed external-consumer and
+downstream trials. Verify the complete four-platform archive, checksum,
+sidecar, provenance, license, and source-offer inventory before making the
+dated GitHub Release immutable. Do not repair a final release by silently
+overwriting assets.</li>
+<li>Download the promoted GitHub Release assets into fresh jobs and repeat
+manifest, checksum, provenance, relocation, link, runtime, capability, and
+dependency inspection. Validation confined to the producer staging tree is
+insufficient.</li>
+<li>Fail every native release closed when any required SDK profile or evidence
+item is missing. Runtime archives must continue rejecting <code>.lib</code> and <code>.a</code>
+files; GitHub Releases are the authoritative SDK distribution channel.</li>
+<li>Keep SDK candidates, release assets, attestations, source-offer material,
+performance evidence, and downstream trial evidence governed as external,
+noncommitted artifacts with bounded retention and explicit ownership.</li>
+</ol>
+
+</main>
+</body>
+</html>

@@ -18,9 +18,11 @@ from ._generated.contracts.codecs import (
     decode_ipc_shutdown_ack_a0_json,
     decode_ipc_welcome_a0_json,
     decode_operation_outcome_a0_json,
+    decode_operation_outcome_b0_json,
     encode_ipc_hello_a0_json,
     encode_ipc_reason_a0_json,
     encode_ipc_request_a0_json,
+    encode_ipc_request_b0_json,
 )
 from ._generated.contracts.models import (
     NORMALIZED_CATALOG_SHA256,
@@ -32,17 +34,25 @@ from ._generated.contracts.models import (
     IpcReasonA0,
     IpcRequestA0,
     IpcRequestValueA0,
+    IpcRequestB0,
+    IpcRequestValueB0,
     IpcRuntimeDispatchA0,
     IpcWelcomeA0,
     HlrProjectionOptionsA0,
     HlrProjectionResultA0,
-    MeshIllustrationInputA0,
-    MeshIllustrationGeometryInputA0,
-    MeshIllustrationGeometryA0,
-    MeshIllustrationResultA0,
+    HlrProjectionResultB0,
+    MeshCollectionA0,
+    MeshHlrProjectionRequestB0,
+    MeshIllustrationInputB0,
+    MeshIllustrationGeometryInputB0,
+    MeshIllustrationGeometryB0,
+    MeshIllustrationResultB0,
     OperationFailureA0,
+    OperationFailureB0,
     OperationOutcomeA0,
     OperationSuccessA0,
+    OperationOutcomeB0,
+    OperationSuccessB0,
     PackedAttachmentProjectionA0,
     PackedAttachmentReferenceA0,
 )
@@ -68,9 +78,9 @@ if TYPE_CHECKING:
     from ._tessellation import ModelTessellation
     from ._generated.contracts.models import ModelTessellationRequestA0
     from ._generated.contracts.models import (
-        ModelIllustrationGeometryRequestA0,
-        ModelIllustrationRequestA0,
-        ModelIllustrationResultA0,
+        ModelIllustrationGeometryRequestB0,
+        ModelIllustrationRequestB0,
+        ModelIllustrationResultB0,
     )
     from ._indexed_mesh_packet_a0 import IndexedTriangleMeshA0
     from ._generated.contracts.models import (
@@ -96,6 +106,24 @@ _REQUIRED_CAPABILITIES = frozenset({"serialized_execution", "queue_only_cancella
 _STDERR_CAPTURE_LIMIT = 1024 * 1024
 _STARTUP_TIMEOUT_SECONDS = 10.0
 _SHUTDOWN_TIMEOUT_SECONDS = 35.0
+_B0_REQUEST_CONTRACTS = frozenset(
+    {
+        "geometry.model_illustration.request.b0",
+        "geometry.model_illustration_geometry.request.b0",
+        "geometry.mesh_illustration.request.b0",
+        "geometry.mesh_illustration_geometry.request.b0",
+        "geometry.mesh_hlr_projection.request.b0",
+    }
+)
+_B0_RESULT_CONTRACTS = frozenset(
+    {
+        "geometry.model_illustration.result.b0",
+        "geometry.model_illustration_geometry.result.b0",
+        "geometry.mesh_illustration.result.b0",
+        "geometry.mesh_illustration_geometry.result.b0",
+        "geometry.hlr_projection.result.b0",
+    }
+)
 
 
 class GeometerIpcError(RuntimeError):
@@ -134,7 +162,7 @@ class GeometerOperationError(GeometerIpcError):
 
 @dataclass(frozen=True, slots=True)
 class OperationResponse:
-    outcome: OperationOutcomeA0
+    outcome: OperationOutcomeA0 | OperationOutcomeB0
     attachments: tuple[Attachment, ...]
 
 
@@ -325,7 +353,7 @@ class _GeometerIpcExecution(_GeometerIpcSession):
     def execute(
         self,
         operation: str,
-        request: IpcRequestValueA0,
+        request: IpcRequestValueA0 | IpcRequestValueB0,
         attachments: tuple[Attachment, ...] = (),
         *,
         timeout: float | None = None,
@@ -348,10 +376,19 @@ class _GeometerIpcExecution(_GeometerIpcSession):
             _validate_request_value(declaration, request)
             _validate_declared_attachments(attachments, declaration.input_attachments, "request")
             request_id = client._take_request_id()
+            request_json = (
+                encode_ipc_request_b0_json(
+                    IpcRequestB0(operation=operation, request=cast("IpcRequestValueB0", request))
+                )
+                if declaration.request_contract in _B0_REQUEST_CONTRACTS
+                else encode_ipc_request_a0_json(
+                    IpcRequestA0(operation=operation, request=cast("IpcRequestValueA0", request))
+                )
+            )
             frame = Frame(
                 kind=FrameKind.REQUEST,
                 request_id=request_id,
-                json=encode_ipc_request_a0_json(IpcRequestA0(operation=operation, request=request)),
+                json=request_json,
                 attachments=attachments,
             )
             _validate_effective_frame(frame, self._welcome.limits)
@@ -385,11 +422,11 @@ class _GeometerIpcExecution(_GeometerIpcSession):
 
     def model_illustration(
         self,
-        request: ModelIllustrationRequestA0,
+        request: ModelIllustrationRequestB0,
         model: bytes | None = None,
         *,
         timeout: float | None = None,
-    ) -> ModelIllustrationResultA0:
+    ) -> ModelIllustrationResultB0:
         """Illustrate one STEP model or analytic scene without a mesh round trip."""
         from ._model_illustration import model_illustration
 
@@ -397,7 +434,7 @@ class _GeometerIpcExecution(_GeometerIpcSession):
 
     def model_illustration_geometry(
         self,
-        request: ModelIllustrationGeometryRequestA0,
+        request: ModelIllustrationGeometryRequestB0,
         model: bytes | None = None,
         *,
         timeout: float | None = None,
@@ -441,7 +478,7 @@ class _GeometerIpcExecution(_GeometerIpcSession):
             ),
             timeout=timeout,
         )
-        if isinstance(response.outcome, OperationFailureA0):
+        if isinstance(response.outcome, (OperationFailureA0, OperationFailureB0)):
             raise GeometerOperationError(response.outcome.operation, response.outcome.diagnostics)
         try:
             result_projection = response.outcome.result
@@ -479,11 +516,11 @@ class _GeometerIpcExecution(_GeometerIpcSession):
 
     def mesh_illustration_geometry(
         self,
-        input: MeshIllustrationGeometryInputA0,
+        input: MeshIllustrationGeometryInputB0,
         *,
-        hlr_projection: HlrProjectionResultA0 | None = None,
+        hlr_projection: HlrProjectionResultB0 | None = None,
         timeout: float | None = None,
-    ) -> MeshIllustrationGeometryA0:
+    ) -> MeshIllustrationGeometryB0:
         """Return ordered millimeter drawing geometry without constructing SVG.
 
         Uses the governed geometry JSON attachment; array order is paint order.
@@ -495,12 +532,12 @@ class _GeometerIpcExecution(_GeometerIpcSession):
 
     def mesh_illustration(
         self,
-        input: MeshIllustrationInputA0,
+        input: MeshIllustrationInputB0,
         *,
-        hlr_projection: HlrProjectionResultA0 | None = None,
+        hlr_projection: HlrProjectionResultB0 | None = None,
         timeout: float | None = None,
-    ) -> MeshIllustrationResultA0:
-        """Render A0 SVG, optionally with visible-only polyline HLR from the same
+    ) -> MeshIllustrationResultB0:
+        """Render B0 SVG, optionally with visible-only polyline HLR from the same
         millimeter model/frame and exactly one matching view. Native composition
         applies show_hlr_* styling, layer ordering and mirror_x. Arcs and more
         than 1,000,000 segments are rejected; hidden lines are not re-filtered.
@@ -529,6 +566,47 @@ class _GeometerIpcExecution(_GeometerIpcSession):
         )
 
     def mesh_hlr_projection(
+        self,
+        meshes: MeshCollectionA0,
+        request: MeshHlrProjectionRequestB0,
+        *,
+        timeout: float | None = None,
+    ) -> HlrProjectionResultB0:
+        """Project the same transformed/clipped mesh fragment used by B0 illustration."""
+        from ._generated.contracts.codecs import encode_mesh_collection_a0_json
+
+        client = cast("GeometerIpcClient", self)
+        response = client.execute(
+            "geometry.mesh_hlr_projection.b0",
+            request,
+            (
+                Attachment(
+                    name="mesh_collection",
+                    media_type="application/vnd.wavenumber.geometer.mesh-collection+json",
+                    data=encode_mesh_collection_a0_json(meshes),
+                ),
+            ),
+            timeout=timeout,
+        )
+        if isinstance(response.outcome, (OperationFailureA0, OperationFailureB0)):
+            raise GeometerOperationError(response.outcome.operation, response.outcome.diagnostics)
+        if response.attachments or not isinstance(response.outcome.result, HlrProjectionResultB0):
+            client._terminate()
+            raise GeometerIpcProtocolError("B0 mesh HLR returned an incompatible response")
+        return response.outcome.result
+
+    def mesh_hlr_projection_b0(
+        self,
+        meshes: MeshCollectionA0,
+        request: MeshHlrProjectionRequestB0,
+        *,
+        timeout: float | None = None,
+    ) -> HlrProjectionResultB0:
+        """Generation-explicit alias for canonical B0 mesh HLR."""
+
+        return self.mesh_hlr_projection(meshes, request, timeout=timeout)
+
+    def mesh_hlr_projection_a0(
         self,
         mesh: bytes | IndexedTriangleMeshA0,
         options: HlrProjectionOptionsA0 | None = None,
@@ -569,7 +647,7 @@ class _GeometerIpcExecution(_GeometerIpcSession):
             (Attachment(name=attachment_name, media_type=media_type, data=data),),
             timeout=timeout,
         )
-        if isinstance(response.outcome, OperationFailureA0):
+        if isinstance(response.outcome, (OperationFailureA0, OperationFailureB0)):
             raise GeometerOperationError(response.outcome.operation, response.outcome.diagnostics)
         if response.attachments or not isinstance(response.outcome.result, HlrProjectionResultA0):
             client._terminate()
@@ -634,12 +712,20 @@ class _GeometerIpcResponse(_GeometerIpcExecution):
     def _decode_response(self, frame: Frame, pending: _PendingRequest) -> OperationResponse:
         _validate_effective_frame(frame, self._welcome.limits)
         try:
-            outcome = decode_operation_outcome_a0_json(frame.json)
+            outcome = (
+                decode_operation_outcome_b0_json(frame.json)
+                if pending.declaration.result_contract in _B0_RESULT_CONTRACTS
+                else decode_operation_outcome_a0_json(frame.json)
+            )
         except Exception as error:
             raise GeometerIpcProtocolError("response contains invalid generated outcome JSON") from error
         if _outcome_operation(outcome) != pending.operation:
             raise GeometerIpcProtocolError("response operation does not match its request")
-        declarations = pending.declaration.output_attachments if isinstance(outcome, OperationSuccessA0) else ()
+        declarations = (
+            pending.declaration.output_attachments
+            if isinstance(outcome, (OperationSuccessA0, OperationSuccessB0))
+            else ()
+        )
         _validate_declared_attachments(frame.attachments, declarations, "response")
         return OperationResponse(outcome=outcome, attachments=frame.attachments)
 
@@ -934,10 +1020,17 @@ def _valid_effective_limits(limits: IpcEffectiveLimitsA0) -> bool:
     return all(0 < value <= maximum for value, maximum in bounded)
 
 
-def _validate_request_value(declaration: IpcOperationDeclarationA0, request: IpcRequestValueA0) -> None:
+def _validate_request_value(
+    declaration: IpcOperationDeclarationA0, request: IpcRequestValueA0 | IpcRequestValueB0
+) -> None:
     is_packed = isinstance(request, PackedAttachmentProjectionA0)
     if is_packed != (declaration.runtime_dispatch is IpcRuntimeDispatchA0.PACKED_ATTACHMENT):
         raise GeometerIpcProtocolError("request projection does not match negotiated runtime dispatch")
+    schema = getattr(request, "schema", None)
+    if (declaration.request_contract in _B0_REQUEST_CONTRACTS or schema is not None) and (
+        schema != declaration.request_contract
+    ):
+        raise GeometerIpcProtocolError("request value does not match the negotiated request contract")
     if declaration.request_contract == "geometry.hlr_projection.options.a0" and not isinstance(
         request, HlrProjectionOptionsA0
     ):
@@ -984,7 +1077,7 @@ def _validate_effective_frame(frame: Frame, limits: IpcEffectiveLimitsA0) -> Non
         raise GeometerIpcProtocolError("request exceeds an effective limit advertised by welcome")
 
 
-def _outcome_operation(outcome: OperationOutcomeA0) -> str:
+def _outcome_operation(outcome: OperationOutcomeA0 | OperationOutcomeB0) -> str:
     return outcome.operation
 
 

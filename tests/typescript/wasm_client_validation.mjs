@@ -2,13 +2,13 @@ import { readFile } from "node:fs/promises";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { nativeIllustrationFixtures } from "./native_illustration_fixtures.mjs";
-import { illustrateMesh, illustrateMeshGeometry } from "../../dist/wasm/npm/geometer/mesh-illustration.js";
-import { decodeMeshIllustrationGeometryA0Json } from "../../dist/wasm/npm/geometer/generated/codecs.js";
+import { illustrateMeshA0 as illustrateMesh, illustrateMeshGeometryA0 as illustrateMeshGeometry } from "../../dist/wasm/npm/geometer/mesh-illustration.js";
+import { decodeMeshIllustrationGeometryB0Json } from "../../dist/wasm/npm/geometer/generated/codecs.js";
 import { createRequire } from "node:module";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { makeAnalyticPolygonPourRequest } from "../../dist/wasm/demos/analytic_polygon_pour_fixture.js";
-import { illustrateMeshWithFastHlr } from "../../dist/wasm/npm/geometer/illustrated-hlr.js";
+import { illustrateMeshWithFastHlrA0 } from "../../dist/wasm/npm/geometer/illustrated-hlr.js";
 import {
   createGeometerWasmClient,
   GeometerOperationError,
@@ -43,15 +43,71 @@ function observeNextExecute() {
   };
 }
 const client = await createGeometerWasmClient(module);
-assert.ok(client.capabilities.operations.includes("geometry.mesh_illustration_geometry.a0"));
+assert.ok(client.capabilities.operations.includes("geometry.mesh_illustration_geometry.b0"));
+const clipped = await client.meshIllustration({
+  input: {
+    schema: "geometry.mesh_illustration.input.b0",
+    meshes: [{
+      id: "crossing",
+      positions: [-1, 0, 0, 1, 0, 0, 1, 1, 0],
+      normals: [0, 0, 1, 0, 0, 1, 0, 0, 1],
+      indices: [0, 1, 2],
+      materials: [{ color: [0.2, 0.6, 0.8], opacity: 1 }],
+    }],
+    view: { direction: [0, 0, 1], up: [0, 1, 0] },
+    clipping: {
+      planes: [{ normal: [1, 0, 0], distance_mm: 0 }],
+      cap_policy: "none",
+    },
+  },
+});
+assert.equal(clipped.empty, false);
+assert.equal(clipped.fragment.input_triangles, 1);
+assert.equal(clipped.fragment.output_triangles, 2);
+assert.equal(clipped.fragment.fragment_sha256, "30739631202635b15ea2cf56c1acc5549a49465a9187c7dc0eccd69bb56b768e");
+assert.equal(clipped.fragment.linework_geometry_sha256, "c784211b7217d3552b81d7cf9e105e24bfc3ddb02b8b2ed61ab1c0f6de654c38");
+assert.match(clipped.svg, /geometry\.mesh_illustration\.result\.b0/u);
+const clippedHlr = await client.meshHlrProjection({
+  meshCollection: {
+    schema: "geometry.mesh_collection.a0",
+    length_unit: "millimeter",
+    meshes: [{
+      id: "crossing",
+      positions: [-1, 0, 0, 1, 0, 0, 1, 1, 0],
+      normals: [0, 0, 1, 0, 0, 1, 0, 0, 1],
+      indices: [0, 1, 2],
+      materials: [{ color: [0.2, 0.6, 0.8], opacity: 1 }],
+    }],
+  },
+  request: {
+    schema: "geometry.mesh_hlr_projection.request.b0",
+    views: [{ id: "default", direction: [0, 0, 1], up: [0, 1, 0] }],
+    clipping: {
+      planes: [{ normal: [1, 0, 0], distance_mm: 0 }],
+      cap_policy: "none",
+    },
+  },
+});
+assert.equal(clippedHlr.schema, "geometry.hlr_projection.result.b0");
+assert.deepEqual(clippedHlr.fragment, clipped.fragment);
 for (const { name, input } of nativeIllustrationFixtures()) {
   const collection = Buffer.from(JSON.stringify({ schema: "geometry.mesh_collection.a0",
     length_unit: "millimeter", meshes: input.meshes }));
-  const request = { schema: "geometry.mesh_illustration_geometry.request.a0",
+  const request = { schema: "geometry.mesh_illustration_geometry.request.b0",
     view: input.view, prepare: input.prepare, style: input.style };
   const attachments = [{ name: "mesh_collection",
     mediaType: "application/vnd.wavenumber.geometer.mesh-collection+json", data: collection }];
-  const reply = client.execute("geometry.mesh_illustration_geometry.a0", JSON.stringify(request), attachments);
+  const reply = client.execute("geometry.mesh_illustration_geometry.b0", JSON.stringify(request), attachments);
+  if (name === "projective") {
+    assert.equal(reply.outcome.ok, false);
+    assert.match(reply.outcome.diagnostics[0].message, /affine/u);
+    continue;
+  }
+  if (name === "warnings" || name === "warning-cap") {
+    assert.equal(reply.outcome.ok, false);
+    assert.match(reply.outcome.diagnostics[0].message, /index|layout|material/u);
+    continue;
+  }
   assert.ok(reply.outcome.ok, `${name}: geometry failed`);
   assert.equal(reply.attachments.length, 1);
   const drawing = reply.attachments[0];
@@ -59,25 +115,38 @@ for (const { name, input } of nativeIllustrationFixtures()) {
   assert.equal(drawing.mediaType, "application/vnd.wavenumber.geometer.illustration-geometry+json");
   assert.equal(drawing.data.length, reply.outcome.result.geometry.byte_length);
   assert.equal(createHash("sha256").update(drawing.data).digest("hex"), reply.outcome.result.geometry.sha256);
-  const geometry = decodeMeshIllustrationGeometryA0Json(new TextDecoder().decode(drawing.data));
+  const geometry = decodeMeshIllustrationGeometryB0Json(new TextDecoder().decode(drawing.data));
   const expected = illustrateMeshGeometry({ schema: "geometry.mesh_illustration_geometry.input.a0",
     length_unit: "millimeter", meshes: input.meshes, view: input.view,
     ...(input.prepare === undefined ? {} : { prepare: input.prepare }),
     ...(input.style === undefined ? {} : { style: input.style }) });
-  const compare = (a, b) => {
+  const compare = (a, b, path = "$") => {
     if (typeof b === "number") {
-      assert.ok(Number.isFinite(a) && Math.abs(a-b) <= 32*Number.EPSILON*Math.max(1, Math.abs(a), Math.abs(b)));
+      const tolerance = 2e-12 + 32 * Number.EPSILON * Math.max(1, Math.abs(a), Math.abs(b));
+      assert.ok(Number.isFinite(a) && Math.abs(a - b) <= tolerance, `${path}: ${a} != ${b}`);
     } else if (b !== null && typeof b === "object") {
       assert.deepEqual(Object.keys(a).sort(), Object.keys(b).sort());
-      for (const key of Object.keys(b)) compare(a[key], b[key]);
-    } else assert.equal(a, b);
+      for (const key of Object.keys(b)) compare(a[key], b[key], `${path}.${key}`);
+    } else assert.equal(a, b, path);
   };
-  compare(geometry, expected);
+  const { schema, empty, fragment, ...comparable } = geometry;
+  const { schema: expectedSchema, ...expectedComparable } = expected;
+  assert.equal(schema, "geometry.mesh_illustration.geometry.b0");
+  assert.equal(expectedSchema, "geometry.mesh_illustration.geometry.a0");
+  assert.equal(empty, false);
+  assert.ok(fragment.fragment_sha256.length === 64 && fragment.linework_geometry_sha256.length === 64);
+  compare(comparable, expectedComparable, `$[${name}]`);
+  assert.ok(geometry.surfaces.every((surface) => surface.layers.every((layer) =>
+    /^rgb\(\d+,\d+,\d+\)$/u.test(layer.fill))));
   assert.deepEqual(geometry.stats, reply.outcome.result.stats);
-  const svg = client.execute("geometry.mesh_illustration.a0", JSON.stringify({ ...request,
-    schema: "geometry.mesh_illustration.request.a0", svg: input.svg }), attachments);
+  assert.deepEqual(geometry.fragment, reply.outcome.result.fragment);
+  const svg = client.execute("geometry.mesh_illustration.b0", JSON.stringify({ ...request,
+    schema: "geometry.mesh_illustration.request.b0", svg: input.svg }), attachments);
   assert.ok(svg.outcome.ok);
-  assert.deepEqual(svg.outcome.result, illustrateMesh(input), `${name}: full WASM SVG parity`);
+  const expectedSvg = illustrateMesh(input);
+  assert.deepEqual(svg.outcome.result.stats, expectedSvg.stats, `${name}: full WASM SVG stats parity`);
+  assert.deepEqual(svg.outcome.result.warnings, expectedSvg.warnings);
+  assert.match(svg.outcome.result.svg, /geometry\.mesh_illustration\.result\.b0/u);
 }
 const model = await readFile(
   join(root, "tests", "fixtures", "step", "embedded_models", "SOT-23.STEP"),
@@ -173,7 +242,7 @@ if (!client.capabilities.operations.includes("geometry.model_bounds.a0")) {
   throw new Error("Generated client did not negotiate model_bounds.");
 }
 
-const meshHlr = await client.meshHlrProjection({
+const meshHlr = await client.meshHlrProjectionA0({
   mesh: {
     positions: [0, 0, 0, 10, 0, 0, 0, 10, 0],
     indices: [0, 1, 2],
@@ -189,7 +258,7 @@ if (
   throw new Error(`Unexpected mesh HLR result ${JSON.stringify(meshHlr)}.`);
 }
 
-const weldedMeshHlr = await client.meshHlrProjection({
+const weldedMeshHlr = await client.meshHlrProjectionA0({
   mesh: {
     positions: [
       1e13,
@@ -224,12 +293,13 @@ if (weldedDetail?.length !== 4) {
 }
 if (
   !client.capabilities.operations.includes("geometry.model_hlr_projection.a0") ||
-  !client.capabilities.operations.includes("geometry.mesh_hlr_projection.a0")
+  !client.capabilities.operations.includes("geometry.mesh_hlr_projection.a0") ||
+  !client.capabilities.operations.includes("geometry.mesh_hlr_projection.b0")
 ) {
   throw new Error("Generated client did not negotiate the governed HLR operations.");
 }
 
-const composed = await illustrateMeshWithFastHlr(client, {
+const composed = await illustrateMeshWithFastHlrA0(client, {
   illustration: {
     schema: "geometry.mesh_illustration.input.a0",
     meshes: [

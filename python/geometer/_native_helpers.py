@@ -5,15 +5,15 @@ from __future__ import annotations
 from pathlib import Path
 
 from ._generated.contracts.models import (
-    HlrProjectionResultA0,
-    MeshIllustrationInputA0,
-    MeshIllustrationGeometryInputA0,
-    MeshIllustrationGeometryA0,
-    MeshIllustrationResultA0,
+    HlrProjectionResultB0,
+    MeshIllustrationInputB0,
+    MeshIllustrationGeometryInputB0,
+    MeshIllustrationGeometryB0,
+    MeshIllustrationResultB0,
     ModelTessellationRequestA0,
-    ModelIllustrationGeometryRequestA0,
-    ModelIllustrationRequestA0,
-    ModelIllustrationResultA0,
+    ModelIllustrationGeometryRequestB0,
+    ModelIllustrationRequestB0,
+    ModelIllustrationResultB0,
 )
 from ._ipc_client import GeometerIpcClient
 from ._model_illustration import ModelIllustrationGeometry
@@ -21,19 +21,19 @@ from ._tessellation import ModelTessellation
 
 
 def model_illustration(
-    request: ModelIllustrationRequestA0,
+    request: ModelIllustrationRequestB0,
     model: bytes | None = None,
     *,
     executable: str | Path | None = None,
     timeout: float | None = None,
-) -> ModelIllustrationResultA0:
+) -> ModelIllustrationResultB0:
     """Illustrate one STEP model or analytic scene with one managed process."""
     with GeometerIpcClient(executable) as client:
         return client.model_illustration(request, model, timeout=timeout)
 
 
 def model_illustration_geometry(
-    request: ModelIllustrationGeometryRequestA0,
+    request: ModelIllustrationGeometryRequestB0,
     model: bytes | None = None,
     *,
     executable: str | Path | None = None,
@@ -61,12 +61,12 @@ def model_tessellation(
 
 
 def mesh_illustration_geometry(
-    input: MeshIllustrationGeometryInputA0,
+    input: MeshIllustrationGeometryInputB0,
     *,
-    hlr_projection: HlrProjectionResultA0 | None = None,
+    hlr_projection: HlrProjectionResultB0 | None = None,
     executable: str | Path | None = None,
     timeout: float | None = None,
-) -> MeshIllustrationGeometryA0:
+) -> MeshIllustrationGeometryB0:
     """Return owning millimeter drawing geometry with one managed native process.
 
     No SVG is generated. Prefer the persistent client for repeated work.
@@ -76,12 +76,12 @@ def mesh_illustration_geometry(
 
 
 def mesh_illustration(
-    input: MeshIllustrationInputA0,
+    input: MeshIllustrationInputB0,
     *,
-    hlr_projection: HlrProjectionResultA0 | None = None,
+    hlr_projection: HlrProjectionResultB0 | None = None,
     executable: str | Path | None = None,
     timeout: float | None = None,
-) -> MeshIllustrationResultA0:
+) -> MeshIllustrationResultB0:
     """Render a generated illustration input to SVG with one owned process.
 
     Optional HLR must be visible-only polylines from the same millimeter model,

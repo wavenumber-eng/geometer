@@ -18,8 +18,8 @@ from native_build_attestation import (
     file_sha256,
     source_identity,
 )
-from dependency_versions import EMSDK_VERSION, OCCT_REPO, OCCT_TAG
-from occt_binary_cache import INSTALL_PROFILE_NAME
+from dependency_versions import EMSDK_VERSION, OCCT_COMMIT, OCCT_REPO, OCCT_TAG, OCCT_TAG_OBJECT
+from occt_producer import INSTALL_PROFILE_NAME
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -75,8 +75,27 @@ def wasm_toolchain_identity() -> dict[str, object]:
         raise BrowserBuildAttestationError("WASM OCCT profile is malformed") from error
     if not isinstance(profile, dict):
         raise BrowserBuildAttestationError("WASM OCCT profile must be an object")
+    base_keys = {
+        "config",
+        "emsdk_version",
+        "kind",
+        "library_type",
+        "macos_deployment_target",
+        "occt_repo",
+        "occt_tag",
+        "platform_tag",
+        "recipe_hash",
+        "toolchain_abi",
+    }
+    source_keys = {"source_commit", "source_tag_object"}
+    source_valid = not source_keys.issubset(profile) or (
+        profile.get("source_commit") == OCCT_COMMIT
+        and profile.get("source_tag_object") == OCCT_TAG_OBJECT
+    )
     if (
-        profile.get("kind") != "wasm"
+        set(profile) not in (base_keys, base_keys | source_keys)
+        or not source_valid
+        or profile.get("kind") != "wasm"
         or profile.get("platform_tag") != "wasm-emscripten"
         or profile.get("occt_repo") != OCCT_REPO
         or profile.get("occt_tag") != OCCT_TAG

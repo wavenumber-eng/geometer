@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Literal, TypeAlias
 
-NORMALIZED_CATALOG_SHA256 = "0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d"
+NORMALIZED_CATALOG_SHA256 = "8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed"
 
 JobId: TypeAlias = int
 
@@ -521,6 +521,7 @@ ProjectedSegment: TypeAlias = tuple[float, float, float, float]
 HlrVector2: TypeAlias = tuple[float, float]
 
 
+# A circular arc expressed in the requested view-plane XY frame.
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ProjectedArc:
     start: HlrVector2
@@ -532,6 +533,7 @@ class ProjectedArc:
     full_circle: bool
 
 
+# Axis-aligned bounds in the requested view-plane XY frame.
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ProjectionBounds:
     min_x: float
@@ -542,6 +544,7 @@ class ProjectionBounds:
     height: float
 
 
+# Segments, arcs, and bounds expressed in the requested view-plane XY frame.
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ProjectedGeometry:
     segments: tuple[ProjectedSegment, ...]
@@ -557,6 +560,7 @@ class HlrProjectionModes:
     bbox: ProjectedGeometry
 
 
+# Projection output in the view plane defined by direction and up. For up=[0,1,0], direction=[0,0,1] maps model (x,y) to view (x,y), while direction=[0,0,-1] maps it to (-x,y). To place footprint-local output on a board, use board_point = occurrence_transform * view_to_model * view_point; the axial bottom view_to_model is diag(-1,1) in 2D and is distinct from the physical bottom-side occurrence transform. This frame applies equally to silhouette/detail/outline segments, arcs, and bounds.
 @dataclass(frozen=True, slots=True, kw_only=True)
 class HlrProjectedView:
     id: str
@@ -571,10 +575,13 @@ class HlrProjectionAlgorithm(str, Enum):
     FAST = "fast"
 
 
+# An orthographic view whose output coordinates lie in its own view plane. Geometer sets Z = normalize(direction), removes the Z component from up and normalizes the remainder as Y, then sets X = Y cross Z. Direction points along positive view depth, from the model toward the observer: greater dot(point, Z) is closer and an outward normal with positive dot(normal, Z) is front-facing. The basis origin is model-coordinate [0,0,0]; projection does not recenter on source bounds.
 @dataclass(frozen=True, slots=True, kw_only=True)
 class HlrViewSpec:
     id: str
+    # Positive view-depth direction from the model toward the observer.
     direction: HlrVector3
+    # Preferred positive view Y; its component along direction is removed.
     up: HlrVector3
 
 
@@ -585,6 +592,7 @@ class HlrProjectionOptionsA0:
     output_outline: bool | None = None
     output_detail: bool | None = None
     output_bbox: bool | None = None
+    # Row-major affine transform applied to source points before view projection. Translation is retained and projection remains anchored at [0,0,0]; no source-bounds recentering occurs.
     model_transform: HlrMatrix4x4 | None = None
     strip_root_placement: bool | None = None
     curve_mode: HlrCurveMode | None = None
@@ -641,6 +649,64 @@ class HlrProjectionResultA0:
     source: HlrProjectionSource
     views: tuple[HlrProjectedView, ...]
     timings: HlrProjectionTimings
+
+
+# Independent hard work budgets for deterministic triangle clipping.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ClippingLimits:
+    max_output_triangles: int | None = None
+    max_generated_vertices: int | None = None
+    max_intersections: int | None = None
+    max_edge_plane_tests: int | None = None
+
+
+IllustrationVector3: TypeAlias = tuple[float, float, float]
+
+
+# Canonical unit-normal plane returned in fragment metadata.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class NormalizedHalfSpacePlane:
+    normal: IllustrationVector3
+    distance_mm: float
+    tolerance_mm: float
+
+
+# Fully resolved clipping values that participate in semantic identity.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class NormalizedClipping:
+    planes: tuple[NormalizedHalfSpacePlane, ...]
+    cap_policy: Literal["none"]
+    max_output_triangles: int
+    max_generated_vertices: int
+    max_intersections: int
+    max_edge_plane_tests: int
+
+
+# Deterministic identity and size summary for the prepared world-space fragment.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class FragmentMetadata:
+    clipping: NormalizedClipping | None = None
+    input_triangles: int
+    output_triangles: int
+    fragment_sha256: str
+    linework_geometry_sha256: str
+    raw_attachment_sha256: str | None = None
+
+
+# One world-space half-space. The kept side satisfies dot(normal, point) - distance_mm >= -tolerance_mm.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class HalfSpacePlane:
+    normal: IllustrationVector3
+    distance_mm: float
+    tolerance_mm: float | None = None
+
+
+# Optional B0 clipping request. The first generation deliberately creates no section caps.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class IllustrationClipping:
+    planes: tuple[HalfSpacePlane, ...]
+    cap_policy: Literal["none"]
+    limits: ClippingLimits | None = None
 
 
 # Named raw-attachment declaration in the negotiated operation catalog.
@@ -802,8 +868,6 @@ class IpcReasonA0:
 IllustrationMatrix4x4: TypeAlias = tuple[
     float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float
 ]
-
-IllustrationVector3: TypeAlias = tuple[float, float, float]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -1615,6 +1679,98 @@ class IpcWelcomeA0:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class ModelIllustrationGeometryRequestB0:
+    schema: Literal["geometry.model_illustration_geometry.request.b0"]
+    source: ModelIllustrationSourceA0
+    view: MeshIllustrationView
+    prepare: MeshIllustrationPrepareOptions | None = None
+    linework: ModelIllustrationLineworkOptionsA0 | None = None
+    style: MeshIllustrationStyleA0 | None = None
+    work_limits: ModelIllustrationWorkLimitsA0 | None = None
+    clipping: IllustrationClipping | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ModelIllustrationRequestB0:
+    schema: Literal["geometry.model_illustration.request.b0"]
+    source: ModelIllustrationSourceA0
+    view: MeshIllustrationView
+    prepare: MeshIllustrationPrepareOptions | None = None
+    linework: ModelIllustrationLineworkOptionsA0 | None = None
+    style: MeshIllustrationStyleA0 | None = None
+    svg: MeshIllustrationSvgOptions | None = None
+    work_limits: ModelIllustrationWorkLimitsA0 | None = None
+    clipping: IllustrationClipping | None = None
+
+
+# Attachment-backed B0 geometry request.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshIllustrationGeometryRequestB0:
+    schema: Literal["geometry.mesh_illustration_geometry.request.b0"]
+    view: MeshIllustrationView
+    prepare: MeshIllustrationPrepareOptions | None = None
+    style: MeshIllustrationStyleA0 | None = None
+    clipping: IllustrationClipping | None = None
+
+
+# Attachment-backed B0 mesh illustration request.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshIllustrationRequestB0:
+    schema: Literal["geometry.mesh_illustration.request.b0"]
+    view: MeshIllustrationView
+    prepare: MeshIllustrationPrepareOptions | None = None
+    style: MeshIllustrationStyleA0 | None = None
+    svg: MeshIllustrationSvgOptions | None = None
+    clipping: IllustrationClipping | None = None
+
+
+# Fast-only HLR request over the governed colored mesh collection.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshHlrProjectionRequestB0:
+    schema: Literal["geometry.mesh_hlr_projection.request.b0"]
+    views: tuple[HlrViewSpec, ...] | None = None
+    output_outline: bool | None = None
+    output_detail: bool | None = None
+    output_bbox: bool | None = None
+    model_transform: HlrMatrix4x4 | None = None
+    round_digits: int | None = None
+    fast: FastHlrOptionsA0 | None = None
+    clipping: IllustrationClipping | None = None
+
+
+IpcRequestValueB0: TypeAlias = (
+    ModelIllustrationGeometryRequestB0
+    | ModelIllustrationRequestB0
+    | MeshIllustrationGeometryRequestB0
+    | MeshIllustrationRequestB0
+    | MeshHlrProjectionRequestB0
+)
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class IpcRequestB0:
+    operation: str
+    request: IpcRequestValueB0
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshCollectionHlrSource:
+    kind: Literal["mesh_collection"]
+    hash: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class HlrProjectionResultB0:
+    schema: Literal["geometry.hlr_projection.result.b0"]
+    units: Literal["mm"]
+    empty: bool
+    source: MeshCollectionHlrSource
+    views: tuple[HlrProjectedView, ...]
+    timings: HlrProjectionTimings
+    fragment: FragmentMetadata
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class MeshIllustrationMesh:
     id: str
     positions: tuple[float, ...]
@@ -1654,6 +1810,29 @@ class MeshIllustrationResultA0:
     schema: Literal["geometry.mesh_illustration.result.a0"]
     svg: str
     stats: MeshIllustrationRenderStats
+    warnings: tuple[str, ...]
+
+
+# Serializable direct-value B0 illustration input.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshIllustrationInputB0:
+    schema: Literal["geometry.mesh_illustration.input.b0"]
+    meshes: tuple[MeshIllustrationMesh, ...]
+    view: MeshIllustrationView
+    prepare: MeshIllustrationPrepareOptions | None = None
+    style: MeshIllustrationStyleA0 | None = None
+    svg: MeshIllustrationSvgOptions | None = None
+    clipping: IllustrationClipping | None = None
+
+
+# B0 SVG illustration result with explicit fragment emptiness and identity.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshIllustrationResultB0:
+    schema: Literal["geometry.mesh_illustration.result.b0"]
+    empty: bool
+    svg: str
+    stats: MeshIllustrationRenderStats
+    fragment: FragmentMetadata
     warnings: tuple[str, ...]
 
 
@@ -1758,6 +1937,53 @@ class MeshIllustrationGeometryResultA0:
     warnings: tuple[str, ...]
 
 
+@dataclass(frozen=True, slots=True, kw_only=True)
+class IllustrationGeometryAttachmentB0:
+    attachment: Literal["illustration_geometry"]
+    schema: Literal["geometry.mesh_illustration.geometry.b0"]
+    byte_length: int
+    sha256: str
+
+
+# Renderer-neutral B0 geometry with optional bounds for an empty fragment.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshIllustrationGeometryB0:
+    schema: Literal["geometry.mesh_illustration.geometry.b0"]
+    length_unit: Literal["millimeter"]
+    empty: bool
+    view: MeshIllustrationView
+    bounds: IllustrationGeometryBounds | None = None
+    surfaces: tuple[IllustrationGeometrySurface, ...]
+    lines: tuple[IllustrationGeometryLine, ...]
+    presentation: IllustrationGeometryPresentation
+    stats: MeshIllustrationRenderStats
+    fragment: FragmentMetadata
+    warnings: tuple[str, ...]
+
+
+# Direct-value B0 geometry input.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshIllustrationGeometryInputB0:
+    schema: Literal["geometry.mesh_illustration_geometry.input.b0"]
+    length_unit: Literal["millimeter"]
+    meshes: tuple[MeshIllustrationMesh, ...]
+    view: MeshIllustrationView
+    prepare: MeshIllustrationPrepareOptions | None = None
+    style: MeshIllustrationStyleA0 | None = None
+    clipping: IllustrationClipping | None = None
+
+
+# B0 metadata for the renderer-neutral geometry attachment.
+@dataclass(frozen=True, slots=True, kw_only=True)
+class MeshIllustrationGeometryResultB0:
+    schema: Literal["geometry.mesh_illustration_geometry.result.b0"]
+    empty: bool
+    geometry: IllustrationGeometryAttachmentB0
+    stats: MeshIllustrationRenderStats
+    fragment: FragmentMetadata
+    warnings: tuple[str, ...]
+
+
 # Source identity included in a successful model-bounds result.
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ModelBoundsSource:
@@ -1855,6 +2081,32 @@ class ModelIllustrationResultA0:
     source: ModelIllustrationSourceSummaryA0
     stats: MeshIllustrationRenderStats
     timings: ModelIllustrationTimingsA0
+    warnings: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ModelIllustrationGeometryResultB0:
+    schema: Literal["geometry.model_illustration_geometry.result.b0"]
+    empty: bool
+    geometry: IllustrationGeometryAttachmentB0
+    bounds_mm: ModelIllustrationBounds3MmA0 | None = None
+    source: ModelIllustrationSourceSummaryA0
+    stats: MeshIllustrationRenderStats
+    timings: ModelIllustrationTimingsA0
+    fragment: FragmentMetadata
+    warnings: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ModelIllustrationResultB0:
+    schema: Literal["geometry.model_illustration.result.b0"]
+    empty: bool
+    svg: str
+    bounds_mm: ModelIllustrationBounds3MmA0 | None = None
+    source: ModelIllustrationSourceSummaryA0
+    stats: MeshIllustrationRenderStats
+    timings: ModelIllustrationTimingsA0
+    fragment: FragmentMetadata
     warnings: tuple[str, ...]
 
 
@@ -2404,6 +2656,32 @@ class OperationSuccessA0:
 # Transport-neutral typed outcome shared by the generic C ABI and executable IPC.
 OperationOutcomeA0: TypeAlias = OperationSuccessA0 | OperationFailureA0
 
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class OperationFailureB0:
+    operation: str
+    ok: Literal[False]
+    diagnostics: tuple[DiagnosticA0, ...]
+
+
+OperationResultValueB0: TypeAlias = (
+    ModelIllustrationGeometryResultB0
+    | ModelIllustrationResultB0
+    | MeshIllustrationGeometryResultB0
+    | MeshIllustrationResultB0
+    | HlrProjectionResultB0
+)
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class OperationSuccessB0:
+    operation: str
+    ok: Literal[True]
+    result: OperationResultValueB0
+
+
+OperationOutcomeB0: TypeAlias = OperationSuccessB0 | OperationFailureB0
+
 MODEL_TYPES = {
     "Wavenumber.Geometer.Contracts.Common.DiagnosticA0": DiagnosticA0,
     "Wavenumber.Geometer.Contracts.Common.PackedAttachmentProjectionA0": PackedAttachmentProjectionA0,
@@ -2420,6 +2698,12 @@ MODEL_TYPES = {
     "Wavenumber.Geometer.Contracts.HlrProjectionA0.ProjectedArc": ProjectedArc,
     "Wavenumber.Geometer.Contracts.HlrProjectionA0.ProjectedGeometry": ProjectedGeometry,
     "Wavenumber.Geometer.Contracts.HlrProjectionA0.ProjectionBounds": ProjectionBounds,
+    "Wavenumber.Geometer.Contracts.IllustrationClippingB0.ClippingLimits": ClippingLimits,
+    "Wavenumber.Geometer.Contracts.IllustrationClippingB0.FragmentMetadata": FragmentMetadata,
+    "Wavenumber.Geometer.Contracts.IllustrationClippingB0.HalfSpacePlane": HalfSpacePlane,
+    "Wavenumber.Geometer.Contracts.IllustrationClippingB0.IllustrationClipping": IllustrationClipping,
+    "Wavenumber.Geometer.Contracts.IllustrationClippingB0.NormalizedClipping": NormalizedClipping,
+    "Wavenumber.Geometer.Contracts.IllustrationClippingB0.NormalizedHalfSpacePlane": NormalizedHalfSpacePlane,
     "Wavenumber.Geometer.Contracts.IpcA0.IpcAttachmentDeclarationA0": IpcAttachmentDeclarationA0,
     "Wavenumber.Geometer.Contracts.IpcA0.IpcAttachmentDescriptorA0": IpcAttachmentDescriptorA0,
     "Wavenumber.Geometer.Contracts.IpcA0.IpcAttachmentLayoutPointer64A0": IpcAttachmentLayoutPointer64A0,
@@ -2439,6 +2723,10 @@ MODEL_TYPES = {
     "Wavenumber.Geometer.Contracts.IpcA0.IpcRequestA0": IpcRequestA0,
     "Wavenumber.Geometer.Contracts.IpcA0.IpcShutdownAckA0": IpcShutdownAckA0,
     "Wavenumber.Geometer.Contracts.IpcA0.IpcWelcomeA0": IpcWelcomeA0,
+    "Wavenumber.Geometer.Contracts.IpcB0.IpcRequestB0": IpcRequestB0,
+    "Wavenumber.Geometer.Contracts.MeshHlrProjectionB0.HlrProjectionResultB0": HlrProjectionResultB0,
+    "Wavenumber.Geometer.Contracts.MeshHlrProjectionB0.MeshCollectionHlrSource": MeshCollectionHlrSource,
+    "Wavenumber.Geometer.Contracts.MeshHlrProjectionB0.MeshHlrProjectionRequestB0": MeshHlrProjectionRequestB0,
     "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationInputA0": MeshIllustrationInputA0,
     "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationMaterial": MeshIllustrationMaterial,
     "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationMesh": MeshIllustrationMesh,
@@ -2448,6 +2736,9 @@ MODEL_TYPES = {
     "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationStyleA0": MeshIllustrationStyleA0,
     "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationSvgOptions": MeshIllustrationSvgOptions,
     "Wavenumber.Geometer.Contracts.MeshIllustrationA0.MeshIllustrationView": MeshIllustrationView,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationB0.MeshIllustrationInputB0": MeshIllustrationInputB0,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationB0.MeshIllustrationRequestB0": MeshIllustrationRequestB0,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationB0.MeshIllustrationResultB0": MeshIllustrationResultB0,
     "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryAttachment": IllustrationGeometryAttachment,
     "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryBounds": IllustrationGeometryBounds,
     "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.IllustrationGeometryLayer": IllustrationGeometryLayer,
@@ -2459,6 +2750,11 @@ MODEL_TYPES = {
     "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryInputA0": MeshIllustrationGeometryInputA0,
     "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryRequestA0": MeshIllustrationGeometryRequestA0,
     "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0.MeshIllustrationGeometryResultA0": MeshIllustrationGeometryResultA0,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryB0.IllustrationGeometryAttachmentB0": IllustrationGeometryAttachmentB0,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryB0.MeshIllustrationGeometryB0": MeshIllustrationGeometryB0,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryB0.MeshIllustrationGeometryInputB0": MeshIllustrationGeometryInputB0,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryB0.MeshIllustrationGeometryRequestB0": MeshIllustrationGeometryRequestB0,
+    "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryB0.MeshIllustrationGeometryResultB0": MeshIllustrationGeometryResultB0,
     "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0.MeshIllustrationRequestA0": MeshIllustrationRequestA0,
     "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsOptionsA0": ModelBoundsOptionsA0,
     "Wavenumber.Geometer.Contracts.ModelBoundsA0.ModelBoundsResultA0": ModelBoundsResultA0,
@@ -2488,6 +2784,10 @@ MODEL_TYPES = {
     "Wavenumber.Geometer.Contracts.ModelIllustrationA0.ModelIllustrationResultA0": ModelIllustrationResultA0,
     "Wavenumber.Geometer.Contracts.ModelIllustrationA0.ModelIllustrationTimingsA0": ModelIllustrationTimingsA0,
     "Wavenumber.Geometer.Contracts.ModelIllustrationA0.ModelIllustrationWorkLimitsA0": ModelIllustrationWorkLimitsA0,
+    "Wavenumber.Geometer.Contracts.ModelIllustrationB0.ModelIllustrationGeometryRequestB0": ModelIllustrationGeometryRequestB0,
+    "Wavenumber.Geometer.Contracts.ModelIllustrationB0.ModelIllustrationGeometryResultB0": ModelIllustrationGeometryResultB0,
+    "Wavenumber.Geometer.Contracts.ModelIllustrationB0.ModelIllustrationRequestB0": ModelIllustrationRequestB0,
+    "Wavenumber.Geometer.Contracts.ModelIllustrationB0.ModelIllustrationResultB0": ModelIllustrationResultB0,
     "Wavenumber.Geometer.Contracts.ModelTessellationA0.MeshCollectionA0": MeshCollectionA0,
     "Wavenumber.Geometer.Contracts.ModelTessellationA0.MeshCollectionAttachment": MeshCollectionAttachment,
     "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationOptionsA0": ModelTessellationOptionsA0,
@@ -2495,6 +2795,8 @@ MODEL_TYPES = {
     "Wavenumber.Geometer.Contracts.ModelTessellationA0.ModelTessellationResultA0": ModelTessellationResultA0,
     "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationFailureA0": OperationFailureA0,
     "Wavenumber.Geometer.Contracts.OperationOutcomeA0.OperationSuccessA0": OperationSuccessA0,
+    "Wavenumber.Geometer.Contracts.OperationOutcomeB0.OperationFailureB0": OperationFailureB0,
+    "Wavenumber.Geometer.Contracts.OperationOutcomeB0.OperationSuccessB0": OperationSuccessB0,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.AttachMetadataProbeCommand": AttachMetadataProbeCommand,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.BodyProbeTarget": BodyProbeTarget,
     "Wavenumber.Geometer.Contracts.StepTopologyA0.BodySummary": BodySummary,

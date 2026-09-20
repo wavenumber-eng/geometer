@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d">
+  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
   <title>TypeScript Contracts And Browser WASM Client — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/typescript-client.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="typescript-contracts-and-browser-wasm-client">TypeScript Contracts And Browser WASM Client</h1></header>
 <h2 id="status-and-authority">Status and authority</h2>
@@ -71,12 +71,13 @@ patch. It returns <code>ModelBoundsResultA0</code> on success and throws
 transport integration, and operation-by-operation promotion; applications
 should prefer the typed method for a promoted operation.</p>
 <p><code>modelHlrProjection()</code> accepts STEP bytes and preserves the established <code>poly</code>
-default. <code>meshHlrProjection()</code> accepts either an encoded indexed-mesh A0 packet
-or a structured <code>IndexedTriangleMeshA0</code>; because that source has no OCCT
-topology, omitted selectors choose Fast detail and Fast mesh-shadow. Both
-return <code>HlrProjectionResultA0</code> with independent outline, detail, and bbox
-layers. The direct WASM, dedicated Worker, and persistent IPC clients expose
-the same typed method names.</p>
+default. Canonical <code>meshHlrProjection()</code> accepts a governed <code>MeshCollectionA0</code>
+plus the complete <code>MeshHlrProjectionRequestB0</code> operation request and returns
+<code>HlrProjectionResultB0</code>, including the fragment digest required for B0
+illustration composition. <code>meshHlrProjectionA0()</code> explicitly retains the
+indexed-mesh packet compatibility operation. The direct WASM, dedicated Worker,
+and persistent IPC clients expose the same generation policy; <code>*B0</code> is only a
+generation-explicit alias for the canonical method.</p>
 <p><code>analyticPlanarBooleanBatch()</code> accepts the generated logical request, encodes
 its packed request attachment, executes the experimental C++ solver, strictly
 decodes the packed result, and returns generated logical jobs, line/arc
@@ -190,7 +191,8 @@ configuration such as <code>wasmBinary</code> or <code>locateFile</code>; the np
 embed a second copy of the geometry kernel.</p>
 <h2 id="dedicated-worker-client">Dedicated Worker client</h2>
 <p><code>createGeometerWorkerClient()</code> exposes the same typed <code>modelBounds()</code>,
-<code>modelHlrProjection()</code>, <code>meshHlrProjection()</code>, and
+<code>modelHlrProjection()</code>, canonical B0 <code>meshHlrProjection()</code>, explicit
+<code>meshHlrProjectionA0()</code>, and
 <code>analyticPlanarBooleanBatch()</code> operations
 without running synchronous OCCT work on the window event loop. The A0 Worker
 protocol is package-local and has the identity

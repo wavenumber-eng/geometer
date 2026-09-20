@@ -161,7 +161,7 @@ def test_typed_mesh_hlr_projection_round_trips_structured_mesh() -> None:
         source_faces=(1,),
     )
     with GeometerIpcClient(executable, client_name="python-mesh-hlr-test") as client:
-        result = client.mesh_hlr_projection(mesh, HlrProjectionOptionsA0())
+        result = client.mesh_hlr_projection_a0(mesh, HlrProjectionOptionsA0())
 
     assert result.schema == "geometry.hlr_projection.result.a0"
     assert result.source.kind.value == "indexed_mesh"
@@ -186,8 +186,8 @@ def test_hlr_ipc_omission_defaults_to_fast_detail_and_fast_mesh_shadow() -> None
     with GeometerIpcClient(executable, client_name="python-hlr-default-test") as client:
         model_default = client.model_hlr_projection(step, HlrProjectionOptionsA0())
         model_explicit = client.model_hlr_projection(step, explicit_fast)
-        mesh_default = client.mesh_hlr_projection(mesh, HlrProjectionOptionsA0())
-        mesh_explicit = client.mesh_hlr_projection(mesh, explicit_fast)
+        mesh_default = client.mesh_hlr_projection_a0(mesh, HlrProjectionOptionsA0())
+        mesh_explicit = client.mesh_hlr_projection_a0(mesh, explicit_fast)
 
     assert model_default.source == model_explicit.source
     assert model_default.views == model_explicit.views
@@ -319,6 +319,16 @@ def test_persistent_client_repeats_nonempty_solve_on_one_connection() -> None:
         first = client.analytic_planar_boolean_batch(_nonempty_request(), timeout=5)
         second = client.analytic_planar_boolean_batch(_nonempty_request(), timeout=5)
     assert first == second
+
+
+def test_public_c_bootstrap_serves_the_existing_ipc_protocol() -> None:
+    server = _native_test_server("geometer_c_api_stdio_test_server")
+    if not server.is_file():
+        pytest.skip("native C bootstrap test server is unavailable")
+    with GeometerIpcClient(server, client_name="python-c-bootstrap-test") as client:
+        result = client.analytic_planar_boolean_batch(_nonempty_request(), timeout=5)
+        assert result.job_results
+        assert client.welcome.catalog_sha256 == NORMALIZED_CATALOG_SHA256
 
 
 def test_timeout_is_typed_and_prevents_reuse_while_native_fake_server_drains() -> None:

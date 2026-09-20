@@ -55,6 +55,7 @@ set(GEOMETER_LIB_SOURCES
     mesh_illustration_layers.cpp
     mesh_illustration_math.cpp
     mesh_illustration_operation.cpp
+    illustration_clipping.cpp
     mesh_illustration_prepare.cpp
     mesh_illustration_style.cpp
     mesh_illustration_svg.cpp
@@ -143,6 +144,7 @@ if(NOT EMSCRIPTEN)
     list(APPEND GEOMETER_LIB_SOURCES
         ipc_a0_frame.cpp
         ipc_a0_server.cpp
+        native_operation_execution_gate.cpp
         native_topology_operation_registry.cpp
         step_topology_edit_journal.cpp
         step_topology_inspection.cpp

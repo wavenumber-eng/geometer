@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d">
+  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
   <title>Distribution Artifacts — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/distribution.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="distribution-artifacts">Distribution Artifacts</h1></header>
 <p>The repository policy is to commit distributable outputs in <code>dist/</code> so another
@@ -45,10 +45,35 @@ are deployment and verification metadata.</li>
 consumers must use grouped native, npm, and WASM paths.</p>
 <p>Native <code>.lib</code> and <code>.a</code> files remain ordinary build/cache outputs under the
 configured CMake build tree. They are not committed or included in native
-runtime releases. A future native SDK must be a separately designed package
-with public headers, exported CMake targets, ABI/toolchain metadata, licenses,
-and a complete dependency-link strategy; a bare static archive is not an SDK.</p>
-<p>Demo build scripts do not publish. See
+runtime archives. Each dated release separately publishes one static SDK for
+Windows x64, Linux x64, Linux arm64, and macOS arm64. Those SDKs contain public
+C ABI headers, exported relocatable CMake targets, Geometer and the exact OCCT
+link closure, ABI/toolchain metadata, integrity/provenance records, and license
+material. See <a href="static-native-sdk.html">Static native SDK</a>.</p>
+<p><code>Publish</code> is a manual workflow dispatched at the exact tag also supplied as its
+input, which binds GitHub provenance to the released source revision. It
+rebuilds all four native archives,
+all four platform wheels, all four static SDKs, and WASM; validates a single
+fail-closed inventory; and stages the unchanged bytes on a draft GitHub
+Release. PyPI receives exactly the four inventoried wheels. Only after trusted
+publishing succeeds is the GitHub Release made public, downloaded again, and
+checked against its inventory and GitHub attestations.</p>
+<p>The release inventory uses the B0 envelope. Besides exact asset names, sizes,
+and SHA-256 digests, it embeds the canonical candidate root and its digest. The
+candidate root contains only the exact Git commit, synchronized release
+identity, and SHA-256 of <code>dependencies/occt-lock.json</code>. Draft, PyPI, and public
+verification must match the candidate source revision to the checked-out
+release tag. Tool versions and workflow timings remain evidence rather than
+alternate cache or candidate identities.</p>
+<p><code>scripts/publish_release_candidate.py</code> implements the immutable candidate-store
+boundary. It freshly validates the complete B0 inventory and artifact contents,
+then conditionally creates
+<code>releases/candidates/&lt;source-sha&gt;/&lt;inventory-sha256&gt;/&lt;asset-name&gt;</code> objects and
+creates the inventory object last. An occupied key is accepted only when its
+bytes are identical. The tool is not invoked from a credentialed workflow until
+the protected hosted ingestion job can consume untrusted build artifacts
+without executing candidate-controlled code.</p>
+<p>Browser and native Lab build scripts do not publish demo applications. See
 <a href="../developer/browser-demos.html">Browser demo packaging and UI</a> for the local build, closure,
 review, and explicit publication boundary.</p>
 <p>Do not commit local generated build state:</p>

@@ -1,25 +1,23 @@
 ---
 # yamllint disable rule:line-length
-name: OCCT Dependency Cache
+name: OCCT Dependency Producer
 
 "on":
   workflow_dispatch:
     inputs:
-      target:
-        description: Dependency target set to build/upload.
+      profile:
+        description: Exact locked profile to rebuild, or all profiles.
         required: true
         default: all
         type: choice
         options:
           - all
-          - native
-          - wasm
-      force_source_build:
-        description: Ignore existing R2 binary cache and rebuild OCCT from source before upload.
-        required: true
-        default: false
-        type: boolean
-
+          - linux-arm64-gcc11-static
+          - linux-x64-gcc11-static
+          - macos-arm64-appleclang17-static
+          - wasm-emscripten-3.1.56-static
+          - windows-x64-msvc-v143-md-static
+          - windows-x64-msvc-v143-mt-static
 permissions:
   contents: read
 
@@ -27,44 +25,44 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 concurrency:
-  group: occt-deps-${{ github.ref }}-${{ inputs.target }}
+  group: occt-deps-${{ github.ref }}-${{ inputs.profile }}
   cancel-in-progress: false
 
 jobs:
-  native:
-    name: native OCCT (${{ matrix.platform }})
-    if: inputs.target == 'all' || inputs.target == 'native'
+  native-all:
+    name: native OCCT (${{ matrix.platform }}, ${{ matrix.profile }})
+    if: github.ref_name == github.event.repository.default_branch && inputs.profile == 'all'
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: windows-latest
+          - os: windows-2022
             platform: windows-x64
-            compiler: msvc
+            profile: default
+            build_args: ""
+          - os: windows-2022
+            platform: windows-x64
+            profile: static-crt
+            build_args: --msvc-runtime Static
           - os: ubuntu-22.04
             platform: linux-x64
-            compiler: gcc
+            profile: default
+            build_args: ""
           - os: ubuntu-22.04-arm
             platform: linux-arm64
-            compiler: gcc
+            profile: default
+            build_args: ""
           - os: macos-15
             platform: macos-arm64
-            compiler: apple-clang
-    env:
-      R2_BUCKET: ${{ vars.R2_BUCKET || secrets.R2_BUCKET }}
-      R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL || vars.R2_ENDPOINT_URL }}
-      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-      AWS_DEFAULT_REGION: auto
+            profile: default
+            build_args: --macos-deployment-target 11.0
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v8.2.0
       - name: Set up Python
         run: uv python install 3.12
-      - name: Read dependency versions
-        id: dependency_versions
-        run: uv run --no-project python scripts/dependency_versions.py --github-output
       - name: Set up MSVC
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
@@ -76,33 +74,62 @@ jobs:
       - name: Install macOS build tools
         if: runner.os == 'macOS'
         run: brew list ninja >/dev/null 2>&1 || brew install ninja
-      - name: Restore GitHub OCCT cache
-        uses: actions/cache@v5
+      - name: Build OCCT from source and publish immutable candidate
+        shell: pwsh
+        run: uv run python scripts/build_occt.py --platform-tag "${{ matrix.platform }}" --binary-cache off --package-binary-cache ${{ matrix.build_args }}
+      - name: Upload candidate handoff
+        uses: actions/upload-artifact@v7
         with:
-          path: |
-            .deps/occt-src
-            .deps/native/${{ matrix.platform }}/occt-build
-            .deps/native/${{ matrix.platform }}/occt-install
-          key: occt-v2-native-${{ matrix.platform }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-${{ hashFiles('scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
-          restore-keys: |
-            occt-v2-native-${{ matrix.platform }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-
-            occt-${{ matrix.os }}-${{ runner.arch }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-
-      - name: Build or restore OCCT and upload to R2
+          name: occt-candidate-${{ matrix.platform }}-${{ matrix.profile }}
+          path: out/occt-binary-cache/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
+
+  native-one:
+    name: native OCCT (${{ inputs.profile }})
+    if: github.ref_name == github.event.repository.default_branch && inputs.profile != 'all' && inputs.profile != 'wasm-emscripten-3.1.56-static'
+    runs-on: ${{ (startsWith(inputs.profile, 'windows-') && 'windows-2022') || (inputs.profile == 'linux-x64-gcc11-static' && 'ubuntu-22.04') || (inputs.profile == 'linux-arm64-gcc11-static' && 'ubuntu-22.04-arm') || 'macos-15' }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.2.0
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Set up MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+      - name: Install Linux build tools
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential ninja-build libgl1-mesa-dev libdbus-1-dev libudev-dev libx11-dev libxcursor-dev libxext-dev libxi-dev libxinerama-dev libxkbcommon-dev libxrandr-dev libwayland-dev wayland-protocols
+      - name: Install macOS build tools
+        if: runner.os == 'macOS'
+        run: brew list ninja >/dev/null 2>&1 || brew install ninja
+      - name: Build OCCT from source and publish immutable candidate
         shell: pwsh
         run: |
-          $mode = if ("${{ inputs.force_source_build }}" -eq "true") { "off" } else { "auto" }
-          uv run python scripts/build_occt.py --platform-tag "${{ matrix.platform }}" --binary-cache $mode --upload-binary-cache
+          $profile = '${{ inputs.profile }}'
+          $platform = if ($profile.StartsWith('windows-')) { 'windows-x64' } elseif ($profile.StartsWith('linux-x64-')) { 'linux-x64' } elseif ($profile.StartsWith('linux-arm64-')) { 'linux-arm64' } else { 'macos-arm64' }
+          $extra = @()
+          if ($profile -eq 'windows-x64-msvc-v143-mt-static') { $extra = @('--msvc-runtime', 'Static') }
+          if ($profile -eq 'macos-arm64-appleclang17-static') { $extra = @('--macos-deployment-target', '11.0') }
+          uv run python scripts/build_occt.py --platform-tag $platform --binary-cache off --package-binary-cache @extra
+      - name: Upload candidate handoff
+        uses: actions/upload-artifact@v7
+        with:
+          name: occt-candidate-${{ inputs.profile }}
+          path: out/occt-binary-cache/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
 
   wasm:
     name: wasm OCCT
-    if: inputs.target == 'all' || inputs.target == 'wasm'
+    if: github.ref_name == github.event.repository.default_branch && (inputs.profile == 'all' || inputs.profile == 'wasm-emscripten-3.1.56-static')
     runs-on: ubuntu-24.04
-    env:
-      R2_BUCKET: ${{ vars.R2_BUCKET || secrets.R2_BUCKET }}
-      R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL || vars.R2_ENDPOINT_URL }}
-      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-      AWS_DEFAULT_REGION: auto
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v8.2.0
@@ -120,21 +147,53 @@ jobs:
         with:
           path: .deps/emsdk
           key: emsdk-v2-linux-x64-${{ steps.dependency_versions.outputs.emsdk_version }}
-          restore-keys: |
-            emsdk-Linux-X64-${{ steps.dependency_versions.outputs.emsdk_version }}
-      - name: Restore GitHub WASM OCCT cache
-        uses: actions/cache@v5
-        with:
-          path: |
-            .deps/occt-src
-            .deps/occt-wasm-build
-            .deps/occt-wasm-install
-          key: occt-v2-wasm-linux-x64-emscripten-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-${{ hashFiles('scripts/build_wasm.py', 'scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
-          restore-keys: |
-            occt-v2-wasm-linux-x64-emscripten-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-
-            wasm-occt-Linux-X64-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-
-      - name: Build or restore WASM OCCT and upload to R2
+      - name: Build WASM OCCT from source and publish immutable candidate
         shell: pwsh
-        run: |
-          $mode = if ("${{ inputs.force_source_build }}" -eq "true") { "off" } else { "auto" }
-          uv run python scripts/build_wasm.py --occt-only --occt-binary-cache $mode --upload-occt-binary-cache
+        run: uv run python scripts/build_wasm.py --occt-only --occt-binary-cache off --package-occt-binary-cache
+      - name: Upload candidate handoff
+        uses: actions/upload-artifact@v7
+        with:
+          name: occt-candidate-wasm-emscripten
+          path: out/occt-binary-cache/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
+
+  publish:
+    name: publish immutable OCCT candidate
+    needs: [native-all, native-one, wasm]
+    if: >-
+      always() && !cancelled() &&
+      github.ref_name == github.event.repository.default_branch &&
+      needs.native-all.result != 'failure' && needs.native-one.result != 'failure' && needs.wasm.result != 'failure' &&
+      ((inputs.profile == 'all' && needs.native-all.result == 'success' && needs.wasm.result == 'success') ||
+       (inputs.profile == 'wasm-emscripten-3.1.56-static' && needs.wasm.result == 'success') ||
+       (inputs.profile != 'all' && inputs.profile != 'wasm-emscripten-3.1.56-static' && needs.native-one.result == 'success'))
+    runs-on: ubuntu-24.04
+    environment: occt-dependency-production
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: occt-candidate-*
+          path: out/occt-candidate-handoff
+          merge-multiple: true
+      - name: Validate and publish candidate bytes
+        env:
+          R2_BUCKET: ${{ vars.R2_BUCKET || secrets.R2_BUCKET }}
+          R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL || vars.R2_ENDPOINT_URL }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: python scripts/publish_occt_candidates.py --root out/occt-candidate-handoff --expected-profile "${{ inputs.profile }}"
+      - name: Retain publication evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: occt-publication-evidence-${{ inputs.profile }}
+          path: |
+            out/occt-candidate-handoff/*/manifest.json
+            out/occt-candidate-handoff/*/occt-install.zip.sha256
+          if-no-files-found: error

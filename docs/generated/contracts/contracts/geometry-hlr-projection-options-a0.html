@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d">
+  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
   <title>geometry.hlr_projection.options.a0 — Geometer</title>
   <link rel="stylesheet" href="../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d" data-page-kind="contract" data-contract-identity="geometry.hlr_projection.options.a0" data-promotion-status="pilot_candidate">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="contract" data-contract-identity="geometry.hlr_projection.options.a0" data-promotion-status="pilot_candidate">
 <main>
 <header>
   <p class="page-type">Contract root</p>
@@ -30,7 +30,9 @@
 <tr><td><code>output_outline</code></td><td>optional</td><td><code>boolean</code></td><td><code>true</code></td><td>none</td><td></td></tr>
 <tr><td><code>output_detail</code></td><td>optional</td><td><code>boolean</code></td><td><code>true</code></td><td>none</td><td></td></tr>
 <tr><td><code>output_bbox</code></td><td>optional</td><td><code>boolean</code></td><td><code>true</code></td><td>none</td><td></td></tr>
-<tr><td><code>model_transform</code></td><td>optional</td><td><code><a href="#declaration-wavenumber-geometer-contracts-hlrprojectiona0-hlrmatrix4x4">HlrMatrix4x4</a></code></td><td><code>identity_4x4</code></td><td>none</td><td></td></tr>
+<tr><td><code>model_transform</code></td><td>optional</td><td><code><a href="#declaration-wavenumber-geometer-contracts-hlrprojectiona0-hlrmatrix4x4">HlrMatrix4x4</a></code></td><td><code>identity_4x4</code></td><td>none</td><td>Row-major affine transform applied to source points before view projection.
+Translation is retained and projection remains anchored at [0,0,0]; no
+source-bounds recentering occurs.</td></tr>
 <tr><td><code>strip_root_placement</code></td><td>optional</td><td><code>boolean</code></td><td><code>false</code></td><td>none</td><td></td></tr>
 <tr><td><code>curve_mode</code></td><td>optional</td><td><code><a href="#declaration-wavenumber-geometer-contracts-hlrprojectiona0-hlrcurvemode">HlrCurveMode</a></code></td><td><code>&quot;native_arcs&quot;</code></td><td>none</td><td></td></tr>
 <tr><td><code>samples_per_curve</code></td><td>optional</td><td><code>uint32</code></td><td><code>24</code></td><td><code>min_value=1</code> <code>max_value=100000</code></td><td></td></tr>
@@ -87,9 +89,15 @@
 <tr><td><code>exact</code></td><td><code>exact</code></td><td></td></tr>
 <tr><td><code>fast</code></td><td><code>fast</code></td><td></td></tr></tbody></table></details>
 <details open id="declaration-wavenumber-geometer-contracts-hlrprojectiona0-hlrvector3"><summary><h2><code>HlrVector3</code> <span class="tag">model</span></h2></summary><p></p><p><span class="tag">array</span> element <code>float64</code>; <code>min_items=3</code> <code>max_items=3</code></p></details>
-<details open id="declaration-wavenumber-geometer-contracts-hlrprojectiona0-hlrviewspec"><summary><h2><code>HlrViewSpec</code> <span class="tag">model</span></h2></summary><p></p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=128</code></td><td></td></tr>
-<tr><td><code>direction</code></td><td>required</td><td><code><a href="#declaration-wavenumber-geometer-contracts-hlrprojectiona0-hlrvector3">HlrVector3</a></code></td><td>—</td><td>none</td><td></td></tr>
-<tr><td><code>up</code></td><td>required</td><td><code><a href="#declaration-wavenumber-geometer-contracts-hlrprojectiona0-hlrvector3">HlrVector3</a></code></td><td>—</td><td>none</td><td></td></tr></tbody></table></details></section>
+<details open id="declaration-wavenumber-geometer-contracts-hlrprojectiona0-hlrviewspec"><summary><h2><code>HlrViewSpec</code> <span class="tag">model</span></h2></summary><p>An orthographic view whose output coordinates lie in its own view plane.
+Geometer sets Z = normalize(direction), removes the Z component from up and
+normalizes the remainder as Y, then sets X = Y cross Z. Direction points
+along positive view depth, from the model toward the observer: greater
+dot(point, Z) is closer and an outward normal with positive dot(normal, Z)
+is front-facing. The basis origin is model-coordinate [0,0,0]; projection
+does not recenter on source bounds.</p><table><thead><tr><th>Field</th><th>Presence</th><th>Type</th><th>Default intent</th><th>Constraints</th><th>Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>required</td><td><code>string</code></td><td>—</td><td><code>min_length=1</code> <code>max_length=128</code></td><td></td></tr>
+<tr><td><code>direction</code></td><td>required</td><td><code><a href="#declaration-wavenumber-geometer-contracts-hlrprojectiona0-hlrvector3">HlrVector3</a></code></td><td>—</td><td>none</td><td>Positive view-depth direction from the model toward the observer.</td></tr>
+<tr><td><code>up</code></td><td>required</td><td><code><a href="#declaration-wavenumber-geometer-contracts-hlrprojectiona0-hlrvector3">HlrVector3</a></code></td><td>—</td><td>none</td><td>Preferred positive view Y; its component along direction is removed.</td></tr></tbody></table></details></section>
 </main>
 </body>
 </html>

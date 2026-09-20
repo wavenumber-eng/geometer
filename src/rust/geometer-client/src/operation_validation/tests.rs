@@ -28,11 +28,13 @@ fn logical_response_must_match_the_negotiated_contract() {
         session_handle: "s".repeat(68),
         closed: true,
     });
-    let outcome = OperationOutcomeA0::Success(contracts::OperationSuccessA0 {
-        operation: "geometry.step_topology.close.a0".to_owned(),
-        ok: true,
-        result,
-    });
+    let outcome = crate::client::OperationOutcome::A0(OperationOutcomeA0::Success(
+        contracts::OperationSuccessA0 {
+            operation: "geometry.step_topology.close.a0".to_owned(),
+            ok: true,
+            result,
+        },
+    ));
     assert!(
         validate_operation_response(&welcome, "geometry.step_topology.close.a0", &outcome, &[])
             .is_ok()

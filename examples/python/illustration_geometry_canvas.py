@@ -7,7 +7,7 @@ from html import escape
 from pathlib import Path
 
 import geometer
-from geometer._generated.contracts.codecs import encode_mesh_illustration_geometry_a0_json
+from geometer._generated.contracts.codecs import encode_mesh_illustration_geometry_b0_json
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -52,8 +52,10 @@ document.documentElement.dataset.rendered = 'true';
 """
 
 
-def write_canvas(geometry: geometer.MeshIllustrationGeometryA0, output: Path, title: str) -> None:
-    encoded = encode_mesh_illustration_geometry_a0_json(geometry)
+def write_canvas(geometry: geometer.MeshIllustrationGeometryB0, output: Path, title: str) -> None:
+    if geometry.bounds is None:
+        raise ValueError("cannot draw empty illustration geometry")
+    encoded = encode_mesh_illustration_geometry_b0_json(geometry)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.with_suffix(".geometry.json").write_bytes(encoded)
     safe_json = encoded.decode().replace("<", "\\u003c").replace("&", "\\u0026")
@@ -85,8 +87,8 @@ def main() -> None:
         model = args.step.read_bytes()
         print("Requesting one-pass STEP illustration geometry (no SVG)...", flush=True)
         geometry_response = client.model_illustration_geometry(
-            geometer.ModelIllustrationGeometryRequestA0(
-                schema="geometry.model_illustration_geometry.request.a0",
+            geometer.ModelIllustrationGeometryRequestB0(
+                schema="geometry.model_illustration_geometry.request.b0",
                 source=geometer.ModelAttachmentIllustrationSourceA0(kind="model", attachment="model"),
                 view=view,
                 style=geometer.MeshIllustrationStyleA0(

@@ -33,6 +33,14 @@ target = "tests/python/test_illustration_geometry.py"
 [[verification_refs]]
 kind = "local_file"
 target = "tests/python/test_model_illustration.py"
+
+[[verification_refs]]
+kind = "local_file"
+target = "tests/cpp/illustration_clipping_test.cpp"
+
+[[verification_refs]]
+kind = "local_file"
+target = "tests/cpp/illustration_b0_operation_test.cpp"
 +++
 
 # REQ-010: Fast HLR And Illustration Interfaces
@@ -98,3 +106,13 @@ exact or polygonal behavior.
 18. The combined operation must use Fast detail and Fast Mesh Shadow, reject
     hidden linework, preserve partial STEP warnings, and expose truthful phase
     timings through TypeSpec-governed generated clients.
+19. B0 model/composed-mesh illustration and composed-mesh HLR must apply the
+    same bounded ordered half-space clipper after all placements/transforms and
+    before bounds, HLR, outlines, visibility, shading, and projection.
+20. Preserve materials, interpolate boundary normals, remove degenerates
+    deterministically, support only `cap_policy: "none"` initially, bind
+    normalized clipping and effective limits into fragment identity, and reject
+    supplied linework whose geometry digest does not match the shaded fragment.
+21. Treat fully clipped fragments as successful explicit empty results with
+    absent bounds. Keep A0 operation identities as strict compatibility
+    adapters while maintained consumers use the complete B0 operation roots.

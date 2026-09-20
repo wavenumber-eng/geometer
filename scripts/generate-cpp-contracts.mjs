@@ -455,9 +455,12 @@ function generateOperationCatalogSource() {
   const resultProjections = [];
   const requiredAttachmentCounts = [];
   const requiredAttachmentNames = [];
-  const logicalResultChecks = [];
-  const structuralRequestChecks = [];
-  const structuralResultChecks = [];
+  const logicalResultChecksA0 = [];
+  const logicalResultChecksB0 = [];
+  const structuralRequestChecksA0 = [];
+  const structuralRequestChecksB0 = [];
+  const structuralResultChecksA0 = [];
+  const structuralResultChecksB0 = [];
   const rootsByContract = new Map(
     projectionCatalog.roots.map((rootRecord) => [rootRecord.contract_identity, rootRecord]),
   );
@@ -473,10 +476,16 @@ function generateOperationCatalogSource() {
     const resultType = operation.result_projection
       ? "PackedAttachmentProjectionA0"
       : shortName(resultRoot.name);
-    structuralRequestChecks.push(
+    const requestChecks = operation.identity.endsWith(".b0")
+      ? structuralRequestChecksB0
+      : structuralRequestChecksA0;
+    const resultChecks = operation.identity.endsWith(".b0")
+      ? structuralResultChecksB0
+      : structuralResultChecksA0;
+    requestChecks.push(
       `    if (operation_id == ${JSON.stringify(operation.identity)}) return std::holds_alternative<contracts::${requestType}>(request);`,
     );
-    structuralResultChecks.push(
+    resultChecks.push(
       `    if (operation_id == ${JSON.stringify(operation.identity)}) return std::holds_alternative<contracts::${resultType}>(result);`,
     );
   }
@@ -501,7 +510,10 @@ function generateOperationCatalogSource() {
       const resultRoot = rootsByContract.get(operation.result_contract);
       if (resultRoot === undefined)
         throw new Error(`Logical operation ${operation.identity} has no generated result root.`);
-      logicalResultChecks.push(
+      const checks = operation.identity.endsWith(".b0")
+        ? logicalResultChecksB0
+        : logicalResultChecksA0;
+      checks.push(
         `    if (operation_id == ${JSON.stringify(operation.identity)}) return std::holds_alternative<contracts::${shortName(resultRoot.name)}>(result);`,
       );
     }
@@ -665,7 +677,16 @@ function generateOperationCatalogSource() {
     "bool operation_logical_result_matches(const std::string& operation_id,",
     "                                      const contracts::OperationResultValueA0& result)",
     "{",
-    ...logicalResultChecks,
+    ...logicalResultChecksA0,
+    "    (void)operation_id;",
+    "    (void)result;",
+    "    return false;",
+    "}",
+    "",
+    "bool operation_logical_result_matches(const std::string& operation_id,",
+    "                                      const contracts::OperationResultValueB0& result)",
+    "{",
+    ...logicalResultChecksB0,
     "    (void)operation_id;",
     "    (void)result;",
     "    return false;",
@@ -674,7 +695,16 @@ function generateOperationCatalogSource() {
     "bool operation_request_value_matches(const std::string& operation_id,",
     "                                     const contracts::IpcRequestValueA0& request)",
     "{",
-    ...structuralRequestChecks,
+    ...structuralRequestChecksA0,
+    "    (void)operation_id;",
+    "    (void)request;",
+    "    return false;",
+    "}",
+    "",
+    "bool operation_request_value_matches(const std::string& operation_id,",
+    "                                     const contracts::IpcRequestValueB0& request)",
+    "{",
+    ...structuralRequestChecksB0,
     "    (void)operation_id;",
     "    (void)request;",
     "    return false;",
@@ -683,7 +713,16 @@ function generateOperationCatalogSource() {
     "bool operation_result_value_matches(const std::string& operation_id,",
     "                                    const contracts::OperationResultValueA0& result)",
     "{",
-    ...structuralResultChecks,
+    ...structuralResultChecksA0,
+    "    (void)operation_id;",
+    "    (void)result;",
+    "    return false;",
+    "}",
+    "",
+    "bool operation_result_value_matches(const std::string& operation_id,",
+    "                                    const contracts::OperationResultValueB0& result)",
+    "{",
+    ...structuralResultChecksB0,
     "    (void)operation_id;",
     "    (void)result;",
     "    return false;",

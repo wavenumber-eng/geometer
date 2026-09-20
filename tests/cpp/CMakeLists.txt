@@ -632,6 +632,14 @@ add_test(NAME geometer_model_tessellation_test COMMAND geometer_model_tessellati
 add_executable(geometer_mesh_illustration_test mesh_illustration_test.cpp)
 add_executable(geometer_mesh_illustration_geometry_test mesh_illustration_geometry_test.cpp)
 add_executable(geometer_model_illustration_native_test model_illustration_native_test.cpp)
+add_executable(geometer_illustration_clipping_test illustration_clipping_test.cpp)
+target_include_directories(geometer_illustration_clipping_test PRIVATE
+                           ${PROJECT_SOURCE_DIR}/src/cpp/lib)
+target_link_libraries(geometer_illustration_clipping_test PRIVATE geometer_lib)
+add_test(NAME geometer_illustration_clipping_test COMMAND geometer_illustration_clipping_test)
+add_executable(geometer_illustration_b0_operation_test illustration_b0_operation_test.cpp)
+target_link_libraries(geometer_illustration_b0_operation_test PRIVATE geometer_lib)
+add_test(NAME geometer_illustration_b0_operation_test COMMAND geometer_illustration_b0_operation_test)
 target_include_directories(geometer_model_illustration_native_test PRIVATE
                            ${PROJECT_SOURCE_DIR}/src/cpp/lib)
 target_link_libraries(geometer_model_illustration_native_test PRIVATE geometer_lib)
@@ -668,6 +676,16 @@ configure_geometer_fixture_test(geometer_operation_contract_test
 add_test(NAME geometer_operation_contract_test COMMAND geometer_operation_contract_test)
 
 if(NOT EMSCRIPTEN)
+    add_executable(geometer_native_operation_execution_gate_test
+        native_operation_execution_gate_test.cpp
+    )
+
+    target_link_libraries(geometer_native_operation_execution_gate_test PRIVATE geometer_lib)
+
+    add_test(NAME geometer_native_operation_execution_gate_test
+        COMMAND geometer_native_operation_execution_gate_test)
+    set_tests_properties(geometer_native_operation_execution_gate_test PROPERTIES TIMEOUT 10)
+
     add_executable(geometer_ipc_a0_frame_test
         ipc_a0_frame_test.cpp
     )
@@ -675,6 +693,12 @@ if(NOT EMSCRIPTEN)
     target_link_libraries(geometer_ipc_a0_frame_test PRIVATE geometer_lib)
 
     add_test(NAME geometer_ipc_a0_frame_test COMMAND geometer_ipc_a0_frame_test)
+
+    add_executable(geometer_c_api_stdio_test_server
+        c_api_stdio_test_server.cpp
+    )
+
+    target_link_libraries(geometer_c_api_stdio_test_server PRIVATE geometer_lib)
 
     add_executable(geometer_ipc_a0_deadline_test_server
         ipc_a0_deadline_test_server.cpp
@@ -877,6 +901,8 @@ if(EMSCRIPTEN)
         geometer_mesh_illustration_test
         geometer_mesh_illustration_geometry_test
         geometer_model_illustration_native_test
+        geometer_illustration_clipping_test
+        geometer_illustration_b0_operation_test
         geometer_operation_contract_test
         geometer_projection_options_json_test
         geometer_projection_model_transform_test
@@ -895,6 +921,7 @@ if(WIN32 AND OpenCASCADE_BINARY_DIR)
         geometer_model_bounds_test
         geometer_model_illustration_native_test
         geometer_operation_contract_test
+        geometer_native_operation_execution_gate_test
         geometer_ipc_a0_frame_test
         geometer_projection_options_json_test
         geometer_projection_model_transform_test

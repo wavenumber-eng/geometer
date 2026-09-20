@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d">
+  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
   <title>HLR Projection A0 — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="0b363ecd84f3d75a772129336cafb198d92158316f81bdf2f2a5416b63d8f36d" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/hlr-projection-a0.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="hlr-projection-a0">HLR Projection A0</h1></header>
 <h2 id="boundary">Boundary</h2>
@@ -39,6 +39,88 @@ supported. Native HLR composition is separate from the pure illustration call.</
 and <a href="../../../operations/geometry-mesh-hlr-projection-a0.html">indexed-mesh operation</a>.
 Runtime consumers should also inspect the negotiated operation catalog instead
 of assuming a particular executable or WASM build exposes an operation.</p>
+<h2 id="view-plane-coordinate-frame">View-plane coordinate frame</h2>
+<p>Every projected XY value belongs to the requested view plane. It is not model
+XY or board XY merely because a caller names the view <code>top</code> or <code>bottom</code>. This
+applies uniformly to outline and detail segments, silhouette edges, native
+arcs, layer bounds, and the <code>bbox</code> geometry.</p>
+<p>For a view with <code>direction = D</code> and <code>up = U</code>, Geometer constructs an
+orthonormal basis at the model-coordinate origin:</p>
+<ol>
+<li><code>Z = normalize(D)</code>;</li>
+<li><code>Y = normalize(U - Z * dot(U, Z))</code>; and</li>
+<li><code>X = Y cross Z</code>.</li>
+</ol>
+<p><code>D</code> therefore names the positive view-depth direction, from the model toward
+the observer; it is not a camera ray pointing into the model. A point <code>P</code> has
+view coordinates <code>(dot(P, X), dot(P, Y), dot(P, Z))</code>. Greater view Z is closer
+to the observer and can occlude smaller view Z. Correspondingly, an outward
+face normal with a positive dot product against <code>Z</code> is front-facing. A
+silhouette separates incident faces on opposite sides of that facing test,
+including its defined grazing tolerance.</p>
+<p>The view origin is <code>(0, 0, 0)</code> in the coordinates presented to projection.
+Geometer does not recenter a shape on its bounding box. <code>model_transform</code> is a
+row-major affine 4x4 applied to source points before the view basis, so the
+complete point mapping is:</p>
+<pre><code class="language-text">transformed_point = model_transform * model_point
+view_point = [dot(transformed_point, X),
+              dot(transformed_point, Y),
+              dot(transformed_point, Z)]
+</code></pre>
+<p>Translations in <code>model_transform</code> are consequently retained. Translation
+along X or Y moves the projected result; translation along Z changes depth.</p>
+<p>With <code>up = [0, 1, 0]</code>, the two axial board-style views make the reflection
+explicit:</p>
+<table>
+<thead>
+<tr>
+<th>Direction</th>
+<th>View basis <code>(X, Y, Z)</code></th>
+<th>Emitted XY</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>[0, 0, 1]</code></td>
+<td><code>([1,0,0], [0,1,0], [0,0,1])</code></td>
+<td><code>(x_model, y_model)</code></td>
+</tr>
+<tr>
+<td><code>[0, 0, -1]</code></td>
+<td><code>([-1,0,0], [0,1,0], [0,0,-1])</code></td>
+<td><code>(-x_model, y_model)</code></td>
+</tr>
+</tbody>
+</table>
+<p>Here <code>x_model</code> and <code>y_model</code> mean coordinates after <code>model_transform</code>. The
+negative-Z result is already expressed in a reflected view frame.</p>
+<h3 id="reconstructing-model-and-board-coordinates">Reconstructing model and board coordinates</h3>
+<p>A consumer that places footprint-local projection geometry on a board must
+first convert view-plane coordinates back to model-local coordinates and only
+then apply the occurrence placement:</p>
+<pre><code class="language-text">board_point = occurrence_transform * view_to_model * view_point
+</code></pre>
+<p>For the axial views above, the top 2D <code>view_to_model</code> is identity and the
+bottom 2D <code>view_to_model</code> is <code>diag(-1, 1)</code>. The bottom conversion is not the
+physical bottom-side occurrence transform. Omitting it leaves view XY mirrored;
+applying it after occurrence placement or adding a renderer-specific
+counter-mirror mixes distinct coordinate frames.</p>
+<p>For example, consider the asymmetric model-local triangle
+<code>A=(-2,0)</code>, <code>B=(1,0)</code>, <code>C=(1,1)</code>. The top view emits the same coordinates. The
+bottom view emits <code>A=(2,0)</code>, <code>B=(-1,0)</code>, <code>C=(-1,1)</code>. Applying the bottom
+<code>view_to_model = diag(-1,1)</code> reconstructs the original model-local triangle,
+after which <code>occurrence_transform</code> gives its one correct board placement.</p>
+<p><code>ProjectedArc.start</code>, <code>end</code>, <code>center</code>, and <code>ccw</code> likewise describe the emitted
+view plane. Carrying <code>view_to_model</code> and <code>occurrence_transform</code> as affine
+transforms preserves the arc without rewriting it. A consumer that instead
+bakes a reflection into arc coordinates must also reverse its clockwise/
+counterclockwise interpretation when the applied 2D linear transform has a
+negative determinant.</p>
+<p>View selection and coordinate reconstruction are separate decisions. A caller
+chooses <code>direction</code> according to the geometry frame it submits and the faces it
+wants visible. A <code>top</code>, <code>bottom</code>, or layer label does not establish whether the
+model is footprint-local or already board-placed, and Geometer does not infer
+an occurrence transform from that label.</p>
 <h2 id="algorithm-selection">Algorithm selection</h2>
 <table>
 <thead>
@@ -152,7 +234,7 @@ const fromStep = await client.modelHlrProjection({
     fast: { crease_angle_rad: (25 * Math.PI) / 180 },
   },
 });
-const fromMesh = await client.meshHlrProjection({
+const fromMesh = await client.meshHlrProjectionA0({
   mesh: {
     positions: [0, 0, 0, 10, 0, 0, 0, 10, 0],
     indices: [0, 1, 2],
@@ -161,7 +243,8 @@ const fromMesh = await client.meshHlrProjection({
 });
 </code></pre>
 <p>The dedicated Worker and persistent TypeScript IPC clients use the same
-<code>modelHlrProjection</code> and <code>meshHlrProjection</code> method names.</p>
+<code>modelHlrProjection</code> and explicit <code>meshHlrProjectionA0</code> compatibility method
+names. Unqualified <code>meshHlrProjection</code> is the canonical B0 operation.</p>
 <h3 id="python-executable-ipc">Python executable IPC</h3>
 <pre><code class="language-python">from pathlib import Path
 
@@ -179,7 +262,7 @@ mesh = geometer.IndexedTriangleMeshA0(
 )
 with geometer.GeometerClient() as client:
     step_result = client.model_hlr_projection(Path(&quot;part.step&quot;).read_bytes(), options)
-    mesh_result = client.mesh_hlr_projection(mesh)
+    mesh_result = client.mesh_hlr_projection_a0(mesh)
 </code></pre>
 <h3 id="rust-executable-ipc">Rust executable IPC</h3>
 <pre><code class="language-rust">use geometer_client::{contracts, GeometerClient, ModelHlrProjectionRequest};
@@ -569,12 +652,13 @@ model are post-A0 work. The evaluated browser raster-HLR prototype is not part
 of the production A0 package.</p>
 <h2 id="typescript-convenience-composition">TypeScript convenience composition</h2>
 <p><code>@wavenumber/geometer/illustrated-hlr</code> composes the indexed-mesh operation with
-the production illustration renderer. <code>illustrateMeshWithFastHlr</code> is the
-one-shot SVG path; <code>createFastHlrIllustrator</code> returns both the governed HLR
-result and a reusable, disposable illustrator. Input positions and transforms
-are millimeters in this composition. The facade does not merge the contracts:
-callers can still inspect or store HLR linework independently of colorized
-output.</p>
+the production A0 illustration renderer. <code>illustrateMeshWithFastHlrA0</code> is the
+one-shot SVG path; <code>createFastHlrIllustratorA0</code> returns both the governed HLR
+result and a reusable, disposable illustrator. Its explicit A0 suffix prevents
+new callers from confusing this compatibility composition with correlated B0
+mesh HLR and clipping. Input positions and transforms are millimeters in this
+composition. The facade does not merge the contracts: callers can still inspect
+or store HLR linework independently of colorized output.</p>
 
 </main>
 </body>

@@ -2,6 +2,7 @@
 
 mod app;
 mod camera;
+mod clipping;
 mod gpu;
 mod hlr;
 mod jobs;

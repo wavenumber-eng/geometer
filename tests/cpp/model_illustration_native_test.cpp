@@ -1,4 +1,5 @@
 #include "analytic_illustration_lowering.h"
+#include "geometer/model_illustration.h"
 #include "model_illustration_transform.h"
 
 #include <cmath>
@@ -135,6 +136,54 @@ void affine_conditioning_is_scale_invariant()
     require(!model_illustration_detail::validate_affine_matrix(correlated, &matrix, &error),
             "correlated near-singular columns should fail without forming normal equations");
 }
+
+void a0_and_unclipped_b0_preserve_legacy_model_rendering()
+{
+    AnalyticExtrusionA0 extrusion;
+    extrusion.id = "body";
+    extrusion.z_min_mm = -1;
+    extrusion.z_max_mm = 2;
+    extrusion.material = material();
+    extrusion.regions = {{rectangle(-2, -1, 3, 2), std::nullopt}};
+    auto source = source_with(extrusion);
+    source.scene.occurrences.front().transform =
+        IllustrationMatrix4x4{-1, 0, 0, 0, 0.2, 1, 0, 0, 0, 0, 1, 0, 4, -3, 1, 1};
+
+    ModelIllustrationRequestA0 a0_request;
+    a0_request.source = source;
+    a0_request.view.direction = {0.4, 0.7, 1};
+    a0_request.view.up = {0, 1, 0};
+    ModelIllustrationResultA0 a0;
+    Status status;
+    require(illustrate_model(a0_request, nullptr, &a0, &status) == 0,
+            "legacy A0 analytic illustration should succeed");
+
+    ModelIllustrationRequestB0 b0_request;
+    b0_request.source = std::move(source);
+    b0_request.view = a0_request.view;
+    ModelIllustrationResultB0 b0;
+    require(illustrate_model(b0_request, nullptr, &b0, &status) == 0 && !b0.empty && b0.bounds_mm,
+            "unclipped B0 analytic illustration should succeed");
+    std::string normalized = b0.svg;
+    const std::string b0_metadata = "<metadata>geometry.model_illustration.result.b0</metadata>";
+    const auto offset = normalized.find(b0_metadata);
+    require(offset != std::string::npos, "B0 model SVG should identify its result generation");
+    normalized.replace(offset, b0_metadata.size(),
+                       "<metadata>geometry.mesh_illustration.result.a0</metadata>");
+    if (normalized != a0.svg)
+    {
+        std::size_t first = 0;
+        while (first < normalized.size() && first < a0.svg.size() &&
+               normalized[first] == a0.svg[first])
+            ++first;
+        throw std::runtime_error("A0/B0 model SVG differs at byte " + std::to_string(first) +
+                                 " (lengths " + std::to_string(a0.svg.size()) + "/" +
+                                 std::to_string(normalized.size()) + ")");
+    }
+    for (std::size_t index = 0; index < a0.bounds_mm.size(); ++index)
+        require(std::abs((*b0.bounds_mm)[index] - a0.bounds_mm[index]) < 1e-9,
+                "B0 canonical bounds must describe the same unclipped legacy geometry");
+}
 } // namespace
 
 int main()
@@ -144,6 +193,7 @@ int main()
         sphere_has_outward_winding_and_exact_limit();
         invalid_profile_topology_is_rejected();
         affine_conditioning_is_scale_invariant();
+        a0_and_unclipped_b0_preserve_legacy_model_rendering();
         std::cout << "model illustration native tests passed\n";
         return 0;
     }

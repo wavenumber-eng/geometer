@@ -5,7 +5,7 @@ use std::time::Duration;
 use geometer_client::contracts;
 use geometer_client::ipc::{self, Frame, FrameKind};
 use geometer_client::{
-    GeometerClient, GeometerClientError, IndexedTriangleMeshA0, MeshHlrProjectionRequest,
+    GeometerClient, GeometerClientError, IndexedTriangleMeshA0, MeshHlrProjectionRequestA0,
     ModelBoundsRequest, NORMALIZED_CATALOG_SHA256,
 };
 use serde::Deserialize;
@@ -147,7 +147,7 @@ async fn persistent_client_runs_typed_mesh_hlr_projection() {
         .unwrap();
     let options =
         contracts::decode_hlr_projection_options_a0_json(br#"{"output_detail":true}"#).unwrap();
-    let request = MeshHlrProjectionRequest::from_mesh(
+    let request = MeshHlrProjectionRequestA0::from_mesh(
         &IndexedTriangleMeshA0 {
             positions: vec![[0.0, 0.0, 0.0], [10.0, 0.0, 0.0], [0.0, 10.0, 0.0]],
             triangles: vec![[0, 1, 2]],
@@ -157,7 +157,7 @@ async fn persistent_client_runs_typed_mesh_hlr_projection() {
     )
     .unwrap();
 
-    let result = client.mesh_hlr_projection(request).await.unwrap();
+    let result = client.mesh_hlr_projection_a0(request).await.unwrap();
 
     assert_eq!(result.schema, "geometry.hlr_projection.result.a0");
     assert!(matches!(
@@ -187,7 +187,9 @@ async fn persistent_client_dispatches_generated_topology_contracts() {
         )
         .await
         .unwrap();
-    let contracts::OperationOutcomeA0::Success(success) = opened.outcome else {
+    let geometer_client::OperationOutcome::A0(contracts::OperationOutcomeA0::Success(success)) =
+        opened.outcome
+    else {
         panic!("topology open failed");
     };
     let contracts::OperationResultValueA0::StepTopologyOpen(open) = success.result else {
@@ -202,7 +204,9 @@ async fn persistent_client_dispatches_generated_topology_contracts() {
         .execute("geometry.step_topology.close.a0", &request, Vec::new())
         .await
         .unwrap();
-    let contracts::OperationOutcomeA0::Success(success) = closed.outcome else {
+    let geometer_client::OperationOutcome::A0(contracts::OperationOutcomeA0::Success(success)) =
+        closed.outcome
+    else {
         panic!("topology close failed");
     };
     assert!(matches!(
@@ -301,7 +305,9 @@ async fn governed_operation_vectors_match_executable_ipc() {
             .unwrap();
         assert!(response.attachments.is_empty(), "{}", vector.id);
         match response.outcome {
-            contracts::OperationOutcomeA0::Success(success) => {
+            geometer_client::OperationOutcome::A0(contracts::OperationOutcomeA0::Success(
+                success,
+            )) => {
                 assert_eq!(vector.expected, "success", "{}", vector.id);
                 assert_eq!(
                     vector.excluded_fields,
@@ -320,14 +326,9 @@ async fn governed_operation_vectors_match_executable_ipc() {
                 assert_eq!(computed.comparison, "exact", "{}", vector.id);
                 assert_eq!(result.source.hash, source_hash.unwrap(), "{}", vector.id);
                 let mut actual = serde_json::to_value(result).unwrap();
-                let mut expected: Value = serde_json::from_slice(
-                    &tokio::fs::read(
-                        vector_root.join(vector.expected_result_file.as_ref().unwrap()),
-                    )
-                    .await
-                    .unwrap(),
-                )
-                .unwrap();
+                let expected_path = vector_root.join(vector.expected_result_file.as_ref().unwrap());
+                let expected_bytes = tokio::fs::read(expected_path).await.unwrap();
+                let mut expected: Value = serde_json::from_slice(&expected_bytes).unwrap();
                 assert_eq!(
                     expected.pointer("/source/hash").unwrap(),
                     "computed:fnv1a64:model",
@@ -340,7 +341,9 @@ async fn governed_operation_vectors_match_executable_ipc() {
                 expected.as_object_mut().unwrap().remove("timings");
                 assert_json_close(&actual, &expected, vector.tolerance.as_ref().unwrap(), "");
             }
-            contracts::OperationOutcomeA0::Failure(failure) => {
+            geometer_client::OperationOutcome::A0(contracts::OperationOutcomeA0::Failure(
+                failure,
+            )) => {
                 assert_eq!(vector.expected, "failure", "{}", vector.id);
                 assert_eq!(failure.diagnostics.len(), 1, "{}", vector.id);
                 let actual = &failure.diagnostics[0];
@@ -354,6 +357,7 @@ async fn governed_operation_vectors_match_executable_ipc() {
                     vector.id
                 );
             }
+            geometer_client::OperationOutcome::B0(_) => panic!("unexpected B0 response"),
         }
     }
     client.close().await.unwrap();
@@ -950,12 +954,12 @@ async fn typed_step_illustration_uses_generated_values_and_recovers_from_limits(
         style: None,
         svg: None,
     };
-    let result = client.mesh_illustration(input.clone()).await.unwrap();
+    let result = client.mesh_illustration_a0(input.clone()).await.unwrap();
     assert!(result.stats.triangles > 0 && result.stats.surface_draws > 0);
     assert!(result.svg.contains("<svg") && result.svg.contains("</svg>"));
     assert_eq!(
         result,
-        client.mesh_illustration(input.clone()).await.unwrap()
+        client.mesh_illustration_a0(input.clone()).await.unwrap()
     );
     // Node is a conformance-test tool only, never a native runtime dependency.
     let mut reference = std::process::Command::new("node")
@@ -982,9 +986,9 @@ async fn typed_step_illustration_uses_generated_values_and_recovers_from_limits(
         weld_tolerance: None,
     });
     assert!(matches!(
-        client.mesh_illustration(limited).await,
+        client.mesh_illustration_a0(limited).await,
         Err(GeometerClientError::Operation { .. })
     ));
-    assert_eq!(result, client.mesh_illustration(input).await.unwrap());
+    assert_eq!(result, client.mesh_illustration_a0(input).await.unwrap());
     client.close().await.unwrap();
 }

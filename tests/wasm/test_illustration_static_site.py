@@ -136,6 +136,75 @@ async function main() {
     throw new Error("Timed out waiting for the initial illustration.");
   })()`, true);
 
+  const clipping = await evaluate(`(async () => {
+    const pane = document.querySelector("#illustrationOutputPane");
+    const mode = document.querySelector("#illustrationClipMode");
+    const side = document.querySelector("#illustrationClipSide");
+    const position = document.querySelector("#illustrationClipPosition");
+    const positionValue = document.querySelector("#illustrationClipPositionValue");
+    const baseline = document.querySelector("#illustrationSvgHost svg").outerHTML;
+    const before = Number(pane.dataset.prepareGeneration);
+    mode.value = "z";
+    mode.dispatchEvent(new Event("change", { bubbles: true }));
+    const clippedDeadline = Date.now() + 120000;
+    while (Date.now() < clippedDeadline) {
+      if (
+        pane.dataset.clipping === "z" &&
+        Number(pane.dataset.prepareGeneration) > before &&
+        document.querySelector("#illustrationBusy").hidden
+      )
+        break;
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+    if (pane.dataset.clipping !== "z") throw new Error("B0 clipping did not activate.");
+    const clippedGeneration = Number(pane.dataset.prepareGeneration);
+    const clippedSvg = document.querySelector("#illustrationSvgHost svg").outerHTML;
+    const clipped = {
+      mode: pane.dataset.clipping,
+      side: pane.dataset.clipSide,
+      distanceMm: Number(pane.dataset.clipDistanceMm),
+      positionLabel: positionValue.value,
+      changed: clippedSvg !== baseline,
+      sideEnabled: !side.disabled,
+      positionEnabled: !position.disabled,
+      triangles: Number(pane.dataset.visibleTriangles),
+    };
+    side.value = "negative";
+    side.dispatchEvent(new Event("change", { bubbles: true }));
+    const sideDeadline = Date.now() + 120000;
+    while (Date.now() < sideDeadline) {
+      if (
+        pane.dataset.clipSide === "negative" &&
+        Number(pane.dataset.prepareGeneration) > clippedGeneration &&
+        document.querySelector("#illustrationBusy").hidden
+      )
+        break;
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+    const negativeChanged =
+      document.querySelector("#illustrationSvgHost svg").outerHTML !== clippedSvg;
+    const negativeGeneration = Number(pane.dataset.prepareGeneration);
+    mode.value = "off";
+    mode.dispatchEvent(new Event("change", { bubbles: true }));
+    const restoreDeadline = Date.now() + 120000;
+    while (Date.now() < restoreDeadline) {
+      if (
+        pane.dataset.clipping === "off" &&
+        Number(pane.dataset.prepareGeneration) > negativeGeneration &&
+        document.querySelector("#illustrationBusy").hidden
+      )
+        break;
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+    return {
+      ...clipped,
+      negativeChanged,
+      restored: document.querySelector("#illustrationSvgHost svg").outerHTML === baseline,
+      controlsDisabled: side.disabled && position.disabled,
+      generation: Number(pane.dataset.prepareGeneration),
+    };
+  })()`, true);
+
   const ambientOcclusion = await evaluate(`(async () => {
     const pane = document.querySelector("#illustrationOutputPane");
     const toggle = document.querySelector("#illustrationAmbientOcclusion");
@@ -343,7 +412,7 @@ async function main() {
     const busy = document.querySelector("#illustrationBusy");
     const checkbox = document.querySelector("#illustrationHlrDetail");
     const before = Number(pane.dataset.prepareGeneration);
-    const native = pane.dataset.engine === "model-illustration-a0";
+    const native = pane.dataset.engine === "model-illustration-b0";
     checkbox.checked = false;
     checkbox.dispatchEvent(new Event("change", { bubbles: true }));
     const offDeadline = Date.now() + 120000;
@@ -814,7 +883,7 @@ async function main() {
 
   const resources = await evaluate(`performance.getEntriesByType("resource").map((entry) => entry.name)`);
   process.stdout.write(JSON.stringify({
-    initial, ambientOcclusion, restyle, fusion, detailToggle, lazyLinework, meshQuality, top, detailBeforeCamera,
+    initial, clipping, ambientOcclusion, restyle, fusion, detailToggle, lazyLinework, meshQuality, top, detailBeforeCamera,
     camera, detailAfterCamera, cameraRemesh, bga, ambientOcclusionMatrix, uploaded,
     filename: download.suggestedFilename,
     exceptions,
@@ -976,10 +1045,21 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
         surface_bounds["minY"] + surface_bounds["maxY"], abs=surface_height * 0.03
     )
     assert result["initial"]["output"] == "svg"
-    assert result["initial"]["engine"] == "model-illustration-a0"
+    assert result["initial"]["engine"] == "model-illustration-b0"
     assert "MODEL ILLUSTRATION / C++ WASM CPU / SVG" in result["initial"]["engineLabel"]
     assert "FAST MESH-SHADOW + FAST DETAIL" in result["initial"]["engineLabel"]
     assert result["initial"]["shading"] == "toon"
+    assert result["clipping"]["mode"] == "z"
+    assert result["clipping"]["side"] == "positive"
+    assert result["clipping"]["changed"] is True
+    assert result["clipping"]["negativeChanged"] is True
+    assert result["clipping"]["restored"] is True
+    assert result["clipping"]["sideEnabled"] is True
+    assert result["clipping"]["positionEnabled"] is True
+    assert result["clipping"]["controlsDisabled"] is True
+    assert result["clipping"]["positionLabel"].endswith(" mm")
+    assert result["clipping"]["triangles"] > 0
+    assert result["clipping"]["generation"] > result["initial"]["generation"]
     assert result["ambientOcclusion"]["first"]["changed"] is True
     assert result["ambientOcclusion"]["first"]["cached"] == "false"
     assert result["ambientOcclusion"]["first"]["buildMs"] >= 0
@@ -1000,7 +1080,7 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
         "shading": "banded",
         "bands": 32,
         "output": "canvas",
-        "engine": "model-illustration-a0",
+        "engine": "model-illustration-b0",
         "engineLabel": result["restyle"]["engineLabel"],
         "canvasVisible": True,
         "canvasOutlines": result["restyle"]["canvasOutlines"],
@@ -1109,6 +1189,6 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
     assert result["exceptions"] == []
     assert result["externalRequests"] == []
     assert exported_svg.startswith('<?xml version="1.0" encoding="UTF-8"?>')
-    assert "geometry.mesh_illustration.geometry.a0" in exported_svg
+    assert "geometry.mesh_illustration.geometry.b0" in exported_svg
     assert 'class="gms' in exported_svg
     assert 'class="gml' in exported_svg

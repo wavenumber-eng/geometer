@@ -14,3 +14,4 @@ wire formats.
 - [REQ-008 Generated Cross-Language Contracts](geometer-req-008-generated_cross_language_contracts.md)
 - [REQ-009 Browser Demo Distribution](geometer-req-009-browser_demo_distribution.md)
 - [REQ-010 Fast HLR And Illustration Interfaces](geometer-req-010-fast_hlr_and_illustration.md)
+- [REQ-011 Supported Static SDK And Unified Runtime](geometer-req-011-supported_static_sdk_and_unified_runtime.md)

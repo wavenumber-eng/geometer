@@ -1,0 +1,188 @@
+{
+  "dependency": {
+    "name": "occt",
+    "source": {
+      "archive": {
+        "license_files": [
+          "LICENSE_LGPL_21.txt",
+          "OCCT_LGPL_EXCEPTION.txt"
+        ],
+        "object_key": "dependencies/occt/source/b8f597c677811d1f9f4d8a97f5ae2825c0353a42/dba62b81078dd43cec23feba89432be301582341001edad1b93342ad8bda35ea/occt-source.tar.gz",
+        "sha256": "dba62b81078dd43cec23feba89432be301582341001edad1b93342ad8bda35ea",
+        "size": 45131814
+      },
+      "commit": "b8f597c677811d1f9f4d8a97f5ae2825c0353a42",
+      "repository": "https://github.com/Open-Cascade-SAS/OCCT.git",
+      "tag": "V8_0_1",
+      "tag_object": "c5605924864829ce8c1e1477f976ffb3880538a8"
+    },
+    "version": "8.0.1"
+  },
+  "profiles": [
+    {
+      "abi": {
+        "architecture": "arm64",
+        "compiler": "gcc-11",
+        "cpp_runtime": "libstdc++",
+        "library_type": "static",
+        "operating_system": "linux"
+      },
+      "archive": {
+        "object_key": "dependencies/occt/linux-arm64-gcc11-static/b0365beeb38e24902f0986437c0544935309fce52e25af7808386e83a1215086/occt-install.zip",
+        "profile_sha256": "c4d0835ba6e60b6c292bda3ba96be96be0c5f187926ddd6f68d776e7264ce4b5",
+        "sha256": "b0365beeb38e24902f0986437c0544935309fce52e25af7808386e83a1215086",
+        "size": 66156117
+      },
+      "id": "linux-arm64-gcc11-static",
+      "qualification": {
+        "release_tag": "v2026-09-19",
+        "source_revision": "6d659f1811123fdbe665b3cfe1fc00cfaec32084",
+        "workflow": ".github/workflows/release.yml",
+        "workflow_run_id": "35482169778"
+      },
+      "selector": {
+        "kind": "native",
+        "msvc_runtime": "none",
+        "platform": "linux-arm64"
+      }
+    },
+    {
+      "abi": {
+        "architecture": "x64",
+        "compiler": "gcc-11",
+        "cpp_runtime": "libstdc++",
+        "library_type": "static",
+        "operating_system": "linux"
+      },
+      "archive": {
+        "object_key": "dependencies/occt/linux-x64-gcc11-static/944288a4095d15badbd6f2589c23a46e925efb35d9358f1f3d69bca6b50d4fd8/occt-install.zip",
+        "profile_sha256": "6cc4ee799fe58a1eb12a7799786df5f4712bc2f5e4c190361ed725ba94c57866",
+        "sha256": "944288a4095d15badbd6f2589c23a46e925efb35d9358f1f3d69bca6b50d4fd8",
+        "size": 63696694
+      },
+      "id": "linux-x64-gcc11-static",
+      "qualification": {
+        "release_tag": "v2026-09-19",
+        "source_revision": "6d659f1811123fdbe665b3cfe1fc00cfaec32084",
+        "workflow": ".github/workflows/release.yml",
+        "workflow_run_id": "35482169778"
+      },
+      "selector": {
+        "kind": "native",
+        "msvc_runtime": "none",
+        "platform": "linux-x64"
+      }
+    },
+    {
+      "abi": {
+        "architecture": "arm64",
+        "compiler": "apple-clang-17",
+        "cpp_runtime": "libc++",
+        "deployment_target": "11.0",
+        "library_type": "static",
+        "operating_system": "macos"
+      },
+      "archive": {
+        "object_key": "dependencies/occt/macos-arm64-appleclang17-static/0eca21e61fa621725b3d735dfdf619b9d11d8045ba0df6821a5ee108d81da5f8/occt-install.zip",
+        "profile_sha256": "fd0720e021020e7a43ba2f239450ab535e64c5dd702094965519e608d2fffeff",
+        "sha256": "0eca21e61fa621725b3d735dfdf619b9d11d8045ba0df6821a5ee108d81da5f8",
+        "size": 50468138
+      },
+      "id": "macos-arm64-appleclang17-static",
+      "qualification": {
+        "release_tag": "v2026-09-19",
+        "source_revision": "6d659f1811123fdbe665b3cfe1fc00cfaec32084",
+        "workflow": ".github/workflows/release.yml",
+        "workflow_run_id": "35482169778"
+      },
+      "selector": {
+        "kind": "native",
+        "msvc_runtime": "none",
+        "platform": "macos-arm64"
+      }
+    },
+    {
+      "abi": {
+        "architecture": "wasm32",
+        "compiler": "emscripten-3.1.56",
+        "library_type": "static",
+        "operating_system": "wasm"
+      },
+      "archive": {
+        "object_key": "dependencies/occt/wasm-emscripten-3.1.56-static/cf05f4fffd1f52be7e6b2f2aa8433baf3ec32dcbbf1812a37cd6fced66bd78ec/occt-install.zip",
+        "profile_sha256": "7a57546838837b696dfd3f10d52961917c87c42cb228c1ff840e4463d1be59e6",
+        "sha256": "cf05f4fffd1f52be7e6b2f2aa8433baf3ec32dcbbf1812a37cd6fced66bd78ec",
+        "size": 57317535
+      },
+      "id": "wasm-emscripten-3.1.56-static",
+      "qualification": {
+        "release_tag": "v2026-09-19",
+        "source_revision": "6d659f1811123fdbe665b3cfe1fc00cfaec32084",
+        "workflow": ".github/workflows/release.yml",
+        "workflow_run_id": "35482169778"
+      },
+      "selector": {
+        "kind": "wasm",
+        "msvc_runtime": "none",
+        "platform": "wasm-emscripten"
+      }
+    },
+    {
+      "abi": {
+        "architecture": "x64",
+        "compiler": "msvc-v143",
+        "cpp_runtime": "msvc",
+        "library_type": "static",
+        "operating_system": "windows",
+        "runtime": "dynamic"
+      },
+      "archive": {
+        "object_key": "dependencies/occt/windows-x64-msvc-v143-md-static/940d35de8c47d38fe2ce9f7e2b263d7aa58c8fa7deae3ac79ed27850bee968be/occt-install.zip",
+        "profile_sha256": "ea7f8ee34be29ac8d46f00e6a2d8a989a6c47fd8df6fcfa44c93a2488518f525",
+        "sha256": "940d35de8c47d38fe2ce9f7e2b263d7aa58c8fa7deae3ac79ed27850bee968be",
+        "size": 188372259
+      },
+      "id": "windows-x64-msvc-v143-md-static",
+      "qualification": {
+        "release_tag": "v2026-09-19",
+        "source_revision": "6d659f1811123fdbe665b3cfe1fc00cfaec32084",
+        "workflow": ".github/workflows/release.yml",
+        "workflow_run_id": "35482169778"
+      },
+      "selector": {
+        "kind": "native",
+        "msvc_runtime": "dynamic",
+        "platform": "windows-x64"
+      }
+    },
+    {
+      "abi": {
+        "architecture": "x64",
+        "compiler": "msvc-v143",
+        "cpp_runtime": "msvc",
+        "library_type": "static",
+        "operating_system": "windows",
+        "runtime": "static"
+      },
+      "archive": {
+        "object_key": "dependencies/occt/windows-x64-msvc-v143-mt-static/6ffd26db0f67d874a47d4aeb2df421ca36b576eeda77e3e4c33e5a343ad7c9ad/occt-install.zip",
+        "profile_sha256": "bf5bcf985677f08e60e53b5118c2ac0e45eb1947ab4f94cb70d8fb7e0f1ca4ae",
+        "sha256": "6ffd26db0f67d874a47d4aeb2df421ca36b576eeda77e3e4c33e5a343ad7c9ad",
+        "size": 220161765
+      },
+      "id": "windows-x64-msvc-v143-mt-static",
+      "qualification": {
+        "release_tag": "v2026-09-19",
+        "source_revision": "6d659f1811123fdbe665b3cfe1fc00cfaec32084",
+        "workflow": ".github/workflows/release.yml",
+        "workflow_run_id": "35482169778"
+      },
+      "selector": {
+        "kind": "native",
+        "msvc_runtime": "static",
+        "platform": "windows-x64"
+      }
+    }
+  ],
+  "schema": "wn.geometer.occt_lock.a0"
+}

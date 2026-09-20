@@ -148,24 +148,28 @@ executable discovery, and all other CLI-backed operations remain unchanged.
 The persistent client exposes governed HLR without temporary files:
 
 ```python
+from pathlib import Path
+
 import geometer
 
-options = geometer.HlrProjectionOptionsA0(
-    projection_algorithm=geometer.HlrProjectionAlgorithm.FAST,
-    outline_algorithm=geometer.HlrOutlineAlgorithm.FAST_MESH_SHADOW,
-    fast=geometer.FastHlrOptionsA0(crease_angle_rad=0.4363323129985824),
-    output_detail=True,
-)
 with geometer.GeometerClient() as client:
-    step_result = client.model_hlr_projection(Path("part.step").read_bytes(), options)
+    tessellated = client.model_tessellation(Path("part.step").read_bytes())
+    collection = geometer.MeshCollectionA0(
+        schema="geometry.mesh_collection.a0",
+        length_unit="millimeter",
+        meshes=tessellated.mesh_collection.meshes,
+    )
     mesh_result = client.mesh_hlr_projection(
-        geometer.IndexedTriangleMeshA0(
-            positions=(0.0, 0.0, 0.0, 10.0, 0.0, 0.0, 0.0, 10.0, 0.0),
-            indices=(0, 1, 2),
-            source_faces=(1,),
-        )
+        collection,
+        geometer.MeshHlrProjectionRequestB0(
+            schema="geometry.mesh_hlr_projection.request.b0",
+            output_detail=True,
+        ),
     )
 ```
+
+The indexed-mesh compatibility signature remains available only as
+`client.mesh_hlr_projection_a0(mesh, options)`.
 
 The analytic planar Boolean candidate is integrated through the same
 executable-backed lane:

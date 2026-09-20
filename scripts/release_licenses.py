@@ -8,7 +8,15 @@ from pathlib import Path
 def _occt_license_source(root: Path, name: str, platform: str | None) -> Path:
     candidates = [root / ".deps" / "occt-src" / name]
     if platform:
-        candidates.append(root / ".deps" / "native" / platform / "occt-install" / name)
+        native = root / ".deps" / "native" / platform
+        for install_name in ("occt-install", "occt-static-crt-install"):
+            install = native / install_name
+            candidates.extend(
+                (
+                    install / name,
+                    install / "share" / "doc" / "opencascade" / name,
+                )
+            )
     candidates.append(root / ".deps" / "occt-wasm-install" / "share" / "doc" / "opencascade" / name)
     return next((path for path in candidates if path.is_file()), candidates[0])
 

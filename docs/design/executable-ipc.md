@@ -53,11 +53,14 @@ mesh = geometer.IndexedTriangleMeshA0(
     source_faces=(1,),
 )
 with geometer.GeometerClient() as client:
-    result = client.mesh_hlr_projection(mesh, timeout=30)
+    result = client.mesh_hlr_projection_a0(mesh, timeout=30)
     print(result.schema)
 ```
 
-For STEP HLR, call `client.model_hlr_projection(step_bytes, options)`.
+This snippet intentionally demonstrates the explicit A0 indexed-mesh
+compatibility operation. Canonical composed-mesh callers use
+`mesh_hlr_projection(collection, MeshHlrProjectionRequestB0(...))`. For STEP
+HLR, call `client.model_hlr_projection(step_bytes, options)`.
 Feature builds additionally expose typed `model_tessellation` in Rust and Python
 for [colored model meshes](model-tessellation-a0.md); use its matching catalog
 and executable, not the older released binary.

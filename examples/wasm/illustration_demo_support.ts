@@ -49,6 +49,17 @@ declare global {
 export type ViewId = "top" | "front" | "right" | "iso" | "camera";
 export type OutputId = "svg" | "canvas";
 export type MeshQualityId = "draft" | "balanced" | "fine" | "extra-fine" | "custom";
+export type ClipMode = "off" | "x" | "y" | "z" | "view";
+export type ClipSide = "positive" | "negative";
+
+export interface IllustrationClipping {
+  planes: Array<{
+    normal: [number, number, number];
+    distance_mm: number;
+    tolerance_mm?: number;
+  }>;
+  cap_policy: "none";
+}
 
 export interface MeshSettings {
   linearDeflectionMm: number;
@@ -66,7 +77,9 @@ export interface CameraViewState {
   halfHeight: number;
 }
 
-export const MESH_QUALITY_PRESETS: Readonly<Record<Exclude<MeshQualityId, "custom">, MeshSettings>> = {
+export const MESH_QUALITY_PRESETS: Readonly<
+  Record<Exclude<MeshQualityId, "custom">, MeshSettings>
+> = {
   draft: {
     linearDeflectionMm: 0.25,
     angularDeflectionDegrees: 40,

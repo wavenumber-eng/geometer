@@ -1,0 +1,310 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.mesh_hlr_projection.request:b0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.mesh_hlr_projection.request.b0"
+    },
+    "views": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/HlrViewSpec"
+      },
+      "maxItems": 64
+    },
+    "output_outline": {
+      "type": "boolean",
+      "default": true
+    },
+    "output_detail": {
+      "type": "boolean",
+      "default": true
+    },
+    "output_bbox": {
+      "type": "boolean",
+      "default": true
+    },
+    "model_transform": {
+      "$ref": "#/$defs/HlrMatrix4x4"
+    },
+    "round_digits": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9,
+      "default": 3
+    },
+    "fast": {
+      "$ref": "#/$defs/FastHlrOptionsA0"
+    },
+    "clipping": {
+      "$ref": "#/$defs/IllustrationClipping"
+    }
+  },
+  "required": [
+    "schema"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Fast-only HLR request over the governed colored mesh collection.",
+  "$defs": {
+    "HlrViewSpec": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "direction": {
+          "$ref": "#/$defs/HlrVector3",
+          "description": "Positive view-depth direction from the model toward the observer."
+        },
+        "up": {
+          "$ref": "#/$defs/HlrVector3",
+          "description": "Preferred positive view Y; its component along direction is removed."
+        }
+      },
+      "required": [
+        "id",
+        "direction",
+        "up"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "An orthographic view whose output coordinates lie in its own view plane.\nGeometer sets Z = normalize(direction), removes the Z component from up and\nnormalizes the remainder as Y, then sets X = Y cross Z. Direction points\nalong positive view depth, from the model toward the observer: greater\ndot(point, Z) is closer and an outward normal with positive dot(normal, Z)\nis front-facing. The basis origin is model-coordinate [0,0,0]; projection\ndoes not recenter on source bounds."
+    },
+    "HlrMatrix4x4": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 16,
+      "maxItems": 16
+    },
+    "FastHlrOptionsA0": {
+      "type": "object",
+      "properties": {
+        "include_boundaries": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_creases": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_silhouettes": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_hidden": {
+          "type": "boolean",
+          "default": false
+        },
+        "suppress_coplanar_seams": {
+          "type": "boolean",
+          "default": false
+        },
+        "crease_angle_rad": {
+          "type": "number",
+          "default": 0.5235987755982988,
+          "minimum": 0,
+          "maximum": 3.141592653589793
+        },
+        "weld_tolerance": {
+          "type": "number",
+          "default": 1e-7,
+          "exclusiveMinimum": 0
+        },
+        "projected_tolerance": {
+          "type": "number",
+          "default": 1e-8,
+          "exclusiveMinimum": 0
+        },
+        "depth_tolerance": {
+          "type": "number",
+          "default": 1e-7,
+          "minimum": 0
+        },
+        "coplanar_seam_angle_rad": {
+          "type": "number",
+          "default": 0.017453292519943295,
+          "minimum": 0,
+          "maximum": 1.5707963267948966
+        },
+        "coplanar_seam_depth_tolerance": {
+          "type": "number",
+          "default": 0.000001,
+          "minimum": 0
+        },
+        "coplanar_seam_lateral_tolerance": {
+          "type": "number",
+          "default": 0.000001,
+          "minimum": 0
+        },
+        "limits": {
+          "$ref": "#/$defs/FastHlrLimitsA0"
+        }
+      },
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Fast vector-HLR controls. Angles are radians and geometric tolerances use model units."
+    },
+    "IllustrationClipping": {
+      "type": "object",
+      "properties": {
+        "planes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/HalfSpacePlane"
+          },
+          "minItems": 1,
+          "maxItems": 16
+        },
+        "cap_policy": {
+          "type": "string",
+          "const": "none"
+        },
+        "limits": {
+          "$ref": "#/$defs/ClippingLimits"
+        }
+      },
+      "required": [
+        "planes",
+        "cap_policy"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Optional B0 clipping request. The first generation deliberately creates no section caps."
+    },
+    "HlrVector3": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "FastHlrLimitsA0": {
+      "type": "object",
+      "properties": {
+        "max_vertices": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295,
+          "default": 2000000
+        },
+        "max_triangles": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295,
+          "default": 2000000
+        },
+        "max_edges": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295,
+          "default": 4000000
+        },
+        "max_grid_references": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295,
+          "default": 64000000
+        },
+        "max_candidate_pairs": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295,
+          "default": 100000000
+        },
+        "max_fragments": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295,
+          "default": 8000000
+        },
+        "max_output_segments": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4294967295,
+          "default": 4000000
+        }
+      },
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Resource ceilings applied during Fast mesh preparation and projection."
+    },
+    "HalfSpacePlane": {
+      "type": "object",
+      "properties": {
+        "normal": {
+          "$ref": "#/$defs/IllustrationVector3"
+        },
+        "distance_mm": {
+          "type": "number"
+        },
+        "tolerance_mm": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0
+        }
+      },
+      "required": [
+        "normal",
+        "distance_mm"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "One world-space half-space. The kept side satisfies dot(normal, point) - distance_mm >= -tolerance_mm."
+    },
+    "ClippingLimits": {
+      "type": "object",
+      "properties": {
+        "max_output_triangles": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2000000,
+          "default": 2000000
+        },
+        "max_generated_vertices": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 6000000,
+          "default": 6000000
+        },
+        "max_intersections": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8000000,
+          "default": 8000000
+        },
+        "max_edge_plane_tests": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32000000,
+          "default": 32000000
+        }
+      },
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Independent hard work budgets for deterministic triangle clipping."
+    },
+    "IllustrationVector3": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3
+    }
+  }
+}

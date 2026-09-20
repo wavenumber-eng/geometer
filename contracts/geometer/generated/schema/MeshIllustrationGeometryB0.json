@@ -1,0 +1,458 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.mesh_illustration.geometry:b0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.mesh_illustration.geometry.b0"
+    },
+    "length_unit": {
+      "type": "string",
+      "const": "millimeter"
+    },
+    "empty": {
+      "type": "boolean"
+    },
+    "view": {
+      "$ref": "#/$defs/MeshIllustrationView"
+    },
+    "bounds": {
+      "$ref": "#/$defs/IllustrationGeometryBounds"
+    },
+    "surfaces": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/IllustrationGeometrySurface"
+      },
+      "maxItems": 2000000
+    },
+    "lines": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/IllustrationGeometryLine"
+      },
+      "maxItems": 1000000
+    },
+    "presentation": {
+      "$ref": "#/$defs/IllustrationGeometryPresentation"
+    },
+    "stats": {
+      "$ref": "#/$defs/MeshIllustrationRenderStats"
+    },
+    "fragment": {
+      "$ref": "#/$defs/FragmentMetadata"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 256
+    }
+  },
+  "required": [
+    "schema",
+    "length_unit",
+    "empty",
+    "view",
+    "surfaces",
+    "lines",
+    "presentation",
+    "stats",
+    "fragment",
+    "warnings"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Renderer-neutral B0 geometry with optional bounds for an empty fragment.",
+  "$defs": {
+    "MeshIllustrationView": {
+      "type": "object",
+      "properties": {
+        "direction": {
+          "$ref": "#/$defs/IllustrationVector3"
+        },
+        "up": {
+          "$ref": "#/$defs/IllustrationVector3"
+        },
+        "mirror_x": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "direction",
+        "up"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "IllustrationGeometryBounds": {
+      "type": "object",
+      "properties": {
+        "min": {
+          "$ref": "#/$defs/IllustrationPoint2"
+        },
+        "max": {
+          "$ref": "#/$defs/IllustrationPoint2"
+        }
+      },
+      "required": [
+        "min",
+        "max"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "IllustrationGeometrySurface": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/IllustrationSurfaceKind"
+        },
+        "layers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/IllustrationGeometryLayer"
+          },
+          "minItems": 1,
+          "maxItems": 2000000
+        }
+      },
+      "required": [
+        "kind",
+        "layers"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Array order is paint order, including ordered underpaint/inlay layers."
+    },
+    "IllustrationGeometryLine": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "$ref": "#/$defs/IllustrationPoint2"
+        },
+        "end": {
+          "$ref": "#/$defs/IllustrationPoint2"
+        },
+        "color": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "width": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "start",
+        "end",
+        "color",
+        "width"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Draw after all surfaces, in array order. Width is in projected millimeters."
+    },
+    "IllustrationGeometryPresentation": {
+      "type": "object",
+      "properties": {
+        "fill_rule": {
+          "type": "string",
+          "const": "evenodd"
+        },
+        "line_cap": {
+          "type": "string",
+          "const": "round"
+        },
+        "line_join": {
+          "type": "string",
+          "const": "round"
+        },
+        "background": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "transparent_background": {
+          "type": "boolean"
+        },
+        "seam_width": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Same-fill seam stroke before target rounding/minimum-pixel rules."
+        },
+        "padding": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Existing SVG viewport padding in projected millimeters."
+        }
+      },
+      "required": [
+        "fill_rule",
+        "line_cap",
+        "line_join",
+        "background",
+        "transparent_background",
+        "seam_width",
+        "padding"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Target-independent paint semantics; SVG fitting/quantization stays in its adapter."
+    },
+    "MeshIllustrationRenderStats": {
+      "type": "object",
+      "properties": {
+        "triangles": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "surface_draws": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "layered_surfaces": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "outlines": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "details": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "creases": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "commands": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        }
+      },
+      "required": [
+        "triangles",
+        "surface_draws",
+        "layered_surfaces",
+        "outlines",
+        "details",
+        "creases",
+        "commands"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "FragmentMetadata": {
+      "type": "object",
+      "properties": {
+        "clipping": {
+          "$ref": "#/$defs/NormalizedClipping"
+        },
+        "input_triangles": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2000000
+        },
+        "output_triangles": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2000000
+        },
+        "fragment_sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "linework_geometry_sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "raw_attachment_sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "input_triangles",
+        "output_triangles",
+        "fragment_sha256",
+        "linework_geometry_sha256"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Deterministic identity and size summary for the prepared world-space fragment."
+    },
+    "IllustrationVector3": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "IllustrationPoint2": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "IllustrationSurfaceKind": {
+      "type": "string",
+      "enum": [
+        "triangle",
+        "fused",
+        "layered"
+      ]
+    },
+    "IllustrationGeometryLayer": {
+      "type": "object",
+      "properties": {
+        "rings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/IllustrationRing"
+          },
+          "minItems": 1,
+          "maxItems": 2000000
+        },
+        "fill": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Sanitized CSS color. Color alpha and numeric layer opacity multiply."
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "required": [
+        "rings",
+        "fill",
+        "opacity"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "NormalizedClipping": {
+      "type": "object",
+      "properties": {
+        "planes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/NormalizedHalfSpacePlane"
+          },
+          "minItems": 1,
+          "maxItems": 16
+        },
+        "cap_policy": {
+          "type": "string",
+          "const": "none"
+        },
+        "max_output_triangles": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "max_generated_vertices": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "max_intersections": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "max_edge_plane_tests": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        }
+      },
+      "required": [
+        "planes",
+        "cap_policy",
+        "max_output_triangles",
+        "max_generated_vertices",
+        "max_intersections",
+        "max_edge_plane_tests"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Fully resolved clipping values that participate in semantic identity."
+    },
+    "IllustrationRing": {
+      "type": "object",
+      "properties": {
+        "points": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/IllustrationPoint2"
+          },
+          "minItems": 3,
+          "maxItems": 6000000
+        }
+      },
+      "required": [
+        "points"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Implicitly closed ring. All rings of one layer form one even-odd filled path."
+    },
+    "NormalizedHalfSpacePlane": {
+      "type": "object",
+      "properties": {
+        "normal": {
+          "$ref": "#/$defs/IllustrationVector3"
+        },
+        "distance_mm": {
+          "type": "number"
+        },
+        "tolerance_mm": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "normal",
+        "distance_mm",
+        "tolerance_mm"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Canonical unit-normal plane returned in fragment metadata."
+    }
+  }
+}

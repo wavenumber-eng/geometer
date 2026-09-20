@@ -15,6 +15,7 @@ env:
 jobs:
   macos-arm64:
     runs-on: macos-15
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v8.2.0
@@ -25,18 +26,6 @@ jobs:
         run: uv run --no-project python scripts/dependency_versions.py --github-output
       - name: Run release signoff
         run: uv run pytest tests/L99_release -q
-      - name: Cache OCCT
-        uses: actions/cache@v5
-        with:
-          path: |
-            .deps/occt-src
-            .deps/native/macos-arm64/occt-build
-            .deps/native/macos-arm64/occt-install
-          key: occt-v2-native-macos-arm64-apple-clang-${{ steps.dependency_versions.outputs.occt_tag }}-${{ hashFiles('scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
-          restore-keys: |
-            occt-v2-native-macos-arm64-apple-clang-${{ steps.dependency_versions.outputs.occt_tag }}-
-            occt-macOS-ARM64-apple-clang-${{ steps.dependency_versions.outputs.occt_tag }}-
-            occt-macos-15-ARM64-apple-clang-${{ steps.dependency_versions.outputs.occt_tag }}-
       - name: Validate native build
         run: uv run python scripts/validate_native.py
       - name: Validate Python package

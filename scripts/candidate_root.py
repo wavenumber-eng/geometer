@@ -1,0 +1,292 @@
+#!/usr/bin/env python3
+"""Create and validate canonical release-candidate root identities."""
+
+from __future__ import annotations
+
+import argparse
+from datetime import date
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import tempfile
+from typing import Any, Sequence
+
+from ci_release_metadata import check_notes, check_surfaces, package_version, release_date, release_tag
+
+
+SCHEMA = "wn.geometer.release_candidate_root.a0"
+ROOT = Path(__file__).resolve().parents[1]
+SHA256_RE = re.compile(r"[0-9a-f]{64}")
+REVISION_RE = re.compile(r"[0-9a-f]{40}")
+VERSION_RE = re.compile(
+    r"(?P<year>[1-9][0-9]{3})\."
+    r"(?P<month>0|[1-9][0-9]*)\."
+    r"(?P<day>0|[1-9][0-9]*)"
+    r"(?:\.(?P<serial>0|[1-9][0-9]*))?"
+)
+
+
+class CandidateRootError(ValueError):
+    """Raised when a release-candidate root is malformed or inconsistent."""
+
+
+def canonical_json(value: dict[str, Any]) -> bytes:
+    """Return the sole accepted JSON encoding for a candidate root."""
+    return (json.dumps(value, indent=2, sort_keys=True, ensure_ascii=True) + "\n").encode("utf-8")
+
+
+def file_sha256(path: Path) -> str:
+    """Hash exact file bytes without interpreting their contents."""
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def candidate_root_sha256(value: dict[str, Any]) -> str:
+    """Hash the canonical candidate-root encoding."""
+    validate_candidate_root(value)
+    return hashlib.sha256(canonical_json(value)).hexdigest()
+
+
+def _object(value: Any, label: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise CandidateRootError(f"{label} must be an object")
+    return value
+
+
+def _keys(value: dict[str, Any], expected: set[str], label: str) -> None:
+    actual = set(value)
+    if actual == expected:
+        return
+    missing = sorted(expected - actual)
+    extra = sorted(actual - expected)
+    raise CandidateRootError(f"{label} fields differ from schema; missing={missing}; extra={extra}")
+
+
+def _text(value: Any, label: str) -> str:
+    if not isinstance(value, str) or not value or "\r" in value or "\n" in value:
+        raise CandidateRootError(f"{label} must be non-empty single-line text")
+    return value
+
+
+def _sha256(value: Any, label: str) -> str:
+    text = _text(value, label)
+    if SHA256_RE.fullmatch(text) is None:
+        raise CandidateRootError(f"{label} must be a lowercase SHA-256 digest")
+    return text
+
+
+def _revision(value: Any, label: str) -> str:
+    text = _text(value, label)
+    if REVISION_RE.fullmatch(text) is None or set(text) == {"0"}:
+        raise CandidateRootError(f"{label} must be a full lowercase 40-character Git revision")
+    return text
+
+
+def _release_identity(version: Any) -> tuple[str, str, int, str]:
+    text = _text(version, "release.version")
+    match = VERSION_RE.fullmatch(text)
+    if match is None:
+        raise CandidateRootError("release.version must be canonical YYYY.M.D or YYYY.M.D.N")
+    year = int(match.group("year"))
+    month = int(match.group("month"))
+    day = int(match.group("day"))
+    try:
+        release_day = date(year, month, day)
+    except ValueError as error:
+        raise CandidateRootError(f"release.version contains an invalid calendar date: {text}") from error
+    release_date = release_day.isoformat()
+    abi_generation = int(release_day.strftime("%Y%m%d"))
+    expected_tag = f"v{release_date}"
+    serial = match.group("serial")
+    if serial is not None:
+        expected_tag = f"{expected_tag}-{serial}"
+    return text, release_date, abi_generation, expected_tag
+
+
+def validate_candidate_root(value: Any) -> dict[str, Any]:
+    """Validate a candidate-root value without consulting a checkout or network."""
+    root = _object(value, "candidate root")
+    _keys(root, {"occt_lock_sha256", "release", "schema", "source"}, "candidate root")
+    if root["schema"] != SCHEMA:
+        raise CandidateRootError(f"unsupported candidate-root schema: {root['schema']!r}")
+
+    source = _object(root["source"], "source")
+    _keys(source, {"revision"}, "source")
+    _revision(source["revision"], "source.revision")
+
+    release = _object(root["release"], "release")
+    _keys(release, {"abi_generation", "date", "expected_tag", "version"}, "release")
+    _, expected_date, expected_abi, expected_tag = _release_identity(release["version"])
+    if release["date"] != expected_date:
+        raise CandidateRootError(f"release.date must be {expected_date} for release.version")
+    if type(release["abi_generation"]) is not int or release["abi_generation"] != expected_abi:
+        raise CandidateRootError(f"release.abi_generation must be {expected_abi} for release.version")
+    if release["expected_tag"] != expected_tag:
+        raise CandidateRootError(f"release.expected_tag must be {expected_tag} for release.version")
+
+    _sha256(root["occt_lock_sha256"], "occt_lock_sha256")
+    return root
+
+
+def create_candidate_root(
+    *,
+    source_revision: str,
+    release_version: str,
+    release_date: str,
+    abi_generation: int,
+    expected_tag: str,
+    occt_lock_sha256: str,
+) -> dict[str, Any]:
+    """Construct and validate the minimal candidate identity."""
+    value: dict[str, Any] = {
+        "occt_lock_sha256": occt_lock_sha256,
+        "release": {
+            "abi_generation": abi_generation,
+            "date": release_date,
+            "expected_tag": expected_tag,
+            "version": release_version,
+        },
+        "schema": SCHEMA,
+        "source": {"revision": source_revision},
+    }
+    return validate_candidate_root(value)
+
+
+def create_candidate_root_from_checkout(root: Path = ROOT) -> dict[str, Any]:
+    """Derive the minimal candidate identity from one checked-out commit."""
+
+    if root != ROOT:
+        raise CandidateRootError(f"candidate checkout root must be {ROOT}")
+    check_surfaces()
+    check_notes()
+    completed = subprocess.run(
+        ["git", "rev-parse", "--verify", "HEAD"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    version = package_version()
+    date_value = release_date(version)
+    return create_candidate_root(
+        source_revision=completed.stdout.strip(),
+        release_version=version,
+        release_date=date_value,
+        abi_generation=int(date_value.replace("-", "")),
+        expected_tag=release_tag(version),
+        occt_lock_sha256=file_sha256(root / "dependencies" / "occt-lock.json"),
+    )
+
+
+def load_candidate_root(path: Path) -> dict[str, Any]:
+    """Load a candidate root and require its exact canonical encoding."""
+    try:
+        raw = path.read_bytes()
+        value = json.loads(raw)
+    except OSError as error:
+        raise CandidateRootError(f"could not read candidate root {path}: {error}") from error
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise CandidateRootError(f"invalid candidate-root JSON: {path}") from error
+    root = validate_candidate_root(value)
+    if raw != canonical_json(root):
+        raise CandidateRootError("candidate root is not canonical deterministic JSON")
+    return root
+
+
+def write_candidate_root(path: Path, value: dict[str, Any]) -> None:
+    """Atomically create a validated candidate root without replacing any path."""
+    validate_candidate_root(value)
+    if path.exists() or path.is_symlink():
+        raise CandidateRootError(f"refusing to overwrite existing candidate root: {path}")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="wb", prefix=f".{path.name}.", suffix=".tmp", dir=path.parent, delete=False
+        ) as stream:
+            temporary = Path(stream.name)
+            stream.write(canonical_json(value))
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.link(temporary, path)
+    except FileExistsError as error:
+        raise CandidateRootError(f"refusing to overwrite existing candidate root: {path}") from error
+    except OSError as error:
+        raise CandidateRootError(f"could not atomically create candidate root {path}: {error}") from error
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+
+
+def _digest(value: str | None, path: Path | None, label: str) -> str:
+    if (value is None) == (path is None):
+        raise CandidateRootError(f"provide exactly one of --{label}-sha256 or --{label}-file")
+    if value is not None:
+        return _sha256(value, label)
+    if path is None:
+        raise AssertionError("digest path must be present")
+    try:
+        return file_sha256(path)
+    except OSError as error:
+        raise CandidateRootError(f"could not hash {label} file {path}: {error}") from error
+
+
+def _add_digest_options(parser: argparse.ArgumentParser, label: str) -> None:
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument(f"--{label}-sha256")
+    group.add_argument(f"--{label}-file", type=Path)
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description=__doc__)
+    commands = parser.add_subparsers(dest="command", required=True)
+    create = commands.add_parser("create", help="create a canonical candidate-root document")
+    create.add_argument("output", type=Path)
+    create.add_argument("--source-revision", required=True)
+    create.add_argument("--release-version", required=True)
+    create.add_argument("--release-date", required=True)
+    create.add_argument("--abi-generation", required=True, type=int)
+    create.add_argument("--expected-tag", required=True)
+    _add_digest_options(create, "occt-lock")
+    create_checkout = commands.add_parser("create-checkout", help="create a candidate root from the current checkout")
+    create_checkout.add_argument("output", type=Path)
+    validate = commands.add_parser("validate", help="validate a canonical candidate-root document")
+    validate.add_argument("input", type=Path)
+    return parser
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    args = _parser().parse_args(argv)
+    try:
+        if args.command == "create":
+            value = create_candidate_root(
+                source_revision=args.source_revision,
+                release_version=args.release_version,
+                release_date=args.release_date,
+                abi_generation=args.abi_generation,
+                expected_tag=args.expected_tag,
+                occt_lock_sha256=_digest(args.occt_lock_sha256, args.occt_lock_file, "occt-lock"),
+            )
+            write_candidate_root(args.output, value)
+            path = args.output
+        elif args.command == "create-checkout":
+            value = create_candidate_root_from_checkout()
+            write_candidate_root(args.output, value)
+            path = args.output
+        else:
+            value = load_candidate_root(args.input)
+            path = args.input
+    except CandidateRootError as error:
+        raise SystemExit(str(error)) from error
+    print(f"candidate root valid: {path} sha256={candidate_root_sha256(value)}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

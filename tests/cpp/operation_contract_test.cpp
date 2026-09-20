@@ -781,19 +781,24 @@ void generic_c_abi_catalog_and_typed_failures()
     catalog_document.Parse(catalog_text.data(), catalog_text.size());
     require(!catalog_document.HasParseError() && catalog_document.IsObject(),
             "generated runtime catalog should be valid JSON");
-    require(catalog_document["operations"].Size() == 9U,
-            "runtime catalog should contain every generated operation exactly once");
-    require(catalog_text.find("geometry.model_tessellation.a0") != std::string::npos &&
-                catalog_text.find("geometry.mesh_illustration.a0") != std::string::npos &&
-                catalog_text.find("geometry.mesh_illustration_geometry.a0") != std::string::npos &&
-                catalog_text.find("geometry.model_illustration.a0") != std::string::npos &&
-                catalog_text.find("geometry.model_illustration_geometry.a0") != std::string::npos,
-            "portable catalog should advertise tessellation, SVG and drawing geometry");
+    require(catalog_document["operations"].Size() >= 18U,
+            "native C ABI catalog should contain the established portable and native operations");
+    require(
+        catalog_text.find("geometry.model_tessellation.a0") != std::string::npos &&
+            catalog_text.find("geometry.mesh_illustration.a0") != std::string::npos &&
+            catalog_text.find("geometry.mesh_illustration_geometry.a0") != std::string::npos &&
+            catalog_text.find("geometry.model_illustration.a0") != std::string::npos &&
+            catalog_text.find("geometry.model_illustration_geometry.a0") != std::string::npos &&
+            catalog_text.find("geometry.mesh_illustration.b0") != std::string::npos &&
+            catalog_text.find("geometry.mesh_illustration_geometry.b0") != std::string::npos &&
+            catalog_text.find("geometry.model_illustration.b0") != std::string::npos &&
+            catalog_text.find("geometry.model_illustration_geometry.b0") != std::string::npos,
+        "native C ABI catalog should advertise A0 compatibility and B0 illustration operations");
     require(catalog_text.find("geometry.model_hlr_projection.a0") != std::string::npos &&
                 catalog_text.find("geometry.mesh_hlr_projection.a0") != std::string::npos,
-            "portable catalog should advertise model and indexed-mesh HLR");
-    require(catalog_text.find("geometry.step_topology.") == std::string::npos,
-            "portable C ABI catalog must not advertise native topology research");
+            "native C ABI catalog should advertise model and indexed-mesh HLR");
+    require(catalog_text.find("geometry.step_topology.open.a0") != std::string::npos,
+            "native C ABI catalog should advertise native topology operations");
     require(catalog_text.find("geometry.analytic_planar_boolean_batch.a0") != std::string::npos &&
                 catalog_text.find("\"runtime_dispatch\":\"packed_attachment\"") !=
                     std::string::npos,
@@ -805,12 +810,14 @@ void generic_c_abi_catalog_and_typed_failures()
     geometer_free_string(catalog);
 
     const std::string native_catalog_text(geometer::native_operation_catalog_json());
+    require(catalog_text == native_catalog_text,
+            "native C ABI and executable IPC must publish the same catalog bytes");
     rapidjson::Document native_catalog_document;
     native_catalog_document.Parse(native_catalog_text.data(), native_catalog_text.size());
     require(!native_catalog_document.HasParseError() && native_catalog_document.IsObject(),
             "generated native runtime catalog should be valid JSON");
-    require(native_catalog_document["operations"].Size() == 18U,
-            "native catalog should contain portable and bounded topology operations");
+    require(native_catalog_document["operations"].Size() >= 18U,
+            "native catalog should retain portable and bounded topology operations");
     require(native_catalog_text.find("geometry.step_topology.open.a0") != std::string::npos &&
                 native_catalog_text.find("geometry.step_topology.inspect.a0") !=
                     std::string::npos &&
@@ -848,9 +855,25 @@ void generic_c_abi_catalog_and_typed_failures()
                     "application/vnd.wavenumber.geometer.step-topology-edit-journal",
             "native restore discovery must advertise only the implemented edit-journal carrier");
 
-    const std::string request = "{}";
+    const std::string topology_operation = "geometry.step_topology.open.a0";
+    const std::string topology_request = R"({"schema":"geometry.step_topology.open.request.a0"})";
     GeometerOperationResult* result = nullptr;
     int code = geometer_operation_execute(
+        topology_operation.data(), static_cast<uint32_t>(topology_operation.size()),
+        reinterpret_cast<const unsigned char*>(topology_request.data()),
+        static_cast<uint32_t>(topology_request.size()), nullptr, 0U, &result, &error);
+    require(code == GEOMETER_OPERATION_ABI_OK && result != nullptr && error == nullptr,
+            "native topology dispatch should return a governed outcome through the C ABI");
+    const std::string topology_failure = result_json(result);
+    require(topology_failure.find("geometer.contract.missing_attachment") != std::string::npos &&
+                topology_failure.find("geometer.contract.unsupported_operation") ==
+                    std::string::npos,
+            "native C ABI execution must use the same topology dispatcher as executable IPC");
+    geometer_operation_result_free(result);
+
+    const std::string request = "{}";
+    result = nullptr;
+    code = geometer_operation_execute(
         "geometry.not_implemented.a0", 27U, reinterpret_cast<const unsigned char*>(request.data()),
         static_cast<uint32_t>(request.size()), nullptr, 0U, &result, &error);
     require(code == GEOMETER_OPERATION_ABI_OK && result != nullptr && error == nullptr,

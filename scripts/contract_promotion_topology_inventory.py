@@ -77,20 +77,34 @@ def _assert_catalog_lineage(path: Path, historical_hash: str) -> None:
     illustration_prefix = "Wavenumber.Geometer.Contracts.MeshIllustrationOperationA0."
     geometry_prefix = "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryA0."
     model_illustration_prefix = "Wavenumber.Geometer.Contracts.ModelIllustrationA0."
-    prefixes = (prefix, illustration_prefix, geometry_prefix, model_illustration_prefix)
+    b0_prefixes = (
+        "Wavenumber.Geometer.Contracts.IllustrationClippingB0.",
+        "Wavenumber.Geometer.Contracts.IpcB0.",
+        "Wavenumber.Geometer.Contracts.MeshHlrProjectionB0.",
+        "Wavenumber.Geometer.Contracts.MeshIllustrationB0.",
+        "Wavenumber.Geometer.Contracts.MeshIllustrationGeometryB0.",
+        "Wavenumber.Geometer.Contracts.ModelIllustrationB0.",
+        "Wavenumber.Geometer.Contracts.OperationOutcomeB0.",
+    )
+    prefixes = (prefix, illustration_prefix, geometry_prefix, model_illustration_prefix, *b0_prefixes)
     catalog["declarations"] = [item for item in catalog["declarations"] if not item["name"].startswith(prefixes)]
     catalog["roots"] = [item for item in catalog["roots"] if not item["name"].startswith(prefixes)]
     catalog["operations"] = [
         item
         for item in catalog["operations"]
         if item["identity"]
-        not in {
+            not in {
             "geometry.model_tessellation.a0",
             "geometry.mesh_illustration.a0",
             "geometry.mesh_illustration_geometry.a0",
             "geometry.model_illustration.a0",
-            "geometry.model_illustration_geometry.a0",
-        }
+                "geometry.model_illustration_geometry.a0",
+                "geometry.mesh_hlr_projection.b0",
+                "geometry.mesh_illustration.b0",
+                "geometry.mesh_illustration_geometry.b0",
+                "geometry.model_illustration.b0",
+                "geometry.model_illustration_geometry.b0",
+            }
     ]
     additions = {
         "Wavenumber.Geometer.Contracts.IpcA0.IpcRequestValueA0": [
@@ -143,6 +157,31 @@ def _assert_catalog_lineage(path: Path, historical_hash: str) -> None:
         )
         property_model["doc"] = doc
         property_model.pop("default", None)
+    # Issue 31 documented the already-existing projection frame after the
+    # topology slices were reviewed. Strip those additive descriptions before
+    # reconstructing the historical catalog evidence.
+    projection_prefix = "Wavenumber.Geometer.Contracts.HlrProjectionA0."
+    for declaration_name in (
+        "HlrProjectedView",
+        "HlrViewSpec",
+        "ProjectedArc",
+        "ProjectedGeometry",
+        "ProjectionBounds",
+    ):
+        declaration = next(
+            item for item in catalog["declarations"] if item["name"] == projection_prefix + declaration_name
+        )
+        declaration["doc"] = ""
+    for declaration_name, property_names in {
+        "HlrProjectionOptionsA0": ("model_transform",),
+        "HlrViewSpec": ("direction", "up"),
+    }.items():
+        declaration = next(
+            item for item in catalog["declarations"] if item["name"] == projection_prefix + declaration_name
+        )
+        for property_model in declaration["properties"]:
+            if property_model["name"] in property_names:
+                property_model["doc"] = ""
     # The executable and generic-operation JSON envelopes were increased after
     # the topology slices were reviewed. Restore their former values before
     # checking the historical catalog digest so that unrelated topology

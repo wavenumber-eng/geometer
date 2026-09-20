@@ -2,7 +2,7 @@
 use crate::{
     camera::Camera,
     gpu::Preview,
-    jobs::{Event, Export, Jobs, Model, Solution},
+    jobs::{Event, Export, Jobs, Model, Solution, SolveSettings},
 };
 use eframe::egui;
 use geometer_client::{GeometerClient, contracts::*};
@@ -29,6 +29,7 @@ pub struct App {
     style: MeshIllustrationStyleA0,
     hlr_options: HlrProjectionOptionsA0,
     mesh_options: ModelTessellationRequestA0,
+    clipping: crate::clipping::Settings,
     preserve_camera_on_load: bool,
     right_dock: bool,
     busy: bool,
@@ -74,6 +75,7 @@ impl App {
             style,
             hlr_options: crate::hlr::options(&Camera::default().view()),
             mesh_options: crate::settings::mesh_defaults(),
+            clipping: crate::clipping::Settings::default(),
             preserve_camera_on_load: false,
             right_dock: false,
             busy: false,
@@ -231,6 +233,7 @@ impl App {
                 self.begin("Geometer: recomputing");
                 let mut options = self.hlr_options.clone();
                 let view = self.camera.view();
+                let clipping = self.clipping.request(self.preview.bounds, &view);
                 options.views = Some(vec![HlrViewSpec {
                     id: "preview".into(),
                     direction: view.direction,
@@ -240,9 +243,12 @@ impl App {
                     self.revision,
                     client,
                     model,
-                    self.camera.view(),
-                    self.style.clone(),
-                    options,
+                    SolveSettings {
+                        view: self.camera.view(),
+                        style: self.style.clone(),
+                        hlr: options,
+                        clipping,
+                    },
                 );
             }
         }
@@ -363,6 +369,13 @@ impl App {
             self.changed();
         }
         ui.small("Drag: orbit • right/middle drag: pan\nWheel: zoom • orbit never refits");
+        ui.separator();
+        if self
+            .clipping
+            .show(ui, self.preview.bounds, &self.camera.view())
+        {
+            self.changed();
+        }
         ui.separator();
         if crate::settings::style_controls(ui, &mut self.style) {
             self.changed();

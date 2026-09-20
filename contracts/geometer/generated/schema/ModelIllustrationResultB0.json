@@ -1,0 +1,364 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:wavenumber:schema:geometer:geometry.model_illustration.result:b0",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "geometry.model_illustration.result.b0"
+    },
+    "empty": {
+      "type": "boolean"
+    },
+    "svg": {
+      "type": "string"
+    },
+    "bounds_mm": {
+      "$ref": "#/$defs/ModelIllustrationBounds3MmA0"
+    },
+    "source": {
+      "$ref": "#/$defs/ModelIllustrationSourceSummaryA0"
+    },
+    "stats": {
+      "$ref": "#/$defs/MeshIllustrationRenderStats"
+    },
+    "timings": {
+      "$ref": "#/$defs/ModelIllustrationTimingsA0"
+    },
+    "fragment": {
+      "$ref": "#/$defs/FragmentMetadata"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 256
+    }
+  },
+  "required": [
+    "schema",
+    "empty",
+    "svg",
+    "source",
+    "stats",
+    "timings",
+    "fragment",
+    "warnings"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "$defs": {
+    "ModelIllustrationBounds3MmA0": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 6,
+      "maxItems": 6
+    },
+    "ModelIllustrationSourceSummaryA0": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/ModelAttachmentSourceSummaryA0"
+        },
+        {
+          "$ref": "#/$defs/AnalyticSourceSummaryA0"
+        }
+      ]
+    },
+    "MeshIllustrationRenderStats": {
+      "type": "object",
+      "properties": {
+        "triangles": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "surface_draws": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "layered_surfaces": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "outlines": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "details": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "creases": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "commands": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        }
+      },
+      "required": [
+        "triangles",
+        "surface_draws",
+        "layered_surfaces",
+        "outlines",
+        "details",
+        "creases",
+        "commands"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "ModelIllustrationTimingsA0": {
+      "type": "object",
+      "properties": {
+        "source_preparation_ms": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Model import+tessellation or analytic validation+lowering."
+        },
+        "linework_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "illustration_ms": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Shading, ordering, fusion, and SVG construction when applicable."
+        },
+        "attachment_encoding_ms": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Encoding a returned attachment, zero for the inline SVG operation."
+        }
+      },
+      "required": [
+        "source_preparation_ms",
+        "linework_ms",
+        "illustration_ms",
+        "attachment_encoding_ms"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "FragmentMetadata": {
+      "type": "object",
+      "properties": {
+        "clipping": {
+          "$ref": "#/$defs/NormalizedClipping"
+        },
+        "input_triangles": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2000000
+        },
+        "output_triangles": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2000000
+        },
+        "fragment_sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "linework_geometry_sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "raw_attachment_sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "input_triangles",
+        "output_triangles",
+        "fragment_sha256",
+        "linework_geometry_sha256"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Deterministic identity and size summary for the prepared world-space fragment."
+    },
+    "ModelAttachmentSourceSummaryA0": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "model"
+        },
+        "media_type": {
+          "$ref": "#/$defs/ModelAttachmentMediaTypeA0"
+        },
+        "source_sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "meshes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65536
+        },
+        "triangles": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2000000
+        }
+      },
+      "required": [
+        "kind",
+        "media_type",
+        "source_sha256",
+        "meshes",
+        "triangles"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "AnalyticSourceSummaryA0": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "analytic"
+        },
+        "definitions": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65536
+        },
+        "occurrences": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65536
+        },
+        "primitives": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65536
+        },
+        "triangles": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2000000
+        }
+      },
+      "required": [
+        "kind",
+        "definitions",
+        "occurrences",
+        "primitives",
+        "triangles"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      }
+    },
+    "NormalizedClipping": {
+      "type": "object",
+      "properties": {
+        "planes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/NormalizedHalfSpacePlane"
+          },
+          "minItems": 1,
+          "maxItems": 16
+        },
+        "cap_policy": {
+          "type": "string",
+          "const": "none"
+        },
+        "max_output_triangles": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "max_generated_vertices": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "max_intersections": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "max_edge_plane_tests": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        }
+      },
+      "required": [
+        "planes",
+        "cap_policy",
+        "max_output_triangles",
+        "max_generated_vertices",
+        "max_intersections",
+        "max_edge_plane_tests"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Fully resolved clipping values that participate in semantic identity."
+    },
+    "ModelAttachmentMediaTypeA0": {
+      "type": "string",
+      "enum": [
+        "application/step",
+        "model/step"
+      ]
+    },
+    "NormalizedHalfSpacePlane": {
+      "type": "object",
+      "properties": {
+        "normal": {
+          "$ref": "#/$defs/IllustrationVector3"
+        },
+        "distance_mm": {
+          "type": "number"
+        },
+        "tolerance_mm": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "normal",
+        "distance_mm",
+        "tolerance_mm"
+      ],
+      "unevaluatedProperties": {
+        "not": {}
+      },
+      "description": "Canonical unit-normal plane returned in fragment metadata."
+    },
+    "IllustrationVector3": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3
+    }
+  }
+}

@@ -1,0 +1,88 @@
+---
+# yamllint disable rule:line-length
+name: Operation Transport Baseline
+
+"on":
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Platform baseline to record.
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - windows-x64
+          - macos-arm64
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  CARGO_BUILD_JOBS: "1"
+  CMAKE_BUILD_PARALLEL_LEVEL: "2"
+
+jobs:
+  sibling-process:
+    name: sibling process (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(inputs.target == 'windows-x64' && '{"include":[{"os":"windows-2022","platform":"windows-x64","compiler":"msvc","executable":"dist/native/windows-x64/geometer.exe"}]}' || inputs.target == 'macos-arm64' && '{"include":[{"os":"macos-15","platform":"macos-arm64","compiler":"apple-clang","executable":"dist/native/macos-arm64/geometer"}]}' || '{"include":[{"os":"windows-2022","platform":"windows-x64","compiler":"msvc","executable":"dist/native/windows-x64/geometer.exe"},{"os":"macos-15","platform":"macos-arm64","compiler":"apple-clang","executable":"dist/native/macos-arm64/geometer"}]}') }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v8.2.0
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Prove clean checkout before build
+        shell: bash
+        run: test -z "$(git status --porcelain)"
+      - name: Read dependency versions
+        id: dependency_versions
+        run: uv run --no-project python scripts/dependency_versions.py --github-output
+      - name: Set up MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+      - name: Install macOS build tools
+        if: runner.os == 'macOS'
+        run: brew list ninja >/dev/null 2>&1 || brew install ninja
+      - name: Build and validate sibling executable
+        run: uv run --group dev python scripts/validate_native.py
+      - name: Benchmark small, medium, and large operations
+        shell: bash
+        run: |
+          uv run python scripts/benchmark_operation_transport.py \
+            --executable "${{ matrix.executable }}" \
+            --fixture tests/fixtures/step/embedded_models/SOT-23.STEP \
+            --runs 3 --warmup 2 --repeat 10 --workers 4 --pool-jobs 20 \
+            --minimum-batch-seconds 5 --source-revision "$(git rev-parse HEAD)" \
+            --output "out/operation-transport-performance/sibling-process-${{ matrix.platform }}-small.json"
+          uv run python scripts/benchmark_operation_transport.py \
+            --executable "${{ matrix.executable }}" \
+            --fixture tests/fixtures/step/embedded_models/BGA90-8X13mm.step \
+            --runs 3 --warmup 2 --repeat 10 --workers 4 --pool-jobs 20 \
+            --minimum-batch-seconds 5 --source-revision "$(git rev-parse HEAD)" \
+            --output "out/operation-transport-performance/sibling-process-${{ matrix.platform }}-medium.json"
+          uv run python scripts/benchmark_operation_transport.py \
+            --executable "${{ matrix.executable }}" \
+            --fixture tests/fixtures/step/embedded_models/XF2M_6015_1AH.step \
+            --runs 3 --warmup 2 --repeat 10 --workers 4 --pool-jobs 20 \
+            --minimum-batch-seconds 5 --source-revision "$(git rev-parse HEAD)" \
+            --output "out/operation-transport-performance/sibling-process-${{ matrix.platform }}-large.json"
+      - name: Upload controlled baseline evidence
+        id: baseline_upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: operation-transport-baseline-${{ matrix.platform }}
+          path: out/operation-transport-performance/sibling-process-${{ matrix.platform }}-*.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Record evidence identity
+        shell: bash
+        run: |
+          echo "### ${{ matrix.platform }} operation transport baseline" >> "$GITHUB_STEP_SUMMARY"
+          echo "Artifact ID: ${{ steps.baseline_upload.outputs.artifact-id }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Artifact digest: ${{ steps.baseline_upload.outputs.artifact-digest }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Source revision: $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"

@@ -3,10 +3,10 @@ from __future__ import annotations
 import json
 import os
 import platform
+import shutil
 import subprocess
 import sys
-import tarfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import pytest
 
@@ -54,19 +54,17 @@ def test_rust_format_lint_and_live_conformance() -> None:
 
 
 @pytest.mark.skipif(TEST_PROFILE == "production", reason="combined analytic consumer is experimental")
-def test_clean_external_consumer_runs_analytic_and_illustration_ipc(tmp_path: Path) -> None:
+def test_clean_staged_source_consumer_runs_analytic_and_illustration_ipc(tmp_path: Path) -> None:
     crate = MANIFEST.parent
     package_dir = tmp_path / "package"
     package_dir.mkdir()
-    run("cargo", "package", "--manifest-path", str(MANIFEST), "--allow-dirty")
-    archives = sorted((crate / "target" / "package").glob("geometer-client-*.crate"))
-    assert archives
-    with tarfile.open(archives[-1], "r:gz") as archive:
-        if sys.version_info >= (3, 12):
-            archive.extractall(package_dir, filter="data")
-        else:
-            archive.extractall(package_dir)
-    unpacked = next(package_dir.iterdir())
+    unpacked = package_dir / "geometer-client"
+    client_files = _stage_cargo_package_sources(MANIFEST, unpacked)
+    _stage_cargo_package_sources(
+        ROOT / "src" / "rust" / "geometer-sys" / "Cargo.toml",
+        package_dir / "geometer-sys",
+    )
+    assert "examples/direct_static_illustration.rs" in client_files
 
     consumer = tmp_path / "consumer"
     (consumer / "src").mkdir(parents=True)
@@ -102,7 +100,7 @@ def test_clean_external_consumer_runs_analytic_and_illustration_ipc(tmp_path: Pa
         "feature_id: contracts::FeatureId::new(1).unwrap(), "
         "center: contracts::PointNm { x: 0, y: 0 }, radius_nm: 1_000_000 })] }] }], "
         "relationship_queries: vec![] }; "
-        'let client = GeometerClient::spawn(executable, "packaged-crate-consumer", "a0").await.unwrap(); '
+        'let client = GeometerClient::spawn(executable, "staged-source-consumer", "a0").await.unwrap(); '
         "let empty_result = client.analytic_planar_boolean_batch(&empty).await.unwrap(); "
         "assert!(empty_result.job_results.is_empty()); "
         "let result = client.analytic_planar_boolean_batch(&request).await.unwrap(); "
@@ -115,7 +113,7 @@ def test_clean_external_consumer_runs_analytic_and_illustration_ipc(tmp_path: Pa
     run("cargo", "generate-lockfile", cwd=consumer)
     run("cargo", "run", "--locked", "--", str(_native_executable()), cwd=consumer)
     # Compile the complete public STEP/HLR/illustration example against the
-    # extracted crate, not a workspace path dependency or handwritten adapter.
+    # staged crate, not a workspace path dependency or handwritten adapter.
     binary_dir = consumer / "src" / "bin"
     binary_dir.mkdir()
     (binary_dir / "mesh_illustration.rs").write_text(
@@ -139,9 +137,9 @@ def test_clean_external_consumer_runs_analytic_and_illustration_ipc(tmp_path: Pa
 
     assert ET.parse(svg).getroot().tag == "{http://www.w3.org/2000/svg}svg"
     assert svg.stat().st_size > 1000
-    # Compile and run caller-supervised process adoption from the extracted
-    # package so the published surface cannot accidentally depend on workspace
-    # visibility or an unpackaged source file.
+    # Compile and run caller-supervised process adoption from the staged
+    # package so the distributed surface cannot accidentally depend on
+    # workspace visibility or an unpackaged source file.
     (binary_dir / "supervised_process.rs").write_text(
         (crate / "examples" / "supervised_process.rs").read_text(encoding="utf-8"),
         encoding="utf-8",
@@ -156,6 +154,34 @@ def test_clean_external_consumer_runs_analytic_and_illustration_ipc(tmp_path: Pa
         str(_native_executable()),
         cwd=consumer,
     )
+
+
+def _stage_cargo_package_sources(manifest: Path, destination: Path) -> set[str]:
+    env = os.environ.copy()
+    env.setdefault("CARGO_BUILD_JOBS", "1")
+    result = subprocess.run(
+        ["cargo", "package", "--manifest-path", str(manifest), "--allow-dirty", "--list"],
+        cwd=ROOT,
+        env=env,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    listed_files = {line.strip() for line in result.stdout.splitlines() if line.strip()}
+    assert "Cargo.toml" in listed_files
+    virtual_files = {".cargo_vcs_info.json", "Cargo.lock", "Cargo.toml.orig"}
+    for listed_file in sorted(listed_files):
+        relative = PurePosixPath(listed_file)
+        assert not relative.is_absolute()
+        assert ".." not in relative.parts
+        source = manifest.parent.joinpath(*relative.parts)
+        if not source.is_file():
+            assert listed_file in virtual_files, f"missing listed package file: {listed_file}"
+            continue
+        target = destination.joinpath(*relative.parts)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
+    return listed_files
 
 
 def _native_executable() -> Path:

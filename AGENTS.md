@@ -78,14 +78,14 @@ Manual OCCT rebuild:
 
 ```powershell
 python scripts\build_occt.py --clean
-python scripts\build_occt.py
+python scripts\build_occt.py --binary-cache off
 ```
 
 `build_occt.py` cleans/builds the current native platform under
 `.deps/native/<platform>/` by default. Use `--clean-source` only when refreshing
 the shared OCCT source checkout too.
 
-Optional OCCT binary cache:
+Locked OCCT dependency objects:
 
 ```powershell
 python scripts\build_occt.py --print-binary-cache-key
@@ -93,6 +93,6 @@ python scripts\build_wasm.py --print-occt-binary-cache-key
 ```
 
 Set R2 credentials in shell environment variables or a temporary local `.env`
-only. Remove or move root `.env` before release signoff. Normal CI consumes the
-cache; the manual `OCCT Dependency Cache` GitHub workflow publishes cache
-archives.
+only. Remove or move root `.env` before release signoff. Normal CI consumes only
+the exact objects in `dependencies/occt-lock.json`; the manual `OCCT Dependency
+Producer` workflow source-builds and conditionally publishes new candidates.

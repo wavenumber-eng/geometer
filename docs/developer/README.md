@@ -185,14 +185,11 @@ Native builds require:
 
 On Windows, use a Visual Studio developer environment or another shell where the
 selected C++ compiler is available to CMake. The default CMake preset uses
-Ninja. The OCCT dependency is built with the active native compiler for that
-platform, so use the same shell consistently for configure/build/validation.
-Binary-cache keys and local install markers include the native toolchain ABI and
-complete build-recipe hash; a compiler, configuration, or recipe change cannot
-silently reuse a stale local install. The published `windows-x64` OCCT 8.0.1
-cache is an MSVC v143-ABI install and must be consumed from a Visual Studio
-Developer PowerShell or Developer Command Prompt. MinGW and other compiler
-families use a different key and cannot restore the MSVC archive.
+Ninja. `dependencies/occt-lock.json` selects one reviewed platform/ABI profile;
+the local marker binds the exact lock and archive digest. The published
+`windows-x64` profile is an MSVC v143-ABI install and must be consumed from a
+Visual Studio Developer PowerShell or Developer Command Prompt. The CMake
+configure guard rejects incompatible Windows compiler families.
 
 On WSL2/Linux, install the usual build toolchain first. For Debian/Ubuntu
 distros, the minimum package set is:
@@ -242,6 +239,48 @@ uv run python scripts/validate_native.py
 Pass `--skip-ctest` to run only the build, CLI, source-checkout Python-wrapper,
 and dependency checks.
 
+### Static C ABI SDK candidate
+
+The supported static SDK is a separate, uncommitted release artifact assembled
+from qualified build outputs and is never placed under `dist/`.
+Build the current host profile with:
+
+```powershell
+uv run python scripts\build_static_sdk.py
+```
+
+On Linux and macOS this builds `geometer_lib` and its link probe in the same
+native CMake graph later used by native validation, avoiding a second compile.
+Windows uses the separate `static-sdk` preset because the SDK is `/MT` while the
+runtime and wheel are `/MD`. The command derives the exact private archive and
+system-library order from the link probe, validates the platform ABI profile,
+and writes a deterministic archive plus checksum and external provenance
+sidecar under `out/sdk-candidate/`. On Windows it first restores or builds a
+separately keyed `/MT` OCCT install under
+`.deps/native/windows-x64/occt-static-crt-install/`; it never reuses the normal
+wheel/runtime `/MD` install.
+
+The archive exports only `include/geometer/c_api.h` and the relocatable
+`Geometer::c_api_static` CMake target. OCCT headers and the Geometer C++ ABI are
+not SDK interfaces. The SDK contains the private static archive closure,
+machine-readable ordered link manifest, schemas, licenses, internal payload
+inventory, build attestation, and the narrow `rust/geometer-sys` FFI crate.
+Cargo consumers set `GEOMETER_SDK_DIR` to the extracted archive root; the crate
+rejects a release, target, platform, or Windows `crt-static` mismatch before
+emitting link directives from the generated manifest. It never downloads an
+SDK. Candidate archives remain generated state
+until the exact bytes pass external-consumer and downstream qualification.
+
+Qualify an existing archive exactly as a release consumer sees it with:
+
+```powershell
+uv run python scripts\validate_static_sdk.py out\sdk-candidate\geometer-sdk-*.zip
+```
+
+This moves the SDK to an unrelated path containing spaces, builds and runs
+external CMake and Cargo consumers, invokes a direct model operation, starts
+the embedded stdio server, and rejects shared Geometer or OCCT dependencies.
+
 On first configure, CMake looks for OCCT at:
 
 ```text
@@ -254,44 +293,31 @@ If OCCT is missing, top-level CMake automatically invokes:
 python scripts\build_occt.py
 ```
 
-That script uses vendored RapidJSON, checks the public binary dependency cache,
-and otherwise clones OCCT, builds OCCT as static libraries, and installs it into
-`.deps/native/<platform>/occt-install/`. The first uncached source build is
-slow. Later configures reuse that platform-specific `.deps/` state and should be
-fast.
+That script selects one explicit profile from `dependencies/occt-lock.json`,
+reuses a matching local install, or downloads and verifies that profile's one
+immutable archive. It installs generated state into
+`.deps/native/<platform>/occt-install/`. A missing or mismatched locked object
+fails; it never starts an implicit source build.
 
 Normal local and CI builds use public HTTPS reads from:
 
 ```env
 GEOMETER_OCCT_BINARY=auto
-GEOMETER_OCCT_CACHE_PUBLIC_BASE_URL=https://artifacts.wavenumber.net
+WN_ARTIFACTS_BASE_URL=https://artifacts.wavenumber.net
 ```
 
 `GEOMETER_OCCT_BINARY` accepts:
 
-- `auto` - use public cache, then any configured signed R2 fallback, then
-  source.
-- `off` - ignore binary caches and build from source.
-- `only` - require a binary cache hit and fail otherwise.
+- `auto` and `only` both use the fail-closed checked-in lock.
+- `off` is an explicit source build for producer or debugging work.
 
-Cache recipe keys cover structured CMake definitions and explicit semantic
-values that can change the installed OCCT bytes. The same definition records
-emit the CMake `-D` arguments and feed the recipe hash. Workspace paths, build
-parallelism, orchestration scripts, cache transport code, and the indirect
-dependency-version file are not hashed. The selected OCCT repository/tag,
-platform, configuration, library type, Emscripten version when applicable, and
-platform baselines are included directly. Native profiles also identify the
-compiler family, ABI-relevant major version, and C++ runtime/ABI selection;
-compiler patch releases do not rotate the key.
-Previously accepted OCCT 8.0.1 archives may be reached only through exact
-profile, destination-recipe, and SHA aliases; there is no generic stale-cache
-fallback. Reviewed local marker-only recipe transitions are also exact and
-one-way: all non-recipe profile fields and the installed OCCT version must
-already match, and the install tree is retained without a rebuild.
+The archive SHA-256 is the consumer identity. Consumer selection does not hash
+build scripts, compiler patch versions, environment state, or recipe inputs and
+does not search aliases or legacy prefixes. Producer recipe and tool details
+remain evidence for reviewing newly built candidates.
 
-R2 credentials are only needed for producer uploads or explicit private fallback
-testing. Copy `.env.example` to `.env` for those cases and fill the `R2_*`
-values locally.
+R2 credentials are only needed for producer uploads. Copy `.env.example` to
+`.env` for that case and fill the `R2_*` values locally.
 
 Root `.env` is for local development only and must not be present when running
 release signoff or `wn-dev-std check`. Move it to an ignored local location, or
@@ -380,6 +406,7 @@ own Mach-O minimum OS metadata:
 
 ```bash
 python scripts/build_occt.py --clean
+python scripts/build_occt.py --binary-cache off
 rm -rf build-native-macos-arm64
 uv run python scripts/validate_native.py
 uv run python scripts/validate_python_package.py --skip-native-validation
@@ -420,23 +447,36 @@ tag.
 ### Public release workflow
 
 The normal publication path is [Publish](../../.github/workflows/release.yml),
-triggered by publishing a GitHub release. Prepare the UTC date version, release
-notes, generated contracts/docs and a release PR first. Require the
-[CI](../../.github/workflows/ci.yml) four-platform native/client/installed-wheel
-matrix, L99 and standards checks, plus [WASM](../../.github/workflows/wasm.yml)
-browser and cross-transport checks before tagging. Inspect native artifact
+dispatched manually with an exact existing release tag. Prepare the UTC date
+version, release notes, generated contracts/docs and a release PR first. Run
+the complete native, client, installed-wheel, L99, standards, browser, and
+cross-transport gates locally before tagging. Inspect native artifact
 attestations for clean source and verified OCCT provenance, then refresh
 committed `dist/` outputs from those qualified builds. Do not publish a local
 development wheel or change attestation fields to make it qualify.
 
-After the reviewed release PR merges, tag its exact revision and publish the
-GitHub release using the dated notes. Publish rebuilds and tests Windows x64,
-Linux x64, Linux ARM64 and macOS ARM64 wheels plus WASM, uploads GitHub assets
-and checksums, and publishes wheels through PyPI trusted publishing. Verify
-workflow completion, release assets and PyPI version/platform files. Then
-install from PyPI in WSL2 and run the headless package example (REQ-006),
-including the installed native illustration workflow. Native Rust GUI binaries
-remain outside release packaging pending a separate decision.
+After the reviewed release PR merges, tag its exact revision but do not create
+or publish the GitHub Release by hand. Dispatch `Publish` at that same tag and
+provide the tag as its input; for example,
+`gh workflow run release.yml --ref v2026-09-19 -f tag=v2026-09-19`. The
+workflow rejects a dispatch ref and input-tag mismatch so GitHub provenance is
+bound to the source revision actually being released. It
+checks out the tag on every runner and rebuilds Windows x64, Linux x64, Linux
+ARM64, and macOS ARM64 native archives, platform wheels, and static SDKs, plus
+WASM. All outputs feed one exact B0 digest inventory bound to the source commit,
+release identity, and immutable OCCT lock through the canonical candidate root.
+The workflow uploads the qualified bytes to a draft GitHub Release and verifies the downloaded draft
+before PyPI trusted publishing receives exactly the four rebuilt wheels. Only a
+successful PyPI publication permits the GitHub Release to become public; a
+final job downloads every public asset and verifies its digest and GitHub
+attestation.
+
+Verify workflow completion and the PyPI version/platform files. Then install
+from PyPI in WSL2 and run the headless package example (REQ-006), including the
+installed native illustration workflow. Native Rust GUI binaries remain
+outside release packaging pending a separate decision. No GitHub workflow is
+triggered by pushes, pull requests, documentation changes, tags, or release
+events.
 
 The commands below are optional manual upload procedures, not a bypass of the
 same qualification gates. Include every supported platform, including Linux
@@ -446,21 +486,21 @@ PyPI upload commands:
 
 ```powershell
 # Preflight metadata.
-python -m twine check out\wheelhouse\windows-x64\wn_geometer-2026.9.7-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.7-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.7-py3-none-macosx_11_0_arm64.whl
+python -m twine check out\wheelhouse\windows-x64\wn_geometer-2026.9.19-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.19-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\linux-arm64\wn_geometer-2026.9.19-py3-none-manylinux_2_35_aarch64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.19-py3-none-macosx_11_0_arm64.whl
 
 # Optional dry-run project on TestPyPI.
-python -m twine upload --repository testpypi out\wheelhouse\windows-x64\wn_geometer-2026.9.7-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.7-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.7-py3-none-macosx_11_0_arm64.whl
+python -m twine upload --repository testpypi out\wheelhouse\windows-x64\wn_geometer-2026.9.19-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.19-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\linux-arm64\wn_geometer-2026.9.19-py3-none-manylinux_2_35_aarch64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.19-py3-none-macosx_11_0_arm64.whl
 
 # Public PyPI release.
-python -m twine upload --repository pypi out\wheelhouse\windows-x64\wn_geometer-2026.9.7-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.7-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.7-py3-none-macosx_11_0_arm64.whl
+python -m twine upload --repository pypi out\wheelhouse\windows-x64\wn_geometer-2026.9.19-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.19-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\linux-arm64\wn_geometer-2026.9.19-py3-none-manylinux_2_35_aarch64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.19-py3-none-macosx_11_0_arm64.whl
 ```
 
 For token-based upload, set `TWINE_USERNAME=__token__` and put the PyPI or
 TestPyPI API token in `TWINE_PASSWORD`, or use an equivalent `.pypirc`/keyring
 setup. Do not write upload tokens into the repository.
 
-The current release target is `wn-geometer==2026.9.7`; callers install
-`wn-geometer==2026.9.7` and import `geometer`.
+The current release target is `wn-geometer==2026.9.19`; callers install
+`wn-geometer==2026.9.19` and import `geometer`.
 
 For local token setup, copy `.env.example` to `.env`, fill the token values,
 and keep `.env` out of version control.
@@ -472,7 +512,7 @@ suspect:
 
 ```powershell
 python scripts\build_occt.py --clean
-python scripts\build_occt.py
+python scripts\build_occt.py --binary-cache off
 cmake --preset default
 cmake --build build --config Release
 ```
@@ -482,7 +522,7 @@ cmake --build build --config Release
 OCCT source checkout, or the Geometer `build/` directory. Add `--clean-source`
 only when intentionally refreshing the shared OCCT source checkout too.
 
-To inspect the dependency cache key without building:
+To inspect the exact locked dependency object without building:
 
 ```powershell
 python scripts\build_occt.py --print-binary-cache-key
@@ -495,11 +535,22 @@ builds. See [OCCT qualification](occt-qualification.md). It keeps dependency
 state below `.deps/occt-qualification/<tag>/`, build evidence below
 `out/occt-qualification/<tag>/`, and committed `dist/` artifacts untouched.
 
-The trusted GitHub workflow `.github/workflows/occt-deps.yml` publishes OCCT
-archives to R2. Normal CI and release workflows consume the public artifact
-cache and do not need R2 secrets. When the printed keys are missing from
-`https://artifacts.wavenumber.net/deps/v1/geometer/occt/`, run the `OCCT
-Dependency Cache` workflow with `target=all` to publish the current generation.
+The trusted GitHub workflow `.github/workflows/occt-deps.yml` always builds OCCT
+from source and publishes each result to a new archive-digest-addressed R2 key.
+It does not restore or populate a GitHub OCCT cache. Secret-free build jobs use
+a one-day workflow artifact to hand candidate bytes to a separate hosted
+publisher protected by the `occt-dependency-production` environment. Its small retained evidence artifact
+contains the exact candidate object key, byte count, archive digest, internal
+profile digest, verified upstream tag object and peeled commit, and producer
+recipe. Dispatch either all profiles or one exact profile for a targeted retry.
+Review that evidence and update
+`dependencies/occt-lock.json` in a normal commit before any consumer selects the
+new bytes.
+
+Normal CI, release workflows, and developer builds select one explicit profile
+from `dependencies/occt-lock.json`, reuse a local install only when its lock
+marker matches, or download that one public object. They do not receive R2
+secrets, derive cache keys, search aliases, or compile OCCT after a miss.
 
 The public Python package uses the executable backend only. Keep ctypes/native
 loading experiments out of the normal wheel and application path unless a future
@@ -641,8 +692,8 @@ date-based ABI generation, for example `20260907`.
 ## Versioning
 
 Geometer follows [ADR 006](../geometer/adr/geometer-adr-006-date_based_versioning_policy.md).
-The current release identity is `v2026-09-13`; the CMake/PyPI package version
-is `2026.9.13`; the C ABI generation is `20260913`.
+The current release identity is `v2026-09-19`; the CMake/PyPI package version
+is `2026.9.19`; the C ABI generation is `20260919`.
 
 The root `CMakeLists.txt` declares `GEOMETER_RELEASE_DATE`,
 `GEOMETER_RELEASE_VERSION`, and `GEOMETER_ABI_VERSION`. The root
@@ -837,7 +888,7 @@ once, then run the reusable matrix harness:
 python scripts\build_occt.py `
   --occt-tag V7_9_3 `
   --occt-state-root .deps\occt-qualification\7.9.3 `
-  --binary-cache auto
+  --binary-cache off
 python scripts\run_xcaf_custom_driver_matrix.py
 ```
 

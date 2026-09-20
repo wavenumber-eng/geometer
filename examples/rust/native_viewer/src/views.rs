@@ -148,14 +148,14 @@ mod tests {
                     if(top.slice(1)===front.slice(1)) continue;
                     for(const v of buildProjectionViews(top,front)) result.push({direction:v.direction,up:v.up,mirror_x:!!v.mirrorX});
                 }
-                for(const view of result) console.log(JSON.stringify({schema:'geometry.mesh_illustration.request.a0',view}));
+                for(const view of result) console.log(JSON.stringify({schema:'geometry.mesh_illustration.request.b0',view}));
             "#]).output().unwrap();
         assert!(output.status.success());
         let expected: Vec<_> = std::str::from_utf8(&output.stdout)
             .unwrap()
             .lines()
             .map(|line| {
-                geometer_client::contracts::decode_mesh_illustration_request_a0_json(
+                geometer_client::contracts::decode_mesh_illustration_request_b0_json(
                     line.as_bytes(),
                 )
                 .unwrap()

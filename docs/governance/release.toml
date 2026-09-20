@@ -14,6 +14,16 @@ owner = "geometer-maintainers"
 process_doc = "docs/developer/README.md"
 build_doc = "docs/developer/README.md"
 
+[[channels.artifact_refs]]
+kind = "governed_artifact"
+target = "native-static-sdk-release-assets"
+rationale = "After SDK support ships, the dated native release and complete SDK matrix form one atomic GitHub Release inventory; missing, extra, duplicate, repackaged, or digest-changed SDK assets block native promotion."
+
+[[channels.artifact_refs]]
+kind = "governed_artifact"
+target = "native-static-sdk-qualification-evidence"
+rationale = "Native promotion is blocked unless durable consumer and downstream evidence binds the exact qualified SDK candidate bytes."
+
 [[channels]]
 id = "github-wasm-bundles"
 kind = "wasm_bundle"
@@ -21,3 +31,31 @@ status = "active"
 owner = "geometer-maintainers"
 process_doc = "docs/developer/README.md"
 build_doc = "docs/developer/README.md"
+
+[[channels]]
+id = "github-static-sdk"
+kind = "github_release"
+status = "planned"
+owner = "geometer-maintainers"
+process_doc = "docs/geometer/requirements/geometer-req-011-supported_static_sdk_and_unified_runtime.md"
+build_doc = "docs/developer/README.md"
+
+[[channels.artifact_refs]]
+kind = "governed_artifact"
+target = "native-static-sdk-candidates"
+rationale = "Candidate SDK bytes remain noncommitted and must pass clean consumers and the KiCad Cruncher trial before promotion."
+
+[[channels.artifact_refs]]
+kind = "governed_artifact"
+target = "native-static-sdk-release-assets"
+rationale = "The dated immutable GitHub Release is the authoritative distribution channel for the four static SDK profiles."
+
+[[channels.artifact_refs]]
+kind = "governed_artifact"
+target = "native-static-sdk-qualification-evidence"
+rationale = "Candidate checksums, sidecars, provenance, clean-consumer results, and downstream trial evidence fail promotion closed."
+
+[[channels.artifact_refs]]
+kind = "governed_artifact"
+target = "native-static-sdk-post-release-verification"
+rationale = "Append-only public-download verification gates issue closure without mutating the immutable dated release."

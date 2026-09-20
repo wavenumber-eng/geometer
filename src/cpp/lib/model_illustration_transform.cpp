@@ -200,9 +200,22 @@ bool apply_affine_matrix(contracts::MeshIllustrationMesh* mesh, const Matrix4& m
                 value /= length;
             std::copy(normal.begin(), normal.end(), mesh->normals->begin() + index);
         }
-    if (det < 0 && mesh->indices)
-        for (std::size_t index = 0; index < mesh->indices->size(); index += 3)
-            std::swap((*mesh->indices)[index + 1], (*mesh->indices)[index + 2]);
+    if (det < 0)
+    {
+        if (mesh->indices)
+            for (std::size_t index = 0; index < mesh->indices->size(); index += 3)
+                std::swap((*mesh->indices)[index + 1], (*mesh->indices)[index + 2]);
+        else
+            for (std::size_t index = 0; index < mesh->positions.size(); index += 9)
+            {
+                for (std::size_t axis = 0; axis < 3; ++axis)
+                    std::swap(mesh->positions[index + 3 + axis], mesh->positions[index + 6 + axis]);
+                if (mesh->normals)
+                    for (std::size_t axis = 0; axis < 3; ++axis)
+                        std::swap((*mesh->normals)[index + 3 + axis],
+                                  (*mesh->normals)[index + 6 + axis]);
+            }
+    }
     mesh->matrix.reset();
     return true;
 }

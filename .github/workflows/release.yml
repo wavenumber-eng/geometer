@@ -139,6 +139,12 @@ jobs:
             occt-v2-native-${{ matrix.platform }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-
             occt-${{ matrix.os }}-${{ runner.arch }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-
 
+      - name: Build static C ABI SDK candidate
+        run: uv run python scripts/build_static_sdk.py --platform ${{ matrix.platform }}
+
+      - name: Qualify relocated static SDK consumer
+        run: uv run python scripts/validate_static_sdk.py out/sdk-candidate/geometer-sdk-*.zip
+
       - name: Build and test production native code
         run: uv run --group dev python scripts/validate_native.py
 
@@ -161,12 +167,6 @@ jobs:
 
       - name: Package native dist
         run: uv run --no-project python scripts/package_release_artifacts.py native --platform ${{ matrix.platform }} --output out/native-${{ matrix.platform }}.zip
-
-      - name: Build static C ABI SDK candidate
-        run: uv run python scripts/build_static_sdk.py --platform ${{ matrix.platform }}
-
-      - name: Qualify relocated static SDK consumer
-        run: uv run python scripts/validate_static_sdk.py out/sdk-candidate/geometer-sdk-*.zip
 
       - name: Upload wheel artifact
         uses: actions/upload-artifact@v7

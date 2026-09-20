@@ -234,6 +234,8 @@ def test_ci_is_manual_only_and_release_rebuilds_every_output_once() -> None:
     assert "path: out/wheelhouse/*.whl" in release
     assert "scripts/build_static_sdk.py --platform ${{ matrix.platform }}" in release
     assert "scripts/validate_static_sdk.py out/sdk-candidate/geometer-sdk-*.zip" in release
+    assert release.index("scripts/build_static_sdk.py") < release.index("scripts/validate_native.py")
+    assert "scripts/build_static_sdk.py --platform ${{ matrix.platform }} --allow-dirty" not in release
     assert "scripts/validate_release_inventory.py" in release
     assert "scripts/verify_release_inventory.py" in release
     assert "name: qualified-release" in release

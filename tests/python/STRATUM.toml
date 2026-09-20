@@ -258,3 +258,10 @@ file = "test_build_release_candidate.py"
 name = "Fixed Release Candidate Lane"
 description = "Checks one explicit build/test/package order per native or WASM lane, disjoint client ownership, isolated outputs, and fail-closed reruns."
 test_case_type = "unit"
+
+[[subtests]]
+id = "PY_034"
+file = "test_release_candidate_store.py"
+name = "Immutable R2 Candidate Store"
+description = "Checks exact source/inventory-addressed R2 paths, asset-before-inventory commit order, conditional creation, and byte-identical retries."
+test_case_type = "unit"

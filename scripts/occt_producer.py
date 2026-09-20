@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import dataclasses
 import hashlib
-import hmac
 import json
 import os
 import posixpath
@@ -16,6 +15,8 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
+import r2_store
+
 
 CANDIDATE_SCHEMA = "wn.geometer.occt_candidate.a0"
 DEFAULT_REGION = "auto"
@@ -26,13 +27,7 @@ INSTALL_PROFILE_NAME = ".geometer-occt-profile.json"
 VALID_MODES = {"auto", "off", "only"}
 
 
-@dataclasses.dataclass(frozen=True)
-class CacheConfig:
-    bucket: str
-    endpoint_url: str
-    access_key_id: str
-    secret_access_key: str
-    region: str
+CacheConfig = r2_store.R2Config
 
 
 @dataclasses.dataclass(frozen=True)
@@ -149,7 +144,9 @@ def directory_content_hash(path: Path) -> str:
     if not path.is_dir():
         raise RuntimeError(f"Producer input directory is missing: {path}")
     digest = hashlib.sha256(b"geometer-producer-directory-content-a0\n")
-    for child in sorted((candidate for candidate in path.rglob("*") if candidate.is_file()), key=lambda p: p.as_posix()):
+    for child in sorted(
+        (candidate for candidate in path.rglob("*") if candidate.is_file()), key=lambda p: p.as_posix()
+    ):
         relative = child.relative_to(path).as_posix().encode()
         digest.update(len(relative).to_bytes(8, "big"))
         digest.update(relative)
@@ -359,9 +356,7 @@ def package_prebuilt_install(
         },
         "schema": CANDIDATE_SCHEMA,
     }
-    (package_dir / MANIFEST_NAME).write_bytes(
-        (json.dumps(manifest, indent=2, sort_keys=True) + "\n").encode("utf-8")
-    )
+    (package_dir / MANIFEST_NAME).write_bytes((json.dumps(manifest, indent=2, sort_keys=True) + "\n").encode("utf-8"))
 
     print(f"Packaged OCCT candidate {locked_profile_id} ({archive_sha256})")
     return package_dir
@@ -575,32 +570,15 @@ def _slug(value: str) -> str:
 
 
 def _normalize_r2_endpoint_url(endpoint_url: str, bucket: str) -> str:
-    parsed = urllib.parse.urlparse(endpoint_url.rstrip("/"))
-    path_parts = [part for part in parsed.path.split("/") if part]
-    if path_parts and path_parts[-1] == bucket:
-        path_parts.pop()
-    normalized_path = "/" + "/".join(path_parts) if path_parts else ""
-    return urllib.parse.urlunparse((parsed.scheme, parsed.netloc, normalized_path, "", "", ""))
+    return r2_store.normalize_endpoint_url(endpoint_url, bucket)
 
 
 def _r2_get_object(config: CacheConfig, key: str) -> bytes | None:
-    try:
-        return _r2_request(config, "GET", key)
-    except urllib.error.HTTPError as exc:
-        if exc.code in {403, 404}:
-            return None
-        raise RuntimeError(f"R2 GET {key} returned HTTP {exc.code}") from exc
+    return r2_store.get_object(config, key)
 
 
 def _r2_put_object_if_absent(config: CacheConfig, key: str, body: bytes, content_type: str) -> None:
-    _r2_request(
-        config,
-        "PUT",
-        key,
-        body=body,
-        content_type=content_type,
-        extra_headers={"if-none-match": "*"},
-    )
+    r2_store.put_object_if_absent(config, key, body, content_type)
 
 
 def _r2_request(
@@ -612,58 +590,15 @@ def _r2_request(
     content_type: str | None = None,
     extra_headers: dict[str, str] | None = None,
 ) -> bytes:
-    parsed = urllib.parse.urlparse(config.endpoint_url)
-    if not parsed.scheme or not parsed.netloc:
-        raise RuntimeError(f"Invalid R2 endpoint URL: {config.endpoint_url}")
-    now = datetime.now(timezone.utc)
-    date_stamp = now.strftime("%Y%m%d")
-    amz_date = now.strftime("%Y%m%dT%H%M%SZ")
-    object_path = f"{parsed.path.rstrip('/')}/{config.bucket}/{key}"
-    canonical_uri = urllib.parse.quote(object_path, safe="/-_.~")
-    url = urllib.parse.urlunparse((parsed.scheme, parsed.netloc, canonical_uri, "", "", ""))
-    payload_hash = hashlib.sha256(body).hexdigest()
-    headers = {"host": parsed.netloc, "x-amz-content-sha256": payload_hash, "x-amz-date": amz_date}
-    if content_type is not None:
-        headers["content-type"] = content_type
-    for name, value in (extra_headers or {}).items():
-        normalized = name.strip().lower()
-        if not re.fullmatch(r"[a-z0-9-]+", normalized) or normalized in headers or normalized == "authorization":
-            raise ValueError(f"Invalid, duplicate, or reserved R2 request header: {name}")
-        headers[normalized] = value
-    signed_header_names = sorted(headers)
-    canonical_headers = "".join(f"{name}:{headers[name].strip()}\n" for name in signed_header_names)
-    signed_headers = ";".join(signed_header_names)
-    canonical_request = "\n".join(
-        [method, canonical_uri, "", canonical_headers, signed_headers, payload_hash]
+    return r2_store.request(
+        config,
+        method,
+        key,
+        body=body,
+        content_type=content_type,
+        extra_headers=extra_headers,
     )
-    credential_scope = f"{date_stamp}/{config.region}/s3/aws4_request"
-    string_to_sign = "\n".join(
-        [
-            "AWS4-HMAC-SHA256",
-            amz_date,
-            credential_scope,
-            hashlib.sha256(canonical_request.encode()).hexdigest(),
-        ]
-    )
-    signing_key = _aws_v4_signing_key(config.secret_access_key, date_stamp, config.region, "s3")
-    signature = hmac.new(signing_key, string_to_sign.encode(), hashlib.sha256).hexdigest()
-    headers["authorization"] = (
-        "AWS4-HMAC-SHA256 "
-        f"Credential={config.access_key_id}/{credential_scope}, "
-        f"SignedHeaders={signed_headers}, Signature={signature}"
-    )
-    request = urllib.request.Request(
-        url,
-        data=body if method in {"PUT", "POST"} else None,
-        headers={name.title(): value for name, value in headers.items() if name != "host"},
-        method=method,
-    )
-    with urllib.request.urlopen(request, timeout=120) as response:
-        return response.read()
 
 
 def _aws_v4_signing_key(secret_key: str, date_stamp: str, region: str, service: str) -> bytes:
-    key_date = hmac.new(("AWS4" + secret_key).encode(), date_stamp.encode(), hashlib.sha256).digest()
-    key_region = hmac.new(key_date, region.encode(), hashlib.sha256).digest()
-    key_service = hmac.new(key_region, service.encode(), hashlib.sha256).digest()
-    return hmac.new(key_service, b"aws4_request", hashlib.sha256).digest()
+    return r2_store.aws_v4_signing_key(secret_key, date_stamp, region, service)

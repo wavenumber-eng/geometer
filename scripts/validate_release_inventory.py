@@ -92,6 +92,7 @@ def validate_inventory(root: Path, tag: str, candidate_root: dict[str, Any]) -> 
         raise ValueError("candidate root version does not match release inventory")
     expected = expected_asset_names(tag)
     assets = collect_assets(root)
+    assets.pop(f"geometer-release-inventory-{tag}.json", None)
     missing = expected - set(assets)
     extra = set(assets) - expected
     if missing or extra:

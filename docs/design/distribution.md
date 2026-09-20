@@ -59,6 +59,15 @@ verification must match the candidate source revision to the checked-out
 release tag. Tool versions and workflow timings remain evidence rather than
 alternate cache or candidate identities.
 
+`scripts/publish_release_candidate.py` implements the immutable candidate-store
+boundary. It freshly validates the complete B0 inventory and artifact contents,
+then conditionally creates
+`releases/candidates/<source-sha>/<inventory-sha256>/<asset-name>` objects and
+creates the inventory object last. An occupied key is accepted only when its
+bytes are identical. The tool is not invoked from a credentialed workflow until
+the protected hosted ingestion job can consume untrusted build artifacts
+without executing candidate-controlled code.
+
 Browser and native Lab build scripts do not publish demo applications. See
 [Browser demo packaging and UI](../developer/browser-demos.md) for the local build, closure,
 review, and explicit publication boundary.

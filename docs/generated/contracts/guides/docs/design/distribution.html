@@ -65,6 +65,14 @@ identity, and SHA-256 of <code>dependencies/occt-lock.json</code>. Draft, PyPI, 
 verification must match the candidate source revision to the checked-out
 release tag. Tool versions and workflow timings remain evidence rather than
 alternate cache or candidate identities.</p>
+<p><code>scripts/publish_release_candidate.py</code> implements the immutable candidate-store
+boundary. It freshly validates the complete B0 inventory and artifact contents,
+then conditionally creates
+<code>releases/candidates/&lt;source-sha&gt;/&lt;inventory-sha256&gt;/&lt;asset-name&gt;</code> objects and
+creates the inventory object last. An occupied key is accepted only when its
+bytes are identical. The tool is not invoked from a credentialed workflow until
+the protected hosted ingestion job can consume untrusted build artifacts
+without executing candidate-controlled code.</p>
 <p>Browser and native Lab build scripts do not publish demo applications. See
 <a href="../developer/browser-demos.html">Browser demo packaging and UI</a> for the local build, closure,
 review, and explicit publication boundary.</p>

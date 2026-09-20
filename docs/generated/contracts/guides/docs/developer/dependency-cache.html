@@ -39,6 +39,9 @@ dependencies/occt/source/&lt;source-commit&gt;/&lt;archive-sha256&gt;/occt-sourc
 </code></pre>
 <p>An object key is created once. Publication uses <code>If-None-Match: *</code>; a producer
 cannot overwrite an occupied key.</p>
+<p><code>scripts/r2_store.py</code> is the one SigV4 and conditional-create transport used by
+immutable R2 publishers. OCCT keeps its dependency-specific validation and key
+policy in <code>occt_producer.py</code>; it does not carry a second signing implementation.</p>
 <h2 id="producer-contract">Producer contract</h2>
 <p><code>.github/workflows/occt-deps.yml</code> is the credentialed, manual-only producer. It
 always builds from source and publishes a new digest-addressed candidate. It

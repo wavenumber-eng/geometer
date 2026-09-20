@@ -71,30 +71,19 @@ assets again, checks every size and SHA-256, and verifies GitHub attestations.
 No push, pull request, documentation change, tag creation, or GitHub Release
 event starts this workflow.
 
-## Dependency caches
+## Locked OCCT dependency
 
-Every native OCCT consumer and producer uses this key family:
+All native and WASM jobs select one explicit profile from
+`dependencies/occt-lock.json`. A clean runner downloads one exact
+archive-digest-addressed R2 object; a warm local machine reuses an extracted
+install only when its lock marker matches. Workflows do not use GitHub Actions
+cache for OCCT, derive recipe keys, search legacy prefixes, or build from source
+after a miss.
 
-```text
-occt-v2-native-<platform>-<compiler>-<occt-tag>-<recipe-hash>
-```
-
-Every WASM OCCT consumer and producer uses:
-
-```text
-occt-v2-wasm-linux-x64-emscripten-<occt-tag>-<emsdk-version>-<recipe-hash>
-```
-
-The platform values are the repository's canonical package tags:
-`windows-x64`, `linux-x64`, `linux-arm64`, and `macos-arm64`. Cache paths always
-include the source, build, and install trees. The dependency-cache workflow is
-the authenticated R2 producer; ordinary workflows consume GitHub cache or the
-public binary cache without R2 credentials.
-
-Legacy restore prefixes remain temporarily below the primary `v2` prefix. On
-the first run they avoid a cold OCCT compile and cause `actions/cache` to save
-the restored content under the new exact key. New caches are always written
-with the canonical key.
+The manual `OCCT Dependency Producer` workflow is the only credentialed path.
+It always source-builds, conditionally creates a new digest-addressed candidate,
+and uploads only its small evidence files to GitHub. The candidate is inert
+until a reviewed commit updates the lock.
 
 ## Historical cost baseline
 

@@ -21,7 +21,8 @@ import sys
 from pathlib import Path
 
 import dependency_versions
-import occt_binary_cache
+import occt_lock
+import occt_producer
 
 ROOT = Path(__file__).resolve().parent.parent
 DEPS_DIR = ROOT / ".deps"
@@ -241,15 +242,17 @@ def patch_occt_wasm_install_rules() -> None:
 # ---- OCCT WASM build ----
 
 
-def occt_wasm_cache_profile() -> occt_binary_cache.OcctCacheProfile:
+def occt_wasm_build_profile(source_tag_object: str, source_commit: str) -> occt_producer.OcctBuildProfile:
     definitions = wasm_occt_cmake_definitions()
-    recipe = occt_binary_cache.semantic_recipe_hash(
+    recipe = occt_producer.semantic_recipe_hash(
         "wasm-install-a2",
         definitions,
         {
             "kind": "wasm",
             "occt_repo": OCCT_REPO,
             "occt_tag": OCCT_TAG,
+            "source_commit": source_commit,
+            "source_tag_object": source_tag_object,
             "emsdk_version": EMSDK_VERSION,
             "platform_tag": OCCT_WASM_PLATFORM_TAG,
             "config": "Release",
@@ -257,23 +260,25 @@ def occt_wasm_cache_profile() -> occt_binary_cache.OcctCacheProfile:
             "wasm_install_patch_original": OCCT_WASM_INSTALL_RULE_ORIGINAL,
             "wasm_install_patch_patched": OCCT_WASM_INSTALL_RULE_PATCHED,
             "rapidjson_patch": RAPIDJSON_PATCH_SENTINEL,
-            "rapidjson_content_sha256": occt_binary_cache.directory_content_hash(RAPIDJSON_SRC),
+            "rapidjson_content_sha256": occt_producer.directory_content_hash(RAPIDJSON_SRC),
         },
     )
-    return occt_binary_cache.OcctCacheProfile(
+    return occt_producer.OcctBuildProfile(
         kind="wasm",
         platform_tag=OCCT_WASM_PLATFORM_TAG,
         config="Release",
         library_type="Static",
         occt_repo=OCCT_REPO,
         occt_tag=OCCT_TAG,
+        source_commit=source_commit,
+        source_tag_object=source_tag_object,
         recipe_hash=recipe,
         emsdk_version=EMSDK_VERSION,
     )
 
 
-def wasm_occt_cmake_definitions() -> tuple[occt_binary_cache.CMakeDefinition, ...]:
-    definition = occt_binary_cache.CMakeDefinition
+def wasm_occt_cmake_definitions() -> tuple[occt_producer.CMakeDefinition, ...]:
+    definition = occt_producer.CMakeDefinition
     return (
         definition("CMAKE_TOOLCHAIN_FILE", str(_toolchain_file()), include_in_recipe=False),
         definition("CMAKE_INSTALL_PREFIX", str(OCCT_WASM_INSTALL), include_in_recipe=False),
@@ -312,7 +317,7 @@ def build_occt_wasm() -> None:
             str(OCCT_SRC),
             "-B",
             str(OCCT_WASM_BUILD),
-            *occt_binary_cache.cmake_definition_args(wasm_occt_cmake_definitions()),
+            *occt_producer.cmake_definition_args(wasm_occt_cmake_definitions()),
         ],
         env=env,
     )
@@ -486,14 +491,19 @@ def main() -> None:
     )
     parser.add_argument(
         "--occt-binary-cache",
-        choices=sorted(occt_binary_cache.VALID_MODES),
+        choices=sorted(occt_producer.VALID_MODES),
         default=None,
-        help="Use prebuilt WASM OCCT binary cache: auto, off, or only (default: env/auto).",
+        help="OCCT mode: auto/only use the exact lock; off is an explicit source build (default: env/auto).",
     )
     parser.add_argument(
         "--upload-occt-binary-cache",
         action="store_true",
         help="Package and upload the WASM OCCT install tree to the configured binary cache.",
+    )
+    parser.add_argument(
+        "--package-occt-binary-cache",
+        action="store_true",
+        help="Package a source-built WASM OCCT candidate without loading publication credentials.",
     )
     parser.add_argument(
         "--print-occt-binary-cache-key",
@@ -515,34 +525,70 @@ def main() -> None:
         clean()
         return
 
-    occt_binary_cache.load_dotenv(ROOT)
-    profile = occt_wasm_cache_profile()
+    source_build = occt_producer.mode_from_value(args.occt_binary_cache) == "off"
+    producer_mode = args.upload_occt_binary_cache or args.package_occt_binary_cache
+    if args.upload_occt_binary_cache and args.package_occt_binary_cache:
+        parser.error("choose only one OCCT upload/package option")
+    if producer_mode and not source_build:
+        parser.error("OCCT candidate production requires explicit mode --occt-binary-cache off")
+    if not source_build and args.occt_tag != dependency_versions.OCCT_TAG:
+        parser.error("locked OCCT consumers cannot override --occt-tag; use --occt-binary-cache off for a source build")
+    locked_profile = None
+    if not source_build:
+        locked_profile = occt_lock.profile_for_selector(
+            occt_lock.load_lock(),
+            kind="wasm",
+            platform=OCCT_WASM_PLATFORM_TAG,
+        )
     if args.print_occt_binary_cache_key:
-        print(profile.cache_key)
+        if locked_profile is None:
+            parser.error("--print-occt-binary-cache-key is available only for locked consumer mode")
+        else:
+            print(locked_profile["archive"]["object_key"])
         return
 
-    install_emsdk()
     verify_vendored_rapidjson()
-    if occt_binary_cache.install_matches_or_migrates_profile(OCCT_WASM_INSTALL, profile):
-        print(f"OCCT WASM already built at {OCCT_WASM_INSTALL}")
-    elif not occt_binary_cache.restore_prebuilt_install(profile, OCCT_WASM_INSTALL, mode=args.occt_binary_cache):
+    if locked_profile is not None:
+        occt_lock.restore_locked_install(locked_profile, OCCT_WASM_INSTALL)
+        install_emsdk()
+    else:
         prepare_occt_source_build()
         clone_source("OCCT", OCCT_SRC, OCCT_REPO, OCCT_TAG, "CMakeLists.txt")
+        source_tag_object, source_commit = occt_producer.source_identity(OCCT_SRC, OCCT_TAG)
+        profile = occt_wasm_build_profile(source_tag_object, source_commit)
+        if producer_mode:
+            lock = occt_lock.load_lock()
+            target_profile = occt_lock.profile_for_selector(
+                lock,
+                kind="wasm",
+                platform=OCCT_WASM_PLATFORM_TAG,
+            )
+            occt_producer.require_locked_source(profile, lock)
+            occt_producer.require_locked_profile(profile, target_profile)
+        install_emsdk()
         patch_occt_wasm_install_rules()
         build_occt_wasm()
-        occt_binary_cache.write_install_profile(OCCT_WASM_INSTALL, profile)
+        occt_producer.write_install_profile(OCCT_WASM_INSTALL, profile)
 
-    if not occt_binary_cache.install_matches_profile(OCCT_WASM_INSTALL, profile):
-        expected = occt_binary_cache.occt_version_from_tag(profile.occt_tag)
-        actual = occt_binary_cache.installed_occt_version(OCCT_WASM_INSTALL) or "unknown"
-        raise RuntimeError(f"OCCT WASM install under {OCCT_WASM_INSTALL} is {actual}, expected {expected}.")
+        if not occt_producer.install_matches_profile(OCCT_WASM_INSTALL, profile):
+            expected = occt_producer.occt_version_from_tag(profile.occt_tag)
+            actual = occt_producer.installed_occt_version(OCCT_WASM_INSTALL) or "unknown"
+            raise RuntimeError(f"OCCT WASM install under {OCCT_WASM_INSTALL} is {actual}, expected {expected}.")
 
-    if args.upload_occt_binary_cache:
-        occt_binary_cache.upload_prebuilt_install(
+    if producer_mode:
+        package_dir = occt_producer.package_prebuilt_install(
             profile,
             OCCT_WASM_INSTALL,
             out_dir=ROOT / "out" / "occt-binary-cache",
+            locked_profile_id=occt_lock.profile_for_selector(
+                occt_lock.load_lock(),
+                kind="wasm",
+                platform=OCCT_WASM_PLATFORM_TAG,
+            )["id"],
         )
+        if args.upload_occt_binary_cache:
+            occt_producer.load_dotenv(ROOT)
+            occt_producer.publish_candidate(package_dir)
 
     if args.occt_only:
         return

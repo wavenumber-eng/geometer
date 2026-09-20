@@ -169,21 +169,19 @@ def test_code_hygiene_allows_active_plans_but_rejects_completed_plans(tmp_path: 
 def test_linux_wheel_builds_use_glibc_235_baseline() -> None:
     ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
     assert "runs-on: ubuntu-22.04" in ci
-    assert "occt-v2-native-linux-x64-gcc-" in ci
 
     for workflow_name in ("release.yml", "occt-deps.yml"):
         workflow = (ROOT / ".github" / "workflows" / workflow_name).read_text(encoding="utf-8")
         assert "os: ubuntu-22.04\n            platform: linux-x64" in workflow
         assert "os: ubuntu-22.04-arm\n            platform: linux-arm64" in workflow
-        assert "occt-v2-native-${{ matrix.platform }}-${{ matrix.compiler }}" in workflow
 
     build_occt = (ROOT / "scripts" / "build_occt.py").read_text(encoding="utf-8")
     assert '"linux_glibc_baseline": resolved_linux_glibc' in build_occt
 
 
 def test_normal_builds_use_public_dependency_cache_without_r2_secrets() -> None:
-    cache_script = (ROOT / "scripts" / "occt_binary_cache.py").read_text(encoding="utf-8")
-    assert 'DEFAULT_PUBLIC_BASE_URL = "https://artifacts.wavenumber.net"' in cache_script
+    lock_script = (ROOT / "scripts" / "occt_lock.py").read_text(encoding="utf-8")
+    assert 'DEFAULT_BASE_URL = "https://artifacts.wavenumber.net"' in lock_script
 
     consumer_workflows = ("ci.yml", "release.yml", "wasm.yml", "macos-wheel.yml")
     for workflow_name in consumer_workflows:
@@ -311,7 +309,7 @@ def test_transport_baseline_can_target_one_cached_platform() -> None:
     assert "Platform baseline to record." in baseline
     assert "inputs.target == 'windows-x64'" in baseline
     assert "inputs.target == 'macos-arm64'" in baseline
-    assert "occt-${{ matrix.os }}-${{ runner.arch }}-${{ matrix.compiler }}" in baseline
+    assert "actions/cache@" not in baseline
 
 
 def test_governed_transport_evidence_preserves_reviewed_bytes() -> None:
@@ -354,25 +352,34 @@ def test_experimental_qualification_is_outside_normal_ci_and_release() -> None:
     assert release.count("needs: qualify-release") == 1
 
 
-def test_occt_cache_consumers_share_platform_keys() -> None:
+def test_occt_consumers_use_only_the_explicit_lock() -> None:
     workflows = {
         name: (ROOT / ".github" / "workflows" / name).read_text(encoding="utf-8")
-        for name in ("ci.yml", "release.yml", "wasm.yml", "macos-wheel.yml", "occt-deps.yml")
+        for name in (
+            "ci.yml",
+            "release.yml",
+            "wasm.yml",
+            "macos-wheel.yml",
+            "operation-transport-baseline.yml",
+            "occt-deps.yml",
+        )
     }
-    matrix_native_key = "occt-v2-native-${{ matrix.platform }}-${{ matrix.compiler }}"
-    assert matrix_native_key in workflows["release.yml"]
-    assert matrix_native_key in workflows["occt-deps.yml"]
-    assert "occt-v2-native-linux-x64-gcc-" in workflows["ci.yml"]
-    assert "occt-v2-native-linux-x64-gcc-" in workflows["wasm.yml"]
-    assert "occt-v2-native-macos-arm64-apple-clang-" in workflows["macos-wheel.yml"]
+    for name, workflow in workflows.items():
+        assert "occt-v2-" not in workflow, name
+        assert "wasm-occt-" not in workflow, name
+        assert ".deps/occt-src" not in workflow, name
 
     producer = workflows["occt-deps.yml"]
     assert "profile: static-crt" in producer
-    assert "cache_suffix: -static-crt" in producer
-    assert "occt-static-crt-build" in producer
-    assert "occt-static-crt-install" in producer
     assert "build_args: --msvc-runtime Static" in producer
-
-    wasm_key = "occt-v2-wasm-linux-x64-emscripten-"
-    for name in ("ci.yml", "release.yml", "wasm.yml", "occt-deps.yml"):
-        assert wasm_key in workflows[name]
+    assert "--binary-cache off --package-binary-cache" in producer
+    assert "--occt-binary-cache off --package-occt-binary-cache" in producer
+    assert "actions/upload-artifact@v7" in producer
+    assert "actions/download-artifact@v8" in producer
+    assert "environment: occt-dependency-production" in producer
+    build_jobs, publish_job = producer.split("  publish:\n", 1)
+    assert "R2_ACCESS_KEY_ID" not in build_jobs
+    assert "R2_SECRET_ACCESS_KEY" not in build_jobs
+    assert "R2_ACCESS_KEY_ID" in publish_job
+    assert "ref: ${{ github.sha }}" in publish_job
+    assert "force_source_build" not in producer

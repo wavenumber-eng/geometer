@@ -29,9 +29,9 @@ Neither root is a release artifact.</p>
 <pre><code class="language-powershell">uv run python scripts/qualify_occt.py --tag V8_0_0 --lane all
 uv run python scripts/qualify_occt.py --tag V8_0_1 --lane all
 </code></pre>
-<p>Use <code>--binary-cache off</code> to require a source build, <code>--binary-cache only</code> to
-probe a published cache without falling back, or <code>--prepare-only</code> to stop after
-the dependency install. Native and WASM lanes can be run separately with
+<p>Qualification defaults to <code>--binary-cache off</code> and builds the requested exact
+tag from source. Use <code>--binary-cache only</code> only to probe the production locked
+tag, or <code>--prepare-only</code> to stop after the dependency install. Native and WASM lanes can be run separately with
 <code>--lane native</code> and <code>--lane wasm</code>.</p>
 <p>For a complete lane, the harness:</p>
 <ol>

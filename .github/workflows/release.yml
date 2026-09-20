@@ -154,20 +154,6 @@ jobs:
         if: runner.os == 'macOS'
         run: brew list ninja >/dev/null 2>&1 || brew install ninja
 
-      - name: Cache OCCT
-        uses: actions/cache@v5
-        with:
-          path: |
-            .deps/occt-src
-            .deps/native/${{ matrix.platform }}/occt-build
-            .deps/native/${{ matrix.platform }}/occt-install
-            .deps/native/${{ matrix.platform }}/occt-static-crt-build
-            .deps/native/${{ matrix.platform }}/occt-static-crt-install
-          key: occt-v2-native-${{ matrix.platform }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-${{ hashFiles('scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
-          restore-keys: |
-            occt-v2-native-${{ matrix.platform }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-
-            occt-${{ matrix.os }}-${{ runner.arch }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-
-
       - name: Build static C ABI SDK candidate
         run: >-
           uv run --no-project python scripts/ci_execution_ledger.py run
@@ -314,18 +300,6 @@ jobs:
           key: emsdk-v2-linux-x64-${{ steps.dependency_versions.outputs.emsdk_version }}
           restore-keys: |
             emsdk-Linux-X64-${{ steps.dependency_versions.outputs.emsdk_version }}
-
-      - name: Cache WASM OCCT install
-        uses: actions/cache@v5
-        with:
-          path: |
-            .deps/occt-src
-            .deps/occt-wasm-build
-            .deps/occt-wasm-install
-          key: occt-v2-wasm-linux-x64-emscripten-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-${{ hashFiles('scripts/build_wasm.py', 'scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
-          restore-keys: |
-            occt-v2-wasm-linux-x64-emscripten-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-
-            wasm-occt-install-Linux-X64-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-
 
       - name: Cache Geometer WASM build
         uses: actions/cache@v5

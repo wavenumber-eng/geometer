@@ -26,9 +26,9 @@ uv run python scripts/qualify_occt.py --tag V8_0_0 --lane all
 uv run python scripts/qualify_occt.py --tag V8_0_1 --lane all
 ```
 
-Use `--binary-cache off` to require a source build, `--binary-cache only` to
-probe a published cache without falling back, or `--prepare-only` to stop after
-the dependency install. Native and WASM lanes can be run separately with
+Qualification defaults to `--binary-cache off` and builds the requested exact
+tag from source. Use `--binary-cache only` only to probe the production locked
+tag, or `--prepare-only` to stop after the dependency install. Native and WASM lanes can be run separately with
 `--lane native` and `--lane wasm`.
 
 For a complete lane, the harness:

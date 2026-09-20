@@ -65,17 +65,6 @@ jobs:
           restore-keys: |
             emsdk-Linux-X64-${{ steps.dependency_versions.outputs.emsdk_version }}
 
-      - name: Cache WASM OCCT install
-        uses: actions/cache@v5
-        with:
-          path: |
-            .deps/occt-src
-            .deps/occt-wasm-build
-            .deps/occt-wasm-install
-          key: occt-v2-wasm-linux-x64-emscripten-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-${{ hashFiles('scripts/build_wasm.py', 'scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
-          restore-keys: |
-            occt-v2-wasm-linux-x64-emscripten-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-
-            wasm-occt-install-Linux-X64-${{ steps.dependency_versions.outputs.occt_tag }}-${{ steps.dependency_versions.outputs.emsdk_version }}-
 
       - name: Cache Geometer WASM build
         uses: actions/cache@v5
@@ -163,18 +152,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential ninja-build libgl1-mesa-dev libdbus-1-dev libudev-dev libx11-dev libxcursor-dev libxext-dev libxi-dev libxinerama-dev libxkbcommon-dev libxrandr-dev libwayland-dev wayland-protocols
 
-      - name: Cache native OCCT
-        uses: actions/cache@v5
-        with:
-          path: |
-            .deps/occt-src
-            .deps/native/linux-x64/occt-build
-            .deps/native/linux-x64/occt-install
-          key: occt-v2-native-linux-x64-gcc-${{ steps.dependency_versions.outputs.occt_tag }}-${{ hashFiles('scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
-          restore-keys: |
-            occt-v2-native-linux-x64-gcc-${{ steps.dependency_versions.outputs.occt_tag }}-
-            occt-ubuntu-22.04-X64-gcc-${{ steps.dependency_versions.outputs.occt_tag }}-
-
       - name: Download Emscripten harness
         uses: actions/download-artifact@v8
         with:
@@ -217,18 +194,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential ninja-build libgl1-mesa-dev libdbus-1-dev libudev-dev libx11-dev libxcursor-dev libxext-dev libxi-dev libxinerama-dev libxkbcommon-dev libxrandr-dev libwayland-dev wayland-protocols
-
-      - name: Cache native OCCT
-        uses: actions/cache@v5
-        with:
-          path: |
-            .deps/occt-src
-            .deps/native/linux-x64/occt-build
-            .deps/native/linux-x64/occt-install
-          key: occt-v2-native-linux-x64-gcc-${{ steps.dependency_versions.outputs.occt_tag }}-${{ hashFiles('scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
-          restore-keys: |
-            occt-v2-native-linux-x64-gcc-${{ steps.dependency_versions.outputs.occt_tag }}-
-            occt-ubuntu-22.04-X64-gcc-${{ steps.dependency_versions.outputs.occt_tag }}-
 
       - name: Download current browser WASM artifacts
         uses: actions/download-artifact@v8

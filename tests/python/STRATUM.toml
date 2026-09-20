@@ -44,9 +44,9 @@ test_case_type = "unit"
 
 [[subtests]]
 id = "PY_003"
-file = "test_occt_binary_cache.py"
-name = "OCCT Dependency And Qualification Helpers"
-description = "Checks OCCT cache keys, manifests, archives, exact-tag isolation, comparison normalization, and consumer artifact routing."
+file = "test_occt_dependency.py"
+name = "OCCT Producer And Qualification Helpers"
+description = "Checks isolated producer evidence, content-addressed conditional publication, exact-tag isolation, qualification normalization, and removal of consumer discovery APIs."
 test_case_type = "unit"
 
 [[subtests]]
@@ -243,4 +243,11 @@ id = "PY_031"
 file = "test_release_promotion_plan.py"
 name = "Non-Mutating Release Promotion Plan"
 description = "Checks exact asset identity, safe names, deterministic resume classification, and rejection of mismatched or unexpected release-channel state without publishing."
+test_case_type = "unit"
+
+[[subtests]]
+id = "PY_032"
+file = "test_occt_lock.py"
+name = "Immutable OCCT Dependency Lock"
+description = "Checks the canonical explicit profile matrix, single version authority, exact digest-addressed restore, and fail-closed archive verification without derived cache identities or aliases."
 test_case_type = "unit"

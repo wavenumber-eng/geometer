@@ -494,7 +494,8 @@ def main() -> int:
     parser.add_argument(
         "--binary-cache",
         choices=("auto", "off", "only"),
-        default="auto",
+        default="off",
+        help="Dependency mode (default: off, because qualification compares source-built exact tags).",
     )
     parser.add_argument("--prepare-only", action="store_true")
     parser.add_argument("--skip-parity", action="store_true")

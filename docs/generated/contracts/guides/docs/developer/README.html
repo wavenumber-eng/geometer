@@ -162,14 +162,11 @@ refreshing dependencies. Those operations remove the cached dependency builds.</
 </ul>
 <p>On Windows, use a Visual Studio developer environment or another shell where the
 selected C++ compiler is available to CMake. The default CMake preset uses
-Ninja. The OCCT dependency is built with the active native compiler for that
-platform, so use the same shell consistently for configure/build/validation.
-Binary-cache keys and local install markers include the native toolchain ABI and
-complete build-recipe hash; a compiler, configuration, or recipe change cannot
-silently reuse a stale local install. The published <code>windows-x64</code> OCCT 8.0.1
-cache is an MSVC v143-ABI install and must be consumed from a Visual Studio
-Developer PowerShell or Developer Command Prompt. MinGW and other compiler
-families use a different key and cannot restore the MSVC archive.</p>
+Ninja. <code>dependencies/occt-lock.json</code> selects one reviewed platform/ABI profile;
+the local marker binds the exact lock and archive digest. The published
+<code>windows-x64</code> profile is an MSVC v143-ABI install and must be consumed from a
+Visual Studio Developer PowerShell or Developer Command Prompt. The CMake
+configure guard rejects incompatible Windows compiler families.</p>
 <p>On WSL2/Linux, install the usual build toolchain first. For Debian/Ubuntu
 distros, the minimum package set is:</p>
 <pre><code class="language-bash">sudo apt update
@@ -235,39 +232,26 @@ the embedded stdio server, and rejects shared Geometer or OCCT dependencies.</p>
 <p>If OCCT is missing, top-level CMake automatically invokes:</p>
 <pre><code class="language-powershell">python scripts\build_occt.py
 </code></pre>
-<p>That script uses vendored RapidJSON, checks the public binary dependency cache,
-and otherwise clones OCCT, builds OCCT as static libraries, and installs it into
-<code>.deps/native/&lt;platform&gt;/occt-install/</code>. The first uncached source build is
-slow. Later configures reuse that platform-specific <code>.deps/</code> state and should be
-fast.</p>
+<p>That script selects one explicit profile from <code>dependencies/occt-lock.json</code>,
+reuses a matching local install, or downloads and verifies that profile's one
+immutable archive. It installs generated state into
+<code>.deps/native/&lt;platform&gt;/occt-install/</code>. A missing or mismatched locked object
+fails; it never starts an implicit source build.</p>
 <p>Normal local and CI builds use public HTTPS reads from:</p>
 <pre><code class="language-env">GEOMETER_OCCT_BINARY=auto
-GEOMETER_OCCT_CACHE_PUBLIC_BASE_URL=https://artifacts.wavenumber.net
+WN_ARTIFACTS_BASE_URL=https://artifacts.wavenumber.net
 </code></pre>
 <p><code>GEOMETER_OCCT_BINARY</code> accepts:</p>
 <ul>
-<li><code>auto</code> - use public cache, then any configured signed R2 fallback, then
-source.</li>
-<li><code>off</code> - ignore binary caches and build from source.</li>
-<li><code>only</code> - require a binary cache hit and fail otherwise.</li>
+<li><code>auto</code> and <code>only</code> both use the fail-closed checked-in lock.</li>
+<li><code>off</code> is an explicit source build for producer or debugging work.</li>
 </ul>
-<p>Cache recipe keys cover structured CMake definitions and explicit semantic
-values that can change the installed OCCT bytes. The same definition records
-emit the CMake <code>-D</code> arguments and feed the recipe hash. Workspace paths, build
-parallelism, orchestration scripts, cache transport code, and the indirect
-dependency-version file are not hashed. The selected OCCT repository/tag,
-platform, configuration, library type, Emscripten version when applicable, and
-platform baselines are included directly. Native profiles also identify the
-compiler family, ABI-relevant major version, and C++ runtime/ABI selection;
-compiler patch releases do not rotate the key.
-Previously accepted OCCT 8.0.1 archives may be reached only through exact
-profile, destination-recipe, and SHA aliases; there is no generic stale-cache
-fallback. Reviewed local marker-only recipe transitions are also exact and
-one-way: all non-recipe profile fields and the installed OCCT version must
-already match, and the install tree is retained without a rebuild.</p>
-<p>R2 credentials are only needed for producer uploads or explicit private fallback
-testing. Copy <code>.env.example</code> to <code>.env</code> for those cases and fill the <code>R2_*</code>
-values locally.</p>
+<p>The archive SHA-256 is the consumer identity. Consumer selection does not hash
+build scripts, compiler patch versions, environment state, or recipe inputs and
+does not search aliases or legacy prefixes. Producer recipe and tool details
+remain evidence for reviewing newly built candidates.</p>
+<p>R2 credentials are only needed for producer uploads. Copy <code>.env.example</code> to
+<code>.env</code> for that case and fill the <code>R2_*</code> values locally.</p>
 <p>Root <code>.env</code> is for local development only and must not be present when running
 release signoff or <code>wn-dev-std check</code>. Move it to an ignored local location, or
 set the same variables in the shell environment before signoff.</p>
@@ -331,6 +315,7 @@ Intel macOS wheel. The standard macOS release target is:</p>
 native CLI from clean generated state because static OCCT objects carry their
 own Mach-O minimum OS metadata:</p>
 <pre><code class="language-bash">python scripts/build_occt.py --clean
+python scripts/build_occt.py --binary-cache off
 rm -rf build-native-macos-arm64
 uv run python scripts/validate_native.py
 uv run python scripts/validate_python_package.py --skip-native-validation
@@ -411,7 +396,7 @@ and keep <code>.env</code> out of version control.</p>
 <p>Use this when changing the pinned OCCT version or when the local OCCT build is
 suspect:</p>
 <pre><code class="language-powershell">python scripts\build_occt.py --clean
-python scripts\build_occt.py
+python scripts\build_occt.py --binary-cache off
 cmake --preset default
 cmake --build build --config Release
 </code></pre>
@@ -419,7 +404,7 @@ cmake --build build --config Release
 <code>.deps/native/&lt;platform&gt;/</code>; it does not remove vendored RapidJSON, the shared
 OCCT source checkout, or the Geometer <code>build/</code> directory. Add <code>--clean-source</code>
 only when intentionally refreshing the shared OCCT source checkout too.</p>
-<p>To inspect the dependency cache key without building:</p>
+<p>To inspect the exact locked dependency object without building:</p>
 <pre><code class="language-powershell">python scripts\build_occt.py --print-binary-cache-key
 python scripts\build_wasm.py --print-occt-binary-cache-key
 </code></pre>
@@ -428,10 +413,21 @@ qualification harness rather than editing <code>dependency_versions.py</code> be
 builds. See <a href="occt-qualification.html">OCCT qualification</a>. It keeps dependency
 state below <code>.deps/occt-qualification/&lt;tag&gt;/</code>, build evidence below
 <code>out/occt-qualification/&lt;tag&gt;/</code>, and committed <code>dist/</code> artifacts untouched.</p>
-<p>The trusted GitHub workflow <code>.github/workflows/occt-deps.yml</code> publishes OCCT
-archives to R2. Normal CI and release workflows consume the public artifact
-cache and do not need R2 secrets. When the printed keys are missing from
-<code>https://artifacts.wavenumber.net/deps/v1/geometer/occt/</code>, run the <code>OCCT Dependency Cache</code> workflow with <code>target=all</code> to publish the current generation.</p>
+<p>The trusted GitHub workflow <code>.github/workflows/occt-deps.yml</code> always builds OCCT
+from source and publishes each result to a new archive-digest-addressed R2 key.
+It does not restore or populate a GitHub OCCT cache. Secret-free build jobs use
+a one-day workflow artifact to hand candidate bytes to a separate hosted
+publisher protected by the <code>occt-dependency-production</code> environment. Its small retained evidence artifact
+contains the exact candidate object key, byte count, archive digest, internal
+profile digest, verified upstream tag object and peeled commit, and producer
+recipe. Dispatch either all profiles or one exact profile for a targeted retry.
+Review that evidence and update
+<code>dependencies/occt-lock.json</code> in a normal commit before any consumer selects the
+new bytes.</p>
+<p>Normal CI, release workflows, and developer builds select one explicit profile
+from <code>dependencies/occt-lock.json</code>, reuse a local install only when its lock
+marker matches, or download that one public object. They do not receive R2
+secrets, derive cache keys, search aliases, or compile OCCT after a miss.</p>
 <p>The public Python package uses the executable backend only. Keep ctypes/native
 loading experiments out of the normal wheel and application path unless a future
 ADR explicitly reopens that backend.</p>
@@ -681,7 +677,7 @@ once, then run the reusable matrix harness:</p>
 <pre><code class="language-powershell">python scripts\build_occt.py `
   --occt-tag V7_9_3 `
   --occt-state-root .deps\occt-qualification\7.9.3 `
-  --binary-cache auto
+  --binary-cache off
 python scripts\run_xcaf_custom_driver_matrix.py
 </code></pre>
 <p>The harness compiles one source file against both installs and exercises

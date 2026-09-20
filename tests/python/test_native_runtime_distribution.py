@@ -65,5 +65,6 @@ def test_release_workflow_uses_filtered_native_runtime_packager() -> None:
 
     assert "scripts/package_release_artifacts.py native" in workflow
     assert "make_archive('out/native-" not in workflow
-    assert "scripts/package_release_artifacts.py wasm --output out/wasm-dist.zip" in workflow
+    assert "scripts/package_release_artifacts.py wasm" in workflow
+    assert "--output out/wasm-dist.zip" in workflow
     assert "shutil.make_archive('out/wasm-dist'" not in workflow

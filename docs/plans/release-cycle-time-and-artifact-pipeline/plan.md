@@ -24,7 +24,7 @@ depends_on = ["target-architecture"]
 [[steps]]
 id = "occt-lock"
 title = "Replace derived OCCT cache discovery with an explicit immutable dependency lock"
-status = "active"
+status = "done"
 depends_on = ["target-architecture", "candidate-root-contract"]
 
 [[steps]]
@@ -540,22 +540,27 @@ Codemagic, CircleCI, or another provider.
 
 ### 5. Lock OCCT instead of discovering it
 
-Replace ordinary consumer key derivation with a checked-in canonical OCCT lock,
-for example `dependencies/occt-lock.json`. One reviewed entry per supported
-binary profile contains:
+Replace ordinary consumer key derivation with the checked-in canonical
+`dependencies/occt-lock.json`. One reviewed entry per supported binary profile
+contains:
 
 - OCCT repository, exact tag, and source commit;
-- platform, architecture, compiler family/major, C++ ABI, CRT, library type,
-  and deployment baseline;
-- build recipe identity and tool versions;
+- a stable profile ID plus explicit platform, architecture, C++ ABI, CRT,
+  library type, and deployment-baseline facts;
 - immutable R2 object key;
 - archive SHA-256 and byte count; and
 - canonical profile-manifest SHA-256.
 
+The archive SHA-256 is the consumer identity. Consumers do not derive identity
+from build scripts, compiler patch versions, environment state, recipe hashes,
+or legacy aliases. Producer recipes and tool versions remain immutable audit
+evidence, but changing that evidence cannot silently select a different binary.
+
 Ordinary native, SDK, WASM, local, and CI consumers perform only:
 
 1. find the exact profile in the lock;
-2. accept a local install only when its marker matches the complete lock entry;
+2. accept a local install only when its stable profile ID, archive digest,
+   OCCT version, and internal producer-marker digest match the selected entry;
 3. otherwise download the one exact R2 object;
 4. verify byte count, archive digest, and internal profile; and
 5. fail within 30 seconds if any object or identity is absent or wrong.
@@ -576,8 +581,9 @@ OCCT build creates a new object and lock digest; it never mutates an existing
 one.
 
 The immutable dependency record also preserves the exact OCCT corresponding
-source archive, patches, build scripts/recipe, licenses, and relink evidence
-required by ADR-018. The source bundle is separately digested and locked; a
+source archive and licenses required by ADR-018. Qualification evidence binds
+the reviewed Geometer source revision containing the build scripts, patches,
+and relink procedure. The source bundle is separately digested and locked; a
 binary-only object is not sufficient dependency-release evidence.
 
 ### 6. Consolidate the Geometer build graph
@@ -834,8 +840,9 @@ from compute regressions, but they do not relax correctness.
 - One build producer per artifact identity and source/profile/platform tuple.
 
 Record p50 and worst of three clean and three warm runs before accepting the
-budgets. A cache hit is an optimization; correctness and artifact identity must
-be identical after a cache miss.
+budgets. A verified local-install hit is only an optimization; clean restoration
+must select the same locked archive identity and must never compile after a
+missing or mismatched object.
 
 ## Documentation and governance changes
 

@@ -66,22 +66,17 @@ allows the GitHub Release to become public. A final job downloads the public
 assets again, checks every size and SHA-256, and verifies GitHub attestations.
 No push, pull request, documentation change, tag creation, or GitHub Release
 event starts this workflow.</p>
-<h2 id="dependency-caches">Dependency caches</h2>
-<p>Every native OCCT consumer and producer uses this key family:</p>
-<pre><code class="language-text">occt-v2-native-&lt;platform&gt;-&lt;compiler&gt;-&lt;occt-tag&gt;-&lt;recipe-hash&gt;
-</code></pre>
-<p>Every WASM OCCT consumer and producer uses:</p>
-<pre><code class="language-text">occt-v2-wasm-linux-x64-emscripten-&lt;occt-tag&gt;-&lt;emsdk-version&gt;-&lt;recipe-hash&gt;
-</code></pre>
-<p>The platform values are the repository's canonical package tags:
-<code>windows-x64</code>, <code>linux-x64</code>, <code>linux-arm64</code>, and <code>macos-arm64</code>. Cache paths always
-include the source, build, and install trees. The dependency-cache workflow is
-the authenticated R2 producer; ordinary workflows consume GitHub cache or the
-public binary cache without R2 credentials.</p>
-<p>Legacy restore prefixes remain temporarily below the primary <code>v2</code> prefix. On
-the first run they avoid a cold OCCT compile and cause <code>actions/cache</code> to save
-the restored content under the new exact key. New caches are always written
-with the canonical key.</p>
+<h2 id="locked-occt-dependency">Locked OCCT dependency</h2>
+<p>All native and WASM jobs select one explicit profile from
+<code>dependencies/occt-lock.json</code>. A clean runner downloads one exact
+archive-digest-addressed R2 object; a warm local machine reuses an extracted
+install only when its lock marker matches. Workflows do not use GitHub Actions
+cache for OCCT, derive recipe keys, search legacy prefixes, or build from source
+after a miss.</p>
+<p>The manual <code>OCCT Dependency Producer</code> workflow is the only credentialed path.
+It always source-builds, conditionally creates a new digest-addressed candidate,
+and uploads only its small evidence files to GitHub. The candidate is inert
+until a reviewed commit updates the lock.</p>
 <h2 id="historical-cost-baseline">Historical cost baseline</h2>
 <p>Before pull-request CI was retired, a production C++ pull request ran four
 native matrices plus WASM, standards, and experimental cross-transport

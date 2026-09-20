@@ -10,7 +10,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from dependency_versions import OCCT_REPO, OCCT_TAG, OCCT_VERSION
+from dependency_versions import OCCT_COMMIT, OCCT_REPO, OCCT_TAG, OCCT_TAG_OBJECT, OCCT_VERSION
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -122,7 +122,7 @@ def occt_identity(
     identity["profile_sha256"] = hashlib.sha256(raw).hexdigest()
     if not isinstance(profile, dict):
         return identity
-    expected_keys = {
+    base_keys = {
         "config",
         "emsdk_version",
         "kind",
@@ -134,9 +134,16 @@ def occt_identity(
         "recipe_hash",
         "toolchain_abi",
     }
+    source_keys = {"source_commit", "source_tag_object"}
+    keys_valid = set(profile) in (base_keys, base_keys | source_keys)
+    source_valid = not source_keys.issubset(profile) or (
+        profile.get("source_commit") == OCCT_COMMIT
+        and profile.get("source_tag_object") == OCCT_TAG_OBJECT
+    )
     valid = all(
         (
-            set(profile) == expected_keys,
+            keys_valid,
+            source_valid,
             raw.replace(b"\r\n", b"\n") == canonical_json(profile),
             profile.get("kind") == "native",
             profile.get("platform_tag") == f"{platform_name}-{arch}",

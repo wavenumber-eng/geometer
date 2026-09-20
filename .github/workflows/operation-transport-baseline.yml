@@ -48,17 +48,6 @@ jobs:
       - name: Install macOS build tools
         if: runner.os == 'macOS'
         run: brew list ninja >/dev/null 2>&1 || brew install ninja
-      - name: Cache OCCT
-        uses: actions/cache@v5
-        with:
-          path: |
-            .deps/occt-src
-            .deps/native/${{ matrix.platform }}/occt-build
-            .deps/native/${{ matrix.platform }}/occt-install
-          key: occt-v2-native-${{ matrix.platform }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-${{ hashFiles('scripts/build_occt.py', 'scripts/dependency_versions.py', 'scripts/occt_binary_cache.py', 'third_party/rapidjson/**') }}
-          restore-keys: |
-            occt-v2-native-${{ matrix.platform }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-
-            occt-${{ matrix.os }}-${{ runner.arch }}-${{ matrix.compiler }}-${{ steps.dependency_versions.outputs.occt_tag }}-
       - name: Build and validate sibling executable
         run: uv run --group dev python scripts/validate_native.py
       - name: Benchmark small, medium, and large operations

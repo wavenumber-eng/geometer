@@ -60,3 +60,83 @@ the separate migration manifest. Rebuild WASM once under the current recipe (or
 approve explicit compatibility evidence), review the resulting lock, then copy
 the exact five native and qualified WASM/source bytes to conditional-create,
 content-addressed R2 keys before changing any consumer.
+
+## Lock migration correction
+
+The consumer-lock implementation re-read the internal marker directly from
+each migrated archive before cutover. Linux and macOS matched the preliminary
+digests. The Windows archives store CRLF marker bytes, so their exact marker
+SHA-256 values are `ea7f8ee34be29ac8d46f00e6a2d8a989a6c47fd8df6fcfa44c93a2488518f525`
+(`/MD`) and `bf5bcf985677f08e60e53b5118c2ac0e45eb1947ab4f94cb70d8fb7e0f1ca4ae`
+(`/MT`).
+
+The legacy WASM archive contained no internal profile marker. It was not
+accepted in that form. A byte-preserving ZIP append added only the canonical
+reviewed legacy profile marker; every pre-existing archive member remained
+unchanged. The resulting locked archive is 57,317,535 bytes with SHA-256
+`cf05f4fffd1f52be7e6b2f2aa8433baf3ec32dcbbf1812a37cd6fced66bd78ec`,
+and its marker SHA-256 is
+`7a57546838837b696dfd3f10d52961917c87c42cb228c1ff840e4463d1be59e6`.
+The original unmarked object remains immutable historical input and is not a
+consumer lock target.
+
+All six binary destinations and the corresponding-source destination were
+created with `If-None-Match: *`; no existing R2 object was overwritten.
+
+The final public paths were then verified independently. A clean Windows x64
+restore and a clean WASM restore checked byte count, archive SHA-256, internal
+profile-marker SHA-256, and installed OCCT version; an immediate second run of
+each reused local state without a download. The public corresponding-source
+object was also downloaded by its lock entry, matched its 45,131,814-byte size
+and SHA-256, and contained both locked license files.
+
+Consumer cutover removes GitHub Actions OCCT caches and deletes the former
+consumer discovery implementation: recipe-derived routing, accepted aliases,
+local marker migrations, public/signed fallback order, legacy prefixes, and
+automatic source fallback no longer exist. Recipe and toolchain computation is
+isolated in `scripts/occt_producer.py` as candidate provenance only.
+
+## Fail-closed hardening
+
+Implementation review found five gaps before accepting the cutover. The
+consumer and producer paths now close them without adding a second identity
+system:
+
+- producer publication resolves the actual annotated tag object, peeled
+  commit, and checkout `HEAD`, records them in the profile evidence, and
+  rejects publication unless they match the checked-in source lock;
+- exact-tag qualification defaults to an explicit source build rather than
+  trying the production lock for a non-production tag;
+- the manual producer can rebuild `all` or one exact profile, so retrying a
+  failed platform does not rebuild the matrix;
+- public restore performs a 30-second `HEAD`/content-length preflight and a
+  bounded streaming download, and WASM restores OCCT before installing
+  Emscripten; and
+- the lock accepts only the supported ABI shapes and verifies the internal
+  marker's target, runtime, toolchain, source, and deployment-target facts in
+  addition to its exact digest. Locked macOS consumers reject a conflicting
+  deployment-target override.
+
+These checks are consistency validation only. They do not compute a consumer
+cache key: the selected profile's locked archive SHA-256 remains the sole byte
+identity.
+
+A second implementation review found that the first producer workflow still
+gave R2 credentials to the build jobs. The final split makes all native and
+WASM jobs secret-free: they build and package, then hand a one-day workflow
+artifact to a hosted `publish` job. Only that job enters the protected
+`occt-dependency-production` environment, checks out the exact default-branch
+workflow commit, validates the manifest/archive/profile as untrusted data, and
+performs conditional R2 creation. Locked Git identity is also checked directly
+after checkout and before configure/build, then checked again at publication.
+
+The GitHub `occt-dependency-production` environment is configured with a
+required reviewer and a custom deployment-branch policy allowing only `main`.
+The final independent implementation re-review reported no blocker or P1
+finding after 67 focused tests, 19 L99 tests, workflow condition/artifact
+inspection, adversarial publisher inspection, and consumer-path inspection.
+
+An indefinite Cloudflare bucket-lock rule remains an operational defense for
+the later failure/security phase. The available R2 S3 credentials cannot manage
+bucket settings, so this code change does not claim that service-side retention
+is enabled; content addressing and conditional create are enforced now.

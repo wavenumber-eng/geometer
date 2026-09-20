@@ -313,6 +313,10 @@ def test_release_credentials_are_isolated_from_candidate_builds() -> None:
     assert "environment: release-production" in promotion
     assert "scripts/build_release_candidate.py" not in promotion
     assert "scripts/build_static_sdk.py" not in promotion
+
+    main_only = "if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)"
+    assert main_only in candidate.split("  build:\n", 1)[0]
+    assert main_only in promotion.split("  verify:\n", 1)[0]
     assert "scripts/build_wasm.py" not in promotion
     assert "--clobber" not in promotion
 

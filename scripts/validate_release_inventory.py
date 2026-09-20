@@ -23,10 +23,10 @@ WHEEL_SUFFIXES = {
 
 
 def release_version(tag: str) -> str:
-    match = re.fullmatch(r"v(\d{4})-(\d{2})-(\d{2})", tag)
+    match = re.fullmatch(r"v([0-9]{4})-([0-9]{2})-([0-9]{2})(?:-(0|[1-9][0-9]*))?", tag)
     if match is None:
         raise ValueError(f"invalid date-version release tag: {tag}")
-    return ".".join(str(int(part)) for part in match.groups())
+    return ".".join(str(int(part)) for part in match.groups() if part is not None)
 
 
 def expected_asset_names(tag: str) -> set[str]:

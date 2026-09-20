@@ -52,8 +52,13 @@ def write_json(path: Path, value: Any) -> None:
 def release_metadata() -> tuple[str, int, str]:
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
     version = str(project["version"])
-    year, month, day = (int(part) for part in version.split("."))
+    parts = [int(part) for part in version.split(".")]
+    if len(parts) not in {3, 4}:
+        raise RuntimeError(f"Unsupported release version: {version}")
+    year, month, day = parts[:3]
     release_tag = f"v{year:04d}-{month:02d}-{day:02d}"
+    if len(parts) == 4:
+        release_tag = f"{release_tag}-{parts[3]}"
     cmake = (ROOT / "CMakeLists.txt").read_text(encoding="utf-8")
     match = re.search(r'set\(GEOMETER_ABI_VERSION "([0-9]{8})"', cmake)
     if match is None:

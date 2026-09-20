@@ -12,13 +12,13 @@ status = "done"
 [[steps]]
 id = "target-architecture"
 title = "Approve the build-once candidate and promotion architecture"
-status = "active"
+status = "done"
 depends_on = ["audit-baseline"]
 
 [[steps]]
 id = "candidate-root-contract"
 title = "Define and test the source, version, workflow, dependency, toolchain, and policy identity of a candidate"
-status = "pending"
+status = "done"
 depends_on = ["target-architecture"]
 
 [[steps]]

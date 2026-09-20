@@ -25,6 +25,7 @@ objectives = [
     "Verify deterministic relocatable static SDK packaging, exact link manifests, payload inventories, external consumer qualification, a packaged direct-static Rust illustration app with no Geometer executable fallback, and isolated Windows CRT profiles.",
     "Verify the immutable release inventory includes every native runtime, wheel, WASM archive, and static SDK sidecar exactly once and binds downloaded release bytes to strict canonical metadata.",
     "Prevent maintained examples and scripts from selecting superseded A0 illustration operations and require durable docs to name B0 as canonical.",
+    "Verify canonical release-candidate identity, fail-closed execution timing records, and non-mutating idempotent promotion planning before expensive release matrices start.",
 ]
 
 [[subtests]]
@@ -221,4 +222,25 @@ id = "PY_028"
 file = "test_illustration_b0_migration.py"
 name = "Illustration B0 Consumer Migration"
 description = "Rejects live A0 illustration operation selection outside the reviewed compatibility inventory and checks canonical B0 documentation."
+test_case_type = "unit"
+
+[[subtests]]
+id = "PY_029"
+file = "test_candidate_root.py"
+name = "Release Candidate Root Identity"
+description = "Checks canonical closed candidate identity over source, release, workflow, policy, OCCT lock, and lane recipe/toolchain digests."
+test_case_type = "unit"
+
+[[subtests]]
+id = "PY_030"
+file = "test_ci_execution_ledger.py"
+name = "CI Execution Ledger"
+description = "Checks fail-closed canonical command timing records, atomic updates, failure propagation, selected parallelism capture, and GitHub summary rendering."
+test_case_type = "unit"
+
+[[subtests]]
+id = "PY_031"
+file = "test_release_promotion_plan.py"
+name = "Non-Mutating Release Promotion Plan"
+description = "Checks exact asset identity, safe names, deterministic resume classification, and rejection of mismatched or unexpected release-channel state without publishing."
 test_case_type = "unit"

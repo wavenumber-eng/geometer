@@ -245,6 +245,12 @@ def test_ci_is_manual_only_and_release_rebuilds_every_output_once() -> None:
     assert "mkdir out/draft-release" not in release
     assert "mkdir out/public-release" not in release
     assert "name: qualified-release" in release
+    assert 'pattern: "*-dist*"' in release
+    assert "name: ci-ledger-${{ matrix.platform }}" in release
+    assert "name: ci-ledger-wasm" in release
+    assert release.count("scripts/ci_execution_ledger.py run") >= 10
+    assert 'notes="docs/releases/$(python scripts/ci_release_metadata.py date).md"' in release
+    assert 'notes="docs/releases/${RELEASE_TAG#v}.md"' not in release
     assert "--clobber" not in release
     assert "needs: qualify-release" in release
     assert "needs: github-assets" in release

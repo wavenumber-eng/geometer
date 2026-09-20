@@ -33,6 +33,18 @@ def _fake_build(tmp_path: Path) -> tuple[Path, Path, list[Path]]:
     return build, geometer, private
 
 
+def test_static_sdk_release_metadata_supports_same_day_serials(tmp_path: Path, monkeypatch) -> None:
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "fixture"\nversion = "2026.9.20.2"\n', encoding="utf-8")
+    (tmp_path / "CMakeLists.txt").write_text('set(GEOMETER_ABI_VERSION "20260920")\n', encoding="utf-8")
+    monkeypatch.setattr(package_static_sdk, "ROOT", tmp_path)
+
+    assert package_static_sdk.release_metadata() == (
+        "2026.9.20.2",
+        20260920,
+        "v2026-09-20-2",
+    )
+
+
 def test_static_sdk_is_deterministic_complete_and_relocatable(tmp_path: Path, monkeypatch) -> None:
     build, geometer, private = _fake_build(tmp_path)
     license_file = tmp_path / "LICENSE.txt"
@@ -135,10 +147,9 @@ def test_static_sdk_validation_rejects_payload_tampering(tmp_path: Path, monkeyp
 
 
 def test_direct_static_illustration_sample_cannot_fall_back_to_the_cli() -> None:
-    source = (
-        package_static_sdk.ROOT
-        / "src/rust/geometer-client/examples/direct_static_illustration.rs"
-    ).read_text(encoding="utf-8")
+    source = (package_static_sdk.ROOT / "src/rust/geometer-client/examples/direct_static_illustration.rs").read_text(
+        encoding="utf-8"
+    )
     assert "GeometerDirectClient::new()" in source
     assert "GeometerClient::spawn" not in source
     assert "find_executable" not in source

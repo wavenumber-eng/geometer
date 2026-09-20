@@ -63,8 +63,11 @@ def test_release_inventory_has_every_platform_product() -> None:
 
 def test_release_inventory_normalizes_date_version() -> None:
     assert release_version("v2001-02-03") == "2001.2.3"
+    assert release_version("v2001-02-03-2") == "2001.2.3.2"
     with pytest.raises(ValueError, match="date-version"):
         release_version("2001.2.3")
+    with pytest.raises(ValueError, match="date-version"):
+        release_version("v2001-02-03-2٢")
 
 
 def test_release_inventory_rejects_duplicate_basenames(tmp_path: Path) -> None:

@@ -136,7 +136,7 @@ depends_on = ["external-review", "sdk-release-candidate", "kicad-trial", "illust
 
 [[steps]]
 id = "release-promotion"
-title = "Publish the immutable SDK asset matrix and download-verify the public release"
+title = "Promote the immutable SDK asset matrix without rebuilding and download-verify every public channel"
 status = "pending"
 depends_on = ["release-signoff"]
 
@@ -162,7 +162,7 @@ status = "pending"
 
 [[exit_criteria]]
 id = "github-release-assets"
-title = "Immutable GitHub Releases fail closed unless every required SDK asset, sidecar, provenance attestation, and checksum is present"
+title = "The immutable release inventory fails closed unless every SDK asset, sidecar, provenance attestation, checksum, and public-channel digest is present"
 status = "pending"
 
 [[exit_criteria]]
@@ -217,6 +217,12 @@ status = "pending"
 +++
 
 # Supported Static SDK and Unified Geometer Operation Transports
+
+Release-candidate construction and publication are now governed by the
+top-priority [release cycle-time and artifact pipeline
+plan](../release-cycle-time-and-artifact-pipeline/plan.md). This plan continues
+to own SDK and transport correctness; it must not add a second release pipeline
+or require rebuilding already-qualified candidate bytes.
 
 This working plan covers:
 

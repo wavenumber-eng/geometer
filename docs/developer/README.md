@@ -809,7 +809,7 @@ packaged-crate consumer running friendly analytic IPC against the platform
 node scripts\generate-rust-contracts.mjs --check
 cargo fmt --manifest-path src\rust\geometer-client\Cargo.toml --all -- --check
 cargo clippy --manifest-path src\rust\geometer-client\Cargo.toml --all-targets --locked -- -D warnings
-wn-dev-std audit src\rust\geometer-client --scope language
+uvx --from wn-dev-std==2026.9.8 wn-dev-std audit src\rust\geometer-client --scope language
 uv run pytest tests\rust -q
 ```
 

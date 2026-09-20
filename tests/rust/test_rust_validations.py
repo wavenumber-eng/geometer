@@ -23,6 +23,7 @@ PRODUCTION_TEST_TARGETS = (
     "illustration_composition",
     "logical_dtos",
 )
+WN_DEV_STD = ("uvx", "--from", "wn-dev-std==2026.9.8", "wn-dev-std")
 
 
 def run(*args: str, cwd: Path = ROOT) -> None:
@@ -50,7 +51,7 @@ def test_rust_format_lint_and_live_conformance() -> None:
             run("cargo", "test", "--manifest-path", str(MANIFEST), "--locked", "--test", target)
     else:
         run("cargo", "test", "--manifest-path", str(MANIFEST), "--locked")
-    run("wn-dev-std", "audit", str(MANIFEST.parent), "--scope", "language")
+    run(*WN_DEV_STD, "audit", str(MANIFEST.parent), "--scope", "language")
 
 
 @pytest.mark.skipif(TEST_PROFILE == "production", reason="combined analytic consumer is experimental")

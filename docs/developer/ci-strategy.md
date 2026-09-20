@@ -152,3 +152,22 @@ GitHub caches. The measured run and cache evidence are recorded on
 [issue #34](https://github.com/wavenumber-eng/geometer/issues/34). These figures
 explain why pull-request automation is intentionally disabled; they are not a
 current PR validation budget.
+
+## Simplified pipeline cutover result
+
+The first complete shadow candidate on the simplified pipeline was
+[run 35538938740](https://github.com/wavenumber-eng/geometer/actions/runs/35538938740)
+at source `3d2333aef0802673c3cf62ac8a47d2336a87ef5b`. It completed in 15m19s
+wall time, including the 1m39s metadata gate and 58s final aggregate. Parallel
+lane durations were macOS ARM64 6m36s, WASM 7m45s, Linux ARM64 8m42s, Linux x64
+10m21s, and Windows x64 12m32s. Every lane restored its exact public locked
+OCCT archive; none built OCCT.
+
+The retained `qualified-release` artifact contained 23 flat files and expired
+after 30 days. Independent download verification matched all 22 inventoried
+release assets and verified the four SDK attestations plus the inventory
+attestation. Intermediate matrix artifacts expire after one day. A negative
+promotion qualification fetched the cross-run artifact successfully, rejected
+the already-published `v2026-09-19` tag/source mismatch before channel access,
+and skipped every publishing job. The next product version is therefore the
+first candidate eligible for real promotion through this pipeline.

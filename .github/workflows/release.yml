@@ -281,7 +281,7 @@ jobs:
           node tests/wasm/step_to_glb_bytes_validation.js
 
       - name: Package WASM dist
-        run: python -c "import pathlib, shutil; pathlib.Path('out').mkdir(exist_ok=True); shutil.make_archive('out/wasm-dist', 'zip', 'dist/wasm')"
+        run: uv run --no-project python scripts/package_release_artifacts.py wasm --output out/wasm-dist.zip
 
       - name: Upload WASM artifact
         uses: actions/upload-artifact@v7

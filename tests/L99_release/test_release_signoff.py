@@ -240,6 +240,10 @@ def test_ci_is_manual_only_and_release_rebuilds_every_output_once() -> None:
     assert "scripts/build_static_sdk.py --platform ${{ matrix.platform }} --allow-dirty" not in release
     assert "scripts/validate_release_inventory.py" in release
     assert "scripts/verify_release_inventory.py" in release
+    assert release.count("mkdir -p out/draft-release") == 2
+    assert release.count("mkdir -p out/public-release") == 1
+    assert "mkdir out/draft-release" not in release
+    assert "mkdir out/public-release" not in release
     assert "name: qualified-release" in release
     assert "--clobber" not in release
     assert "needs: qualify-release" in release

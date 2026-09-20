@@ -384,7 +384,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          mkdir out/draft-release
+          mkdir -p out/draft-release
           gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir out/draft-release
           python scripts/verify_release_inventory.py out/draft-release --tag "$RELEASE_TAG"
 
@@ -441,7 +441,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           test "$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = "true"
-          mkdir out/draft-release
+          mkdir -p out/draft-release
           gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir out/draft-release
           python scripts/verify_release_inventory.py out/draft-release --tag "$RELEASE_TAG"
           gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false
@@ -465,7 +465,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           test "$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = "false"
-          mkdir out/public-release
+          mkdir -p out/public-release
           gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir out/public-release
           python scripts/verify_release_inventory.py out/public-release --tag "$RELEASE_TAG"
           mapfile -d '' attestable_archives < <(find out/public-release -maxdepth 1 -type f -name 'geometer-sdk-*.zip' -print0)

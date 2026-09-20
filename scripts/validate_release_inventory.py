@@ -85,7 +85,11 @@ def validate_inventory(root: Path, tag: str, candidate_root: dict[str, Any]) -> 
         validate_native(native_path)
         validate_wheel(wheel_path)
         validate_native_wheel_pair(native_path, wheel_path)
-        validate_sdk(assets[f"geometer-sdk-{release_version(tag)}-{platform_name}.zip"])
+        validate_sdk(
+            assets[f"geometer-sdk-{release_version(tag)}-{platform_name}.zip"],
+            expected_release_tag=tag,
+            expected_source_revision=candidate["source"]["revision"],
+        )
     validate_wasm(assets["wasm-dist.zip"])
     validate_candidate_validation_file(
         assets[validation_asset_name(tag)],

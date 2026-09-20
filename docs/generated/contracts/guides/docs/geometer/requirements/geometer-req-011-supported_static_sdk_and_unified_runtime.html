@@ -151,12 +151,15 @@ and record a reviewed compliance disposition before promotion.</li>
 <li>Build a release-candidate SDK matrix outside Git and before public release
 promotion. Candidate bytes are temporary CI or draft-release evidence and
 must not become authoritative merely because a build job succeeded.</li>
-<li>Gate promotion on a clean KiCad Cruncher trial using the candidate SDK, not
-Geometer build-tree paths. On Windows x64 and macOS ARM64, statically link
-Geometer, invoke <code>geometer_serve_stdio()</code> from a hidden self-hosted command,
-preserve the serial-worker process pool, and run representative Toon work
-with one and four workers.</li>
-<li>Run the downstream trial with <code>GEOMETER_EXE</code> unset, no Geometer on <code>PATH</code>,
+<li>When the SDK interface, supported toolchain profile, packaging, or embedded
+runtime behavior changes, gate promotion on a clean KiCad Cruncher trial
+using the candidate SDK, not Geometer build-tree paths. On Windows x64 and
+macOS ARM64, statically link Geometer, invoke <code>geometer_serve_stdio()</code> from
+a hidden self-hosted command, preserve the serial-worker process pool, and
+run representative Toon work with one and four workers. Unrelated releases
+may reference the latest applicable downstream evidence rather than repeat
+the trial.</li>
+<li>When required by item 29, run the downstream trial with <code>GEOMETER_EXE</code> unset, no Geometer on <code>PATH</code>,
 and no sibling Geometer executable or shared Geometer/OCCT library. Prove
 that child processes execute the relocated Cruncher binary, compare output
 with the sibling-Geometer baseline, inject one worker failure, and preserve

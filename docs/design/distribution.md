@@ -45,11 +45,11 @@ material. See [Static native SDK](static-native-sdk.md).
 `Build Release Candidate` and `Promote Release Candidate` are separate manual
 workflows. Candidate production builds all four native archives, four platform
 wheels, four static SDKs, and WASM once, validates one fail-closed inventory,
-and stores those exact bytes under an immutable R2 candidate identity. The
-promotion workflow contains no compilation or packaging tools. It verifies an
-immutable tag at the inventoried source, retrieves the candidate, and
-idempotently publishes the same bytes to GitHub Releases and PyPI before
-creating the final R2 tag alias.
+and retains those exact bytes as the `qualified-release` artifact of that
+successful GitHub Actions run. The promotion workflow contains no compilation
+or packaging tools. Given that run ID, it verifies the workflow, source,
+inventory, and immutable tag, then idempotently publishes the same bytes to
+PyPI and GitHub Releases.
 
 The release inventory uses the B0 envelope. Besides exact asset names, sizes,
 and SHA-256 digests, it embeds the canonical candidate root and its digest. The
@@ -59,16 +59,11 @@ verification must match the candidate source revision to the checked-out
 release tag. Tool versions and workflow timings remain evidence rather than
 alternate cache or candidate identities.
 
-`scripts/publish_release_candidate.py` implements the immutable candidate-store
-boundary. It freshly validates the complete B0 inventory and artifact contents,
-then conditionally creates
-`releases/candidates/<source-sha>/<inventory-sha256>/<asset-name>` objects and
-creates the inventory object last. An occupied key is accepted only when its
-bytes are identical. The protected hosted ingestion job executes code from the
-reviewed workflow revision and consumes candidate artifacts only as bounded
-data. `scripts/fetch_release_candidate.py` restores exact candidate bytes for
-promotion, and `scripts/publish_release_tag.py` conditionally creates
-`releases/tags/<tag>.json` only after PyPI and GitHub publication succeed.
+Candidate artifacts are retained for 30 days. Promotion verifies that the run
+completed successfully on `main` using `.github/workflows/release-candidate.yml`
+before downloading `qualified-release`. GitHub Releases are the durable public
+archive after promotion. R2 is intentionally not part of the product release
+path; it stores only locked third-party dependency archives such as OCCT.
 
 Browser and native Lab build scripts do not publish demo applications. See
 [Browser demo packaging and UI](../developer/browser-demos.md) for the local build, closure,

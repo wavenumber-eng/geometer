@@ -17,6 +17,81 @@ from release_asset_names import PLATFORMS, WHEEL_SUFFIXES, product_asset_names, 
 
 SCHEMA = "wn.geometer.release_candidate_validation.a0"
 LANES = ("release-verify", *PLATFORMS, "wasm")
+RELEASE_VERIFY_TASKS = (
+    ("test", "release orchestration preflight"),
+    ("test", "generated contract drift"),
+    ("test", "release metadata tag"),
+    ("test", "candidate source identity"),
+    ("test", "candidate main ancestry"),
+    ("test", "release notes version"),
+    ("test", "L99 release gate"),
+    ("test", "repository standards"),
+    ("test", "release standards audit"),
+)
+NATIVE_TASKS = (
+    ("build", "static C ABI SDK"),
+    ("test", "relocated static SDK consumer"),
+    ("build-test", "production native validation"),
+)
+LINUX_X64_CLIENT_TASKS = (
+    ("test", "Python client stratum"),
+    ("test", "Rust client stratum"),
+    ("prepare", "pinned Node dependencies"),
+    ("test", "Node toolchain version"),
+    ("test", "TypeScript host client stratum"),
+)
+NATIVE_PACKAGE_TASKS = (
+    ("build-test", "Python package validation"),
+    ("test", "wheel metadata"),
+    ("package", "native distribution"),
+)
+WASM_TASKS = (
+    ("prepare", "pinned Node dependencies"),
+    ("test", "Node toolchain version"),
+    ("build", "WASM artifacts"),
+    ("test", "TypeScript check"),
+    ("build", "HLR browser site"),
+    ("build", "illustration browser site"),
+    ("build", "standalone HLR demo"),
+    ("build", "standalone illustration demo"),
+    ("test", "browser site validation"),
+    ("test", "TypeScript WASM client stratum"),
+    ("test", "WASM planar batch validation"),
+    ("test", "WASM STEP to GLB validation"),
+    ("package", "WASM distribution"),
+)
+
+
+def required_tasks(lane: str) -> tuple[tuple[str, str], ...]:
+    if lane == "release-verify":
+        return RELEASE_VERIFY_TASKS
+    if lane == "wasm":
+        return WASM_TASKS
+    if lane not in PLATFORMS:
+        raise ValueError(f"unknown candidate lane: {lane}")
+    clients = LINUX_X64_CLIENT_TASKS if lane == "linux-x64" else ()
+    return (*NATIVE_TASKS, *clients, *NATIVE_PACKAGE_TASKS)
+
+
+def _validate_required_tasks(lane: str, entries: list[dict[str, Any]]) -> None:
+    observed = tuple((entry["kind"], entry["name"]) for entry in entries)
+    expected = required_tasks(lane)
+    if observed != expected:
+        raise ValueError(f"candidate lane task order or identity mismatch: {lane}")
+    for entry in entries:
+        environment = entry["environment"]
+        if environment["CARGO_BUILD_JOBS"] is None or environment["CMAKE_BUILD_PARALLEL_LEVEL"] is None:
+            raise ValueError(f"candidate lane omitted governed parallelism: {lane}/{entry['name']}")
+        if lane in PLATFORMS and environment["GEOMETER_REQUIRE_NATIVE_TEST_SERVERS"] != "1":
+            raise ValueError(f"native candidate lane did not require native test servers: {lane}/{entry['name']}")
+        if entry["name"] in {"Python client stratum", "Rust client stratum", "TypeScript host client stratum"}:
+            if environment["GEOMETER_TEST_PROFILE"] != "production":
+                raise ValueError(f"client candidate task did not use the production test profile: {entry['name']}")
+        if entry["name"] == "TypeScript host client stratum" and environment["GEOMETER_TYPESCRIPT_SCOPE"] != "host":
+            raise ValueError("TypeScript host candidate task did not use the host scope")
+        if entry["name"] == "TypeScript WASM client stratum":
+            if environment["GEOMETER_TEST_PROFILE"] != "production" or environment["GEOMETER_TYPESCRIPT_SCOPE"] != "wasm":
+                raise ValueError("TypeScript WASM candidate task did not use the production WASM scope")
 
 
 def canonical_bytes(value: dict[str, Any]) -> bytes:
@@ -87,8 +162,7 @@ def build_candidate_validation(
         ledger_path = ledger_root / f"ci-ledger-{lane}.json"
         ledger = load_ledger(ledger_path)
         entries = ledger["entries"]
-        if not entries:
-            raise ValueError(f"candidate lane has no recorded commands: {lane}")
+        _validate_required_tasks(lane, entries)
         for entry in entries:
             if entry["lane"] != lane:
                 raise ValueError(f"candidate ledger entry is assigned to the wrong lane: {lane}")
@@ -167,6 +241,7 @@ def validate_candidate_validation(
             raise ValueError("candidate validation lane record is malformed")
         lane = lane_record["lane"]
         ledger = validate_ledger({"entries": lane_record["entries"], "schema": "wn.geometer.ci_execution_ledger.a0"})
+        _validate_required_tasks(lane, ledger["entries"])
         if any(entry["lane"] != lane or entry["outcome"] != "success" for entry in ledger["entries"]):
             raise ValueError(f"candidate validation lane contains invalid entries: {lane}")
         for entry in ledger["entries"]:

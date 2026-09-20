@@ -245,9 +245,10 @@ def test_ci_is_manual_only_and_candidate_uses_shared_command() -> None:
     assert "\n  release:" not in release_triggers
     assert "\n  pull_request:" not in release_triggers
     assert "\n  push:" not in release_triggers
-    assert "ref: ${{ inputs.source_revision }}" in candidate
+    assert "inputs.source_revision" not in candidate
+    assert "inputs.tag" not in candidate
     assert '--name "candidate source identity"' in candidate
-    assert 'bash "${{ inputs.source_revision }}" "$GITHUB_SHA"' in candidate
+    assert 'bash "$GITHUB_SHA"' in candidate
 
     assert candidate.count("scripts/build_release_candidate.py") == 2
     assert "--platform ${{ matrix.platform }}" in candidate
@@ -274,17 +275,30 @@ def test_ci_is_manual_only_and_candidate_uses_shared_command() -> None:
         assert implementation_detail not in release
     assert "scripts/validate_release_inventory.py" in candidate
     assert "scripts/verify_release_inventory.py" in release
+    assert "Preflight GitHub release state before PyPI" in release
+    assert release.index("Preflight GitHub release state before PyPI") < release.index("  pypi:")
+    assert release.count('gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG"') == 2
+    assert release.count("grep -q '(HTTP 404)'") == 2
+    assert release.count("jq '.assets | length'") == 2
+    assert release.count('cmp "out/github-preflight/$inventory" "out/promotion-payload/$inventory"') == 2
     assert "scripts/candidate_root.py create-checkout out/candidate-root.json" in candidate
     assert "--candidate-root out/candidate-root.json" in candidate
     assert "name: qualified-release" in candidate
+    assert "path: out/qualified-release/*" in candidate
+    assert 'destination="out/qualified-release/$(basename "$asset")"' in candidate
+    assert "scripts/verify_release_inventory.py" in candidate
     assert 'pattern: "*-dist*"' in candidate
     assert "name: ci-ledger-${{ matrix.platform }}" in candidate
     assert "name: ci-ledger-wasm" in candidate
-    assert "scripts/fetch_release_candidate.py" in release
-    assert "scripts/publish_release_tag.py" in release
+    assert "candidate_run_id" in release
+    assert "run-id: ${{ inputs.candidate_run_id }}" in release
+    assert 'name: qualified-release' in release
+    assert 'test "$(jq -r .path <<<"$run")" = ".github/workflows/release-candidate.yml"' in release
+    assert "scripts/fetch_release_candidate.py" not in release
+    assert "scripts/publish_release_tag.py" not in release
     assert "--clobber" not in release
-    assert "needs: pypi" in release
-    assert "needs: qualify-release" in candidate
+    assert "needs: [fetch, pypi]" in release
+    assert "needs: [verify, build, wasm]" in candidate
     assert "actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4" in candidate
     assert "attestations: write" in candidate
     assert "gh attestation verify" in release
@@ -299,18 +313,18 @@ def test_ci_is_manual_only_and_candidate_uses_shared_command() -> None:
     assert "-eq 4" in release
 
 
-def test_release_credentials_are_isolated_from_candidate_builds() -> None:
+def test_release_pipeline_uses_github_artifacts_and_isolates_publish_credentials() -> None:
     candidate = (ROOT / ".github/workflows/release-candidate.yml").read_text(encoding="utf-8")
-    build_jobs, ingestion = candidate.split("  ingest-r2:\n", 1)
-    assert "R2_ACCESS_KEY_ID" not in build_jobs
-    assert "R2_SECRET_ACCESS_KEY" not in build_jobs
-    assert "environment: release-candidate-production" in ingestion
-    assert "ref: ${{ github.sha }}" in ingestion
-    assert "scripts/publish_release_candidate.py" in ingestion
+    assert "ingest-r2" not in candidate
+    assert "R2_ACCESS_KEY_ID" not in candidate
+    assert "R2_SECRET_ACCESS_KEY" not in candidate
+    assert "retention-days: 30" in candidate
 
     promotion = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
-    assert "environment: release-candidate-read" in promotion
-    assert "environment: release-production" in promotion
+    assert "R2_ACCESS_KEY_ID" not in promotion
+    assert "R2_SECRET_ACCESS_KEY" not in promotion
+    assert "environment: release-github-production" in promotion
+    assert "name: pypi" in promotion
     assert "scripts/build_release_candidate.py" not in promotion
     assert "scripts/build_static_sdk.py" not in promotion
 
@@ -400,8 +414,7 @@ def test_experimental_qualification_is_outside_normal_ci_and_release() -> None:
     assert "--include-experimental-tests" not in ci
     assert "--include-experimental-tests" not in release
     assert "  cross-transport:" not in release
-    assert candidate.count("needs: [build, wasm]") == 1
-    assert candidate.count("needs: qualify-release") == 1
+    assert candidate.count("needs: [verify, build, wasm]") == 1
 
 
 def test_occt_consumers_use_only_the_explicit_lock() -> None:

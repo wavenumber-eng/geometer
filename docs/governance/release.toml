@@ -43,37 +43,19 @@ build_doc = "docs/developer/README.md"
 [[channels.artifact_refs]]
 kind = "governed_artifact"
 target = "native-static-sdk-candidates"
-rationale = "Candidate SDK bytes remain noncommitted and must pass clean consumers and the KiCad Cruncher trial before promotion."
+rationale = "Candidate SDK bytes remain noncommitted and must pass the clean consumers in the candidate workflow; SDK-interface changes additionally require the downstream application trial before promotion."
 
 [[channels.artifact_refs]]
 kind = "governed_artifact"
 target = "native-static-sdk-release-assets"
-rationale = "The dated immutable GitHub Release is the human-facing compatibility mirror for the four static SDK profiles; every byte must match the R2 candidate inventory."
+rationale = "The dated immutable GitHub Release is the durable distribution for the four static SDK profiles; every byte must match the qualified candidate-run inventory."
 
 [[channels.artifact_refs]]
 kind = "governed_artifact"
 target = "native-static-sdk-qualification-evidence"
-rationale = "Candidate checksums, sidecars, provenance, clean-consumer results, and downstream trial evidence fail promotion closed."
+rationale = "Candidate checksums, sidecars, provenance, and clean-consumer results fail promotion closed; downstream trial evidence is required when the SDK interface, profile, packaging, or runtime semantics change."
 
 [[channels.artifact_refs]]
 kind = "governed_artifact"
 target = "native-static-sdk-post-release-verification"
 rationale = "Append-only public-download verification gates issue closure without mutating the immutable dated release."
-
-[[channels]]
-id = "r2-immutable-release-store"
-kind = "internal"
-status = "active"
-owner = "geometer-maintainers"
-process_doc = "docs/developer/README.md"
-build_doc = "docs/developer/ci-strategy.md"
-
-[[channels.artifact_refs]]
-kind = "governed_artifact"
-target = "immutable-release-candidates"
-rationale = "R2 stores source- and inventory-addressed candidate bytes before promotion and an immutable tag alias only after PyPI and GitHub publication succeed."
-
-[[channels.artifact_refs]]
-kind = "governed_artifact"
-target = "native-static-sdk-release-assets"
-rationale = "Promoted SDK bytes remain byte-identical across R2 and GitHub Releases."

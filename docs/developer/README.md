@@ -452,44 +452,33 @@ remove or relocate any root `.env` before signoff. Do not tag yet: the final
 version and expected tag are already part of the reviewed source revision.
 
 After the release PR merges, dispatch [Build Release
-Candidate](../../.github/workflows/release-candidate.yml) from `main`. Its
-`source_revision` must equal the exact current `main` revision and `tag` must
-equal the expected tag derived from that source. For example:
+Candidate](../../.github/workflows/release-candidate.yml) from `main`. It builds
+the exact dispatch revision and derives the expected tag from that source:
 
 ```powershell
-$revision = git rev-parse origin/main
-$tag = uv run python scripts/ci_release_metadata.py tag
-gh workflow run release-candidate.yml --ref main `
-  -f source_revision=$revision `
-  -f tag=$tag
+gh workflow run release-candidate.yml --ref main
 ```
 
 The workflow builds Windows x64, Linux x64, Linux ARM64, macOS ARM64, and WASM
-once. The builder jobs have no R2 or PyPI credentials. A protected hosted job
-revalidates the complete B0 inventory with trusted workflow code and stores the
-candidate under
-`releases/candidates/<source-sha>/<inventory-sha256>/`, writing the inventory
-last. Download `release-candidate-reference` or read the workflow summary to
-obtain the immutable inventory digest.
+once. The builder jobs have no publishing credentials. The aggregate job
+revalidates the complete B0 inventory, attests it, and retains the exact
+`qualified-release` artifact for 30 days. The workflow summary reports the run
+ID, source, tag, and inventory digest.
 
 Review the candidate evidence, then create the expected tag at the exact source
 revision. Do not create a GitHub Release by hand. Dispatch [Promote Release
-Candidate](../../.github/workflows/release.yml) from `main` with the tag, source
-revision, and inventory digest:
+Candidate](../../.github/workflows/release.yml) from `main` with the successful
+candidate run ID:
 
 ```powershell
-gh workflow run release.yml --ref main `
-  -f tag=$tag `
-  -f source_revision=$revision `
-  -f inventory_sha256=<64-lowercase-hex-digest>
+gh workflow run release.yml --ref main -f candidate_run_id=<run-id>
 ```
 
-Promotion downloads and verifies the R2 candidate, reconciles the GitHub draft
-without overwriting existing names, publishes only missing PyPI wheels, makes
-the exact GitHub Release public, and creates the immutable R2 tag alias last.
-It contains no build or packaging step. A retry verifies completed channels and
-resumes the first missing operation; any occupied identity with different bytes
-fails closed.
+Promotion verifies and downloads that run's `qualified-release` artifact,
+publishes only missing PyPI wheels, and reconciles the immutable GitHub Release
+without overwriting existing names. It contains no build or packaging step. A
+retry verifies completed channels and resumes the first missing operation; any
+occupied identity with different bytes fails closed.
 
 Verify workflow completion and the PyPI version/platform files. Then install
 from PyPI in WSL2 and run the headless package example (REQ-006), including the

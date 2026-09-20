@@ -12,6 +12,7 @@ from candidate_validation import (
     LANES,
     build_candidate_validation,
     canonical_bytes,
+    required_tasks,
     validate_candidate_validation,
     validate_candidate_validation_file,
 )
@@ -44,19 +45,37 @@ def _fixture(root: Path) -> tuple[Path, Path]:
     for name in product_asset_names(TEST_TAG):
         (artifacts / name).write_bytes(name.encode())
     for lane in LANES:
-        ledger = {
-            "entries": [
+        environment = {
+            "CARGO_BUILD_JOBS": "1",
+            "CMAKE_BUILD_PARALLEL_LEVEL": "2",
+            "GEOMETER_REQUIRE_NATIVE_TEST_SERVERS": "1" if lane in {"windows-x64", "linux-x64", "linux-arm64", "macos-arm64"} else None,
+            "GEOMETER_TEST_PROFILE": None,
+            "GEOMETER_TYPESCRIPT_SCOPE": None,
+        }
+        entries = []
+        for kind, name in required_tasks(lane):
+            task_environment = dict(environment)
+            if name in {"Python client stratum", "Rust client stratum", "TypeScript host client stratum"}:
+                task_environment["GEOMETER_TEST_PROFILE"] = "production"
+            if name == "TypeScript host client stratum":
+                task_environment["GEOMETER_TYPESCRIPT_SCOPE"] = "host"
+            if name == "TypeScript WASM client stratum":
+                task_environment["GEOMETER_TEST_PROFILE"] = "production"
+                task_environment["GEOMETER_TYPESCRIPT_SCOPE"] = "wasm"
+            entries.append(
                 {
-                    "command": ["candidate-tool", lane],
+                    "command": ["candidate-tool", lane, name],
                     "duration_seconds": 1.25,
-                    "environment": {"CARGO_BUILD_JOBS": "1", "CMAKE_BUILD_PARALLEL_LEVEL": "2"},
+                    "environment": task_environment,
                     "exit_code": 0,
-                    "kind": "test",
+                    "kind": kind,
                     "lane": lane,
-                    "name": f"qualify {lane}",
+                    "name": name,
                     "outcome": "success",
                 }
-            ],
+            )
+        ledger = {
+            "entries": entries,
             "schema": "wn.geometer.ci_execution_ledger.a0",
         }
         (ledgers / f"ci-ledger-{lane}.json").write_bytes(ledger_bytes(ledger))
@@ -102,9 +121,9 @@ def test_candidate_validation_rejects_duplicate_task_identity(tmp_path: Path) ->
         "schema": "wn.geometer.ci_execution_ledger.a0",
     }
     changed["lanes"][0]["ledger_sha256"] = hashlib.sha256(ledger_bytes(embedded)).hexdigest()
-    changed["lanes"][0]["duration_seconds"] = 2.5
+    changed["lanes"][0]["duration_seconds"] += 1.25
 
-    with pytest.raises(ValueError, match="repeats a task identity"):
+    with pytest.raises(ValueError, match="task order or identity mismatch"):
         validate_candidate_validation(changed, artifacts, candidate, TEST_TAG)
 
 

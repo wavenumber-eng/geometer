@@ -260,13 +260,6 @@ description = "Checks one explicit build/test/package order per native or WASM l
 test_case_type = "unit"
 
 [[subtests]]
-id = "PY_034"
-file = "test_release_candidate_store.py"
-name = "Immutable R2 Candidate Store"
-description = "Checks exact source/inventory-addressed R2 paths, asset-before-inventory commit order, verified recovery, immutable tag aliases, conditional creation, and byte-identical retries."
-test_case_type = "unit"
-
-[[subtests]]
 id = "PY_035"
 file = "test_candidate_validation.py"
 name = "Candidate Validation Evidence"

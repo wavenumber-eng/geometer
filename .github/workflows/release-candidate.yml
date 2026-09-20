@@ -4,15 +4,6 @@ name: Build Release Candidate
 
 "on":
   workflow_dispatch:
-    inputs:
-      source_revision:
-        description: Exact reviewed 40-character source commit to build
-        required: true
-        type: string
-      tag:
-        description: Expected vYYYY-MM-DD tag embedded by that source commit
-        required: true
-        type: string
 
 permissions:
   contents: read
@@ -23,7 +14,6 @@ env:
   CMAKE_BUILD_PARALLEL_LEVEL: "2"
   GEOMETER_OCCT_BINARY: only
   GEOMETER_REQUIRE_NATIVE_TEST_SERVERS: "1"
-  RELEASE_TAG: ${{ inputs.tag }}
 
 jobs:
   verify:
@@ -31,10 +21,12 @@ jobs:
     if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    outputs:
+      release_tag: ${{ steps.identity.outputs.release_tag }}
+      source_revision: ${{ steps.identity.outputs.source_revision }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          ref: ${{ inputs.source_revision }}
           fetch-depth: 0
       - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
       - name: Set up Python
@@ -70,28 +62,34 @@ jobs:
             --name "generated contract drift" \
             -- npm run check:contracts
       - name: Verify source and expected tag match package metadata
+        id: identity
         shell: bash
         run: |
+          source_revision="$(git rev-parse HEAD)"
+          release_tag="$(uv run python scripts/ci_release_metadata.py tag)"
+          test "$source_revision" = "$GITHUB_SHA"
+          echo "source_revision=$source_revision" >> "$GITHUB_OUTPUT"
+          echo "release_tag=$release_tag" >> "$GITHUB_OUTPUT"
           uv run --no-project python scripts/ci_execution_ledger.py run \
             --ledger out/ci-ledger-release-verify.json \
             --lane release-verify \
             --kind test \
             --name "release metadata tag" \
-            -- uv run python scripts/ci_release_metadata.py check-tag "$RELEASE_TAG"
+            -- uv run python scripts/ci_release_metadata.py check-tag "$release_tag"
           uv run --no-project python scripts/ci_execution_ledger.py run \
             --ledger out/ci-ledger-release-verify.json \
             --lane release-verify \
             --kind test \
             --name "candidate source identity" \
-            -- bash -c 'test "$(git rev-parse HEAD)" = "$1" && test "$1" = "$2"' \
-            bash "${{ inputs.source_revision }}" "$GITHUB_SHA"
-          git fetch --no-tags origin main
+            -- bash -c 'test "$(git rev-parse HEAD)" = "$1"' \
+            bash "$GITHUB_SHA"
+          git fetch --no-tags origin "$GITHUB_REF_NAME"
           uv run --no-project python scripts/ci_execution_ledger.py run \
             --ledger out/ci-ledger-release-verify.json \
             --lane release-verify \
             --kind test \
             --name "candidate main ancestry" \
-            -- git merge-base --is-ancestor HEAD origin/main
+            -- git merge-base --is-ancestor HEAD "origin/$GITHUB_REF_NAME"
       - name: Verify release notes mention package version
         shell: bash
         run: >-
@@ -144,6 +142,8 @@ jobs:
     needs: verify
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
+    env:
+      RELEASE_TAG: ${{ needs.verify.outputs.release_tag }}
     strategy:
       fail-fast: false
       matrix:
@@ -165,7 +165,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          ref: ${{ inputs.source_revision }}
+          ref: ${{ needs.verify.outputs.source_revision }}
 
       - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
 
@@ -253,11 +253,13 @@ jobs:
     needs: verify
     runs-on: ubuntu-24.04
     timeout-minutes: 90
+    env:
+      RELEASE_TAG: ${{ needs.verify.outputs.release_tag }}
     steps:
       - name: Check out repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          ref: ${{ inputs.source_revision }}
+          ref: ${{ needs.verify.outputs.source_revision }}
 
       - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
 
@@ -324,9 +326,11 @@ jobs:
 
   qualify-release:
     name: immutable release inventory
-    needs: [build, wasm]
+    needs: [verify, build, wasm]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    env:
+      RELEASE_TAG: ${{ needs.verify.outputs.release_tag }}
     permissions:
       attestations: write
       contents: read
@@ -335,7 +339,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          ref: ${{ inputs.source_revision }}
+          ref: ${{ needs.verify.outputs.source_revision }}
 
       - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
 
@@ -371,71 +375,48 @@ jobs:
             --candidate-root out/candidate-root.json \
             --output "out/geometer-release-inventory-${RELEASE_TAG}.json"
 
+      - name: Stage and reverify flat promotion payload
+        shell: bash
+        run: |
+          mkdir out/qualified-release
+          while IFS= read -r -d '' asset; do
+            destination="out/qualified-release/$(basename "$asset")"
+            test ! -e "$destination"
+            cp "$asset" "$destination"
+          done < <(find out/release-candidate -type f -print0)
+          cp "out/geometer-release-inventory-${RELEASE_TAG}.json" out/qualified-release/
+          uv run --no-project python scripts/verify_release_inventory.py \
+            out/qualified-release \
+            --tag "$RELEASE_TAG" \
+            --source-revision "${{ needs.verify.outputs.source_revision }}"
+
       - name: Attest the qualified static SDK archives
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
         with:
-          subject-path: out/release-candidate/**/geometer-*.zip
+          subject-path: out/qualified-release/geometer-*.zip
 
       - name: Attest the canonical release inventory
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
         with:
-          subject-path: out/geometer-release-inventory-*.json
+          subject-path: out/qualified-release/geometer-release-inventory-*.json
 
       - name: Upload qualified immutable payload
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: qualified-release
-          path: |
-            out/release-candidate/**
-            out/geometer-release-inventory-*.json
-          if-no-files-found: error
-
-  ingest-r2:
-    name: immutable R2 candidate ingestion
-    needs: qualify-release
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    environment: release-candidate-production
-    permissions:
-      contents: read
-    steps:
-      - name: Check out trusted workflow revision
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          ref: ${{ github.sha }}
-
-      - name: Download qualified candidate as inert data
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: qualified-release
-          path: out/qualified-release
-
-      - name: Revalidate and conditionally store exact candidate bytes
-        env:
-          R2_BUCKET: ${{ vars.R2_BUCKET || secrets.R2_BUCKET }}
-          R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL || vars.R2_ENDPOINT_URL }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: auto
-        run: >-
-          python scripts/publish_release_candidate.py out/qualified-release
-          --tag "$RELEASE_TAG"
-          --source-revision "${{ inputs.source_revision }}"
-          --report out/release-candidate-publication.json
-
-      - name: Report immutable candidate identity
-        shell: bash
-        run: |
-          echo '## Immutable release candidate' >> "$GITHUB_STEP_SUMMARY"
-          echo '' >> "$GITHUB_STEP_SUMMARY"
-          echo "- Source: \`${{ inputs.source_revision }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Tag: \`$RELEASE_TAG\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Inventory: \`$(jq -r .inventory_sha256 out/release-candidate-publication.json)\`" >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload candidate reference
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: release-candidate-reference
-          path: out/release-candidate-publication.json
+          path: out/qualified-release/*
           if-no-files-found: error
           retention-days: 30
+
+      - name: Report promotion command
+        shell: bash
+        run: |
+          inventory="out/qualified-release/geometer-release-inventory-${RELEASE_TAG}.json"
+          echo '## Qualified release candidate' >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo "- Candidate run: \`$GITHUB_RUN_ID\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Source: \`${{ needs.verify.outputs.source_revision }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Tag: \`$RELEASE_TAG\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Inventory SHA-256: \`$(sha256sum "$inventory" | cut -d ' ' -f 1)\`" >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo "Promote with candidate run \`$GITHUB_RUN_ID\`." >> "$GITHUB_STEP_SUMMARY"

@@ -6,6 +6,7 @@ import zipfile
 from pathlib import Path
 
 import package_static_sdk
+import pytest
 import validate_static_sdk
 from build_static_sdk import build_layout, validate_windows_static_runtime
 
@@ -104,7 +105,15 @@ def test_static_sdk_is_deterministic_complete_and_relocatable(tmp_path: Path, mo
     provenance = json.loads(first.with_suffix(".zip.provenance.json").read_text(encoding="utf-8"))
     assert provenance["archive"]["sha256"] == hashlib.sha256(first.read_bytes()).hexdigest()
     assert provenance["source_revision"] == "a" * 40
-    assert validate_static_sdk.validate_archive(first)["platform"] == "windows-x64"
+    assert validate_static_sdk.validate_archive(
+        first,
+        expected_release_tag=provenance["release_tag"],
+        expected_source_revision="a" * 40,
+    )["platform"] == "windows-x64"
+    with pytest.raises(ValueError, match="release tag does not match the candidate"):
+        validate_static_sdk.validate_archive(first, expected_release_tag="v2000-01-01")
+    with pytest.raises(ValueError, match="source revision does not match the candidate"):
+        validate_static_sdk.validate_archive(first, expected_source_revision="b" * 40)
 
 
 def test_static_sdk_validation_rejects_payload_tampering(tmp_path: Path, monkeypatch) -> None:

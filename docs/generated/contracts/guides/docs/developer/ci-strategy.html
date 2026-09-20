@@ -16,7 +16,7 @@ documentation changes trigger no automation. Developers run the affected
 checks locally before pushing and record important validation in the pull
 request. Every workflow is manual-only. Candidate production and release
 promotion are separate operations: candidate jobs compile and qualify once,
-while promotion only moves verified existing bytes between R2, PyPI, and GitHub.</p>
+while promotion only moves verified existing bytes to PyPI and GitHub.</p>
 <h2 id="local-development-gate">Local development gate</h2>
 <p>Choose checks in proportion to the change, using the commands in the canonical
 <a href="README.html">developer guide</a>. Before a release, run the complete local gate:</p>
@@ -76,34 +76,30 @@ ordinary pull requests or releases.</p>
 <pre><code class="language-powershell">uv run python scripts/validate_native.py --include-experimental-tests
 </code></pre>
 <h2 id="release-automation">Release automation</h2>
-<p><code>Build Release Candidate</code> is dispatched from <code>main</code> with the exact current
-40-character source revision and its source-derived expected tag. The workflow
-rejects any revision other than its own reviewed workflow revision. Secret-free
-jobs build and qualify Windows x64, Linux x64, Linux ARM64, macOS ARM64, and
-WASM through <code>scripts/build_release_candidate.py</code>. Python, Rust, and TypeScript
-host integration run once on Linux x64; the disjoint browser/Worker scope runs
-once against the WASM candidate.</p>
+<p><code>Build Release Candidate</code> is dispatched from <code>main</code> without parameters. It uses
+the dispatch revision and derives the expected tag from the checked-out package
+metadata. Secret-free jobs build and qualify Windows x64, Linux x64, Linux
+ARM64, macOS ARM64, and WASM through <code>scripts/build_release_candidate.py</code>.
+Python, Rust, and TypeScript host integration run once on Linux x64; the
+disjoint browser/Worker scope runs once against the WASM candidate.</p>
 <p>The hosted aggregate creates the canonical candidate root and B0 release
 inventory, verifies the complete payload, and attests the SDKs and inventory.
-Only the final <code>release-candidate-production</code> job receives R2 credentials. It
-checks out the exact trusted workflow revision, treats the downloaded candidate
-as inert data, revalidates every artifact, and conditionally creates the
-content-addressed R2 objects. Assets are written first and the inventory last.
-The retained candidate-reference artifact reports the source revision and
-inventory digest needed for promotion.</p>
+It retains the exact payload for 30 days as the run's <code>qualified-release</code>
+artifact. Candidate jobs receive no publishing credentials.</p>
 <p>After creating the immutable Git tag at the inventoried source, dispatch
-<code>Promote Release Candidate</code> with the tag, source revision, and inventory
-digest. It contains no compiler, CMake, Cargo, Emscripten, wheel builder, or
-packager. It fetches exact R2 bytes, verifies the tag and inventory without
-publication credentials, idempotently reconciles a GitHub draft and PyPI,
-publishes the GitHub Release, and finally creates the immutable R2 tag alias.
-An occupied filename or alias is accepted only when its bytes are identical.
-A rerun resumes missing channel operations and performs no compilation.</p>
+<code>Promote Release Candidate</code> with only the successful candidate run ID. It
+contains no compiler, CMake, Cargo, Emscripten, wheel builder, or packager. It
+proves that the selected run is a successful candidate run from <code>main</code>,
+downloads <code>qualified-release</code>, derives its source and tag from the inventory,
+verifies the immutable tag, and idempotently publishes the exact wheels and
+GitHub assets. An occupied filename is accepted only when its bytes are
+identical. A rerun resumes missing channel operations and performs no
+compilation.</p>
 <p>Both workflows are manual-only. Credentialed jobs execute pinned actions and
-code from the protected dispatch revision. Candidate builders never receive
-R2 or PyPI credentials. The three R2-facing environments are restricted to
-<code>main</code>: <code>release-candidate-production</code>, <code>release-candidate-read</code>, and
-<code>release-production</code>.</p>
+code from the protected dispatch revision. Candidate builders receive no R2,
+PyPI, or GitHub-release credentials. PyPI and GitHub publication use the
+protected <code>pypi</code> and <code>release-github-production</code> environments. R2 is not a
+release channel.</p>
 <h2 id="locked-occt-dependency">Locked OCCT dependency</h2>
 <p>All native and WASM jobs select one explicit profile from
 <code>dependencies/occt-lock.json</code>. A clean runner downloads one exact

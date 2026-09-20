@@ -38,7 +38,13 @@ def test_run_records_canonical_success_and_selected_parallelism(
         {
             "command": command,
             "duration_seconds": ledger["entries"][0]["duration_seconds"],
-            "environment": {"CARGO_BUILD_JOBS": "8", "CMAKE_BUILD_PARALLEL_LEVEL": "16"},
+            "environment": {
+                "CARGO_BUILD_JOBS": "8",
+                "CMAKE_BUILD_PARALLEL_LEVEL": "16",
+                "GEOMETER_REQUIRE_NATIVE_TEST_SERVERS": None,
+                "GEOMETER_TEST_PROFILE": None,
+                "GEOMETER_TYPESCRIPT_SCOPE": None,
+            },
             "exit_code": 0,
             "kind": "build",
             "lane": "windows-x64",
@@ -109,7 +115,13 @@ def test_missing_executable_is_recorded_as_failure(tmp_path: Path) -> None:
                     {
                         "command": ["tool"],
                         "duration_seconds": 1,
-                        "environment": {"CARGO_BUILD_JOBS": None, "CMAKE_BUILD_PARALLEL_LEVEL": None},
+                        "environment": {
+                            "CARGO_BUILD_JOBS": None,
+                            "CMAKE_BUILD_PARALLEL_LEVEL": None,
+                            "GEOMETER_REQUIRE_NATIVE_TEST_SERVERS": None,
+                            "GEOMETER_TEST_PROFILE": None,
+                            "GEOMETER_TYPESCRIPT_SCOPE": None,
+                        },
                         "exit_code": 1,
                         "kind": "test",
                         "lane": "linux-x64",
@@ -227,6 +239,9 @@ def test_command_is_executed_without_a_shell(tmp_path: Path) -> None:
 def test_environment_records_absent_values_as_null(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("CMAKE_BUILD_PARALLEL_LEVEL", raising=False)
     monkeypatch.delenv("CARGO_BUILD_JOBS", raising=False)
+    monkeypatch.delenv("GEOMETER_REQUIRE_NATIVE_TEST_SERVERS", raising=False)
+    monkeypatch.delenv("GEOMETER_TEST_PROFILE", raising=False)
+    monkeypatch.delenv("GEOMETER_TYPESCRIPT_SCOPE", raising=False)
     ledger_path = tmp_path / "ledger.json"
 
     run_and_record(
@@ -240,4 +255,7 @@ def test_environment_records_absent_values_as_null(tmp_path: Path, monkeypatch: 
     assert load_ledger(ledger_path)["entries"][0]["environment"] == {
         "CARGO_BUILD_JOBS": None,
         "CMAKE_BUILD_PARALLEL_LEVEL": None,
+        "GEOMETER_REQUIRE_NATIVE_TEST_SERVERS": None,
+        "GEOMETER_TEST_PROFILE": None,
+        "GEOMETER_TYPESCRIPT_SCOPE": None,
     }

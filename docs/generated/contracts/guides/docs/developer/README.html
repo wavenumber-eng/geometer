@@ -352,37 +352,26 @@ release PR first. Run the complete local gate before candidate production and
 remove or relocate any root <code>.env</code> before signoff. Do not tag yet: the final
 version and expected tag are already part of the reviewed source revision.</p>
 <p>After the release PR merges, dispatch <a href="../../../../../../.github/workflows/release-candidate.yml">Build Release
-Candidate</a> from <code>main</code>. Its
-<code>source_revision</code> must equal the exact current <code>main</code> revision and <code>tag</code> must
-equal the expected tag derived from that source. For example:</p>
-<pre><code class="language-powershell">$revision = git rev-parse origin/main
-$tag = uv run python scripts/ci_release_metadata.py tag
-gh workflow run release-candidate.yml --ref main `
-  -f source_revision=$revision `
-  -f tag=$tag
+Candidate</a> from <code>main</code>. It builds
+the exact dispatch revision and derives the expected tag from that source:</p>
+<pre><code class="language-powershell">gh workflow run release-candidate.yml --ref main
 </code></pre>
 <p>The workflow builds Windows x64, Linux x64, Linux ARM64, macOS ARM64, and WASM
-once. The builder jobs have no R2 or PyPI credentials. A protected hosted job
-revalidates the complete B0 inventory with trusted workflow code and stores the
-candidate under
-<code>releases/candidates/&lt;source-sha&gt;/&lt;inventory-sha256&gt;/</code>, writing the inventory
-last. Download <code>release-candidate-reference</code> or read the workflow summary to
-obtain the immutable inventory digest.</p>
+once. The builder jobs have no publishing credentials. The aggregate job
+revalidates the complete B0 inventory, attests it, and retains the exact
+<code>qualified-release</code> artifact for 30 days. The workflow summary reports the run
+ID, source, tag, and inventory digest.</p>
 <p>Review the candidate evidence, then create the expected tag at the exact source
 revision. Do not create a GitHub Release by hand. Dispatch <a href="../../../../../../.github/workflows/release.yml">Promote Release
-Candidate</a> from <code>main</code> with the tag, source
-revision, and inventory digest:</p>
-<pre><code class="language-powershell">gh workflow run release.yml --ref main `
-  -f tag=$tag `
-  -f source_revision=$revision `
-  -f inventory_sha256=&lt;64-lowercase-hex-digest&gt;
+Candidate</a> from <code>main</code> with the successful
+candidate run ID:</p>
+<pre><code class="language-powershell">gh workflow run release.yml --ref main -f candidate_run_id=&lt;run-id&gt;
 </code></pre>
-<p>Promotion downloads and verifies the R2 candidate, reconciles the GitHub draft
-without overwriting existing names, publishes only missing PyPI wheels, makes
-the exact GitHub Release public, and creates the immutable R2 tag alias last.
-It contains no build or packaging step. A retry verifies completed channels and
-resumes the first missing operation; any occupied identity with different bytes
-fails closed.</p>
+<p>Promotion verifies and downloads that run's <code>qualified-release</code> artifact,
+publishes only missing PyPI wheels, and reconciles the immutable GitHub Release
+without overwriting existing names. It contains no build or packaging step. A
+retry verifies completed channels and resumes the first missing operation; any
+occupied identity with different bytes fails closed.</p>
 <p>Verify workflow completion and the PyPI version/platform files. Then install
 from PyPI in WSL2 and run the headless package example (REQ-006), including the
 installed native illustration workflow. Native Rust GUI binaries remain

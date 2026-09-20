@@ -82,8 +82,17 @@ def validate_wheel(path: Path) -> None:
         raise ValueError("Linux wheel does not carry the governed manylinux_2_35 platform tag")
 
 
-def validate_sdk(path: Path) -> None:
-    validate_static_sdk_archive(path)
+def validate_sdk(
+    path: Path,
+    *,
+    expected_release_tag: str | None = None,
+    expected_source_revision: str | None = None,
+) -> None:
+    validate_static_sdk_archive(
+        path,
+        expected_release_tag=expected_release_tag,
+        expected_source_revision=expected_source_revision,
+    )
 
 
 def main() -> None:

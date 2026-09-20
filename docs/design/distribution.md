@@ -42,14 +42,14 @@ C ABI headers, exported relocatable CMake targets, Geometer and the exact OCCT
 link closure, ABI/toolchain metadata, integrity/provenance records, and license
 material. See [Static native SDK](static-native-sdk.md).
 
-`Publish` is a manual workflow dispatched at the exact tag also supplied as its
-input, which binds GitHub provenance to the released source revision. It
-rebuilds all four native archives,
-all four platform wheels, all four static SDKs, and WASM; validates a single
-fail-closed inventory; and stages the unchanged bytes on a draft GitHub
-Release. PyPI receives exactly the four inventoried wheels. Only after trusted
-publishing succeeds is the GitHub Release made public, downloaded again, and
-checked against its inventory and GitHub attestations.
+`Build Release Candidate` and `Promote Release Candidate` are separate manual
+workflows. Candidate production builds all four native archives, four platform
+wheels, four static SDKs, and WASM once, validates one fail-closed inventory,
+and retains those exact bytes as the `qualified-release` artifact of that
+successful GitHub Actions run. The promotion workflow contains no compilation
+or packaging tools. Given that run ID, it verifies the workflow, source,
+inventory, and immutable tag, then idempotently publishes the same bytes to
+PyPI and GitHub Releases.
 
 The release inventory uses the B0 envelope. Besides exact asset names, sizes,
 and SHA-256 digests, it embeds the canonical candidate root and its digest. The
@@ -59,14 +59,11 @@ verification must match the candidate source revision to the checked-out
 release tag. Tool versions and workflow timings remain evidence rather than
 alternate cache or candidate identities.
 
-`scripts/publish_release_candidate.py` implements the immutable candidate-store
-boundary. It freshly validates the complete B0 inventory and artifact contents,
-then conditionally creates
-`releases/candidates/<source-sha>/<inventory-sha256>/<asset-name>` objects and
-creates the inventory object last. An occupied key is accepted only when its
-bytes are identical. The tool is not invoked from a credentialed workflow until
-the protected hosted ingestion job can consume untrusted build artifacts
-without executing candidate-controlled code.
+Candidate artifacts are retained for 30 days. Promotion verifies that the run
+completed successfully on `main` using `.github/workflows/release-candidate.yml`
+before downloading `qualified-release`. GitHub Releases are the durable public
+archive after promotion. R2 is intentionally not part of the product release
+path; it stores only locked third-party dependency archives such as OCCT.
 
 Browser and native Lab build scripts do not publish demo applications. See
 [Browser demo packaging and UI](../developer/browser-demos.md) for the local build, closure,

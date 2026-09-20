@@ -15,6 +15,7 @@ from validate_release_inventory import (
     release_version,
     validate_native_wheel_pair,
 )
+from release_asset_names import validation_asset_name
 from verify_release_inventory import verify_release
 
 
@@ -66,7 +67,7 @@ def write_downloaded_release(root: Path, tag: str) -> tuple[Path, dict[str, obje
 
 def test_release_inventory_has_every_platform_product() -> None:
     names = expected_asset_names(TEST_TAG)
-    assert len(names) == 21
+    assert len(names) == 22
     assert f"wn_geometer-{TEST_VERSION}-py3-none-win_amd64.whl" in names
     assert f"wn_geometer-{TEST_VERSION}-py3-none-manylinux_2_35_x86_64.whl" in names
     assert f"wn_geometer-{TEST_VERSION}-py3-none-manylinux_2_35_aarch64.whl" in names
@@ -75,6 +76,7 @@ def test_release_inventory_has_every_platform_product() -> None:
         archive = f"geometer-sdk-{TEST_VERSION}-{platform_name}.zip"
         assert {archive, f"{archive}.sha256", f"{archive}.provenance.json"}.issubset(names)
     assert not any("illustration-demo" in name for name in names)
+    assert validation_asset_name(TEST_TAG) in names
 
 
 def test_release_inventory_normalizes_date_version() -> None:

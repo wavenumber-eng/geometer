@@ -139,21 +139,27 @@ downloaded candidate assets, outside the Geometer source and build trees:
 5. Platform inspection finds no Geometer or OCCT shared-library dependency and
    confirms the declared CRT, system-library, architecture, and deployment
    profile.
-6. Windows x64 and macOS ARM64 downstream trials statically link KiCad Cruncher,
-   execute representative Toon work with one and four self-hosted workers,
-   preserve failure replacement and output parity, and package no sibling
-   Geometer executable.
+6. When the SDK interface, supported toolchain profile, packaging, or embedded
+   runtime behavior changes, Windows x64 and macOS ARM64 downstream trials
+   statically link KiCad Cruncher, execute representative Toon work with one
+   and four self-hosted workers, preserve failure replacement and output
+   parity, and package no sibling Geometer executable. Unrelated releases reuse
+   the latest applicable downstream evidence.
 7. Performance, memory, final-binary size, and SDK-size evidence satisfies the
    reviewed promotion budgets.
 8. Static-link licensing evidence identifies the exact OCCT corresponding
    source, modifications and build scripts, provides durable source access or
    the required offer, and documents downstream relink obligations.
 
-Promotion publishes the already-qualified bytes to the dated GitHub Release;
-the release job does not rebuild different SDK bytes after qualification. The
-release fails closed when an asset, checksum, attestation, profile, or
-downloaded-asset validation is missing. Large SDK and OCCT archives remain
-generated state locally and are never an authoritative Git cache.
+Candidate production stores the already-qualified bytes as one retained GitHub
+Actions artifact bound to the successful candidate run. Promotion retrieves
+those exact bytes and publishes them to the dated GitHub Release; it does not
+compile, link, package, or rebuild different SDK bytes. PyPI receives only the
+inventoried wheels. Promotion fails closed when an asset, checksum, attestation,
+profile, source/tag relation, or downloaded-asset validation is missing or
+different. Large SDK and OCCT archives remain generated state locally and are
+never an authoritative Git cache. R2 remains only the immutable OCCT dependency
+store, not a product-release channel.
 
 ## Non-goals
 
@@ -175,7 +181,8 @@ generated state locally and are never an authoritative Git cache.
 ## Consequences
 
 - Every supported native release has both a runtime distribution and a
-  separately governed static SDK distribution.
+  separately governed static SDK distribution whose R2 and GitHub bytes share
+  one inventory identity.
 - Applications can ship one binary while retaining the proven executable IPC
   worker model by spawning themselves.
 - Direct calls avoid framing and pipe copies but retain JSON/attachment contract

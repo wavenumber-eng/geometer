@@ -126,6 +126,7 @@ def main() -> None:
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("version")
     subparsers.add_parser("date")
+    subparsers.add_parser("tag")
     tag_parser = subparsers.add_parser("check-tag")
     tag_parser.add_argument("tag")
     subparsers.add_parser("check-notes")
@@ -137,6 +138,8 @@ def main() -> None:
         print(version)
     elif args.command == "date":
         print(release_date(version))
+    elif args.command == "tag":
+        print(release_tag(version))
     elif args.command == "check-tag":
         check_tag(args.tag)
     elif args.command == "check-notes":

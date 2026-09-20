@@ -82,7 +82,48 @@ def validate_payload_inventory(archive: zipfile.ZipFile, names: list[str], paylo
             raise ValueError(f"static SDK payload entry does not match: {name}")
 
 
-def validate_archive(archive_path: Path) -> dict[str, Any]:
+def validate_provenance(value: Any, archive_path: Path, archive_digest: str) -> dict[str, Any]:
+    if not isinstance(value, dict) or set(value) != {
+        "archive",
+        "payload_inventory_sha256",
+        "release_tag",
+        "schema",
+        "source_revision",
+        "workflow",
+    } or value.get("schema") != "wn.geometer.static_sdk_provenance.a0":
+        raise ValueError("static SDK provenance fields or schema are invalid")
+    if re.fullmatch(r"v[0-9]{4}-[0-9]{2}-[0-9]{2}(?:-(?:0|[1-9][0-9]*))?", value["release_tag"]) is None:
+        raise ValueError("static SDK provenance release tag is invalid")
+    if re.fullmatch(r"[0-9a-f]{40}", value["source_revision"]) is None:
+        raise ValueError("static SDK provenance source revision is invalid")
+    workflow = value["workflow"]
+    if not isinstance(workflow, dict) or set(workflow) != {"repository", "run_attempt", "run_id"}:
+        raise ValueError("static SDK provenance workflow identity is invalid")
+    workflow_values = tuple(workflow[name] for name in ("repository", "run_id", "run_attempt"))
+    if any(item is None for item in workflow_values) != all(item is None for item in workflow_values):
+        raise ValueError("static SDK provenance workflow identity must be complete or explicitly local")
+    if workflow_values[0] is not None and (
+        not all(isinstance(item, str) for item in workflow_values)
+        or re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", workflow_values[0]) is None
+        or re.fullmatch(r"[1-9][0-9]*", workflow_values[1]) is None
+        or re.fullmatch(r"[1-9][0-9]*", workflow_values[2]) is None
+    ):
+        raise ValueError("static SDK provenance workflow identity is invalid")
+    if value.get("archive") != {
+        "name": archive_path.name,
+        "sha256": archive_digest,
+        "size": archive_path.stat().st_size,
+    }:
+        raise ValueError("static SDK provenance is not bound to the archive")
+    return value
+
+
+def validate_archive(
+    archive_path: Path,
+    *,
+    expected_release_tag: str | None = None,
+    expected_source_revision: str | None = None,
+) -> dict[str, Any]:
     checksum_path = archive_path.with_suffix(archive_path.suffix + ".sha256")
     provenance_path = archive_path.with_suffix(archive_path.suffix + ".provenance.json")
     expected_checksum = checksum_path.read_text(encoding="utf-8").strip()
@@ -90,15 +131,13 @@ def validate_archive(archive_path: Path) -> dict[str, Any]:
     if expected_checksum != f"{actual_digest}  {archive_path.name}":
         raise ValueError("static SDK checksum sidecar does not match the archive")
 
-    provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
-    if provenance.get("schema") != "wn.geometer.static_sdk_provenance.a0":
-        raise ValueError("static SDK provenance has an unsupported schema")
-    if provenance.get("archive") != {
-        "name": archive_path.name,
-        "sha256": actual_digest,
-        "size": archive_path.stat().st_size,
-    }:
-        raise ValueError("static SDK provenance is not bound to the archive")
+    provenance = validate_provenance(
+        json.loads(provenance_path.read_text(encoding="utf-8")), archive_path, actual_digest
+    )
+    if expected_release_tag is not None and provenance["release_tag"] != expected_release_tag:
+        raise ValueError("static SDK provenance release tag does not match the candidate")
+    if expected_source_revision is not None and provenance["source_revision"] != expected_source_revision:
+        raise ValueError("static SDK provenance source revision does not match the candidate")
 
     with zipfile.ZipFile(archive_path) as archive:
         names = archive.namelist()
@@ -113,6 +152,16 @@ def validate_archive(archive_path: Path) -> dict[str, Any]:
             raise ValueError("static SDK payload inventory has an unsupported schema")
         if attestation.get("schema") != "wn.geometer.static_sdk_attestation.a0":
             raise ValueError("static SDK attestation has an unsupported schema")
+        version_parts = str(manifest.get("release_version", "")).split(".")
+        if len(version_parts) not in {3, 4} or any(not part.isdigit() for part in version_parts):
+            raise ValueError("static SDK manifest release version is invalid")
+        expected_tag = f"v{int(version_parts[0]):04d}-{int(version_parts[1]):02d}-{int(version_parts[2]):02d}"
+        if len(version_parts) == 4:
+            expected_tag += f"-{int(version_parts[3])}"
+        if provenance["release_tag"] != expected_tag:
+            raise ValueError("static SDK provenance release tag does not match the manifest")
+        if attestation.get("source_revision") != provenance["source_revision"]:
+            raise ValueError("static SDK provenance source revision does not match the internal attestation")
 
         manifest_digest = sha256_bytes(archive.read("share/geometer/geometer-sdk.json"))
         if payload.get("manifest_sha256") != manifest_digest:
@@ -314,11 +363,12 @@ def validate_cargo_consumer(sdk: Path, root: Path) -> None:
         raise ValueError("Cargo consumer imports private Geometer DLLs: " + ", ".join(forbidden))
 
 
-def validate_direct_rust_client(sdk: Path) -> None:
+def validate_direct_rust_client(sdk: Path, target: Path) -> None:
     cargo = shutil.which("cargo")
     if cargo is None:
         raise RuntimeError("cargo is required to qualify the Geometer direct Rust client")
     environment = os.environ.copy()
+    environment["CARGO_TARGET_DIR"] = str(target)
     environment["GEOMETER_SDK_DIR"] = str(sdk)
     if sys.platform == "win32":
         flags = environment.get("RUSTFLAGS", "")
@@ -340,11 +390,10 @@ def validate_direct_rust_client(sdk: Path) -> None:
     subprocess.check_call(command, cwd=ROOT, env=environment)
 
 
-def validate_direct_static_illustration(sdk: Path, root: Path) -> None:
+def validate_direct_static_illustration(sdk: Path, root: Path, target: Path) -> None:
     cargo = shutil.which("cargo")
     if cargo is None:
         raise RuntimeError("cargo is required to package the direct static illustration example")
-    target = root / "direct illustration target"
     environment = os.environ.copy()
     environment["CARGO_TARGET_DIR"] = str(target)
     environment["GEOMETER_SDK_DIR"] = str(sdk)
@@ -462,8 +511,11 @@ def validate_external_consumer(
             if not client.welcome.operation_catalog.operations:
                 raise ValueError("embedded stdio server returned an empty operation catalog")
         validate_cargo_consumer(sdk, root)
-        validate_direct_rust_client(sdk)
-        validate_direct_static_illustration(sdk, root)
+        direct_static_target = (
+            ROOT / "out" / "qualification-cache" / "static-sdk-direct" / str(manifest["platform"])
+        )
+        validate_direct_rust_client(sdk, direct_static_target)
+        validate_direct_static_illustration(sdk, root, direct_static_target)
         imports = imported_libraries(executable)
         forbidden = sorted(name for name in imports if FORBIDDEN_PRIVATE_IMPORTS.match(name))
         if forbidden:

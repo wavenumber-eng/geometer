@@ -152,12 +152,15 @@ named byte attachments. OCCT remains a private implementation dependency.
 28. Build a release-candidate SDK matrix outside Git and before public release
     promotion. Candidate bytes are temporary CI or draft-release evidence and
     must not become authoritative merely because a build job succeeded.
-29. Gate promotion on a clean KiCad Cruncher trial using the candidate SDK, not
-    Geometer build-tree paths. On Windows x64 and macOS ARM64, statically link
-    Geometer, invoke `geometer_serve_stdio()` from a hidden self-hosted command,
-    preserve the serial-worker process pool, and run representative Toon work
-    with one and four workers.
-30. Run the downstream trial with `GEOMETER_EXE` unset, no Geometer on `PATH`,
+29. When the SDK interface, supported toolchain profile, packaging, or embedded
+    runtime behavior changes, gate promotion on a clean KiCad Cruncher trial
+    using the candidate SDK, not Geometer build-tree paths. On Windows x64 and
+    macOS ARM64, statically link Geometer, invoke `geometer_serve_stdio()` from
+    a hidden self-hosted command, preserve the serial-worker process pool, and
+    run representative Toon work with one and four workers. Unrelated releases
+    may reference the latest applicable downstream evidence rather than repeat
+    the trial.
+30. When required by item 29, run the downstream trial with `GEOMETER_EXE` unset, no Geometer on `PATH`,
     and no sibling Geometer executable or shared Geometer/OCCT library. Prove
     that child processes execute the relocated Cruncher binary, compare output
     with the sibling-Geometer baseline, inject one worker failure, and preserve

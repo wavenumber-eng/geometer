@@ -47,6 +47,17 @@ def _python_module(name: str, *arguments: str) -> tuple[str, ...]:
     return (sys.executable, "-m", name, *arguments)
 
 
+def _node_dependency_tasks() -> tuple[CandidateTask, CandidateTask]:
+    npm = shutil.which("npm")
+    node = shutil.which("node")
+    if npm is None or node is None:
+        raise CandidateBuildError("Node 24 and npm are required for JavaScript-backed candidate tests")
+    return (
+        CandidateTask("prepare", "pinned Node dependencies", (npm, "ci")),
+        CandidateTask("test", "Node toolchain version", (npm, "run", "check:node-toolchain")),
+    )
+
+
 @contextmanager
 def _environment(overrides: tuple[tuple[str, str], ...]):
     previous = {name: os.environ.get(name) for name, _ in overrides}
@@ -150,6 +161,7 @@ def run_native_candidate(platform: str, output: Path, execute: TaskExecutor) -> 
                     _python_module("rack", "run", "rust"),
                     client_environment,
                 ),
+                *_node_dependency_tasks(),
                 CandidateTask(
                     "test",
                     "TypeScript host client stratum",
@@ -199,6 +211,7 @@ def run_wasm_candidate(output: Path, execute: TaskExecutor) -> None:
         raise CandidateBuildError("Node 24 and npm are required for the WASM candidate lane")
     wasm = output / "wasm-dist.zip"
     tasks = [
+        *_node_dependency_tasks(),
         CandidateTask("build", "WASM artifacts", _python_script("build_wasm.py")),
         CandidateTask("test", "TypeScript check", (npm, "run", "check:typescript")),
         CandidateTask("build", "HLR browser site", _python_script("build_hlr_site.py")),

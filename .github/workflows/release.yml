@@ -5,16 +5,8 @@ name: Promote Release Candidate
 "on":
   workflow_dispatch:
     inputs:
-      tag:
-        description: Exact existing vYYYY-MM-DD tag to promote
-        required: true
-        type: string
-      source_revision:
-        description: Exact 40-character candidate source commit
-        required: true
-        type: string
-      inventory_sha256:
-        description: Exact immutable candidate inventory SHA-256
+      candidate_run_id:
+        description: Successful Build Release Candidate workflow run ID
         required: true
         type: string
 
@@ -23,34 +15,61 @@ permissions:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
-  RELEASE_TAG: ${{ inputs.tag }}
-  SOURCE_REVISION: ${{ inputs.source_revision }}
-  INVENTORY_SHA256: ${{ inputs.inventory_sha256 }}
+  CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
 
 jobs:
   fetch:
-    name: fetch immutable R2 candidate
+    name: fetch qualified candidate artifact
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-24.04
     timeout-minutes: 10
-    environment: release-candidate-read
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      release_tag: ${{ steps.identity.outputs.release_tag }}
+      source_revision: ${{ steps.run.outputs.source_revision }}
     steps:
       - name: Check out trusted promotion code
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ github.sha }}
 
-      - name: Fetch exact candidate bytes without executing them
+      - name: Verify candidate workflow run
+        id: run
         env:
-          R2_BUCKET: ${{ vars.R2_BUCKET || secrets.R2_BUCKET }}
-          R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL || vars.R2_ENDPOINT_URL }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: auto
-        run: >-
-          python scripts/fetch_release_candidate.py out/promotion-payload
-          --tag "$RELEASE_TAG"
-          --source-revision "$SOURCE_REVISION"
-          --inventory-sha256 "$INVENTORY_SHA256"
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          run="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$CANDIDATE_RUN_ID")"
+          test "$(jq -r .name <<<"$run")" = "Build Release Candidate"
+          test "$(jq -r .path <<<"$run")" = ".github/workflows/release-candidate.yml"
+          test "$(jq -r .event <<<"$run")" = "workflow_dispatch"
+          test "$(jq -r .head_branch <<<"$run")" = "${{ github.event.repository.default_branch }}"
+          test "$(jq -r .status <<<"$run")" = "completed"
+          test "$(jq -r .conclusion <<<"$run")" = "success"
+          source_revision="$(jq -r .head_sha <<<"$run")"
+          test "${#source_revision}" -eq 40
+          echo "source_revision=$source_revision" >> "$GITHUB_OUTPUT"
+
+      - name: Download qualified candidate
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: qualified-release
+          path: out/promotion-payload
+          run-id: ${{ inputs.candidate_run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Read candidate identity
+        id: identity
+        shell: bash
+        run: |
+          shopt -s nullglob
+          inventories=(out/promotion-payload/geometer-release-inventory-v*.json)
+          test "${#inventories[@]}" -eq 1
+          release_tag="$(jq -r .release_tag "${inventories[0]}")"
+          test "$(jq -r .candidate_root.source.revision "${inventories[0]}")" = "${{ steps.run.outputs.source_revision }}"
+          echo "release_tag=$release_tag" >> "$GITHUB_OUTPUT"
 
       - name: Upload inert promotion handoff
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -65,6 +84,9 @@ jobs:
     needs: fetch
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    env:
+      RELEASE_TAG: ${{ needs.fetch.outputs.release_tag }}
+      SOURCE_REVISION: ${{ needs.fetch.outputs.source_revision }}
     steps:
       - name: Check out trusted promotion code
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -83,89 +105,67 @@ jobs:
         run: |
           git fetch --force origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
           test "$(git rev-parse "$RELEASE_TAG^{commit}")" = "$SOURCE_REVISION"
-          inventory="out/promotion-payload/geometer-release-inventory-${RELEASE_TAG}.json"
-          test "$(sha256sum "$inventory" | cut -d ' ' -f 1)" = "$INVENTORY_SHA256"
           python scripts/verify_release_inventory.py \
             out/promotion-payload \
             --tag "$RELEASE_TAG" \
             --source-revision "$SOURCE_REVISION"
 
-  github-draft:
-    name: reconcile immutable GitHub draft
-    needs: verify
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    permissions:
-      contents: write
-    steps:
-      - name: Check out trusted promotion code
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          ref: ${{ github.sha }}
-          fetch-depth: 0
-
-      - name: Download verified promotion handoff
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: promotion-payload
-          path: out/promotion-payload
-
-      - name: Create or resume the draft with exact assets
+      - name: Preflight GitHub release state before PyPI
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          inventory="geometer-release-inventory-${RELEASE_TAG}.json"
-          mkdir -p out/github-observed
-          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir out/github-observed
+          mkdir -p out/github-preflight
+          if gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" \
+            > out/github-preflight/release.json 2> out/github-preflight/release.error; then
+            release="$(cat out/github-preflight/release.json)"
           else
-            git fetch origin "$SOURCE_REVISION"
-            git show "$SOURCE_REVISION:docs/releases/${RELEASE_TAG:1:10}.md" > out/release-notes.md
-            gh release create "$RELEASE_TAG" \
-              --repo "$GITHUB_REPOSITORY" \
-              --verify-tag \
-              --draft \
-              --title "Geometer ${RELEASE_TAG#v}" \
-              --notes-file out/release-notes.md
+            if grep -q '(HTTP 404)' out/github-preflight/release.error; then
+              exit 0
+            fi
+            cat out/github-preflight/release.error >&2
+            exit 1
           fi
-
+          inventory="geometer-release-inventory-${RELEASE_TAG}.json"
+          if test "$(jq '.assets | length' <<<"$release")" -ne 0; then
+            gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir out/github-preflight
+          fi
+          rm out/github-preflight/release.json out/github-preflight/release.error
+          if test "$(jq -r .draft <<<"$release")" = false; then
+            test -f "out/github-preflight/$inventory"
+            cmp "out/github-preflight/$inventory" "out/promotion-payload/$inventory"
+            python scripts/verify_release_inventory.py \
+              out/github-preflight \
+              --tag "$RELEASE_TAG" \
+              --source-revision "$SOURCE_REVISION"
+            exit 0
+          fi
           inventory_present=false
-          if test -f "out/github-observed/$inventory"; then
-            cmp "out/github-observed/$inventory" "out/promotion-payload/$inventory"
-            rm "out/github-observed/$inventory"
+          if test -f "out/github-preflight/$inventory"; then
+            cmp "out/github-preflight/$inventory" "out/promotion-payload/$inventory"
+            rm "out/github-preflight/$inventory"
             inventory_present=true
           fi
-          python scripts/snapshot_release_channel.py out/github-observed \
+          python scripts/snapshot_release_channel.py out/github-preflight \
             --channel github \
-            --output out/github-observed.json
+            --output out/github-preflight.json
           python scripts/plan_release_promotion.py \
             "out/promotion-payload/$inventory" \
-            out/github-observed.json \
-            --output out/github-plan.json
-          if test "$inventory_present" = true && test "$(jq '.uploads | length' out/github-plan.json)" -ne 0; then
+            out/github-preflight.json \
+            --output out/github-preflight-plan.json
+          if test "$inventory_present" = true && test "$(jq '.uploads | length' out/github-preflight-plan.json)" -ne 0; then
             echo "GitHub inventory commit marker exists before all assets" >&2
             exit 1
           fi
-          while IFS= read -r name; do
-            gh release upload "$RELEASE_TAG" "out/promotion-payload/$name" --repo "$GITHUB_REPOSITORY"
-          done < <(jq -r '.uploads[].name' out/github-plan.json)
-          if test "$inventory_present" = false; then
-            gh release upload "$RELEASE_TAG" "out/promotion-payload/$inventory" --repo "$GITHUB_REPOSITORY"
-          fi
-
-          mkdir -p out/github-verified
-          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir out/github-verified
-          python scripts/verify_release_inventory.py \
-            out/github-verified \
-            --tag "$RELEASE_TAG" \
-            --source-revision "$SOURCE_REVISION"
 
   pypi:
     name: reconcile PyPI trusted publication
-    needs: github-draft
+    needs: [fetch, verify]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    env:
+      RELEASE_TAG: ${{ needs.fetch.outputs.release_tag }}
+      SOURCE_REVISION: ${{ needs.fetch.outputs.source_revision }}
     environment:
       name: pypi
       url: https://pypi.org/p/wn-geometer
@@ -205,11 +205,28 @@ jobs:
           packages-dir: dist-pypi
           skip-existing: true
 
+      - name: Require complete PyPI publication
+        shell: bash
+        run: |
+          for attempt in 1 2 3 4 5; do
+            result="$(python scripts/check_pypi_release.py \
+              "out/promotion-payload/geometer-release-inventory-${RELEASE_TAG}.json")"
+            if test "$(jq -r .needs_upload <<<"$result")" = false; then
+              exit 0
+            fi
+            test "$attempt" -lt 5
+            sleep 15
+          done
+
   github-release:
     name: publish exact GitHub release
-    needs: pypi
+    needs: [fetch, pypi]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    environment: release-github-production
+    env:
+      RELEASE_TAG: ${{ needs.fetch.outputs.release_tag }}
+      SOURCE_REVISION: ${{ needs.fetch.outputs.source_revision }}
     permissions:
       contents: write
     steps:
@@ -217,52 +234,93 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ github.sha }}
+          fetch-depth: 0
 
-      - name: Download and verify GitHub assets before publication
+      - name: Download verified promotion handoff
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: promotion-payload
+          path: out/promotion-payload
+
+      - name: Reconcile, verify, and publish exact GitHub assets
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          mkdir out/github-release
+          git fetch --force origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+          test "$(git rev-parse "$RELEASE_TAG^{commit}")" = "$SOURCE_REVISION"
+
+          inventory="geometer-release-inventory-${RELEASE_TAG}.json"
+          mkdir -p out/github-observed
+          release_exists=false
+          if gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" \
+            > out/github-observed/release.json 2> out/github-observed/release.error; then
+            release="$(cat out/github-observed/release.json)"
+            release_exists=true
+            if test "$(jq '.assets | length' <<<"$release")" -ne 0; then
+              gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir out/github-observed
+            fi
+          else
+            if ! grep -q '(HTTP 404)' out/github-observed/release.error; then
+              cat out/github-observed/release.error >&2
+              exit 1
+            fi
+          fi
+          rm -f out/github-observed/release.json out/github-observed/release.error
+          if test "$release_exists" = false; then
+            git show "$SOURCE_REVISION:docs/releases/${RELEASE_TAG:1:10}.md" > out/release-notes.md
+            gh release create "$RELEASE_TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --verify-tag \
+              --draft \
+              --title "Geometer ${RELEASE_TAG#v}" \
+              --notes-file out/release-notes.md
+          fi
+
+          inventory_present=false
+          if test -f "out/github-observed/$inventory"; then
+            cmp "out/github-observed/$inventory" "out/promotion-payload/$inventory"
+            rm "out/github-observed/$inventory"
+            inventory_present=true
+          fi
+          python scripts/snapshot_release_channel.py out/github-observed \
+            --channel github \
+            --output out/github-observed.json
+          python scripts/plan_release_promotion.py \
+            "out/promotion-payload/$inventory" \
+            out/github-observed.json \
+            --output out/github-plan.json
+          if test "$inventory_present" = true && test "$(jq '.uploads | length' out/github-plan.json)" -ne 0; then
+            echo "GitHub inventory commit marker exists before all assets" >&2
+            exit 1
+          fi
+          while IFS= read -r name; do
+            gh release upload "$RELEASE_TAG" "out/promotion-payload/$name" --repo "$GITHUB_REPOSITORY"
+          done < <(jq -r '.uploads[].name' out/github-plan.json)
+          if test "$inventory_present" = false; then
+            gh release upload "$RELEASE_TAG" "out/promotion-payload/$inventory" --repo "$GITHUB_REPOSITORY"
+          fi
+
+          mkdir -p out/github-release
           gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir out/github-release
           python scripts/verify_release_inventory.py \
             out/github-release \
             --tag "$RELEASE_TAG" \
             --source-revision "$SOURCE_REVISION"
           if test "$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = true; then
+            git fetch --force origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+            test "$(git rev-parse "$RELEASE_TAG^{commit}")" = "$SOURCE_REVISION"
             gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false
           fi
 
-  r2-tag:
-    name: commit immutable R2 tag alias
-    needs: [pypi, github-release]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    environment: release-production
-    steps:
-      - name: Check out trusted promotion code
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          ref: ${{ github.sha }}
-
-      - name: Create or verify the final R2 tag alias
-        env:
-          R2_BUCKET: ${{ vars.R2_BUCKET || secrets.R2_BUCKET }}
-          R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL || vars.R2_ENDPOINT_URL }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: auto
-        run: >-
-          python scripts/publish_release_tag.py
-          --tag "$RELEASE_TAG"
-          --source-revision "$SOURCE_REVISION"
-          --inventory-sha256 "$INVENTORY_SHA256"
-
   verify-public:
     name: verify public channel identity
-    needs: r2-tag
+    needs: [fetch, pypi, github-release]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    env:
+      RELEASE_TAG: ${{ needs.fetch.outputs.release_tag }}
+      SOURCE_REVISION: ${{ needs.fetch.outputs.source_revision }}
     permissions:
       attestations: read
       contents: read
@@ -277,6 +335,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
+          git fetch --force origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+          test "$(git rev-parse "$RELEASE_TAG^{commit}")" = "$SOURCE_REVISION"
           test "$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = false
           mkdir out/public-release
           gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir out/public-release

@@ -3,9 +3,9 @@
 Geometer does not run GitHub Actions for pushes or pull requests. In particular,
 documentation changes trigger no automation. Developers run the affected
 checks locally before pushing and record important validation in the pull
-request. Every workflow is manual-only. `Publish` is dispatched only for an
-existing reviewed release tag and is the current path that builds and publishes
-the complete supported release matrix.
+request. Every workflow is manual-only. Candidate production and release
+promotion are separate operations: candidate jobs compile and qualify once,
+while promotion only moves verified existing bytes to PyPI and GitHub.
 
 ## Local development gate
 
@@ -85,29 +85,33 @@ uv run python scripts/validate_native.py --include-experimental-tests
 
 ## Release automation
 
-Dispatch `Publish` manually at an exact existing `vYYYY-MM-DD` tag and supply
-that same tag as the workflow input. The workflow rejects any dispatch-ref,
-input-tag, or checked-out-commit mismatch, then builds and packages Windows
-x64, Linux x64, Linux arm64, macOS arm64, and WASM. Each native platform runs
-the production C++ suite and rebuilds its platform-specific `wn-geometer`
-wheel, native archive, and static SDK. Python, Rust, and TypeScript host/native
-integration runs once against Linux x64; candidate-WASM TypeScript
-integration runs once in the WASM lane. The other platforms concentrate on
-native and wheel packaging. Experimental qualification is independent of
-publishing.
+`Build Release Candidate` is dispatched from `main` without parameters. It uses
+the dispatch revision and derives the expected tag from the checked-out package
+metadata. Secret-free jobs build and qualify Windows x64, Linux x64, Linux
+ARM64, macOS ARM64, and WASM through `scripts/build_release_candidate.py`.
+Python, Rust, and TypeScript host integration run once on Linux x64; the
+disjoint browser/Worker scope runs once against the WASM candidate.
 
-The workflow invokes `scripts/build_release_candidate.py`; it does not restate
-the lane commands in YAML. This keeps local and hosted candidate behavior on
-the same reviewed path.
+The hosted aggregate creates the canonical candidate root and B0 release
+inventory, verifies the complete payload, and attests the SDKs and inventory.
+It retains the exact payload for 30 days as the run's `qualified-release`
+artifact. Candidate jobs receive no publishing credentials.
 
-The four platform jobs and WASM feed one exact digest inventory. The workflow
-attests the inventory and all four SDK archives, uploads the exact bytes to a
-draft GitHub Release, re-downloads the draft, and only then sends the four
-qualified wheels to PyPI through trusted publishing. A successful PyPI publish
-allows the GitHub Release to become public. A final job downloads the public
-assets again, checks every size and SHA-256, and verifies GitHub attestations.
-No push, pull request, documentation change, tag creation, or GitHub Release
-event starts this workflow.
+After creating the immutable Git tag at the inventoried source, dispatch
+`Promote Release Candidate` with only the successful candidate run ID. It
+contains no compiler, CMake, Cargo, Emscripten, wheel builder, or packager. It
+proves that the selected run is a successful candidate run from `main`,
+downloads `qualified-release`, derives its source and tag from the inventory,
+verifies the immutable tag, and idempotently publishes the exact wheels and
+GitHub assets. An occupied filename is accepted only when its bytes are
+identical. A rerun resumes missing channel operations and performs no
+compilation.
+
+Both workflows are manual-only. Credentialed jobs execute pinned actions and
+code from the protected dispatch revision. Candidate builders receive no R2,
+PyPI, or GitHub-release credentials. PyPI and GitHub publication use the
+protected `pypi` and `release-github-production` environments. R2 is not a
+release channel.
 
 ## Locked OCCT dependency
 

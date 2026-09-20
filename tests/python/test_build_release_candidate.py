@@ -31,12 +31,14 @@ def test_native_candidate_has_one_fixed_linux_order(tmp_path: Path) -> None:
         "production native validation",
         "Python client stratum",
         "Rust client stratum",
+        "pinned Node dependencies",
+        "Node toolchain version",
         "TypeScript host client stratum",
         "Python package validation",
         "wheel metadata",
         "native distribution",
     ]
-    typescript = tasks[5]
+    typescript = tasks[7]
     assert dict(typescript.environment) == {
         "GEOMETER_REQUIRE_NATIVE_TEST_SERVERS": "1",
         "GEOMETER_TEST_PROFILE": "production",
@@ -69,6 +71,8 @@ def test_wasm_candidate_owns_package_and_worker_scope(tmp_path: Path, monkeypatc
     candidate.run_wasm_candidate(output, tasks.append)
 
     assert [task.name for task in tasks] == [
+        "pinned Node dependencies",
+        "Node toolchain version",
         "WASM artifacts",
         "TypeScript check",
         "HLR browser site",
@@ -81,7 +85,7 @@ def test_wasm_candidate_owns_package_and_worker_scope(tmp_path: Path, monkeypatc
         "WASM STEP to GLB validation",
         "WASM distribution",
     ]
-    assert dict(tasks[7].environment) == {
+    assert dict(tasks[9].environment) == {
         "GEOMETER_TEST_PROFILE": "production",
         "GEOMETER_TYPESCRIPT_SCOPE": "wasm",
     }

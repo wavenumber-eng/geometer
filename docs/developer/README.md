@@ -446,30 +446,39 @@ tag.
 
 ### Public release workflow
 
-The normal publication path is [Publish](../../.github/workflows/release.yml),
-dispatched manually with an exact existing release tag. Prepare the UTC date
-version, release notes, generated contracts/docs and a release PR first. Run
-the complete native, client, installed-wheel, L99, standards, browser, and
-cross-transport gates locally before tagging. Inspect native artifact
-attestations for clean source and verified OCCT provenance, then refresh
-committed `dist/` outputs from those qualified builds. Do not publish a local
-development wheel or change attestation fields to make it qualify.
+Prepare the UTC date version, release notes, generated contracts/docs, and
+release PR first. Run the complete local gate before candidate production and
+remove or relocate any root `.env` before signoff. Do not tag yet: the final
+version and expected tag are already part of the reviewed source revision.
 
-After the reviewed release PR merges, tag its exact revision but do not create
-or publish the GitHub Release by hand. Dispatch `Publish` at that same tag and
-provide the tag as its input; for example,
-`gh workflow run release.yml --ref v2026-09-19 -f tag=v2026-09-19`. The
-workflow rejects a dispatch ref and input-tag mismatch so GitHub provenance is
-bound to the source revision actually being released. It
-checks out the tag on every runner and rebuilds Windows x64, Linux x64, Linux
-ARM64, and macOS ARM64 native archives, platform wheels, and static SDKs, plus
-WASM. All outputs feed one exact B0 digest inventory bound to the source commit,
-release identity, and immutable OCCT lock through the canonical candidate root.
-The workflow uploads the qualified bytes to a draft GitHub Release and verifies the downloaded draft
-before PyPI trusted publishing receives exactly the four rebuilt wheels. Only a
-successful PyPI publication permits the GitHub Release to become public; a
-final job downloads every public asset and verifies its digest and GitHub
-attestation.
+After the release PR merges, dispatch [Build Release
+Candidate](../../.github/workflows/release-candidate.yml) from `main`. It builds
+the exact dispatch revision and derives the expected tag from that source:
+
+```powershell
+gh workflow run release-candidate.yml --ref main
+```
+
+The workflow builds Windows x64, Linux x64, Linux ARM64, macOS ARM64, and WASM
+once. The builder jobs have no publishing credentials. The aggregate job
+revalidates the complete B0 inventory, attests it, and retains the exact
+`qualified-release` artifact for 30 days. The workflow summary reports the run
+ID, source, tag, and inventory digest.
+
+Review the candidate evidence, then create the expected tag at the exact source
+revision. Do not create a GitHub Release by hand. Dispatch [Promote Release
+Candidate](../../.github/workflows/release.yml) from `main` with the successful
+candidate run ID:
+
+```powershell
+gh workflow run release.yml --ref main -f candidate_run_id=<run-id>
+```
+
+Promotion verifies and downloads that run's `qualified-release` artifact,
+publishes only missing PyPI wheels, and reconciles the immutable GitHub Release
+without overwriting existing names. It contains no build or packaging step. A
+retry verifies completed channels and resumes the first missing operation; any
+occupied identity with different bytes fails closed.
 
 Verify workflow completion and the PyPI version/platform files. Then install
 from PyPI in WSL2 and run the headless package example (REQ-006), including the
@@ -547,7 +556,7 @@ Review that evidence and update
 `dependencies/occt-lock.json` in a normal commit before any consumer selects the
 new bytes.
 
-Normal CI, release workflows, and developer builds select one explicit profile
+Normal CI, candidate workflows, and developer builds select one explicit profile
 from `dependencies/occt-lock.json`, reuse a local install only when its lock
 marker matches, or download that one public object. They do not receive R2
 secrets, derive cache keys, search aliases, or compile OCCT after a miss.
@@ -789,7 +798,7 @@ packaged-crate consumer running friendly analytic IPC against the platform
 node scripts\generate-rust-contracts.mjs --check
 cargo fmt --manifest-path src\rust\geometer-client\Cargo.toml --all -- --check
 cargo clippy --manifest-path src\rust\geometer-client\Cargo.toml --all-targets --locked -- -D warnings
-wn-dev-std audit src\rust\geometer-client --scope language
+uvx --from wn-dev-std==2026.9.8 wn-dev-std audit src\rust\geometer-client --scope language
 uv run pytest tests\rust -q
 ```
 

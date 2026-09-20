@@ -446,30 +446,50 @@ tag.
 
 ### Public release workflow
 
-The normal publication path is [Publish](../../.github/workflows/release.yml),
-dispatched manually with an exact existing release tag. Prepare the UTC date
-version, release notes, generated contracts/docs and a release PR first. Run
-the complete native, client, installed-wheel, L99, standards, browser, and
-cross-transport gates locally before tagging. Inspect native artifact
-attestations for clean source and verified OCCT provenance, then refresh
-committed `dist/` outputs from those qualified builds. Do not publish a local
-development wheel or change attestation fields to make it qualify.
+Prepare the UTC date version, release notes, generated contracts/docs, and
+release PR first. Run the complete local gate before candidate production and
+remove or relocate any root `.env` before signoff. Do not tag yet: the final
+version and expected tag are already part of the reviewed source revision.
 
-After the reviewed release PR merges, tag its exact revision but do not create
-or publish the GitHub Release by hand. Dispatch `Publish` at that same tag and
-provide the tag as its input; for example,
-`gh workflow run release.yml --ref v2026-09-19 -f tag=v2026-09-19`. The
-workflow rejects a dispatch ref and input-tag mismatch so GitHub provenance is
-bound to the source revision actually being released. It
-checks out the tag on every runner and rebuilds Windows x64, Linux x64, Linux
-ARM64, and macOS ARM64 native archives, platform wheels, and static SDKs, plus
-WASM. All outputs feed one exact B0 digest inventory bound to the source commit,
-release identity, and immutable OCCT lock through the canonical candidate root.
-The workflow uploads the qualified bytes to a draft GitHub Release and verifies the downloaded draft
-before PyPI trusted publishing receives exactly the four rebuilt wheels. Only a
-successful PyPI publication permits the GitHub Release to become public; a
-final job downloads every public asset and verifies its digest and GitHub
-attestation.
+After the release PR merges, dispatch [Build Release
+Candidate](../../.github/workflows/release-candidate.yml) from `main`. Its
+`source_revision` must equal the exact current `main` revision and `tag` must
+equal the expected tag derived from that source. For example:
+
+```powershell
+$revision = git rev-parse origin/main
+$tag = uv run python scripts/ci_release_metadata.py tag
+gh workflow run release-candidate.yml --ref main `
+  -f source_revision=$revision `
+  -f tag=$tag
+```
+
+The workflow builds Windows x64, Linux x64, Linux ARM64, macOS ARM64, and WASM
+once. The builder jobs have no R2 or PyPI credentials. A protected hosted job
+revalidates the complete B0 inventory with trusted workflow code and stores the
+candidate under
+`releases/candidates/<source-sha>/<inventory-sha256>/`, writing the inventory
+last. Download `release-candidate-reference` or read the workflow summary to
+obtain the immutable inventory digest.
+
+Review the candidate evidence, then create the expected tag at the exact source
+revision. Do not create a GitHub Release by hand. Dispatch [Promote Release
+Candidate](../../.github/workflows/release.yml) from `main` with the tag, source
+revision, and inventory digest:
+
+```powershell
+gh workflow run release.yml --ref main `
+  -f tag=$tag `
+  -f source_revision=$revision `
+  -f inventory_sha256=<64-lowercase-hex-digest>
+```
+
+Promotion downloads and verifies the R2 candidate, reconciles the GitHub draft
+without overwriting existing names, publishes only missing PyPI wheels, makes
+the exact GitHub Release public, and creates the immutable R2 tag alias last.
+It contains no build or packaging step. A retry verifies completed channels and
+resumes the first missing operation; any occupied identity with different bytes
+fails closed.
 
 Verify workflow completion and the PyPI version/platform files. Then install
 from PyPI in WSL2 and run the headless package example (REQ-006), including the
@@ -547,7 +567,7 @@ Review that evidence and update
 `dependencies/occt-lock.json` in a normal commit before any consumer selects the
 new bytes.
 
-Normal CI, release workflows, and developer builds select one explicit profile
+Normal CI, candidate workflows, and developer builds select one explicit profile
 from `dependencies/occt-lock.json`, reuse a local install only when its lock
 marker matches, or download that one public object. They do not receive R2
 secrets, derive cache keys, search aliases, or compile OCCT after a miss.

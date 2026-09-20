@@ -37,6 +37,15 @@ included_in_release = "never directly; only the exact candidate bytes that pass 
 retention = "untracked CI or draft-release evidence retained through the candidate review and immutable promotion decision"
 
 [[artifacts]]
+id = "immutable-release-candidates"
+kind = "release_evidence"
+paths = ["out/release-candidate/**", "out/geometer-release-inventory-*.json"]
+tracked = "forbidden"
+produced_by = "the manual Build Release Candidate workflow from one reviewed source revision and one immutable OCCT lock"
+included_in_release = "exact inventoried native archives, wheels, static SDKs, WASM, checksums, and provenance are promoted without rebuilding"
+retention = "content-addressed R2 candidate objects survive workflow-artifact expiry; promoted tag aliases and their referenced candidates are retained permanently"
+
+[[artifacts]]
 id = "operation-transport-performance-baselines"
 kind = "release_evidence"
 paths = ["docs/research/evidence/operation-transport/**"]
@@ -52,7 +61,7 @@ paths = ["out/sdk-release/**"]
 tracked = "forbidden"
 produced_by = "byte-for-byte promotion of deterministic SDK candidates that already passed qualification; promotion never rebuilds or repackages them"
 included_in_release = "four platform SDK archives with checksums, external sidecars, provenance, licenses, and corresponding-source material"
-retention = "authoritative on the dated GitHub Release; local downloaded or staged copies remain generated state"
+retention = "authoritative in the immutable R2 candidate/tag store and mirrored on the dated GitHub Release; local downloaded or staged copies remain generated state"
 
 [[artifacts]]
 id = "native-static-sdk-qualification-evidence"

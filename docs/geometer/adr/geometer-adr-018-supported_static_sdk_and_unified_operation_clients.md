@@ -149,11 +149,15 @@ downloaded candidate assets, outside the Geometer source and build trees:
    source, modifications and build scripts, provides durable source access or
    the required offer, and documents downstream relink obligations.
 
-Promotion publishes the already-qualified bytes to the dated GitHub Release;
-the release job does not rebuild different SDK bytes after qualification. The
-release fails closed when an asset, checksum, attestation, profile, or
-downloaded-asset validation is missing. Large SDK and OCCT archives remain
-generated state locally and are never an authoritative Git cache.
+Candidate production stores the already-qualified bytes beneath one
+source-and-inventory-addressed immutable R2 identity. Promotion retrieves those
+exact bytes and mirrors them to the dated GitHub Release; it does not compile,
+link, package, or rebuild different SDK bytes. PyPI receives only the
+inventoried wheels. The final immutable R2 tag alias is created after PyPI and
+GitHub publication succeed. Promotion fails closed when an asset, checksum,
+attestation, profile, source/tag relation, or downloaded-asset validation is
+missing or different. Large SDK and OCCT archives remain generated state
+locally and are never an authoritative Git cache.
 
 ## Non-goals
 
@@ -175,7 +179,8 @@ generated state locally and are never an authoritative Git cache.
 ## Consequences
 
 - Every supported native release has both a runtime distribution and a
-  separately governed static SDK distribution.
+  separately governed static SDK distribution whose R2 and GitHub bytes share
+  one inventory identity.
 - Applications can ship one binary while retaining the proven executable IPC
   worker model by spawning themselves.
 - Direct calls avoid framing and pipe copies but retain JSON/attachment contract

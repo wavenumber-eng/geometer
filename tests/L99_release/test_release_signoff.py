@@ -206,6 +206,8 @@ def test_ci_is_manual_only_and_release_rebuilds_every_output_once() -> None:
         assert 'GEOMETER_REQUIRE_NATIVE_TEST_SERVERS: "1"' in workflow
         assert "cargo test --locked" not in workflow
 
+    assert "GEOMETER_OCCT_BINARY: only" in release
+
     assert "name: Full Validation (Manual)" in ci
     assert "workflow_dispatch:" in ci
     assert "pull_request:" not in ci

@@ -57,6 +57,73 @@ jobs:
           tests/python/test_release_promotion_plan.py
           tests/python/test_release_inventory.py
           -q
+      - name: Verify generated contracts
+        run: |
+          npm install --global npm@11.16.0
+          test "$(npm --version)" = "11.16.0"
+          npm ci
+          uv run --no-project python scripts/ci_execution_ledger.py run \
+            --ledger out/ci-ledger-release-verify.json \
+            --lane release-verify \
+            --kind test \
+            --name "generated contract drift" \
+            -- npm run check:contracts
+      - name: Verify source and expected tag match package metadata
+        shell: bash
+        run: |
+          uv run --no-project python scripts/ci_execution_ledger.py run \
+            --ledger out/ci-ledger-release-verify.json \
+            --lane release-verify \
+            --kind test \
+            --name "release metadata tag" \
+            -- uv run python scripts/ci_release_metadata.py check-tag "$RELEASE_TAG"
+          uv run --no-project python scripts/ci_execution_ledger.py run \
+            --ledger out/ci-ledger-release-verify.json \
+            --lane release-verify \
+            --kind test \
+            --name "candidate source identity" \
+            -- bash -c 'test "$(git rev-parse HEAD)" = "$1" && test "$1" = "$2"' \
+            bash "${{ inputs.source_revision }}" "$GITHUB_SHA"
+          git fetch --no-tags origin main
+          uv run --no-project python scripts/ci_execution_ledger.py run \
+            --ledger out/ci-ledger-release-verify.json \
+            --lane release-verify \
+            --kind test \
+            --name "candidate main ancestry" \
+            -- git merge-base --is-ancestor HEAD origin/main
+      - name: Verify release notes mention package version
+        shell: bash
+        run: >-
+          uv run --no-project python scripts/ci_execution_ledger.py run
+          --ledger out/ci-ledger-release-verify.json
+          --lane release-verify
+          --kind test
+          --name "release notes version"
+          --
+          uv run python scripts/ci_release_metadata.py check-notes
+      - name: Run release signoff gate
+        run: >-
+          uv run --no-project python scripts/ci_execution_ledger.py run
+          --ledger out/ci-ledger-release-verify.json
+          --lane release-verify
+          --kind test
+          --name "L99 release gate"
+          --
+          uv run --group dev rack run L99_release
+      - name: Run standards check
+        run: |
+          uv run --no-project python scripts/ci_execution_ledger.py run \
+            --ledger out/ci-ledger-release-verify.json \
+            --lane release-verify \
+            --kind test \
+            --name "repository standards" \
+            -- uvx --from wn-dev-std==2026.9.8 wn-dev-std check . --format json
+          uv run --no-project python scripts/ci_execution_ledger.py run \
+            --ledger out/ci-ledger-release-verify.json \
+            --lane release-verify \
+            --kind test \
+            --name "release standards audit" \
+            -- uvx --from wn-dev-std==2026.9.8 wn-dev-std audit . --mode release --format json
       - name: Report release orchestration timing
         if: always() && hashFiles('out/ci-ledger-release-verify.json') != ''
         shell: bash
@@ -70,30 +137,6 @@ jobs:
           name: ci-ledger-release-verify
           path: out/ci-ledger-release-verify.json
           if-no-files-found: error
-
-      - name: Verify generated contracts
-        run: |
-          npm install --global npm@11.16.0
-          test "$(npm --version)" = "11.16.0"
-          npm ci
-          npm run check:contracts
-      - name: Verify source and expected tag match package metadata
-        shell: bash
-        run: |
-          uv run python scripts/ci_release_metadata.py check-tag "$RELEASE_TAG"
-          test "$(git rev-parse HEAD)" = "${{ inputs.source_revision }}"
-          test "${{ inputs.source_revision }}" = "$GITHUB_SHA"
-          git fetch --no-tags origin main
-          git merge-base --is-ancestor HEAD origin/main
-      - name: Verify release notes mention package version
-        shell: bash
-        run: uv run python scripts/ci_release_metadata.py check-notes
-      - name: Run release signoff gate
-        run: uv run --group dev rack run L99_release
-      - name: Run standards check
-        run: |
-          uvx --from wn-dev-std==2026.9.8 wn-dev-std check . --format json
-          uvx --from wn-dev-std==2026.9.8 wn-dev-std audit . --mode release --format json
 
   build:
     name: build (${{ matrix.platform }}, py3.12)

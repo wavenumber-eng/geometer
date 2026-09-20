@@ -246,7 +246,8 @@ def test_ci_is_manual_only_and_candidate_uses_shared_command() -> None:
     assert "\n  pull_request:" not in release_triggers
     assert "\n  push:" not in release_triggers
     assert "ref: ${{ inputs.source_revision }}" in candidate
-    assert 'test "${{ inputs.source_revision }}" = "$GITHUB_SHA"' in candidate
+    assert '--name "candidate source identity"' in candidate
+    assert 'bash "${{ inputs.source_revision }}" "$GITHUB_SHA"' in candidate
 
     assert candidate.count("scripts/build_release_candidate.py") == 2
     assert "--platform ${{ matrix.platform }}" in candidate

@@ -241,19 +241,22 @@ and dependency checks.
 
 ### Static C ABI SDK candidate
 
-The supported static SDK is a separate, uncommitted release artifact; it is not
-the ordinary `geometer_lib` build output and is never placed under `dist/`.
+The supported static SDK is a separate, uncommitted release artifact assembled
+from qualified build outputs and is never placed under `dist/`.
 Build the current host profile with:
 
 ```powershell
 uv run python scripts\build_static_sdk.py
 ```
 
-This builds the `static-sdk` CMake preset, derives the exact private archive and
-system-library order from a CMake link probe, validates the platform ABI
-profile, and writes a deterministic archive plus checksum and external
-provenance sidecar under `out/sdk-candidate/`. On Windows it first restores or
-builds a separately keyed `/MT` OCCT install under
+On Linux and macOS this builds `geometer_lib` and its link probe in the same
+native CMake graph later used by native validation, avoiding a second compile.
+Windows uses the separate `static-sdk` preset because the SDK is `/MT` while the
+runtime and wheel are `/MD`. The command derives the exact private archive and
+system-library order from the link probe, validates the platform ABI profile,
+and writes a deterministic archive plus checksum and external provenance
+sidecar under `out/sdk-candidate/`. On Windows it first restores or builds a
+separately keyed `/MT` OCCT install under
 `.deps/native/windows-x64/occt-static-crt-install/`; it never reuses the normal
 wheel/runtime `/MD` install.
 

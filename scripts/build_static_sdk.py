@@ -56,6 +56,13 @@ def default_output(platform_name: str) -> Path:
     return ROOT / "out/sdk-candidate" / f"geometer-sdk-{version}-{platform_name}.zip"
 
 
+def build_layout(platform_name: str) -> tuple[str, Path]:
+    """Return the fixed CMake graph for a supported SDK platform."""
+    if platform_name == "windows-x64":
+        return "static-sdk", ROOT / "build-static-sdk"
+    return "default", ROOT / f"build-native-{platform_name}"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--platform", choices=sorted(SUPPORTED_PLATFORMS), default=native_platform())
@@ -86,12 +93,23 @@ def main() -> None:
             dependency_command.extend(["--macos-deployment-target", "11.0"])
         run(dependency_command)
 
-    run(["cmake", "--preset", "static-sdk", f"-DGEOMETER_NATIVE_DIST_PLATFORM={args.platform}"])
+    preset, build_dir = build_layout(args.platform)
+    configure_command = [
+        "cmake",
+        "--preset",
+        preset,
+        "-B",
+        str(build_dir),
+        f"-DGEOMETER_NATIVE_DIST_PLATFORM={args.platform}",
+    ]
+    if args.platform == "macos-arm64":
+        configure_command.append("-DCMAKE_OSX_DEPLOYMENT_TARGET=11.0")
+    run(configure_command)
     run(
         [
             "cmake",
             "--build",
-            "build-static-sdk",
+            str(build_dir),
             "--config",
             "Release",
             "--target",
@@ -102,7 +120,6 @@ def main() -> None:
             "keeprsp",
         ]
     )
-    build_dir = ROOT / "build-static-sdk"
     if args.platform == "windows-x64":
         validate_windows_static_runtime(build_dir)
     output = args.output.resolve() if args.output is not None else default_output(args.platform)

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import package_static_sdk
 import validate_static_sdk
-from build_static_sdk import validate_windows_static_runtime
+from build_static_sdk import build_layout, validate_windows_static_runtime
 
 
 def _fake_build(tmp_path: Path) -> tuple[Path, Path, list[Path]]:
@@ -209,6 +209,13 @@ def test_windows_static_occt_recipe_is_isolated() -> None:
     assert 'definition("CMAKE_CXX_FLAGS_RELEASE", "/MT /O2 /Ob2 /DNDEBUG")' in source
     assert 'GEOMETER_MSVC_RUNTIME STREQUAL "Static"' in cmake
     assert "occt-static-crt-install" in cmake
+
+
+def test_sdk_build_layout_reuses_native_graph_except_for_windows_mt() -> None:
+    assert build_layout("windows-x64") == ("static-sdk", package_static_sdk.ROOT / "build-static-sdk")
+    assert build_layout("linux-x64") == ("default", package_static_sdk.ROOT / "build-native-linux-x64")
+    assert build_layout("linux-arm64") == ("default", package_static_sdk.ROOT / "build-native-linux-arm64")
+    assert build_layout("macos-arm64") == ("default", package_static_sdk.ROOT / "build-native-macos-arm64")
 
 
 def test_windows_sdk_rejects_dynamic_crt_compile_commands(tmp_path: Path) -> None:

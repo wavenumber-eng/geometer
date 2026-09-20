@@ -6,7 +6,6 @@ status = "active"
 title = "Supported Static SDK And Unified Runtime"
 created = "2026-09-18"
 issue_refs = ["wavenumber-eng/geometer#25", "wavenumber-eng/geometer#38"]
-plan_refs = ["geometer-static-sdk-unified-transports"]
 adr_refs = ["geometer-adr-011", "geometer-adr-015", "geometer-adr-018"]
 verification_status = "unverified"
 +++

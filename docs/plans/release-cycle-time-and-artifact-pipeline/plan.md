@@ -66,7 +66,7 @@ depends_on = ["audit-baseline", "target-architecture"]
 [[steps]]
 id = "test-lane-consolidation"
 title = "Remove only proven duplicate client and packaging validation while preserving release coverage"
-status = "pending"
+status = "done"
 depends_on = ["target-architecture", "test-runtime-impact-audit"]
 
 [[steps]]

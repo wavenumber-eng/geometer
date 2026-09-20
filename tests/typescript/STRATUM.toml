@@ -1,6 +1,6 @@
 name = "TypeScript Contracts And WASM Client"
 order = 5
-description = "Verify generated TypeScript codecs, packaged consumption, and direct plus Worker browser WASM clients."
+description = "Verify host/native TypeScript integration and the generated package against the current WASM candidate in disjoint scopes."
 enabled = true
 runner = "pytest"
 concerns = ["typescript", "contracts", "wasm", "package"]
@@ -31,5 +31,5 @@ objectives = [
 id = "TS_001"
 file = "test_typescript_validations.py"
 name = "Generated TypeScript Package"
-description = "Runs codec, clean-consumer, direct WASM, and real Worker/WASM client validation."
+description = "Runs disjoint host/native and candidate-WASM scopes for codecs, clean consumption, and direct plus Worker clients."
 test_case_type = "integration"

@@ -87,20 +87,19 @@ jobs:
           uv run python scripts/build_hlr_site.py
           uv run python scripts/build_illustration_site.py
           uv run python scripts/build_standalone_demos.py all
-          node tests/typescript/analytic_static_site_validation.mjs
-          node tests/typescript/hlr_static_site_validation.mjs
-          node tests/typescript/illustration_static_site_validation.mjs
-          node tests/typescript/analytic_self_contained_demo_validation.mjs
           uv run pytest tests/wasm/test_analytic_standalone_demo.py -q
           uv run pytest tests/wasm/test_pcb_standalone_demo.py -q
           uv run pytest tests/wasm/test_hlr_static_site.py -q
           uv run pytest tests/wasm/test_illustration_static_site.py -q
-          uv run pytest tests/python/test_package_single_html_site.py -q
           uv run pytest tests/python/test_contract_promotion_manifest.py -q
+
+      - name: Validate TypeScript package against candidate WASM
+        env:
+          GEOMETER_TYPESCRIPT_SCOPE: wasm
+        run: uv run --group dev rack run typescript
 
       - name: Run WASM validation tests
         run: |
-          node tests/typescript/wasm_client_validation.mjs
           node tests/wasm/planar_batch_solve_bytes_validation.js
           node tests/wasm/step_to_glb_bytes_validation.js
 

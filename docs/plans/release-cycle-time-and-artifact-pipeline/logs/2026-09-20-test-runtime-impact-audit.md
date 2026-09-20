@@ -51,18 +51,21 @@ three client strata together took 102 seconds, and wheel validation took 13
 seconds. Reintroducing three fresh runners would add checkout/tool setup and
 repeat those same assertions without testing different candidate bytes.
 
-The release workflow also currently runs these TypeScript scripts in both the
-Linux client stratum and WASM lane:
+The release workflow previously ran these TypeScript scripts in both the Linux
+client stratum and WASM lane:
 
 - `hlr_static_site_validation.mjs`;
 - `illustration_static_site_validation.mjs`; and
 - `wasm_client_validation.mjs`.
 
-The Linux copy reads checked-in WASM distribution files while the WASM lane
-reads the just-built candidate. The candidate lane is authoritative. Before
-removing the Linux copies, split `TS_001` into explicit native/source and WASM
-profiles so `worker_client_validation.mjs` and `worker_protocol_validation.mjs`
-also move to the candidate WASM bytes without losing coverage.
+The Linux copy read checked-in WASM distribution files while the WASM lane read
+the just-built candidate. The stratum now has two fixed scopes. `host` owns the
+three source checks and two native-process checks. `wasm` owns every script that
+consumes the generated package or built demo, including the Worker client and
+protocol checks. CI and release invoke each scope once in its owning lane; the
+unscoped local default still runs both. Direct workflow invocations of the
+three scripts above were removed, as was the duplicate generic single-HTML
+packager unit test from WASM jobs.
 
 Relocated SDK validation compiles the Rust dependency graph once for the direct
 backend test and again for the packaged illustration example. Those consumers

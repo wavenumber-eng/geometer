@@ -220,12 +220,14 @@ def test_ci_is_manual_only_and_release_rebuilds_every_output_once() -> None:
     assert "release:" not in ci
     assert ci.count("uv run --group dev rack run python") == 1
     assert ci.count("uv run --group dev rack run rust") == 1
-    assert ci.count("uv run --group dev rack run typescript") == 1
+    assert ci.count("uv run --group dev rack run typescript") == 2
     assert ci.count("scripts/validate_python_package.py --skip-native-validation --wheelhouse out/wheelhouse") == 1
     assert "\n  python:" not in ci
     assert "\n  rust:" not in ci
     assert "\n  typescript:" not in ci
-    assert ci.count("GEOMETER_TEST_PROFILE: production") == 1
+    assert ci.count("GEOMETER_TEST_PROFILE: production") == 2
+    assert ci.count("GEOMETER_TYPESCRIPT_SCOPE: host") == 1
+    assert ci.count("GEOMETER_TYPESCRIPT_SCOPE: wasm") == 1
     assert "push:" not in ci
 
     assert "name: Publish" in release
@@ -239,10 +241,19 @@ def test_ci_is_manual_only_and_release_rebuilds_every_output_once() -> None:
     assert 'test "$(git rev-parse HEAD)" = "$(git rev-parse "$GITHUB_SHA^{commit}")"' in release
 
     assert release.count("uv run --group dev rack run python") == 1
-    assert release.count("uv run --group dev rack run typescript") == 1
+    assert release.count("uv run --group dev rack run typescript") == 2
     assert release.count("uv run --group dev rack run rust") == 1
     assert "if: matrix.platform == 'linux-x64'" in release
     assert "GEOMETER_TEST_PROFILE: production" in release
+    assert release.count("GEOMETER_TYPESCRIPT_SCOPE: host") == 1
+    assert release.count("GEOMETER_TYPESCRIPT_SCOPE: wasm") == 1
+    for duplicate_script in (
+        "hlr_static_site_validation.mjs",
+        "illustration_static_site_validation.mjs",
+        "wasm_client_validation.mjs",
+    ):
+        assert duplicate_script not in ci
+        assert duplicate_script not in release
     assert release.count("scripts/validate_python_package.py --skip-native-validation --wheelhouse out/wheelhouse") == 1
     assert "python -m build --wheel --outdir out/wheelhouse" not in release
     assert "twine check out/wheelhouse/*.whl" in release

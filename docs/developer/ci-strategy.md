@@ -4,7 +4,7 @@ Geometer does not run GitHub Actions for pushes or pull requests. In particular,
 documentation changes trigger no automation. Developers run the affected
 checks locally before pushing and record important validation in the pull
 request. Every workflow is manual-only. `Publish` is dispatched only for an
-existing reviewed release tag and is the sole path that rebuilds and publishes
+existing reviewed release tag and is the current path that builds and publishes
 the complete supported release matrix.
 
 ## Local development gate
@@ -27,6 +27,11 @@ uvx --from wn-dev-std==2026.9.8 wn-dev-std check . --format json
 The native build runs CTest's `production` label by default. Set
 `GEOMETER_TEST_PROFILE=production` for client strata when a focused production
 run should omit retained analytic-solver and STEP topology research suites.
+Production TypeScript validation has two explicit, disjoint scopes:
+`GEOMETER_TYPESCRIPT_SCOPE=host` runs source and native-process checks in the
+Linux native lane, while `GEOMETER_TYPESCRIPT_SCOPE=wasm` validates the package,
+browser clients, Workers, and built sites only after the current WASM candidate
+exists. Omitting the variable runs both scopes for local development.
 
 ## Manual workflows
 
@@ -35,9 +40,10 @@ never runs automatically. The experimental, macOS wheel, dependency-cache, and
 operation-transport workflows are likewise manual-only. Dispatch one only when
 its specific remote environment or controlled evidence is required. Every job
 has an explicit timeout so a stalled runner or test cannot consume minutes
-indefinitely. Python, Rust, and TypeScript production strata run once in the
-Linux native job; separate jobs must not repeat those strata or rebuild the
-same wheel.
+indefinitely. Python and Rust production strata run once in the Linux native
+job. TypeScript's host scope runs there and its disjoint WASM scope runs against
+the freshly built WASM candidate. Separate jobs must not repeat either scope or
+rebuild the same wheel.
 
 ## Experimental qualification
 
@@ -61,8 +67,10 @@ input-tag, or checked-out-commit mismatch, then builds and packages Windows
 x64, Linux x64, Linux arm64, macOS arm64, and WASM. Each native platform runs
 the production C++ suite and rebuilds its platform-specific `wn-geometer`
 wheel, native archive, and static SDK. Python, Rust, and TypeScript integration
-runs once against Linux x64; the other platforms concentrate on native and
-wheel packaging. Experimental qualification is independent of publishing.
+host/native integration runs once against Linux x64; candidate-WASM TypeScript
+integration runs once in the WASM lane. The other platforms concentrate on
+native and wheel packaging. Experimental qualification is independent of
+publishing.
 
 The four platform jobs and WASM feed one exact digest inventory. The workflow
 attests the inventory and all four SDK archives, uploads the exact bytes to a

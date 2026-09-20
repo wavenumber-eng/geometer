@@ -75,6 +75,7 @@ jobs:
         env:
           GEOMETER_REQUIRE_NATIVE_TEST_SERVERS: "1"
           GEOMETER_TEST_PROFILE: production
+          GEOMETER_TYPESCRIPT_SCOPE: host
         run: |
           uv tool install wn-dev-std==2026.9.8
           uv run --group dev rack run python
@@ -143,13 +144,14 @@ jobs:
           uv run python scripts/build_illustration_site.py
           uv run python scripts/build_standalone_demos.py hlr
           uv run python scripts/build_standalone_demos.py illustration
-          node tests/typescript/hlr_static_site_validation.mjs
-          node tests/typescript/illustration_static_site_validation.mjs
           uv run pytest tests/wasm/test_hlr_static_site.py tests/wasm/test_illustration_static_site.py -q
-          uv run pytest tests/python/test_package_single_html_site.py -q
+      - name: Validate TypeScript package against candidate WASM
+        env:
+          GEOMETER_TEST_PROFILE: production
+          GEOMETER_TYPESCRIPT_SCOPE: wasm
+        run: uv run --group dev rack run typescript
       - name: Run production WASM validation
         run: |
-          node tests/typescript/wasm_client_validation.mjs
           node tests/wasm/planar_batch_solve_bytes_validation.js
           node tests/wasm/step_to_glb_bytes_validation.js
       - name: Upload WASM artifacts

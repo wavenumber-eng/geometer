@@ -188,6 +188,7 @@ jobs:
         env:
           GEOMETER_REQUIRE_NATIVE_TEST_SERVERS: "1"
           GEOMETER_TEST_PROFILE: production
+          GEOMETER_TYPESCRIPT_SCOPE: host
         run: |
           uv tool install wn-dev-std==2026.9.8
           uv run --no-project python scripts/ci_execution_ledger.py run --ledger out/ci-execution-ledger.json --lane linux-x64 --kind test --name "Python client stratum" -- uv run --group dev rack run python
@@ -328,14 +329,22 @@ jobs:
           uv run --no-project python scripts/ci_execution_ledger.py run --ledger out/ci-execution-ledger.json --lane wasm --kind build --name "illustration browser site" -- uv run python scripts/build_illustration_site.py
           uv run --no-project python scripts/ci_execution_ledger.py run --ledger out/ci-execution-ledger.json --lane wasm --kind build --name "standalone HLR demo" -- uv run python scripts/build_standalone_demos.py hlr
           uv run --no-project python scripts/ci_execution_ledger.py run --ledger out/ci-execution-ledger.json --lane wasm --kind build --name "standalone illustration demo" -- uv run python scripts/build_standalone_demos.py illustration
-          uv run --no-project python scripts/ci_execution_ledger.py run --ledger out/ci-execution-ledger.json --lane wasm --kind test --name "HLR static site" -- node tests/typescript/hlr_static_site_validation.mjs
-          uv run --no-project python scripts/ci_execution_ledger.py run --ledger out/ci-execution-ledger.json --lane wasm --kind test --name "illustration static site" -- node tests/typescript/illustration_static_site_validation.mjs
           uv run --no-project python scripts/ci_execution_ledger.py run --ledger out/ci-execution-ledger.json --lane wasm --kind test --name "browser site Python validation" -- uv run pytest tests/wasm/test_hlr_static_site.py tests/wasm/test_illustration_static_site.py -q
-          uv run --no-project python scripts/ci_execution_ledger.py run --ledger out/ci-execution-ledger.json --lane wasm --kind test --name "single HTML package validation" -- uv run pytest tests/python/test_package_single_html_site.py -q
+
+      - name: Validate TypeScript package against candidate WASM
+        env:
+          GEOMETER_TEST_PROFILE: production
+          GEOMETER_TYPESCRIPT_SCOPE: wasm
+        run: >-
+          uv run --no-project python scripts/ci_execution_ledger.py run
+          --ledger out/ci-execution-ledger.json
+          --lane wasm
+          --kind test
+          --name "TypeScript WASM client stratum"
+          -- uv run --group dev rack run typescript
 
       - name: Run WASM validation tests
         run: |
-          uv run --no-project python scripts/ci_execution_ledger.py run --ledger out/ci-execution-ledger.json --lane wasm --kind test --name "WASM client validation" -- node tests/typescript/wasm_client_validation.mjs
           uv run --no-project python scripts/ci_execution_ledger.py run --ledger out/ci-execution-ledger.json --lane wasm --kind test --name "WASM planar batch validation" -- node tests/wasm/planar_batch_solve_bytes_validation.js
           uv run --no-project python scripts/ci_execution_ledger.py run --ledger out/ci-execution-ledger.json --lane wasm --kind test --name "WASM STEP to GLB validation" -- node tests/wasm/step_to_glb_bytes_validation.js
 

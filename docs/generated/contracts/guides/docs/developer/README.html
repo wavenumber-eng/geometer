@@ -41,6 +41,37 @@ The <a href="native-api-readiness.html">native illustration API readiness handof
 separates implemented surfaces and package evidence from remaining release gates.
 The <a href="ci-strategy.html">CI strategy</a> defines change routing, production and
 experimental boundaries, release coverage, and canonical OCCT cache keys.</p>
+<h2 id="build-and-release-model">Build And Release Model</h2>
+<p>Local builds provide the fast development loop and are the normal place to run
+change-appropriate checks. Release artifacts have a deliberately smaller,
+fail-closed path:</p>
+<ol>
+<li>Merge the reviewed versioned source to <code>main</code> and run the complete local
+release gate.</li>
+<li>Dispatch <code>Build Release Candidate</code> from that exact <code>main</code> revision. It has
+no inputs and builds every supported native target, all wheels, the static
+SDK matrix, and WASM exactly once.</li>
+<li>Review the run summary and its attested, flat <code>qualified-release</code> artifact.</li>
+<li>Create the expected immutable tag at the inventoried source revision.</li>
+<li>Dispatch <code>Promote Release Candidate</code> with only the successful candidate run
+ID. Promotion downloads and revalidates those bytes; it never compiles,
+packages, or substitutes artifacts.</li>
+<li>Verify the public PyPI and GitHub Release files after publication.</li>
+</ol>
+<p>Product release candidates must come from clean hosted builders; locally built
+Windows, Linux, or WASM outputs are useful test evidence but are not uploaded
+or promoted as release artifacts. A workflow- or documentation-only change
+does not require a new Geometer package version. It is qualified with a shadow
+candidate when needed and takes effect for the next product release.</p>
+<p>R2 has one role: it stores immutable, digest-addressed OCCT dependency
+archives. A candidate consumes the exact object selected by
+<code>dependencies/occt-lock.json</code>; a missing or mismatched object fails instead of
+rebuilding OCCT. Product candidates and release assets are retained by GitHub
+Actions and published to PyPI/GitHub Releases, never staged through R2.</p>
+<p>The commands and recovery behavior are documented under
+<a href="#public-release-workflow">Public release workflow</a>. Workflow ownership,
+credential boundaries, retention, and measured timing are recorded in the
+<a href="ci-strategy.html">CI strategy</a>.</p>
 <h2 id="repository-layout">Repository Layout</h2>
 <ul>
 <li><code>src/cpp/lib/</code> - reusable C++ library code.</li>

@@ -36,6 +36,41 @@ separates implemented surfaces and package evidence from remaining release gates
 The [CI strategy](ci-strategy.md) defines change routing, production and
 experimental boundaries, release coverage, and canonical OCCT cache keys.
 
+## Build And Release Model
+
+Local builds provide the fast development loop and are the normal place to run
+change-appropriate checks. Release artifacts have a deliberately smaller,
+fail-closed path:
+
+1. Merge the reviewed versioned source to `main` and run the complete local
+   release gate.
+2. Dispatch `Build Release Candidate` from that exact `main` revision. It has
+   no inputs and builds every supported native target, all wheels, the static
+   SDK matrix, and WASM exactly once.
+3. Review the run summary and its attested, flat `qualified-release` artifact.
+4. Create the expected immutable tag at the inventoried source revision.
+5. Dispatch `Promote Release Candidate` with only the successful candidate run
+   ID. Promotion downloads and revalidates those bytes; it never compiles,
+   packages, or substitutes artifacts.
+6. Verify the public PyPI and GitHub Release files after publication.
+
+Product release candidates must come from clean hosted builders; locally built
+Windows, Linux, or WASM outputs are useful test evidence but are not uploaded
+or promoted as release artifacts. A workflow- or documentation-only change
+does not require a new Geometer package version. It is qualified with a shadow
+candidate when needed and takes effect for the next product release.
+
+R2 has one role: it stores immutable, digest-addressed OCCT dependency
+archives. A candidate consumes the exact object selected by
+`dependencies/occt-lock.json`; a missing or mismatched object fails instead of
+rebuilding OCCT. Product candidates and release assets are retained by GitHub
+Actions and published to PyPI/GitHub Releases, never staged through R2.
+
+The commands and recovery behavior are documented under
+[Public release workflow](#public-release-workflow). Workflow ownership,
+credential boundaries, retention, and measured timing are recorded in the
+[CI strategy](ci-strategy.md).
+
 ## Repository Layout
 
 - `src/cpp/lib/` - reusable C++ library code.

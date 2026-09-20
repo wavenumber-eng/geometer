@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import importlib.util
+import re
 import shutil
 import subprocess
 import sys
@@ -295,6 +296,34 @@ def test_ci_is_manual_only_and_candidate_uses_shared_command() -> None:
     assert '--source-digest "$SOURCE_REVISION"' in release
     assert "wn-dev-std audit . --mode release --format json" in candidate
     assert "-eq 4" in release
+
+
+def test_release_credentials_are_isolated_from_candidate_builds() -> None:
+    candidate = (ROOT / ".github/workflows/release-candidate.yml").read_text(encoding="utf-8")
+    build_jobs, ingestion = candidate.split("  ingest-r2:\n", 1)
+    assert "R2_ACCESS_KEY_ID" not in build_jobs
+    assert "R2_SECRET_ACCESS_KEY" not in build_jobs
+    assert "environment: release-candidate-production" in ingestion
+    assert "ref: ${{ github.sha }}" in ingestion
+    assert "scripts/publish_release_candidate.py" in ingestion
+
+    promotion = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
+    assert "environment: release-candidate-read" in promotion
+    assert "environment: release-production" in promotion
+    assert "scripts/build_release_candidate.py" not in promotion
+    assert "scripts/build_static_sdk.py" not in promotion
+    assert "scripts/build_wasm.py" not in promotion
+    assert "--clobber" not in promotion
+
+
+def test_release_workflow_actions_are_immutable_node24_generation_pins() -> None:
+    action_line = re.compile(r"^\s*(?:-\s*)?uses:\s+[^@\s]+@([0-9a-f]{40})(?:\s+#\s+.+)?$", re.MULTILINE)
+    for workflow_name in ("release-candidate.yml", "release.yml"):
+        workflow = (ROOT / ".github" / "workflows" / workflow_name).read_text(encoding="utf-8")
+        uses_lines = [line for line in workflow.splitlines() if "uses:" in line]
+        assert uses_lines
+        assert len(action_line.findall(workflow)) == len(uses_lines)
+        assert "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24" in workflow
 
 
 def test_every_workflow_is_manual_only() -> None:

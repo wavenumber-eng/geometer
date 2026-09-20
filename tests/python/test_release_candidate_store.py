@@ -184,3 +184,38 @@ def test_candidate_fetch_fails_without_leaving_partial_output(tmp_path: Path) ->
             lambda _config, key: objects.get(key),
         )
     assert not (tmp_path / "downloaded").exists()
+
+
+def test_publisher_cli_writes_canonical_candidate_reference(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    report = tmp_path / "reference.json"
+    monkeypatch.setattr(publish_release_candidate.r2_store, "config_from_env", lambda: object())
+    monkeypatch.setattr(
+        publish_release_candidate,
+        "publish_candidate",
+        lambda *_args: {
+            "created": ["asset.zip"],
+            "existing": [],
+            "inventory_sha256": "a" * 64,
+            "prefix": f"releases/candidates/{TEST_REVISION}/{'a' * 64}",
+        },
+    )
+    assert (
+        publish_release_candidate.main(
+            [
+                str(tmp_path),
+                "--tag",
+                TEST_TAG,
+                "--source-revision",
+                TEST_REVISION,
+                "--report",
+                str(report),
+            ]
+        )
+        == 0
+    )
+    value = json.loads(report.read_bytes())
+    assert report.read_text(encoding="utf-8") == json.dumps(value, indent=2, sort_keys=True) + "\n"
+    assert value["inventory_sha256"] == "a" * 64
+    assert value["source_revision"] == TEST_REVISION

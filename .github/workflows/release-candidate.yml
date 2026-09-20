@@ -365,3 +365,21 @@ jobs:
           python scripts/publish_release_candidate.py out/qualified-release
           --tag "$RELEASE_TAG"
           --source-revision "${{ inputs.source_revision }}"
+          --report out/release-candidate-publication.json
+
+      - name: Report immutable candidate identity
+        shell: bash
+        run: |
+          echo '## Immutable release candidate' >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo "- Source: \`${{ inputs.source_revision }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Tag: \`$RELEASE_TAG\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Inventory: \`$(jq -r .inventory_sha256 out/release-candidate-publication.json)\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload candidate reference
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: release-candidate-reference
+          path: out/release-candidate-publication.json
+          if-no-files-found: error
+          retention-days: 30

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 from pathlib import Path
 from typing import Any, Callable, Sequence, TypedDict
 
@@ -86,11 +87,28 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("root", type=Path)
     parser.add_argument("--tag", required=True)
     parser.add_argument("--source-revision", required=True)
+    parser.add_argument("--report", type=Path)
     args = parser.parse_args(argv)
     config = r2_store.config_from_env()
     if config is None:
         parser.error("R2_BUCKET, R2_ENDPOINT_URL, R2_ACCESS_KEY_ID, and R2_SECRET_ACCESS_KEY are required")
     report = publish_candidate(args.root.resolve(), args.tag, args.source_revision, config)
+    if args.report is not None:
+        publication = {
+            "created": report["created"],
+            "existing": report["existing"],
+            "inventory_sha256": report["inventory_sha256"],
+            "prefix": report["prefix"],
+            "release_tag": args.tag,
+            "schema": "wn.geometer.release_candidate_publication.a0",
+            "source_revision": args.source_revision,
+        }
+        args.report.parent.mkdir(parents=True, exist_ok=True)
+        args.report.write_text(
+            json.dumps(publication, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
     print(
         f"candidate stored at {report['prefix']}; created={len(report['created'])}; existing={len(report['existing'])}"
     )

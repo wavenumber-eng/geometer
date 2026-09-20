@@ -177,12 +177,11 @@ jobs:
         with:
           node-version: "24"
 
-      - name: Restore pinned browser-test dependencies
+      - name: Pin Node package manager
         if: matrix.platform == 'linux-x64'
         run: |
           npm install --global npm@11.16.0
-          npm ci
-          npm run check:node-toolchain
+          test "$(npm --version)" = "11.16.0"
 
       - name: Read dependency versions
         id: dependency_versions
@@ -277,7 +276,6 @@ jobs:
         run: |
           npm install --global npm@11.16.0
           test "$(npm --version)" = "11.16.0"
-          npm ci
 
       - name: Install build tools
         run: |

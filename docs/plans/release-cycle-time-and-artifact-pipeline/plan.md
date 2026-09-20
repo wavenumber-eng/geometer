@@ -16,10 +16,16 @@ status = "active"
 depends_on = ["audit-baseline"]
 
 [[steps]]
+id = "candidate-root-contract"
+title = "Define and test the source, version, workflow, dependency, toolchain, and policy identity of a candidate"
+status = "pending"
+depends_on = ["target-architecture"]
+
+[[steps]]
 id = "occt-lock"
 title = "Replace derived OCCT cache discovery with an explicit immutable dependency lock"
 status = "pending"
-depends_on = ["target-architecture"]
+depends_on = ["target-architecture", "candidate-root-contract"]
 
 [[steps]]
 id = "local-builder"
@@ -29,9 +35,15 @@ depends_on = ["target-architecture", "occt-lock"]
 
 [[steps]]
 id = "arm-default-qualification"
-title = "Keep GitHub-hosted ARM64 builders as default and qualify the MacBook as a sequential compatibility fallback"
+title = "Keep and qualify GitHub-hosted Linux ARM64 and macOS ARM64 as the default ARM builders"
 status = "pending"
 depends_on = ["target-architecture", "occt-lock"]
+
+[[steps]]
+id = "macbook-fallback"
+title = "Qualify the constrained MacBook as a sequential ARM compatibility fallback"
+status = "pending"
+depends_on = ["arm-default-qualification"]
 
 [[steps]]
 id = "mac-cloud-options"
@@ -46,16 +58,22 @@ status = "pending"
 depends_on = ["target-architecture"]
 
 [[steps]]
-id = "test-lane-consolidation"
-title = "Remove duplicate client and packaging validation while preserving release coverage"
+id = "test-runtime-impact-audit"
+title = "Audit test IDs, coverage, duplication, runtime, and release critical path before changing lanes"
 status = "pending"
-depends_on = ["target-architecture"]
+depends_on = ["audit-baseline", "target-architecture"]
+
+[[steps]]
+id = "test-lane-consolidation"
+title = "Remove only proven duplicate client and packaging validation while preserving release coverage"
+status = "pending"
+depends_on = ["target-architecture", "test-runtime-impact-audit"]
 
 [[steps]]
 id = "candidate-workflow"
 title = "Produce one immutable candidate from local x64/WASM and hosted ARM64 builders"
 status = "pending"
-depends_on = ["local-builder", "arm-default-qualification", "build-graph-consolidation", "test-lane-consolidation"]
+depends_on = ["candidate-root-contract", "local-builder", "arm-default-qualification", "build-graph-consolidation", "test-lane-consolidation"]
 
 [[steps]]
 id = "r2-release-store"
@@ -88,12 +106,6 @@ status = "pending"
 depends_on = ["performance-qualification"]
 
 [[steps]]
-id = "test-runtime-impact-audit"
-title = "Audit test-lane coverage, duplication, runtime, and release critical path"
-status = "pending"
-depends_on = ["performance-qualification"]
-
-[[steps]]
 id = "external-review"
 title = "Obtain independent build, release, security, and supply-chain review"
 status = "pending"
@@ -117,7 +129,7 @@ status = "pending"
 
 [[exit_criteria]]
 id = "local-cycle"
-title = "Windows, Linux x64, and WASM qualify on the AMD workstation, with the constrained MacBook proven as a sequential ARM compatibility fallback"
+title = "Windows, Linux x64, and WASM qualify on the AMD workstation without changing the hosted ARM default"
 status = "pending"
 
 [[exit_criteria]]
@@ -148,11 +160,6 @@ status = "pending"
 [[exit_criteria]]
 id = "no-hidden-duplication"
 title = "The workflow reports compilation, validation, upload, and promotion time by artifact and rejects duplicate builds"
-status = "pending"
-
-[[exit_criteria]]
-id = "mac-cloud-options"
-title = "GitHub and shortlisted macOS ARM64 clouds have comparable three-run time, cost, environment, and artifact evidence"
 status = "pending"
 
 [[exit_criteria]]
@@ -216,8 +223,8 @@ canonical candidate inventory + validation records + attestations
 The preferred initial target builds Windows, Linux x64, and WASM on the AMD
 workstation and keeps GitHub-hosted runners as the default for Linux ARM64 and
 macOS ARM64. Faster macOS clouds and the constrained local MacBook are measured
-alternatives, not assumptions. The platform list remains the current four
-native targets plus WASM until a
+non-blocking alternatives, not candidate or cutover prerequisites. The platform
+list remains the current four native targets plus WASM until a
 downstream and support-policy audit explicitly removes a target. Earlier intent
 to emphasize Windows and macOS is not sufficient to silently remove Linux:
 published Python wheels and Alexandria's native manifest currently depend on
@@ -381,9 +388,23 @@ Introduce two workflows and one shared local command:
   developers and workflow runners. The workflow must not contain a separate
   implementation of artifact selection or naming.
 
-Candidate identity is independent of a date tag. A reviewed commit may be fully
-qualified before its final release date is chosen. Promotion records the tag as
-an immutable alias of that candidate; it does not rename or repackage contents.
+Candidate storage identity is independent of whether the Git tag object exists,
+but candidate contents are not independent of the release version. Before any
+candidate bytes are produced, the source commit must contain the synchronized
+final date version, C ABI generation, release date, release notes, and derived
+expected tag. Changing any of those values changes the source SHA and requires a
+complete rebuild. Promotion may create or verify the tag later, but the tag must
+equal the source-derived expected tag and point to the exact candidate commit.
+Promotion records that tag as an immutable alias; it does not rename or
+repackage contents.
+
+Every candidate has a canonical root identity containing the built source
+commit, embedded release version and expected tag, reviewed workflow commit and
+workflow digest, candidate schema/policy digest, OCCT-lock digest, and every
+lane's provisioning/toolchain recipe digest. Leaf attestations bind that root,
+artifact digest, and validation-ledger digest. A hosted aggregate attestation
+states that ingestion verified and stored the bytes; it must not claim that the
+ingestion job built locally produced artifacts.
 
 Every channel operation is idempotent. If PyPI already contains the exact
 inventoried wheel, that wheel is verified and skipped. If a GitHub or R2 asset
@@ -423,8 +444,13 @@ retained. The runner must be isolated from the interactive developer checkout:
 - no PyPI trusted-publisher environment and no production R2 credentials;
 - no inherited user secrets, SSH agent, cloud CLI sessions, or writable source
   checkout outside the job;
-- destroy the worktree and unregister or reset the runner after each candidate
-  until a disposable VM/snapshot runner is available.
+- use a one-job just-in-time runner inside a disposable VM/snapshot; registration
+  reset, labels, WSL distribution separation, and manual dispatch are routing or
+  hygiene controls, not a security boundary;
+- restrict the organization runner group to the one protected candidate
+  workflow and reviewed workflow revision; and
+- disable Windows-drive mounting, Windows executable interoperability, developer
+  profiles, credential stores, SSH agents, and access to trusted local services.
 
 The self-hosted job uploads candidate files to GitHub workflow artifacts. A
 small hosted ingestion job verifies the candidate inventory and is the only job
@@ -432,10 +458,14 @@ allowed to write the immutable R2 candidate store. This prevents a build runner
 from becoming a release publisher.
 
 GitHub explicitly warns about self-hosted runners on public repositories. This
-design relies on manual dispatch, trusted exact refs, no untrusted workflow
+design requires one-job JIT registration, a disposable machine boundary,
+protected reviewed workflow code, trusted exact refs, no untrusted workflow
 events, secret separation, and ephemeral cleanup. If those controls cannot be
-proven, use the local command outside Actions and submit its signed inventory to
-a hosted ingestion workflow, or keep the affected target hosted.
+proven, use the local command outside Actions and submit artifacts through a
+separate untrusted intake. That path remains disabled until its signing key,
+enrollment, accepted issuer/identity, rotation, and revocation design is
+reviewed; an undefined "signed inventory" is insufficient. Otherwise keep the
+affected target GitHub-hosted.
 
 ### 3. Keep GitHub-hosted ARM64 as the initial default
 
@@ -444,7 +474,7 @@ Linux ARM64 and macOS ARM64 candidates. They already execute the full build,
 CTest, wheel-install, and relocated-SDK qualification on the target architecture
 and require no new trusted build control plane.
 
-Qualify the 8 GiB/512 GB Apple-silicon MacBook only as a compatibility and
+Separately qualify the 8 GiB/512 GB Apple-silicon MacBook only as a compatibility and
 outage fallback. Run macOS ARM64 on the host and Linux ARM64 in a dedicated
 Ubuntu 22.04 ARM64 VM, sequentially rather than concurrently. Use conservative
 parallelism derived from observed memory pressure; restore exact OCCT binaries
@@ -545,6 +575,11 @@ even privileged accidental overwrite or deletion is rejected. Publishing a new
 OCCT build creates a new object and lock digest; it never mutates an existing
 one.
 
+The immutable dependency record also preserves the exact OCCT corresponding
+source archive, patches, build scripts/recipe, licenses, and relink evidence
+required by ADR-018. The source bundle is separately digested and locked; a
+binary-only object is not sufficient dependency-release evidence.
+
 ### 6. Consolidate the Geometer build graph
 
 For Linux and macOS, configure one release CMake graph per platform/profile that
@@ -595,26 +630,38 @@ source SHA, input artifact digests, platform/profile, command identity, outcome,
 duration, and log reference. Inventory validation rejects duplicate build
 producers for one artifact identity and missing required tests.
 
-Before any real platform build, run a sub-minute synthetic release dry run that
+Before any real platform build, run a sub-minute, non-mutating fixture test that
 exercises artifact naming, directory creation, canonical ordering, inventory
-generation, upload/download, draft/public release transitions in a test target,
-and idempotent resume logic using tiny fixtures. Add workflow and shell linting
-so path-creation and expression errors fail before matrix work.
+generation, and idempotent resume decisions using tiny local files. Test actual
+upload/download and draft/public transitions only in a separately dispatched
+integration workflow using a dedicated fixture repository, R2 intake namespace,
+and TestPyPI identity with explicit cleanup and retention. Move orchestration
+logic into tested Python helpers and keep workflow shell thin; add a reviewed,
+pinned `actionlint` binary for YAML/expression checks rather than assuming
+Yamllint covers GitHub semantics.
 
 ### 8. Make R2 the immutable byte store, not the Python package manager
 
-Use R2 for two distinct immutable namespaces or buckets:
+Use separate R2 state boundaries:
 
 ```text
 dependencies/occt/<profile>/<archive-sha256>/...
+release-intake/<upload-id>/...
 releases/candidates/<source-sha>/<inventory-sha256>/...
-releases/tags/vYYYY-MM-DD/<inventory-sha256>.json
+releases/tags/vYYYY-MM-DD.json
 ```
 
-Candidate paths are content-addressed and bucket-locked. The tag object is a
-small immutable signed alias to an existing candidate inventory. Store every
+Quarantine/intake objects are short-lived and never authoritative. Qualified
+candidate paths are content-addressed and receive a finite retention lock long
+enough for review and recovery. The single tag object is an indefinitely locked,
+conditional-create signed alias to exactly one existing candidate inventory;
+an occupied tag key with different content fails. Promoted release assets and
+OCCT dependency objects are indefinitely locked. Store every
 native archive, static SDK, WASM/npm/demo archive, wheel, checksum, internal
 manifest, validation record, and provenance bundle referenced by the inventory.
+Upload assets first, leaf provenance next, the aggregate inventory as the
+candidate commit marker, and the tag alias last. Readers ignore incomplete
+namespaces that lack a valid final inventory.
 
 Distribution roles are deliberately different:
 
@@ -635,9 +682,12 @@ consumer migrates to R2 and policy approves the compatibility break. During
 this plan, upload the same inventoried bytes to both. In particular, update
 Alexandria only after its existing GitHub native URLs have a tested R2 successor.
 
-Use R2 lifecycle rules only for abandoned candidate prefixes after a generous
-review window. Tagged release objects and their inventories are retained
-indefinitely unless a separate retention ADR changes that policy. Collect
+Use lifecycle rules for abandoned intake and, after their finite locks expire,
+unpromoted candidates. Tagged release objects and their inventories are retained
+indefinitely unless a separate retention ADR changes that policy. Separate
+bucket-scoped credentials and protected environments govern OCCT production,
+candidate ingestion, and tagged releases; builders receive none. Define rotation,
+revocation, audit logging, and compromise recovery. Collect
 storage and request metrics so the initial low cost remains visible.
 
 ### 9. Preserve trusted PyPI publication
@@ -647,6 +697,16 @@ protected release environment. The job downloads wheels from the immutable R2
 candidate or the workflow artifact, proves their digests against the signed
 inventory, and publishes those exact files. No local/self-hosted builder receives
 the PyPI identity token or release-environment access.
+
+Credentialed ingestion and promotion always execute workflow and verifier code
+from a protected canonical branch at a reviewed workflow SHA. The candidate
+commit and tag are hostile data and are never checked out or executed by an
+R2-, PyPI-, or GitHub-write job. Artifact verification runs first in a no-secret,
+no-OIDC job. The PyPI job consumes only the already-qualified exact payload and
+publishes it. R2 ingestion, PyPI, and GitHub publication use separate protected
+environments with required reviewers and deployment policies. Release actions
+are pinned to immutable commit SHAs; release tags are protected from movement or
+deletion and GitHub immutable releases are enabled before cutover.
 
 Trusted Publishing establishes the GitHub repository, workflow, environment,
 and commit identity of the publishing act. Candidate build provenance is a
@@ -675,12 +735,19 @@ it cannot alter candidate bytes.
 
 ### Phase A: low-risk immediate reductions
 
-1. Add step-timing and compilation-ledger output to the current workflow.
-2. Replace global CMake/Cargo throttles with measured per-runner values.
-3. Run inventory/order/naming/shell dry-run tests before matrices.
-4. Stop duplicating Python/Rust/TypeScript tests in `ci.yml`.
-5. Exclude preview/example compilation from headless release production.
-6. Preserve current publication behavior while measuring the reductions.
+1. Define the canonical candidate-root schema and add step-timing plus
+   compilation/test-ledger output without changing release bytes.
+2. Run non-mutating inventory/order/naming/path/resume fixture tests before
+   matrices; keep real channel-transition tests separately dispatched.
+3. Measure current CMake/Cargo settings before replacing them; changing the
+   workflow variable alone is insufficient because the Rust harness also sets a
+   one-job default.
+4. Generate a test-ID/command ledger and audit the apparent
+   Python/Rust/TypeScript duplication before removing a job.
+5. Preserve `geometer_hlr_preview` and current native archive contents until an
+   explicit distribution/consumer decision; moving it is not a low-risk change.
+6. Preserve current publication, dependency fallback, test lanes, and
+   CMake/Cargo limits during the first instrumentation slice.
 
 ### Phase B: immutable dependencies and local builders
 
@@ -690,11 +757,12 @@ it cannot alter candidate bytes.
 3. Remove consumer source-build and legacy/alias fallbacks.
 4. Qualify Windows plus direct WSL2 Linux x64 and WASM runners with a non-release
    candidate; defer Docker unless reproducibility evidence requires it.
-5. Keep GitHub-hosted ARM64 as the default; qualify native macOS ARM64 and a
-   sequential Ubuntu 22.04 ARM64 VM on the MacBook only as fallback evidence.
+5. Keep and qualify GitHub-hosted ARM64 as the default.
 6. Benchmark Buildkite M4 and Codemagic M4 against GitHub macOS, then CircleCI
    M4 Pro if neither meets the adoption threshold.
-7. Benchmark AMD-host QEMU ARM64 only as a disaster-recovery path.
+7. Separately qualify native macOS ARM64 and a sequential Ubuntu 22.04 ARM64 VM
+   on the MacBook only as fallback evidence; benchmark AMD-host QEMU ARM64 only
+   as a disaster-recovery path.
 
 ### Phase C: build-once candidates
 
@@ -722,6 +790,9 @@ The cutover is incomplete until automated tests demonstrate:
 
 - missing OCCT lock entry, object, checksum, or profile fails without compiling;
 - an attempted overwrite of an OCCT or tagged-release object fails;
+- credentialed jobs never check out or execute candidate-controlled code;
+- every leaf attestation and aggregate inventory binds the canonical candidate
+  root and an allowlisted builder/workflow identity;
 - a dirty local checkout cannot produce a promotable attestation;
 - untrusted refs and pull-request events cannot schedule the self-hosted runner;
 - self-hosted jobs cannot access PyPI or production R2 credentials;
@@ -732,7 +803,10 @@ The cutover is incomplete until automated tests demonstrate:
 - an expired GitHub workflow artifact can be recovered from immutable R2;
 - R2/GitHub/PyPI public downloads match the canonical inventory;
 - release tag/source SHA/candidate SHA mismatches fail before publication;
-- a runner loss leaves no mutable authoritative state only on that runner; and
+- a runner loss leaves no mutable authoritative state only on that runner;
+- hostile archives are rejected by exact filename/count, per-file/aggregate
+  size, JSON depth/size, archive-entry/expanded-size, traversal, link, and device
+  limits without extraction or execution in a credentialed job; and
 - old GitHub Release and PyPI consumer paths remain valid.
 
 ## Performance budgets

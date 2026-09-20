@@ -228,7 +228,7 @@ test_case_type = "unit"
 id = "PY_029"
 file = "test_candidate_root.py"
 name = "Release Candidate Root Identity"
-description = "Checks canonical closed candidate identity over source, release, workflow, policy, OCCT lock, and lane recipe/toolchain digests."
+description = "Checks canonical closed candidate identity over source, release, and the single immutable OCCT lock digest."
 test_case_type = "unit"
 
 [[subtests]]

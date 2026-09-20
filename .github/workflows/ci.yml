@@ -93,63 +93,6 @@ jobs:
             dist/native/linux-x64/*
           if-no-files-found: error
 
-  python:
-    name: Python package
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v8.2.0
-      - name: Set up Python
-        run: uv python install 3.12
-      - name: Run production Python tests
-        env:
-          GEOMETER_TEST_PROFILE: production
-        run: uv run --group dev rack run python
-      - name: Validate Python package
-        run: uv run --group dev python scripts/validate_python_package.py --skip-native-validation --wheelhouse out/wheelhouse
-      - name: Check wheel
-        run: uv run --group dev twine check out/wheelhouse/*.whl
-
-  rust:
-    name: Rust client
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v8.2.0
-      - name: Set up Python
-        run: uv python install 3.12
-      - name: Install standards CLI
-        run: uv tool install wn-dev-std==2026.9.8
-      - name: Run production Rust validation
-        env:
-          GEOMETER_TEST_PROFILE: production
-        run: uv run --group dev rack run rust
-
-  typescript:
-    name: TypeScript client
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v8.2.0
-      - name: Set up Python
-        run: uv python install 3.12
-      - name: Set up Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: "24"
-          cache: npm
-      - name: Install Node toolchain
-        run: |
-          npm install --global npm@11.16.0
-          npm ci
-      - name: Run production TypeScript validation
-        env:
-          GEOMETER_TEST_PROFILE: production
-        run: uv run --group dev rack run typescript
-
   wasm:
     name: Production WASM
     runs-on: ubuntu-24.04

@@ -35,7 +35,9 @@ never runs automatically. The experimental, macOS wheel, dependency-cache, and
 operation-transport workflows are likewise manual-only. Dispatch one only when
 its specific remote environment or controlled evidence is required. Every job
 has an explicit timeout so a stalled runner or test cannot consume minutes
-indefinitely.
+indefinitely. Python, Rust, and TypeScript production strata run once in the
+Linux native job; separate jobs must not repeat those strata or rebuild the
+same wheel.
 
 ## Experimental qualification
 

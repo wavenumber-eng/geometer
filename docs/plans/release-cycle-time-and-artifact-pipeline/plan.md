@@ -60,7 +60,7 @@ depends_on = ["target-architecture"]
 [[steps]]
 id = "test-runtime-impact-audit"
 title = "Audit test IDs, coverage, duplication, runtime, and release critical path before changing lanes"
-status = "pending"
+status = "done"
 depends_on = ["audit-baseline", "target-architecture"]
 
 [[steps]]

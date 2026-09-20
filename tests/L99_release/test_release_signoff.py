@@ -218,7 +218,14 @@ def test_ci_is_manual_only_and_release_rebuilds_every_output_once() -> None:
     assert "workflow_dispatch:" in ci
     assert "pull_request:" not in ci
     assert "release:" not in ci
-    assert ci.count("GEOMETER_TEST_PROFILE: production") == 4
+    assert ci.count("uv run --group dev rack run python") == 1
+    assert ci.count("uv run --group dev rack run rust") == 1
+    assert ci.count("uv run --group dev rack run typescript") == 1
+    assert ci.count("scripts/validate_python_package.py --skip-native-validation --wheelhouse out/wheelhouse") == 1
+    assert "\n  python:" not in ci
+    assert "\n  rust:" not in ci
+    assert "\n  typescript:" not in ci
+    assert ci.count("GEOMETER_TEST_PROFILE: production") == 1
     assert "push:" not in ci
 
     assert "name: Publish" in release

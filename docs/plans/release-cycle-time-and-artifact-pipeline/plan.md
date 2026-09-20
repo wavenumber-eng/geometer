@@ -23,15 +23,21 @@ depends_on = ["target-architecture"]
 
 [[steps]]
 id = "local-builder"
-title = "Qualify isolated Windows x64, Linux x64, and WASM builders on the AMD workstation"
+title = "Qualify Windows x64 plus direct WSL2 Linux x64 and WASM builders on the AMD workstation"
 status = "pending"
 depends_on = ["target-architecture", "occt-lock"]
 
 [[steps]]
-id = "arm-builder-spike"
-title = "Qualify macOS ARM64 and virtualized Linux ARM64 builders on the Apple-silicon MacBook"
+id = "arm-default-qualification"
+title = "Keep GitHub-hosted ARM64 builders as default and qualify the MacBook as a sequential compatibility fallback"
 status = "pending"
 depends_on = ["target-architecture", "occt-lock"]
+
+[[steps]]
+id = "mac-cloud-options"
+title = "Benchmark faster macOS ARM64 clouds against the GitHub-hosted default"
+status = "pending"
+depends_on = ["audit-baseline", "target-architecture"]
 
 [[steps]]
 id = "build-graph-consolidation"
@@ -47,9 +53,9 @@ depends_on = ["target-architecture"]
 
 [[steps]]
 id = "candidate-workflow"
-title = "Produce an immutable complete candidate inventory from the two local machines with hosted fallbacks"
+title = "Produce one immutable candidate from local x64/WASM and hosted ARM64 builders"
 status = "pending"
-depends_on = ["local-builder", "arm-builder-spike", "build-graph-consolidation", "test-lane-consolidation"]
+depends_on = ["local-builder", "arm-default-qualification", "build-graph-consolidation", "test-lane-consolidation"]
 
 [[steps]]
 id = "r2-release-store"
@@ -111,7 +117,7 @@ status = "pending"
 
 [[exit_criteria]]
 id = "local-cycle"
-title = "The complete Windows, Linux x64/ARM64, macOS ARM64, and WASM matrix qualifies on the two local machines"
+title = "Windows, Linux x64, and WASM qualify on the AMD workstation, with the constrained MacBook proven as a sequential ARM compatibility fallback"
 status = "pending"
 
 [[exit_criteria]]
@@ -142,6 +148,11 @@ status = "pending"
 [[exit_criteria]]
 id = "no-hidden-duplication"
 title = "The workflow reports compilation, validation, upload, and promotion time by artifact and rejects duplicate builds"
+status = "pending"
+
+[[exit_criteria]]
+id = "mac-cloud-options"
+title = "GitHub and shortlisted macOS ARM64 clouds have comparable three-run time, cost, environment, and artifact evidence"
 status = "pending"
 
 [[exit_criteria]]
@@ -191,8 +202,8 @@ reviewed source SHA + dependency lock
         +-- AMD workstation / Windows --------- Windows CLI/wheel/SDK
         +-- AMD workstation / WSL2 ------------ Linux x64 CLI/wheel/SDK
         +-- AMD workstation / WSL2 ------------ WASM/npm/demo payload
-        +-- Apple-silicon MacBook -------------- macOS ARM64 CLI/wheel/SDK
-        +-- MacBook / Ubuntu ARM64 VM ---------- Linux ARM64 CLI/wheel/SDK
+        +-- GitHub-hosted Ubuntu ARM64 --------- Linux ARM64 CLI/wheel/SDK
+        +-- GitHub-hosted macOS ARM64 ---------- macOS ARM64 CLI/wheel/SDK
         |
         v
 canonical candidate inventory + validation records + attestations
@@ -202,10 +213,11 @@ canonical candidate inventory + validation records + attestations
         +-- GitHub Release compatibility mirror and human-facing catalog
 ```
 
-The preferred target builds the complete candidate matrix on the two local
-machines. GitHub-hosted native runners remain a clean-room comparison and
-failover during cutover, not the ordinary compiler farm. The platform list
-remains the current four native targets plus WASM until a
+The preferred initial target builds Windows, Linux x64, and WASM on the AMD
+workstation and keeps GitHub-hosted runners as the default for Linux ARM64 and
+macOS ARM64. Faster macOS clouds and the constrained local MacBook are measured
+alternatives, not assumptions. The platform list remains the current four
+native targets plus WASM until a
 downstream and support-policy audit explicitly removes a target. Earlier intent
 to emphasize Windows and macOS is not sufficient to silently remove Linux:
 published Python wheels and Alexandria's native manifest currently depend on
@@ -278,9 +290,11 @@ outside it.
 
 - Windows 11 Pro, Ryzen 9 9950X, 16 cores/32 threads, 61.6 GiB RAM.
 - WSL2 Ubuntu 24.04 is installed; Docker is not currently installed.
-- An Apple-silicon MacBook can provide native macOS ARM64 and hardware-
-  virtualized Linux ARM64 execution; its exact CPU, RAM, disk, and clean/warm
-  candidate timings must be recorded during qualification.
+- The available Apple-silicon MacBook has 8 GiB RAM and a 512 GB SSD. It can
+  provide native macOS ARM64 and hardware-virtualized Linux ARM64 execution,
+  but those lanes must run sequentially, use conservative parallelism, and
+  aggressively remove disposable build/dependency state. It is a compatibility
+  and outage fallback until measurements prove otherwise.
 - A dedicated Ubuntu 22.04 environment is required for the current
   `manylinux_2_35` promise. A binary built directly on Ubuntu 24.04 can acquire
   a newer glibc requirement and is not an acceptable substitute.
@@ -382,6 +396,21 @@ Use the AMD workstation for Windows x64, Linux x64, and WASM candidate jobs
 after qualification. Linux x64 and WASM run in a dedicated Ubuntu 22.04 WSL2
 environment so the wheel is built and tested against the governed glibc
 baseline.
+
+Use direct WSL2 as the performance baseline and preferred builder. Docker
+Desktop's normal Linux-container backend itself uses WSL2, so Docker is not a
+separate faster virtualization path and may add image, overlay-filesystem,
+volume, and container-start overhead. Keep the checkout, build tree, and
+dependency state in the Linux filesystem rather than `/mnt/c`; WSL's cross-OS
+filesystem access would otherwise dominate the result.
+
+Obtain isolation with a dedicated Ubuntu 22.04 WSL distribution created from a
+versioned root filesystem and reproducible provisioning manifest. Export a
+verified clean base or recreate it from the pinned inputs; do not reuse the
+interactive Ubuntu 24.04 distribution. Docker installation and comparison are
+optional follow-up work only if the dedicated distro proves hard to reproduce
+or clean. If compared later, both layouts must invoke the same shared candidate
+command and use the same CPU/memory limits and OCCT lock.
 Run them through a dedicated, manual-only, self-hosted GitHub Actions runner so
 the existing workflow identity, log, artifact upload, and attestation path is
 retained. The runner must be isolated from the interactive developer checkout:
@@ -408,20 +437,20 @@ events, secret separation, and ephemeral cleanup. If those controls cannot be
 proven, use the local command outside Actions and submit its signed inventory to
 a hosted ingestion workflow, or keep the affected target hosted.
 
-### 3. Build both ARM64 targets on the Apple-silicon MacBook
+### 3. Keep GitHub-hosted ARM64 as the initial default
 
-Use the MacBook as the preferred ARM64 build machine:
+Continue using native GitHub-hosted `ubuntu-22.04-arm` and `macos-15` runners for
+Linux ARM64 and macOS ARM64 candidates. They already execute the full build,
+CTest, wheel-install, and relocated-SDK qualification on the target architecture
+and require no new trusted build control plane.
 
-1. build and execute the macOS ARM64 candidate on the macOS host; and
-2. build and execute the Linux ARM64 candidate inside an Ubuntu 22.04 ARM64 VM
-   using Apple-silicon hardware virtualization.
-
-This is native ARM64 execution rather than CPU emulation, so it can satisfy the
-same build, CTest, wheel-install, and relocated-SDK qualification as GitHub's
-ARM64 runners. The Linux VM must use a versioned reproducible image, fixed CPU
-and memory allocation, shared R2 dependency lock, clean candidate worktree, and
-an isolated self-hosted runner identity. The macOS host and Linux guest are
-separate candidate lanes and must not write the same working directory.
+Qualify the 8 GiB/512 GB Apple-silicon MacBook only as a compatibility and
+outage fallback. Run macOS ARM64 on the host and Linux ARM64 in a dedicated
+Ubuntu 22.04 ARM64 VM, sequentially rather than concurrently. Use conservative
+parallelism derived from observed memory pressure; restore exact OCCT binaries
+from R2 instead of compiling OCCT; place disposable state under one bounded
+root; and prove cleanup leaves enough disk for the next lane. A Docker ARM64
+container remains optional and is not expected to improve speed.
 
 Also benchmark Linux ARM64 under QEMU/binfmt on the AMD workstation, but treat
 it as a disaster-recovery option unless it meets the full candidate budget.
@@ -431,13 +460,55 @@ guest under QEMU or an ARM64 container using binfmt can do that, but emulated
 compilation is likely slower and more fragile than the MacBook's virtualized
 ARM guest.
 
-Run three clean and three warm comparisons against the standard GitHub-hosted
-Linux ARM64 and macOS ARM64 runners. Keep those hosted lanes as failover until
-the MacBook has produced two consecutive matching candidates. An ephemeral
-DigitalOcean ARM64 or x64 builder remains a final fallback; adopt one only if
-measured outage recovery justifies another credentialed control plane.
+Run three clean and three warm MacBook fallback comparisons against the standard
+GitHub-hosted Linux ARM64 and macOS ARM64 runners. GitHub remains the default
+regardless of a successful fallback qualification until the separate cloud or
+local adoption criteria are approved. An ephemeral DigitalOcean ARM64 builder
+remains a final fallback; adopt one only if measured outage recovery justifies
+another credentialed control plane.
 
-### 4. Lock OCCT instead of discovering it
+### 4. Research faster macOS ARM64 cloud capacity
+
+GitHub's standard public macOS ARM64 runner remains the control: M1, 3 CPU,
+7 GiB RAM, free for this public repository, and 10.30 minutes observed for the
+`2026.9.19` macOS candidate job. Compare the exact shared candidate command and
+locked OCCT input on these alternatives:
+
+| Priority | Provider/profile | Current published capacity and price | Initial disposition |
+| ---: | --- | --- | --- |
+| Control | GitHub standard macOS | M1, 3 CPU, 7 GiB; free for this public repository | Default until displaced by evidence |
+| Control | GitHub XLarge macOS | M2 Pro, 5 CPU, 14 GiB; $0.102/min and requires an eligible organization plan | Separates hardware gain from provider migration |
+| 1 | Buildkite M4 Medium/Large | 6 CPU/28 GiB at $0.12/min or 12 CPU/56 GiB at $0.24/min, metered to the second | First external speed benchmark |
+| 2 | Codemagic M4 | 10-core M4, 16 GiB at $0.114/min; personal plan currently includes 500 M2 minutes/month | Second external speed/cost benchmark |
+| 3 | CircleCI M4 Pro | 6 CPU/28 GiB or 12 CPU/56 GiB; 200 or 400 credits/min | Benchmark after normalizing plan and credit cost |
+| 4 | Cirrus CI Apple silicon | Ephemeral Tart macOS VMs; open-source projects advertise a free tier | Evaluate availability/current hardware; older published M1 data may not beat GitHub materially |
+| 5 | Scaleway dedicated M2 | 8-core M2, 16 GiB, 256 GB at EUR 0.17/hour with a 24-hour minimum | About EUR 4.08 minimum; useful dedicated fallback, not first burst choice |
+| 6 | AWS EC2 Mac | M2/M2 Pro/M4 bare metal with 24-48 GiB; 24-hour Dedicated Host minimum | Operationally capable but poor fit for occasional ten-minute builds |
+| 7 | MacStadium | Dedicated M4 10-core/16 GiB begins at $149/month; larger monthly profiles available | Consider only if release frequency justifies an always-on host |
+
+For the top three external candidates, run the same reviewed source SHA at
+least three times with:
+
+- the same exact R2 OCCT lock and no dependency source builds;
+- equivalent clean checkout and no compiler-object cache for the clean result;
+- the same candidate command, test selection, SDK relocation, packaging, and
+  upload destination;
+- measured queue, machine startup, checkout, dependency restore, compile, test,
+  package, and upload durations;
+- reported CPU model/allocation, memory peak, swap, disk, Xcode/Clang, and
+  macOS deployment target;
+- candidate byte digests and validation-ledger equivalence; and
+- actual per-candidate cost including platform/base-plan charges.
+
+Adopt a non-GitHub default only if it reduces macOS candidate wall time by at
+least 30 percent across three runs, remains below $3 per candidate at current
+release frequency, supports clean ephemeral state, and hands the exact bytes to
+the hosted R2-ingestion/promotion boundary without publication credentials.
+Separate CI configuration must remain a thin invocation of the repository's
+shared candidate command; do not fork release behavior into Buildkite,
+Codemagic, CircleCI, or another provider.
+
+### 5. Lock OCCT instead of discovering it
 
 Replace ordinary consumer key derivation with a checked-in canonical OCCT lock,
 for example `dependencies/occt-lock.json`. One reviewed entry per supported
@@ -474,7 +545,7 @@ even privileged accidental overwrite or deletion is rejected. Publishing a new
 OCCT build creates a new object and lock digest; it never mutates an existing
 one.
 
-### 5. Consolidate the Geometer build graph
+### 6. Consolidate the Geometer build graph
 
 For Linux and macOS, configure one release CMake graph per platform/profile that
 produces the library, CLI, production tests, SDK link probe/install tree, native
@@ -503,7 +574,7 @@ consolidation: prefer Ninja incremental reuse on isolated persistent dependency
 volumes first; add `sccache` only if three-run evidence shows a material gain
 without making correctness depend on cache availability.
 
-### 6. Consolidate tests by responsibility
+### 7. Consolidate tests by responsibility
 
 Keep one execution of each release assertion per source SHA and artifact:
 
@@ -530,7 +601,7 @@ generation, upload/download, draft/public release transitions in a test target,
 and idempotent resume logic using tiny fixtures. Add workflow and shell linting
 so path-creation and expression errors fail before matrix work.
 
-### 7. Make R2 the immutable byte store, not the Python package manager
+### 8. Make R2 the immutable byte store, not the Python package manager
 
 Use R2 for two distinct immutable namespaces or buckets:
 
@@ -569,7 +640,7 @@ review window. Tagged release objects and their inventories are retained
 indefinitely unless a separate retention ADR changes that policy. Collect
 storage and request metrics so the initial low cost remains visible.
 
-### 8. Preserve trusted PyPI publication
+### 9. Preserve trusted PyPI publication
 
 PyPI publication stays in a GitHub-hosted job using Trusted Publishing and the
 protected release environment. The job downloads wheels from the immutable R2
@@ -583,7 +654,7 @@ separate attestation and must identify the self-hosted or hosted builder and
 toolchain honestly; promotion must not imply that a hosted publisher compiled
 bytes it only verified.
 
-### 9. Make promotion resumable and channel-aware
+### 10. Make promotion resumable and channel-aware
 
 Promotion state is a canonical record keyed by inventory digest with independent
 states for R2, PyPI, draft GitHub Release, public GitHub Release, and final
@@ -617,18 +688,20 @@ it cannot alter candidate bytes.
 2. Publish existing verified OCCT archives to new content-addressed locked R2
    keys; download-verify before switching consumers.
 3. Remove consumer source-build and legacy/alias fallbacks.
-4. Qualify isolated Windows, WSL2 Linux x64, and WSL2 WASM runners with a
-   non-release candidate.
-5. Qualify native macOS ARM64 and an Ubuntu 22.04 ARM64 VM on the MacBook.
-6. Benchmark AMD-host QEMU ARM64 only as a disaster-recovery path.
-7. Keep GitHub-hosted fallbacks until two consecutive complete candidates pass
-   on the two-machine local matrix.
+4. Qualify Windows plus direct WSL2 Linux x64 and WASM runners with a non-release
+   candidate; defer Docker unless reproducibility evidence requires it.
+5. Keep GitHub-hosted ARM64 as the default; qualify native macOS ARM64 and a
+   sequential Ubuntu 22.04 ARM64 VM on the MacBook only as fallback evidence.
+6. Benchmark Buildkite M4 and Codemagic M4 against GitHub macOS, then CircleCI
+   M4 Pro if neither meets the adoption threshold.
+7. Benchmark AMD-host QEMU ARM64 only as a disaster-recovery path.
 
 ### Phase C: build-once candidates
 
 1. Implement the shared candidate command and canonical inventory.
 2. Consolidate CMake graphs and choose the Windows CRT outcome.
-3. Combine all five locally built platform payloads into one candidate.
+3. Combine locally built Windows/Linux x64/WASM with the selected hosted ARM64
+   payloads into one candidate.
 4. Add hosted R2 ingestion and immutable candidate retention.
 5. Run a complete shadow candidate beside the old release workflow and compare
    every artifact name, content policy, test result, and duration.
@@ -673,8 +746,12 @@ from compute regressions, but they do not relax correctness.
 - Warm local WASM candidate: at most 2 minutes.
 - Complete AMD-workstation Windows + Linux x64 + WASM qualification: at most 10
   clean minutes and 5 warm minutes when its independent lanes run in parallel.
-- Each MacBook macOS ARM64 and virtualized Linux ARM64 lane: at most 15 minutes.
-- Complete two-machine candidate wall time when all lanes run in parallel: at most 15
+- Each GitHub-hosted ARM64 lane: at most 15 minutes.
+- Any adopted external macOS cloud must be at least 30 percent faster than the
+  three-run GitHub standard control and cost less than $3 per candidate.
+- Each sequential MacBook fallback lane: at most 20 minutes without memory
+  exhaustion or more than 50 GiB of disposable local state.
+- Complete candidate wall time when all lanes run in parallel: at most 15
   minutes, excluding an explicitly approved downstream application trial.
 - Promotion and public verification: at most 5 minutes with zero compilation.
 - Recovery from a publication-only failure: at most 5 minutes with zero
@@ -721,14 +798,28 @@ Primary sources used for architecture and cost assumptions:
 - [Cloudflare R2 S3 compatibility](https://developers.cloudflare.com/r2/api/s3/api/): conditional `PutObject` support.
 - [PyPA manylinux](https://github.com/pypa/manylinux): glibc compatibility policy and build images.
 - [DigitalOcean Droplet pricing](https://www.digitalocean.com/pricing/droplets): current dedicated-CPU comparison pricing.
+- [Docker Desktop WSL2 backend](https://docs.docker.com/desktop/features/wsl/): Docker's Windows Linux-container backend, resource behavior, integration, and data-location guidance.
+- [Microsoft WSL2 architecture](https://learn.microsoft.com/en-us/windows/wsl/wsl2-about): WSL2's managed VM, Linux kernel, and filesystem-performance guidance.
+- [GitHub hosted-runner specifications](https://docs.github.com/en/actions/reference/runners/github-hosted-runners): standard macOS M1 capacity.
+- [GitHub larger-runner specifications](https://docs.github.com/en/actions/reference/runners/larger-runners): M2 Pro ARM64 profile and limitations.
+- [GitHub Actions runner pricing](https://docs.github.com/en/billing/reference/actions-runner-pricing): current standard and larger-runner rates.
+- [Buildkite hosted-agent pricing](https://www2.buildkite.com/pricing/): M4 macOS shapes and per-second billing.
+- [Codemagic pricing](https://codemagic.io/pricing/): M2/M4 per-minute rates, free allowance, and concurrency.
+- [CircleCI macOS execution environment](https://circleci.com/docs/guides/execution-managed/using-macos/): M4 Pro resource shapes and supported environments.
+- [CircleCI price list](https://circleci.com/pricing/price-list/): current macOS credit rates.
+- [Cirrus CI macOS VMs](https://cirrus-ci.org/guide/macOS/): ephemeral Apple-silicon Tart VM support.
+- [Scaleway Apple silicon pricing](https://www.scaleway.com/en/pricing/apple-silicon/): dedicated M2 capacity and hourly price.
+- [AWS EC2 Mac FAQ](https://aws.amazon.com/ec2/faqs/): Apple-silicon profiles and 24-hour Dedicated Host minimum.
+- [MacStadium pricing](https://macstadium.com/pricing): current dedicated Apple-silicon monthly profiles.
 
 ## Closure order
 
 1. Approve the target architecture and budgets in this plan.
 2. Implement the immediate low-risk reductions and measure them.
 3. Replace OCCT discovery/fallback with the immutable lock and locked R2 objects.
-4. Qualify Windows, Linux x64, and WASM on the AMD workstation and both ARM64
-   targets on the Apple-silicon MacBook.
+4. Qualify Windows, Linux x64, and WASM on the AMD workstation; retain GitHub as
+   the ARM64 default, qualify the MacBook fallback, and complete the macOS cloud
+   comparison.
 5. Consolidate build/test graphs and produce one complete shadow candidate.
 6. Implement R2 ingestion and promotion-only PyPI/GitHub publication.
 7. Run failure injection, security review, and independent review.

@@ -165,17 +165,17 @@
         "runtime": "static"
       },
       "archive": {
-        "object_key": "dependencies/occt/windows-x64-msvc-v143-mt-static/6ffd26db0f67d874a47d4aeb2df421ca36b576eeda77e3e4c33e5a343ad7c9ad/occt-install.zip",
-        "profile_sha256": "bf5bcf985677f08e60e53b5118c2ac0e45eb1947ab4f94cb70d8fb7e0f1ca4ae",
-        "sha256": "6ffd26db0f67d874a47d4aeb2df421ca36b576eeda77e3e4c33e5a343ad7c9ad",
-        "size": 220161765
+        "object_key": "dependencies/occt/windows-x64-msvc-v143-mt-static/3b010466a458841c10d8d63744c7160e30b928ea1f6f0ce529988ecfcbe1f335/occt-install.zip",
+        "profile_sha256": "862056845cee35ed1095bb43ec1939c0d1e47c80fe4239504f20eca798d1d217",
+        "sha256": "3b010466a458841c10d8d63744c7160e30b928ea1f6f0ce529988ecfcbe1f335",
+        "size": 224924115
       },
       "id": "windows-x64-msvc-v143-mt-static",
       "qualification": {
         "release_tag": "v2026-09-19",
-        "source_revision": "6d659f1811123fdbe665b3cfe1fc00cfaec32084",
-        "workflow": ".github/workflows/release.yml",
-        "workflow_run_id": "35482169778"
+        "source_revision": "41c29d4913e9fe94a8f6ba66c76270fe93be5c02",
+        "workflow": ".github/workflows/occt-deps.yml",
+        "workflow_run_id": "35533884508"
       },
       "selector": {
         "kind": "native",

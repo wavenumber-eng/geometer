@@ -8,11 +8,12 @@ created = "2026-09-20T09:05:57-04:00"
 
 # Log: candidate-root-contract
 
-The reviewed candidate-root contract is implemented as strict canonical JSON
-binding source, release version/date/ABI/tag, workflow repository/revision/file,
-policy, OCCT lock, and ordered lane recipe/toolchain digests. Creation is
-atomic and refuses replacement. Date-version serials remain consistent through
-release inventory and static-SDK metadata.
+The candidate-root contract is implemented as strict canonical JSON binding
+only source, release version/date/ABI/tag, and the OCCT lock digest. Workflow,
+policy, and builder recipes are already fixed by the source commit; actual
+toolchain observations belong in audit evidence rather than additional lookup
+identities. Creation is atomic and refuses replacement. Date-version serials
+remain consistent through release inventory and static-SDK metadata.
 
 The same low-risk slice adds a fail-closed canonical execution ledger and a
 pure non-mutating promotion planner. The current release workflow runs the

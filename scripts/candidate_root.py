@@ -8,7 +8,7 @@ from datetime import date
 import hashlib
 import json
 import os
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 import re
 import tempfile
 from typing import Any, Sequence
@@ -23,8 +23,6 @@ VERSION_RE = re.compile(
     r"(?P<day>0|[1-9][0-9]*)"
     r"(?:\.(?P<serial>0|[1-9][0-9]*))?"
 )
-REPOSITORY_RE = re.compile(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+")
-LANE_ID_RE = re.compile(r"[a-z0-9][a-z0-9-]*")
 
 
 class CandidateRootError(ValueError):
@@ -86,28 +84,6 @@ def _revision(value: Any, label: str) -> str:
     return text
 
 
-def _repository(value: Any, label: str) -> str:
-    text = _text(value, label)
-    if REPOSITORY_RE.fullmatch(text) is None or text.endswith(".git"):
-        raise CandidateRootError(f"{label} must be an owner/repository slug")
-    return text
-
-
-def _workflow_path(value: Any) -> str:
-    text = _text(value, "workflow.path")
-    path = PurePosixPath(text)
-    if (
-        path.is_absolute()
-        or path.as_posix() != text
-        or ".." in path.parts
-        or path.parts[:2] != (".github", "workflows")
-        or len(path.parts) != 3
-        or path.suffix not in {".yml", ".yaml"}
-    ):
-        raise CandidateRootError("workflow.path must be a normalized .github/workflows YAML path")
-    return text
-
-
 def _release_identity(version: Any) -> tuple[str, str, int, str]:
     text = _text(version, "release.version")
     match = VERSION_RE.fullmatch(text)
@@ -132,11 +108,7 @@ def _release_identity(version: Any) -> tuple[str, str, int, str]:
 def validate_candidate_root(value: Any) -> dict[str, Any]:
     """Validate a candidate-root value without consulting a checkout or network."""
     root = _object(value, "candidate root")
-    _keys(
-        root,
-        {"lanes", "occt_lock_sha256", "policy_sha256", "release", "schema", "source", "workflow"},
-        "candidate root",
-    )
+    _keys(root, {"occt_lock_sha256", "release", "schema", "source"}, "candidate root")
     if root["schema"] != SCHEMA:
         raise CandidateRootError(f"unsupported candidate-root schema: {root['schema']!r}")
 
@@ -154,33 +126,7 @@ def validate_candidate_root(value: Any) -> dict[str, Any]:
     if release["expected_tag"] != expected_tag:
         raise CandidateRootError(f"release.expected_tag must be {expected_tag} for release.version")
 
-    workflow = _object(root["workflow"], "workflow")
-    _keys(workflow, {"file_sha256", "path", "repository", "revision"}, "workflow")
-    _repository(workflow["repository"], "workflow.repository")
-    _workflow_path(workflow["path"])
-    _revision(workflow["revision"], "workflow.revision")
-    _sha256(workflow["file_sha256"], "workflow.file_sha256")
-    _sha256(root["policy_sha256"], "policy_sha256")
     _sha256(root["occt_lock_sha256"], "occt_lock_sha256")
-
-    lanes = root["lanes"]
-    if not isinstance(lanes, list) or not lanes:
-        raise CandidateRootError("lanes must be a non-empty array")
-    lane_ids: list[str] = []
-    for index, raw_lane in enumerate(lanes):
-        label = f"lanes[{index}]"
-        lane = _object(raw_lane, label)
-        _keys(lane, {"id", "recipe_sha256", "toolchain_sha256"}, label)
-        lane_id = _text(lane["id"], f"{label}.id")
-        if LANE_ID_RE.fullmatch(lane_id) is None:
-            raise CandidateRootError(f"{label}.id must be a lowercase lane identifier")
-        _sha256(lane["recipe_sha256"], f"{label}.recipe_sha256")
-        _sha256(lane["toolchain_sha256"], f"{label}.toolchain_sha256")
-        lane_ids.append(lane_id)
-    if len(set(lane_ids)) != len(lane_ids):
-        raise CandidateRootError("lane identifiers must be unique")
-    if lane_ids != sorted(lane_ids):
-        raise CandidateRootError("lanes must be ordered lexicographically by id")
     return root
 
 
@@ -191,19 +137,11 @@ def create_candidate_root(
     release_date: str,
     abi_generation: int,
     expected_tag: str,
-    workflow_repository: str,
-    workflow_path: str,
-    workflow_revision: str,
-    workflow_file_sha256: str,
-    policy_sha256: str,
     occt_lock_sha256: str,
-    lanes: list[dict[str, str]],
 ) -> dict[str, Any]:
-    """Construct and validate a candidate root, normalizing lane order."""
+    """Construct and validate the minimal candidate identity."""
     value: dict[str, Any] = {
-        "lanes": sorted(lanes, key=lambda lane: lane.get("id", "")),
         "occt_lock_sha256": occt_lock_sha256,
-        "policy_sha256": policy_sha256,
         "release": {
             "abi_generation": abi_generation,
             "date": release_date,
@@ -212,12 +150,6 @@ def create_candidate_root(
         },
         "schema": SCHEMA,
         "source": {"revision": source_revision},
-        "workflow": {
-            "file_sha256": workflow_file_sha256,
-            "path": workflow_path,
-            "repository": workflow_repository,
-            "revision": workflow_revision,
-        },
     }
     return validate_candidate_root(value)
 
@@ -275,13 +207,6 @@ def _digest(value: str | None, path: Path | None, label: str) -> str:
         raise CandidateRootError(f"could not hash {label} file {path}: {error}") from error
 
 
-def _lane(value: str) -> dict[str, str]:
-    parts = value.split(":")
-    if len(parts) != 3:
-        raise argparse.ArgumentTypeError("lane must be ID:RECIPE_SHA256:TOOLCHAIN_SHA256")
-    return {"id": parts[0], "recipe_sha256": parts[1], "toolchain_sha256": parts[2]}
-
-
 def _add_digest_options(parser: argparse.ArgumentParser, label: str) -> None:
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(f"--{label}-sha256")
@@ -298,15 +223,7 @@ def _parser() -> argparse.ArgumentParser:
     create.add_argument("--release-date", required=True)
     create.add_argument("--abi-generation", required=True, type=int)
     create.add_argument("--expected-tag", required=True)
-    create.add_argument("--workflow-repository", required=True)
-    create.add_argument("--workflow-path", required=True)
-    create.add_argument("--workflow-revision", required=True)
-    _add_digest_options(create, "workflow")
-    _add_digest_options(create, "policy")
     _add_digest_options(create, "occt-lock")
-    create.add_argument(
-        "--lane", action="append", required=True, type=_lane, metavar="ID:RECIPE_SHA256:TOOLCHAIN_SHA256"
-    )
     validate = commands.add_parser("validate", help="validate a canonical candidate-root document")
     validate.add_argument("input", type=Path)
     return parser
@@ -322,13 +239,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 release_date=args.release_date,
                 abi_generation=args.abi_generation,
                 expected_tag=args.expected_tag,
-                workflow_repository=args.workflow_repository,
-                workflow_path=args.workflow_path,
-                workflow_revision=args.workflow_revision,
-                workflow_file_sha256=_digest(args.workflow_sha256, args.workflow_file, "workflow"),
-                policy_sha256=_digest(args.policy_sha256, args.policy_file, "policy"),
                 occt_lock_sha256=_digest(args.occt_lock_sha256, args.occt_lock_file, "occt-lock"),
-                lanes=args.lane,
             )
             write_candidate_root(args.output, value)
             path = args.output

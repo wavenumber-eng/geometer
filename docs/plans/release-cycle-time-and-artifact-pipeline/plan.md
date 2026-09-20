@@ -398,13 +398,15 @@ equal the source-derived expected tag and point to the exact candidate commit.
 Promotion records that tag as an immutable alias; it does not rename or
 repackage contents.
 
-Every candidate has a canonical root identity containing the built source
-commit, embedded release version and expected tag, reviewed workflow commit and
-workflow digest, candidate schema/policy digest, OCCT-lock digest, and every
-lane's provisioning/toolchain recipe digest. Leaf attestations bind that root,
-artifact digest, and validation-ledger digest. A hosted aggregate attestation
-states that ingestion verified and stored the bytes; it must not claim that the
-ingestion job built locally produced artifacts.
+Every candidate has one small canonical root identity containing the built
+source commit, embedded release version and expected tag, and OCCT-lock digest.
+The source commit already fixes the workflow, policy, and checked-in builder
+recipes, so hashing them again creates redundant identities without increasing
+integrity. Actual toolchain details and lane observations are audit evidence,
+not lookup keys. Leaf attestations bind the candidate root, artifact digest,
+and validation-ledger digest. A hosted aggregate attestation states that
+ingestion verified and stored the bytes; it must not claim that the ingestion
+job built locally produced artifacts.
 
 Every channel operation is idempotent. If PyPI already contains the exact
 inventoried wheel, that wheel is verified and skipped. If a GitHub or R2 asset

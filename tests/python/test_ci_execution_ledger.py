@@ -24,6 +24,9 @@ def test_run_records_canonical_success_and_selected_parallelism(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     ledger_path = tmp_path / "ledger.json"
+    monkeypatch.delenv("GEOMETER_REQUIRE_NATIVE_TEST_SERVERS", raising=False)
+    monkeypatch.delenv("GEOMETER_TEST_PROFILE", raising=False)
+    monkeypatch.delenv("GEOMETER_TYPESCRIPT_SCOPE", raising=False)
     monkeypatch.setenv("CMAKE_BUILD_PARALLEL_LEVEL", "16")
     monkeypatch.setenv("CARGO_BUILD_JOBS", "8")
     command = [sys.executable, "-c", "print('child output is inherited')"]

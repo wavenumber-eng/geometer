@@ -108,7 +108,7 @@ def test_release_qualification_executes_b0_on_every_native_platform() -> None:
     assert "partial_illustration.fragment.clipping is None" in package_validation
     assert "not empty_illustration.empty" in package_validation
 
-    release = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+    release = (ROOT / ".github" / "workflows" / "release-candidate.yml").read_text(encoding="utf-8")
     candidate = (ROOT / "scripts" / "build_release_candidate.py").read_text(encoding="utf-8")
     assert "scripts/build_release_candidate.py" in release
     assert '"validate_native.py"' in candidate

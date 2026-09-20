@@ -10,7 +10,9 @@ import pytest
 
 from candidate_root import candidate_root_sha256, create_candidate_root
 from ci_release_metadata import package_version, release_date, release_tag
+import fetch_release_candidate
 import publish_release_candidate
+import publish_release_tag
 import r2_store
 from validate_release_inventory import expected_asset_names
 from verify_release_inventory import verify_release
@@ -107,3 +109,78 @@ def test_r2_config_uses_one_standard_environment(monkeypatch: pytest.MonkeyPatch
     monkeypatch.setenv("R2_SECRET_ACCESS_KEY", "secret")
     config = r2_store.config_from_env()
     assert config == r2_store.R2Config("bucket", "https://account.invalid", "key", "secret")
+
+
+def test_candidate_store_round_trip_and_tag_alias(tmp_path: Path) -> None:
+    source = tmp_path / "source"
+    source.mkdir()
+    inventory_sha256 = _release(source)
+    config = r2_store.R2Config("bucket", "https://example.invalid", "key", "secret")
+    objects: dict[str, bytes] = {}
+
+    def create(_config: r2_store.R2Config, key: str, body: bytes, _content_type: str) -> bool:
+        previous = objects.setdefault(key, body)
+        if previous != body:
+            raise RuntimeError("different bytes")
+        return previous is body
+
+    def get(_config: r2_store.R2Config, key: str) -> bytes | None:
+        return objects.get(key)
+
+    publish_release_candidate.publish_candidate(
+        source,
+        TEST_TAG,
+        TEST_REVISION,
+        config,
+        create,
+        verify_release,
+    )
+    output = tmp_path / "downloaded"
+    inventory = fetch_release_candidate.fetch_candidate(
+        output,
+        TEST_TAG,
+        TEST_REVISION,
+        inventory_sha256,
+        config,
+        get,
+    )
+    assert inventory["candidate_root"]["source"]["revision"] == TEST_REVISION
+    assert {path.name for path in output.iterdir()} == {
+        *expected_asset_names(TEST_TAG),
+        f"geometer-release-inventory-{TEST_TAG}.json",
+    }
+
+    key, created = publish_release_tag.publish_tag_alias(
+        TEST_TAG,
+        TEST_REVISION,
+        inventory_sha256,
+        config,
+        get=get,
+        create=create,
+    )
+    assert created
+    assert key == f"releases/tags/{TEST_TAG}.json"
+    alias = json.loads(objects[key])
+    assert alias["inventory_sha256"] == inventory_sha256
+    assert alias["source_revision"] == TEST_REVISION
+
+
+def test_candidate_fetch_fails_without_leaving_partial_output(tmp_path: Path) -> None:
+    source = tmp_path / "source"
+    source.mkdir()
+    inventory_sha256 = _release(source)
+    inventory_name = f"geometer-release-inventory-{TEST_TAG}.json"
+    prefix = f"releases/candidates/{TEST_REVISION}/{inventory_sha256}"
+    objects = {f"{prefix}/{inventory_name}": (source / inventory_name).read_bytes()}
+    config = r2_store.R2Config("bucket", "https://example.invalid", "key", "secret")
+
+    with pytest.raises(ValueError, match="asset is absent"):
+        fetch_release_candidate.fetch_candidate(
+            tmp_path / "downloaded",
+            TEST_TAG,
+            TEST_REVISION,
+            inventory_sha256,
+            config,
+            lambda _config, key: objects.get(key),
+        )
+    assert not (tmp_path / "downloaded").exists()

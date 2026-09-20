@@ -61,7 +61,7 @@ def test_native_build_does_not_copy_static_library_to_dist() -> None:
 
 
 def test_release_workflow_uses_filtered_native_runtime_packager() -> None:
-    workflow = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
+    workflow = (ROOT / ".github/workflows/release-candidate.yml").read_text(encoding="utf-8")
     candidate = (ROOT / "scripts/build_release_candidate.py").read_text(encoding="utf-8")
 
     assert "scripts/build_release_candidate.py" in workflow

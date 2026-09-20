@@ -220,3 +220,20 @@ def test_windows_sdk_rejects_dynamic_crt_compile_commands(tmp_path: Path) -> Non
         encoding="utf-8",
     )
     validate_windows_static_runtime(build)
+
+
+def test_static_sdk_expands_preserved_ninja_link_response_file(tmp_path: Path) -> None:
+    response = tmp_path / "CMakeFiles/geometer_sdk_link_probe.rsp"
+    response.parent.mkdir(parents=True)
+    response.write_text('lib/geometer.lib "occt/TKernel.lib" ws2_32.lib', encoding="utf-8")
+    command = package_static_sdk.expand_response_files(
+        'link.exe @"CMakeFiles/geometer_sdk_link_probe.rsp" /out:probe.exe',
+        tmp_path,
+    )
+    assert command == 'link.exe lib/geometer.lib "occt/TKernel.lib" ws2_32.lib /out:probe.exe'
+
+
+def test_static_sdk_uses_canonical_cmake_compiler_families() -> None:
+    assert package_static_sdk.canonical_compiler_family("GNU") == "gcc"
+    assert package_static_sdk.canonical_compiler_family("AppleClang") == "apple-clang"
+    assert package_static_sdk.canonical_compiler_family("MSVC") == "msvc"

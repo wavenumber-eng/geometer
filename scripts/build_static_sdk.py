@@ -97,6 +97,9 @@ def main() -> None:
             "--target",
             "geometer_lib",
             "geometer_sdk_link_probe",
+            "--",
+            "-d",
+            "keeprsp",
         ]
     )
     build_dir = ROOT / "build-static-sdk"

@@ -28,6 +28,7 @@ SUPPORTED_PLATFORMS = {
     "macos-arm64": ("aarch64-apple-darwin", "arm64", "apple-clang", "libc++", "macos-11.0"),
 }
 ARCHIVE_PATTERN = re.compile(r'(?:(?:"([^"\r\n]+\.(?:lib|a))")|([^\s"\r\n]+\.(?:lib|a)))', re.IGNORECASE)
+RESPONSE_PATTERN = re.compile(r'@(?:"([^"\r\n]+)"|([^\s"\r\n]+))')
 CATALOG_PATTERN = re.compile(r'return "([0-9a-f]{64})";')
 
 
@@ -98,6 +99,11 @@ def compiler_identity(build_dir: Path) -> tuple[str, str]:
     return identity.group(1), version.group(1)
 
 
+def canonical_compiler_family(identity: str) -> str:
+    normalized = identity.lower()
+    return {"gnu": "gcc", "appleclang": "apple-clang"}.get(normalized, normalized)
+
+
 def geometer_archive(build_dir: Path, platform: str) -> Path:
     name = "geometer.lib" if platform.startswith("windows-") else "libgeometer.a"
     path = build_dir / "src" / "cpp" / "lib" / name
@@ -116,7 +122,20 @@ def link_command(build_dir: Path) -> str:
     lines = [line for line in output.splitlines() if "geometer_sdk_link_probe" in line]
     if not lines:
         raise RuntimeError("CMake did not expose the static SDK link probe command")
-    return lines[-1]
+    return expand_response_files(lines[-1], build_dir)
+
+
+def expand_response_files(command: str, build_dir: Path) -> str:
+    def replace(match: re.Match[str]) -> str:
+        value = match.group(1) or match.group(2)
+        path = Path(value)
+        if not path.is_absolute():
+            path = build_dir / path
+        if not path.is_file():
+            raise RuntimeError(f"Static SDK link response file is unavailable: {path}")
+        return path.read_text(encoding="utf-8", errors="replace")
+
+    return RESPONSE_PATTERN.sub(replace, command)
 
 
 def ordered_unique(values: list[str]) -> list[str]:
@@ -294,8 +313,8 @@ def package(build_dir: Path, platform: str, output: Path, allow_dirty: bool) -> 
     source_revision = git_revision(allow_dirty)
     target, architecture, expected_compiler, cxx_runtime, minimum_os = SUPPORTED_PLATFORMS[platform]
     compiler_id, compiler_version = compiler_identity(build_dir)
-    compiler_family = compiler_id.lower().replace("appleclang", "apple-clang")
-    if expected_compiler not in compiler_family:
+    compiler_family = canonical_compiler_family(compiler_id)
+    if compiler_family != expected_compiler:
         raise RuntimeError(f"SDK profile expected {expected_compiler}, got {compiler_id}")
 
     geometer = geometer_archive(build_dir, platform)

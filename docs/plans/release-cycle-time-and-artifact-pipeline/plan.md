@@ -23,13 +23,13 @@ depends_on = ["target-architecture"]
 
 [[steps]]
 id = "local-builder"
-title = "Qualify an isolated Windows x64 and WASM self-hosted candidate builder"
+title = "Qualify isolated Windows x64, Linux x64, and WASM builders on the AMD workstation"
 status = "pending"
 depends_on = ["target-architecture", "occt-lock"]
 
 [[steps]]
-id = "linux-builder-spike"
-title = "Benchmark WSL2 Ubuntu 22.04, GitHub-hosted, and on-demand Linux x64 builders"
+id = "arm-builder-spike"
+title = "Qualify macOS ARM64 and virtualized Linux ARM64 builders on the Apple-silicon MacBook"
 status = "pending"
 depends_on = ["target-architecture", "occt-lock"]
 
@@ -47,9 +47,9 @@ depends_on = ["target-architecture"]
 
 [[steps]]
 id = "candidate-workflow"
-title = "Produce an immutable complete candidate inventory from local and hosted builders"
+title = "Produce an immutable complete candidate inventory from the two local machines with hosted fallbacks"
 status = "pending"
-depends_on = ["local-builder", "linux-builder-spike", "build-graph-consolidation", "test-lane-consolidation"]
+depends_on = ["local-builder", "arm-builder-spike", "build-graph-consolidation", "test-lane-consolidation"]
 
 [[steps]]
 id = "r2-release-store"
@@ -111,12 +111,12 @@ status = "pending"
 
 [[exit_criteria]]
 id = "local-cycle"
-title = "Windows x64 and WASM qualify locally within ten clean minutes and five warm minutes"
+title = "The complete Windows, Linux x64/ARM64, macOS ARM64, and WASM matrix qualifies on the two local machines"
 status = "pending"
 
 [[exit_criteria]]
-id = "hosted-cycle"
-title = "The complete missing-platform candidate matrix finishes within fifteen wall-clock minutes"
+id = "candidate-cycle"
+title = "The complete parallel candidate matrix finishes within fifteen wall-clock minutes"
 status = "pending"
 
 [[exit_criteria]]
@@ -188,11 +188,11 @@ The target flow is:
 ```text
 reviewed source SHA + dependency lock
         |
-        +-- local isolated Windows builder ---- Windows CLI/wheel/SDK
-        +-- local isolated WASM builder ------- WASM/npm/demo payload
-        +-- selected Linux x64 builder -------- Linux CLI/wheel/SDK
-        +-- hosted Linux ARM64 builder -------- ARM64 CLI/wheel/SDK
-        +-- hosted macOS ARM64 builder -------- macOS CLI/wheel/SDK
+        +-- AMD workstation / Windows --------- Windows CLI/wheel/SDK
+        +-- AMD workstation / WSL2 ------------ Linux x64 CLI/wheel/SDK
+        +-- AMD workstation / WSL2 ------------ WASM/npm/demo payload
+        +-- Apple-silicon MacBook -------------- macOS ARM64 CLI/wheel/SDK
+        +-- MacBook / Ubuntu ARM64 VM ---------- Linux ARM64 CLI/wheel/SDK
         |
         v
 canonical candidate inventory + validation records + attestations
@@ -202,7 +202,10 @@ canonical candidate inventory + validation records + attestations
         +-- GitHub Release compatibility mirror and human-facing catalog
 ```
 
-The platform list remains the current four native targets plus WASM until a
+The preferred target builds the complete candidate matrix on the two local
+machines. GitHub-hosted native runners remain a clean-room comparison and
+failover during cutover, not the ordinary compiler farm. The platform list
+remains the current four native targets plus WASM until a
 downstream and support-policy audit explicitly removes a target. Earlier intent
 to emphasize Windows and macOS is not sufficient to silently remove Linux:
 published Python wheels and Alexandria's native manifest currently depend on
@@ -275,6 +278,9 @@ outside it.
 
 - Windows 11 Pro, Ryzen 9 9950X, 16 cores/32 threads, 61.6 GiB RAM.
 - WSL2 Ubuntu 24.04 is installed; Docker is not currently installed.
+- An Apple-silicon MacBook can provide native macOS ARM64 and hardware-
+  virtualized Linux ARM64 execution; its exact CPU, RAM, disk, and clean/warm
+  candidate timings must be recorded during qualification.
 - A dedicated Ubuntu 22.04 environment is required for the current
   `manylinux_2_35` promise. A binary built directly on Ubuntu 24.04 can acquire
   a newer glibc requirement and is not an acceptable substitute.
@@ -372,7 +378,10 @@ different byte sequence at an occupied release identity is a hard error.
 
 ### 2. Use local compute without trusting it with publication secrets
 
-Use this workstation for Windows x64 and WASM candidate jobs after qualification.
+Use the AMD workstation for Windows x64, Linux x64, and WASM candidate jobs
+after qualification. Linux x64 and WASM run in a dedicated Ubuntu 22.04 WSL2
+environment so the wheel is built and tested against the governed glibc
+baseline.
 Run them through a dedicated, manual-only, self-hosted GitHub Actions runner so
 the existing workflow identity, log, artifact upload, and attestation path is
 retained. The runner must be isolated from the interactive developer checkout:
@@ -399,30 +408,34 @@ events, secret separation, and ephemeral cleanup. If those controls cannot be
 proven, use the local command outside Actions and submit its signed inventory to
 a hosted ingestion workflow, or keep the affected target hosted.
 
-### 3. Select Linux builders empirically
+### 3. Build both ARM64 targets on the Apple-silicon MacBook
 
-Create a dedicated Ubuntu 22.04 WSL2 distribution, preferably stored on the
-larger drive, for Linux x64 and reproducible WASM tests. Do not use the existing
-Ubuntu 24.04 host directly for `manylinux_2_35` wheels. Compare three clean and
-three warm runs of:
+Use the MacBook as the preferred ARM64 build machine:
 
-1. WSL2 Ubuntu 22.04 on this workstation;
-2. the standard GitHub-hosted Ubuntu runner; and
-3. an ephemeral DigitalOcean Ubuntu 22.04 dedicated-CPU Droplet.
+1. build and execute the macOS ARM64 candidate on the macOS host; and
+2. build and execute the Linux ARM64 candidate inside an Ubuntu 22.04 ARM64 VM
+   using Apple-silicon hardware virtualization.
 
-Compare end-to-end candidate time, not compile time alone: dependency restore,
-configure, build, tests, wheel repair, SDK relocation, archive, upload, teardown,
-and operator time. DigitalOcean is a fallback, not the default: standard GitHub
-runners are free for this public repository, while an 8-dedicated-CPU Droplet
-is currently listed at $0.25/hour and a 16-CPU one at $0.50/hour. Adopt it only
-if the measured cycle-time improvement justifies another credentialed control
-plane and reproducible image lifecycle.
+This is native ARM64 execution rather than CPU emulation, so it can satisfy the
+same build, CTest, wheel-install, and relocated-SDK qualification as GitHub's
+ARM64 runners. The Linux VM must use a versioned reproducible image, fixed CPU
+and memory allocation, shared R2 dependency lock, clean candidate worktree, and
+an isolated self-hosted runner identity. The macOS host and Linux guest are
+separate candidate lanes and must not write the same working directory.
 
-Keep Linux ARM64 and macOS ARM64 on native GitHub-hosted runners initially.
-Cross-compiling those artifacts is not qualification because the release must
-execute tests on the target architecture. The available MacBook may become an
-ephemeral self-hosted macOS ARM64 builder after the same isolation, signing,
-and timing audit; it is not required for the first cutover.
+Also benchmark Linux ARM64 under QEMU/binfmt on the AMD workstation, but treat
+it as a disaster-recovery option unless it meets the full candidate budget.
+Cross-compilation alone is insufficient because the candidate's CTests, bundled
+executable, wheel, and relocated SDK must execute as ARM64. A complete ARM64
+guest under QEMU or an ARM64 container using binfmt can do that, but emulated
+compilation is likely slower and more fragile than the MacBook's virtualized
+ARM guest.
+
+Run three clean and three warm comparisons against the standard GitHub-hosted
+Linux ARM64 and macOS ARM64 runners. Keep those hosted lanes as failover until
+the MacBook has produced two consecutive matching candidates. An ephemeral
+DigitalOcean ARM64 or x64 builder remains a final fallback; adopt one only if
+measured outage recovery justifies another credentialed control plane.
 
 ### 4. Lock OCCT instead of discovering it
 
@@ -604,15 +617,18 @@ it cannot alter candidate bytes.
 2. Publish existing verified OCCT archives to new content-addressed locked R2
    keys; download-verify before switching consumers.
 3. Remove consumer source-build and legacy/alias fallbacks.
-4. Qualify the isolated Windows/WASM local runner with a non-release candidate.
-5. Install and qualify WSL2 Ubuntu 22.04; complete the Linux builder comparison.
-6. Keep GitHub-hosted fallbacks until two consecutive candidates pass locally.
+4. Qualify isolated Windows, WSL2 Linux x64, and WSL2 WASM runners with a
+   non-release candidate.
+5. Qualify native macOS ARM64 and an Ubuntu 22.04 ARM64 VM on the MacBook.
+6. Benchmark AMD-host QEMU ARM64 only as a disaster-recovery path.
+7. Keep GitHub-hosted fallbacks until two consecutive complete candidates pass
+   on the two-machine local matrix.
 
 ### Phase C: build-once candidates
 
 1. Implement the shared candidate command and canonical inventory.
 2. Consolidate CMake graphs and choose the Windows CRT outcome.
-3. Combine local Windows/WASM with hosted missing-platform artifacts.
+3. Combine all five locally built platform payloads into one candidate.
 4. Add hosted R2 ingestion and immutable candidate retention.
 5. Run a complete shadow candidate beside the old release workflow and compare
    every artifact name, content policy, test result, and duration.
@@ -655,10 +671,10 @@ from compute regressions, but they do not relax correctness.
 - Warm local Windows native + SDK candidate: at most 2 minutes.
 - Clean local WASM candidate: at most 5 minutes.
 - Warm local WASM candidate: at most 2 minutes.
-- Complete local Windows + WASM qualification: at most 10 clean minutes and 5
-  warm minutes.
-- Each remaining hosted platform lane: at most 15 minutes.
-- Complete candidate wall time when all lanes run in parallel: at most 15
+- Complete AMD-workstation Windows + Linux x64 + WASM qualification: at most 10
+  clean minutes and 5 warm minutes when its independent lanes run in parallel.
+- Each MacBook macOS ARM64 and virtualized Linux ARM64 lane: at most 15 minutes.
+- Complete two-machine candidate wall time when all lanes run in parallel: at most 15
   minutes, excluding an explicitly approved downstream application trial.
 - Promotion and public verification: at most 5 minutes with zero compilation.
 - Recovery from a publication-only failure: at most 5 minutes with zero
@@ -711,8 +727,8 @@ Primary sources used for architecture and cost assumptions:
 1. Approve the target architecture and budgets in this plan.
 2. Implement the immediate low-risk reductions and measure them.
 3. Replace OCCT discovery/fallback with the immutable lock and locked R2 objects.
-4. Qualify the local Windows/WASM builder and choose the Linux x64 builder from
-   measured end-to-end results.
+4. Qualify Windows, Linux x64, and WASM on the AMD workstation and both ARM64
+   targets on the Apple-silicon MacBook.
 5. Consolidate build/test graphs and produce one complete shadow candidate.
 6. Implement R2 ingestion and promotion-only PyPI/GitHub publication.
 7. Run failure injection, security review, and independent review.

@@ -125,16 +125,11 @@ jobs:
         with:
           path: .deps/emsdk
           key: emsdk-v2-linux-x64-${{ steps.dependency_versions.outputs.emsdk_version }}
-          restore-keys: |
-            emsdk-Linux-X64-${{ steps.dependency_versions.outputs.emsdk_version }}
       - name: Cache Geometer WASM build
         uses: actions/cache@v5
         with:
           path: build-wasm
-          key: geometer-wasm-v2-linux-x64-${{ hashFiles('CMakeLists.txt', 'CMakePresets.json', 'src/cpp/**', 'third_party/clipper2/**') }}
-          restore-keys: |
-            geometer-wasm-v2-linux-x64-
-            geometer-wasm-build-Linux-X64-
+          key: geometer-wasm-v3-linux-x64-${{ github.sha }}
       - name: Build WASM artifacts
         run: uv run python scripts/build_wasm.py
       - name: Build production browser demos

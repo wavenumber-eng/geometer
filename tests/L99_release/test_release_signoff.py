@@ -202,15 +202,15 @@ def test_normal_builds_use_public_dependency_cache_without_r2_secrets() -> None:
     assert "R2_SECRET_ACCESS_KEY" in producer_workflow
 
 
-def test_ci_is_manual_only_and_release_rebuilds_every_output_once() -> None:
+def test_ci_is_manual_only_and_release_uses_shared_candidate_command() -> None:
     ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
     release = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
 
     for workflow in (ci, release):
         assert 'CARGO_BUILD_JOBS: "1"' in workflow
         assert 'CMAKE_BUILD_PARALLEL_LEVEL: "2"' in workflow
-        assert 'GEOMETER_REQUIRE_NATIVE_TEST_SERVERS: "1"' in workflow
         assert "cargo test --locked" not in workflow
+    assert 'GEOMETER_REQUIRE_NATIVE_TEST_SERVERS: "1"' in ci
 
     assert "GEOMETER_OCCT_BINARY: only" in release
 
@@ -230,6 +230,12 @@ def test_ci_is_manual_only_and_release_rebuilds_every_output_once() -> None:
     assert ci.count("GEOMETER_TYPESCRIPT_SCOPE: wasm") == 1
     assert "push:" not in ci
 
+    wasm_workflow = (ROOT / ".github/workflows/wasm.yml").read_text(encoding="utf-8")
+    for workflow in (ci, release, wasm_workflow):
+        assert "geometer-wasm-v3-linux-x64-${{ github.sha }}" in workflow
+        assert "hashFiles('CMakeLists.txt'" not in workflow
+        assert "restore-keys:" not in workflow
+
     assert "name: Publish" in release
     release_triggers = release.split("\npermissions:", 1)[0]
     assert "workflow_dispatch:" in release_triggers
@@ -240,13 +246,10 @@ def test_ci_is_manual_only_and_release_rebuilds_every_output_once() -> None:
     assert 'test "$GITHUB_REF" = "refs/tags/$RELEASE_TAG"' in release
     assert 'test "$(git rev-parse HEAD)" = "$(git rev-parse "$GITHUB_SHA^{commit}")"' in release
 
-    assert release.count("uv run --group dev rack run python") == 1
-    assert release.count("uv run --group dev rack run typescript") == 2
-    assert release.count("uv run --group dev rack run rust") == 1
-    assert "if: matrix.platform == 'linux-x64'" in release
-    assert "GEOMETER_TEST_PROFILE: production" in release
-    assert release.count("GEOMETER_TYPESCRIPT_SCOPE: host") == 1
-    assert release.count("GEOMETER_TYPESCRIPT_SCOPE: wasm") == 1
+    assert release.count("scripts/build_release_candidate.py") == 2
+    assert "--platform ${{ matrix.platform }}" in release
+    assert "out/release-candidate/${{ matrix.platform }}/wheelhouse/*.whl" in release
+    assert "out/release-candidate/wasm/wasm-dist.zip" in release
     for duplicate_script in (
         "hlr_static_site_validation.mjs",
         "illustration_static_site_validation.mjs",
@@ -254,14 +257,14 @@ def test_ci_is_manual_only_and_release_rebuilds_every_output_once() -> None:
     ):
         assert duplicate_script not in ci
         assert duplicate_script not in release
-    assert release.count("scripts/validate_python_package.py --skip-native-validation --wheelhouse out/wheelhouse") == 1
-    assert "python -m build --wheel --outdir out/wheelhouse" not in release
-    assert "twine check out/wheelhouse/*.whl" in release
-    assert "path: out/wheelhouse/*.whl" in release
-    assert "scripts/build_static_sdk.py --platform ${{ matrix.platform }}" in release
-    assert "scripts/validate_static_sdk.py out/sdk-candidate/geometer-sdk-*.zip" in release
-    assert release.index("scripts/build_static_sdk.py") < release.index("scripts/validate_native.py")
-    assert "scripts/build_static_sdk.py --platform ${{ matrix.platform }} --allow-dirty" not in release
+    for implementation_detail in (
+        "scripts/build_static_sdk.py",
+        "scripts/validate_static_sdk.py",
+        "scripts/validate_native.py",
+        "scripts/validate_python_package.py",
+        "scripts/package_release_artifacts.py",
+    ):
+        assert implementation_detail not in release
     assert "scripts/validate_release_inventory.py" in release
     assert "scripts/verify_release_inventory.py" in release
     assert release.count("mkdir -p out/draft-release") == 2
@@ -272,7 +275,6 @@ def test_ci_is_manual_only_and_release_rebuilds_every_output_once() -> None:
     assert 'pattern: "*-dist*"' in release
     assert "name: ci-ledger-${{ matrix.platform }}" in release
     assert "name: ci-ledger-wasm" in release
-    assert release.count("scripts/ci_execution_ledger.py run") >= 10
     assert 'notes="docs/releases/$(python scripts/ci_release_metadata.py date).md"' in release
     assert 'notes="docs/releases/${RELEASE_TAG#v}.md"' not in release
     assert "--clobber" not in release

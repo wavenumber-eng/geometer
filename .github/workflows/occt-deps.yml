@@ -147,8 +147,6 @@ jobs:
         with:
           path: .deps/emsdk
           key: emsdk-v2-linux-x64-${{ steps.dependency_versions.outputs.emsdk_version }}
-          restore-keys: |
-            emsdk-Linux-X64-${{ steps.dependency_versions.outputs.emsdk_version }}
       - name: Build WASM OCCT from source and publish immutable candidate
         shell: pwsh
         run: uv run python scripts/build_wasm.py --occt-only --occt-binary-cache off --package-occt-binary-cache

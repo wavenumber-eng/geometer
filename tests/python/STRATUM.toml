@@ -251,3 +251,10 @@ file = "test_occt_lock.py"
 name = "Immutable OCCT Dependency Lock"
 description = "Checks the canonical explicit profile matrix, single version authority, exact digest-addressed restore, and fail-closed archive verification without derived cache identities or aliases."
 test_case_type = "unit"
+
+[[subtests]]
+id = "PY_033"
+file = "test_build_release_candidate.py"
+name = "Fixed Release Candidate Lane"
+description = "Checks one explicit build/test/package order per native or WASM lane, disjoint client ownership, isolated outputs, and fail-closed reruns."
+test_case_type = "unit"

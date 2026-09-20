@@ -33,6 +33,30 @@ Linux native lane, while `GEOMETER_TYPESCRIPT_SCOPE=wasm` validates the package,
 browser clients, Workers, and built sites only after the current WASM candidate
 exists. Omitting the variable runs both scopes for local development.
 
+## Shared candidate command
+
+Release lanes use the same entry point locally and in GitHub Actions. Run it
+from a clean checkout with a new output directory:
+
+```powershell
+uv run --group dev python scripts/build_release_candidate.py native --platform windows-x64
+uv run --group dev python scripts/build_release_candidate.py wasm
+```
+
+On the dedicated WSL builder, select `linux-x64` instead. The command has one
+fixed SDK-before-native build, test, package, and metadata-check order for each
+native platform and one fixed build/browser/package order for WASM. It writes
+only under `out/release-candidate/<lane>/` plus the execution ledger. It refuses
+a dirty checkout or an existing lane directory; use a fresh worktree or an
+explicit new `--output-dir` rather than merging partial and new candidate bytes.
+It does not infer changed files, hash recipes, discover cache aliases, or choose
+tests dynamically.
+
+Hosted WASM jobs reuse `build-wasm` only for an exact Git commit. They do not
+maintain a hand-written source-file fingerprint or accept a nearest-prefix
+fallback. The Emscripten SDK cache is keyed only by its pinned version and also
+has no legacy fallback.
+
 ## Manual workflows
 
 The `Full Validation (Manual)` workflow is an explicit diagnostic fallback. It
@@ -66,11 +90,15 @@ that same tag as the workflow input. The workflow rejects any dispatch-ref,
 input-tag, or checked-out-commit mismatch, then builds and packages Windows
 x64, Linux x64, Linux arm64, macOS arm64, and WASM. Each native platform runs
 the production C++ suite and rebuilds its platform-specific `wn-geometer`
-wheel, native archive, and static SDK. Python, Rust, and TypeScript integration
-host/native integration runs once against Linux x64; candidate-WASM TypeScript
+wheel, native archive, and static SDK. Python, Rust, and TypeScript host/native
+integration runs once against Linux x64; candidate-WASM TypeScript
 integration runs once in the WASM lane. The other platforms concentrate on
 native and wheel packaging. Experimental qualification is independent of
 publishing.
+
+The workflow invokes `scripts/build_release_candidate.py`; it does not restate
+the lane commands in YAML. This keeps local and hosted candidate behavior on
+the same reviewed path.
 
 The four platform jobs and WASM feed one exact digest inventory. The workflow
 attests the inventory and all four SDK archives, uploads the exact bytes to a

@@ -109,6 +109,8 @@ def test_release_qualification_executes_b0_on_every_native_platform() -> None:
     assert "not empty_illustration.empty" in package_validation
 
     release = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
-    assert "uv run --group dev python scripts/validate_native.py" in release
-    assert "uv run --group dev python scripts/validate_python_package.py" in release
-    assert "uv run python scripts/validate_static_sdk.py" in release
+    candidate = (ROOT / "scripts" / "build_release_candidate.py").read_text(encoding="utf-8")
+    assert "scripts/build_release_candidate.py" in release
+    assert '"validate_native.py"' in candidate
+    assert '"validate_python_package.py"' in candidate
+    assert '"validate_static_sdk.py"' in candidate

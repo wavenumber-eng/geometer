@@ -154,83 +154,25 @@ jobs:
         if: runner.os == 'macOS'
         run: brew list ninja >/dev/null 2>&1 || brew install ninja
 
-      - name: Build static C ABI SDK candidate
+      - name: Build and qualify native release candidate
         run: >-
-          uv run --no-project python scripts/ci_execution_ledger.py run
+          uv run --group dev python scripts/build_release_candidate.py
           --ledger out/ci-execution-ledger.json
-          --lane ${{ matrix.platform }}
-          --kind build
-          --name "static C ABI SDK"
-          --
-          uv run python scripts/build_static_sdk.py --platform ${{ matrix.platform }}
-
-      - name: Qualify relocated static SDK consumer
-        run: >-
-          uv run --no-project python scripts/ci_execution_ledger.py run
-          --ledger out/ci-execution-ledger.json
-          --lane ${{ matrix.platform }}
-          --kind test
-          --name "relocated static SDK consumer"
-          -- uv run python scripts/validate_static_sdk.py out/sdk-candidate/geometer-sdk-*.zip
-
-      - name: Build and test production native code
-        run: >-
-          uv run --no-project python scripts/ci_execution_ledger.py run
-          --ledger out/ci-execution-ledger.json
-          --lane ${{ matrix.platform }}
-          --kind build-test
-          --name "production native validation"
-          --
-          uv run --group dev python scripts/validate_native.py
-
-      - name: Run production client strata against the Linux native build
-        if: matrix.platform == 'linux-x64'
-        env:
-          GEOMETER_REQUIRE_NATIVE_TEST_SERVERS: "1"
-          GEOMETER_TEST_PROFILE: production
-          GEOMETER_TYPESCRIPT_SCOPE: host
-        run: |
-          uv tool install wn-dev-std==2026.9.8
-          uv run --no-project python scripts/ci_execution_ledger.py run --ledger out/ci-execution-ledger.json --lane linux-x64 --kind test --name "Python client stratum" -- uv run --group dev rack run python
-          uv run --no-project python scripts/ci_execution_ledger.py run --ledger out/ci-execution-ledger.json --lane linux-x64 --kind test --name "Rust client stratum" -- uv run --group dev rack run rust
-          uv run --no-project python scripts/ci_execution_ledger.py run --ledger out/ci-execution-ledger.json --lane linux-x64 --kind test --name "TypeScript client stratum" -- uv run --group dev rack run typescript
-
-      - name: Test Python package
-        run: >-
-          uv run --no-project python scripts/ci_execution_ledger.py run
-          --ledger out/ci-execution-ledger.json
-          --lane ${{ matrix.platform }}
-          --kind build-test
-          --name "Python package validation"
-          -- uv run --group dev python scripts/validate_python_package.py --skip-native-validation --wheelhouse out/wheelhouse
-
-      - name: Check wheel metadata
-        run: uv run --group dev twine check out/wheelhouse/*.whl
-
-      - name: Package native dist
-        run: >-
-          uv run --no-project python scripts/ci_execution_ledger.py run
-          --ledger out/ci-execution-ledger.json
-          --lane ${{ matrix.platform }}
-          --kind package
-          --name "native distribution"
-          --
-          uv run --no-project python scripts/package_release_artifacts.py native
+          native
           --platform ${{ matrix.platform }}
-          --output out/native-${{ matrix.platform }}.zip
 
       - name: Upload wheel artifact
         uses: actions/upload-artifact@v7
         with:
           name: python-dist-${{ matrix.platform }}
-          path: out/wheelhouse/*.whl
+          path: out/release-candidate/${{ matrix.platform }}/wheelhouse/*.whl
           if-no-files-found: error
 
       - name: Upload native artifact
         uses: actions/upload-artifact@v7
         with:
           name: native-dist-${{ matrix.platform }}
-          path: out/native-${{ matrix.platform }}.zip
+          path: out/release-candidate/${{ matrix.platform }}/native-${{ matrix.platform }}.zip
           if-no-files-found: error
 
       - name: Upload static SDK candidate
@@ -238,9 +180,9 @@ jobs:
         with:
           name: sdk-dist-${{ matrix.platform }}
           path: |
-            out/sdk-candidate/geometer-sdk-*.zip
-            out/sdk-candidate/geometer-sdk-*.zip.sha256
-            out/sdk-candidate/geometer-sdk-*.zip.provenance.json
+            out/release-candidate/${{ matrix.platform }}/geometer-sdk-*.zip
+            out/release-candidate/${{ matrix.platform }}/geometer-sdk-*.zip.sha256
+            out/release-candidate/${{ matrix.platform }}/geometer-sdk-*.zip.provenance.json
           if-no-files-found: error
 
       - name: Report native lane timing
@@ -299,71 +241,24 @@ jobs:
         with:
           path: .deps/emsdk
           key: emsdk-v2-linux-x64-${{ steps.dependency_versions.outputs.emsdk_version }}
-          restore-keys: |
-            emsdk-Linux-X64-${{ steps.dependency_versions.outputs.emsdk_version }}
 
       - name: Cache Geometer WASM build
         uses: actions/cache@v5
         with:
           path: build-wasm
-          key: geometer-wasm-v2-linux-x64-${{ hashFiles('CMakeLists.txt', 'CMakePresets.json', 'src/cpp/**', 'third_party/clipper2/**') }}
-          restore-keys: |
-            geometer-wasm-v2-linux-x64-
-            geometer-wasm-build-Linux-X64-
+          key: geometer-wasm-v3-linux-x64-${{ github.sha }}
 
-      - name: Build WASM artifacts
+      - name: Build and qualify WASM release candidate
         run: >-
-          uv run --no-project python scripts/ci_execution_ledger.py run
+          uv run --group dev python scripts/build_release_candidate.py
           --ledger out/ci-execution-ledger.json
-          --lane wasm
-          --kind build
-          --name "WASM artifacts"
-          --
-          uv run python scripts/build_wasm.py
-
-      - name: Build production browser demos
-        run: |
-          google-chrome --version
-          uv run --no-project python scripts/ci_execution_ledger.py run --ledger out/ci-execution-ledger.json --lane wasm --kind test --name "TypeScript check" -- npm run check:typescript
-          uv run --no-project python scripts/ci_execution_ledger.py run --ledger out/ci-execution-ledger.json --lane wasm --kind build --name "HLR browser site" -- uv run python scripts/build_hlr_site.py
-          uv run --no-project python scripts/ci_execution_ledger.py run --ledger out/ci-execution-ledger.json --lane wasm --kind build --name "illustration browser site" -- uv run python scripts/build_illustration_site.py
-          uv run --no-project python scripts/ci_execution_ledger.py run --ledger out/ci-execution-ledger.json --lane wasm --kind build --name "standalone HLR demo" -- uv run python scripts/build_standalone_demos.py hlr
-          uv run --no-project python scripts/ci_execution_ledger.py run --ledger out/ci-execution-ledger.json --lane wasm --kind build --name "standalone illustration demo" -- uv run python scripts/build_standalone_demos.py illustration
-          uv run --no-project python scripts/ci_execution_ledger.py run --ledger out/ci-execution-ledger.json --lane wasm --kind test --name "browser site Python validation" -- uv run pytest tests/wasm/test_hlr_static_site.py tests/wasm/test_illustration_static_site.py -q
-
-      - name: Validate TypeScript package against candidate WASM
-        env:
-          GEOMETER_TEST_PROFILE: production
-          GEOMETER_TYPESCRIPT_SCOPE: wasm
-        run: >-
-          uv run --no-project python scripts/ci_execution_ledger.py run
-          --ledger out/ci-execution-ledger.json
-          --lane wasm
-          --kind test
-          --name "TypeScript WASM client stratum"
-          -- uv run --group dev rack run typescript
-
-      - name: Run WASM validation tests
-        run: |
-          uv run --no-project python scripts/ci_execution_ledger.py run --ledger out/ci-execution-ledger.json --lane wasm --kind test --name "WASM planar batch validation" -- node tests/wasm/planar_batch_solve_bytes_validation.js
-          uv run --no-project python scripts/ci_execution_ledger.py run --ledger out/ci-execution-ledger.json --lane wasm --kind test --name "WASM STEP to GLB validation" -- node tests/wasm/step_to_glb_bytes_validation.js
-
-      - name: Package WASM dist
-        run: >-
-          uv run --no-project python scripts/ci_execution_ledger.py run
-          --ledger out/ci-execution-ledger.json
-          --lane wasm
-          --kind package
-          --name "WASM distribution"
-          --
-          uv run --no-project python scripts/package_release_artifacts.py wasm
-          --output out/wasm-dist.zip
+          wasm
 
       - name: Upload WASM artifact
         uses: actions/upload-artifact@v7
         with:
           name: wasm-dist
-          path: out/wasm-dist.zip
+          path: out/release-candidate/wasm/wasm-dist.zip
           if-no-files-found: error
 
       - name: Report WASM lane timing

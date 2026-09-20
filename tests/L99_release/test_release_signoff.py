@@ -319,6 +319,7 @@ def test_release_pipeline_uses_github_artifacts_and_isolates_publish_credentials
     assert "R2_ACCESS_KEY_ID" not in candidate
     assert "R2_SECRET_ACCESS_KEY" not in candidate
     assert "retention-days: 30" in candidate
+    assert candidate.count("retention-days: 1") == 7
 
     promotion = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
     assert "R2_ACCESS_KEY_ID" not in promotion

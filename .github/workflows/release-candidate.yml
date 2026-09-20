@@ -136,6 +136,7 @@ jobs:
           name: ci-ledger-release-verify
           path: out/ci-ledger-release-verify.json
           if-no-files-found: error
+          retention-days: 1
 
   build:
     name: build (${{ matrix.platform }}, py3.12)
@@ -215,6 +216,7 @@ jobs:
           name: python-dist-${{ matrix.platform }}
           path: out/release-candidate/${{ matrix.platform }}/wheelhouse/*.whl
           if-no-files-found: error
+          retention-days: 1
 
       - name: Upload native artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -222,6 +224,7 @@ jobs:
           name: native-dist-${{ matrix.platform }}
           path: out/release-candidate/${{ matrix.platform }}/native-${{ matrix.platform }}.zip
           if-no-files-found: error
+          retention-days: 1
 
       - name: Upload static SDK candidate
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -232,6 +235,7 @@ jobs:
             out/release-candidate/${{ matrix.platform }}/geometer-sdk-*.zip.sha256
             out/release-candidate/${{ matrix.platform }}/geometer-sdk-*.zip.provenance.json
           if-no-files-found: error
+          retention-days: 1
 
       - name: Report native lane timing
         if: always() && hashFiles(format('out/ci-ledger-{0}.json', matrix.platform)) != ''
@@ -247,6 +251,7 @@ jobs:
           name: ci-ledger-${{ matrix.platform }}
           path: out/ci-ledger-${{ matrix.platform }}.json
           if-no-files-found: error
+          retention-days: 1
 
   wasm:
     name: wasm dist
@@ -309,6 +314,7 @@ jobs:
           name: wasm-dist
           path: out/release-candidate/wasm/wasm-dist.zip
           if-no-files-found: error
+          retention-days: 1
 
       - name: Report WASM lane timing
         if: always() && hashFiles('out/ci-ledger-wasm.json') != ''
@@ -323,6 +329,7 @@ jobs:
           name: ci-ledger-wasm
           path: out/ci-ledger-wasm.json
           if-no-files-found: error
+          retention-days: 1
 
   qualify-release:
     name: immutable release inventory

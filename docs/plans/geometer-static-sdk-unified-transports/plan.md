@@ -218,11 +218,10 @@ status = "pending"
 
 # Supported Static SDK and Unified Geometer Operation Transports
 
-Release-candidate construction and publication are now governed by the
-top-priority [release cycle-time and artifact pipeline
-plan](../release-cycle-time-and-artifact-pipeline/plan.md). This plan continues
-to own SDK and transport correctness; it must not add a second release pipeline
-or require rebuilding already-qualified candidate bytes.
+Release-candidate construction and publication are governed by the durable
+[build automation strategy](../../developer/ci-strategy.md). This plan
+continues to own SDK and transport correctness; it must not add a second
+release pipeline or require rebuilding already-qualified candidate bytes.
 
 This working plan covers:
 

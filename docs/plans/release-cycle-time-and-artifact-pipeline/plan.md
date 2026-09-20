@@ -24,7 +24,7 @@ depends_on = ["target-architecture"]
 [[steps]]
 id = "occt-lock"
 title = "Replace derived OCCT cache discovery with an explicit immutable dependency lock"
-status = "pending"
+status = "active"
 depends_on = ["target-architecture", "candidate-root-contract"]
 
 [[steps]]

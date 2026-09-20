@@ -18,6 +18,8 @@ from plan_release_promotion import (
     canonical_bytes,
     plan_release_promotion,
 )
+from check_pypi_release import classify as classify_pypi
+from snapshot_release_channel import snapshot
 
 
 TEST_VERSION = package_version()
@@ -177,3 +179,43 @@ def test_cli_rejects_noncanonical_input(tmp_path: Path) -> None:
     )
     assert result.returncode != 0
     assert "not canonical JSON" in result.stderr
+
+
+def test_channel_snapshot_is_flat_canonical_and_supports_exclusions(tmp_path: Path) -> None:
+    (tmp_path / "b.zip").write_bytes(b"b")
+    (tmp_path / "a.zip").write_bytes(b"a")
+    (tmp_path / "inventory.json").write_bytes(b"ignored")
+    value = snapshot(tmp_path, "github", {"inventory.json"})
+    assert [entry["name"] for entry in value["assets"]] == ["a.zip", "b.zip"]
+
+
+def test_pypi_resume_accepts_exact_files_and_reports_missing() -> None:
+    expected = expected_inventory()
+    expected["assets"] = [asset("one.whl", b"one"), asset("two.whl", b"two")]
+    observed = {
+        "releases": {
+            TEST_VERSION: [
+                {
+                    "filename": "one.whl",
+                    "digests": {"sha256": expected["assets"][0]["sha256"]},
+                    "size": expected["assets"][0]["size"],
+                }
+            ]
+        }
+    }
+    result = classify_pypi(expected, observed)
+    assert result == {"exact": ["one.whl"], "missing": ["two.whl"], "needs_upload": True}
+
+
+def test_pypi_resume_rejects_filename_collision() -> None:
+    expected = expected_inventory()
+    expected["assets"] = [asset("one.whl", b"one")]
+    observed = {
+        "releases": {
+            TEST_VERSION: [
+                {"filename": "one.whl", "digests": {"sha256": "0" * 64}, "size": 3}
+            ]
+        }
+    }
+    with pytest.raises(ValueError, match="identity conflicts"):
+        classify_pypi(expected, observed)

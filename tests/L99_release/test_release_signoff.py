@@ -170,7 +170,7 @@ def test_linux_wheel_builds_use_glibc_235_baseline() -> None:
     ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
     assert "runs-on: ubuntu-22.04" in ci
 
-    for workflow_name in ("release.yml", "occt-deps.yml"):
+    for workflow_name in ("release-candidate.yml", "occt-deps.yml"):
         workflow = (ROOT / ".github" / "workflows" / workflow_name).read_text(encoding="utf-8")
         assert "os: ubuntu-22.04\n            platform: linux-x64" in workflow
         assert "os: ubuntu-22.04-arm\n            platform: linux-arm64" in workflow
@@ -180,7 +180,7 @@ def test_linux_wheel_builds_use_glibc_235_baseline() -> None:
 
 
 def test_windows_builds_use_the_locked_msvc_v143_runner() -> None:
-    workflow_names = ("release.yml", "occt-deps.yml", "operation-transport-baseline.yml")
+    workflow_names = ("release-candidate.yml", "occt-deps.yml", "operation-transport-baseline.yml")
     for workflow_name in workflow_names:
         workflow = (ROOT / ".github" / "workflows" / workflow_name).read_text(encoding="utf-8")
         assert "windows-latest" not in workflow
@@ -191,7 +191,7 @@ def test_normal_builds_use_public_dependency_cache_without_r2_secrets() -> None:
     lock_script = (ROOT / "scripts" / "occt_lock.py").read_text(encoding="utf-8")
     assert 'DEFAULT_BASE_URL = "https://artifacts.wavenumber.net"' in lock_script
 
-    consumer_workflows = ("ci.yml", "release.yml", "wasm.yml", "macos-wheel.yml")
+    consumer_workflows = ("ci.yml", "wasm.yml", "macos-wheel.yml")
     for workflow_name in consumer_workflows:
         workflow = (ROOT / ".github" / "workflows" / workflow_name).read_text(encoding="utf-8")
         assert "R2_ACCESS_KEY_ID" not in workflow
@@ -202,17 +202,18 @@ def test_normal_builds_use_public_dependency_cache_without_r2_secrets() -> None:
     assert "R2_SECRET_ACCESS_KEY" in producer_workflow
 
 
-def test_ci_is_manual_only_and_release_uses_shared_candidate_command() -> None:
+def test_ci_is_manual_only_and_candidate_uses_shared_command() -> None:
     ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    candidate = (ROOT / ".github/workflows/release-candidate.yml").read_text(encoding="utf-8")
     release = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
 
-    for workflow in (ci, release):
+    for workflow in (ci, candidate):
         assert 'CARGO_BUILD_JOBS: "1"' in workflow
         assert 'CMAKE_BUILD_PARALLEL_LEVEL: "2"' in workflow
         assert "cargo test --locked" not in workflow
     assert 'GEOMETER_REQUIRE_NATIVE_TEST_SERVERS: "1"' in ci
 
-    assert "GEOMETER_OCCT_BINARY: only" in release
+    assert "GEOMETER_OCCT_BINARY: only" in candidate
 
     assert "name: Full Validation (Manual)" in ci
     assert "workflow_dispatch:" in ci
@@ -231,32 +232,35 @@ def test_ci_is_manual_only_and_release_uses_shared_candidate_command() -> None:
     assert "push:" not in ci
 
     wasm_workflow = (ROOT / ".github/workflows/wasm.yml").read_text(encoding="utf-8")
-    for workflow in (ci, release, wasm_workflow):
+    for workflow in (ci, candidate, wasm_workflow):
         assert "geometer-wasm-v3-linux-x64-${{ github.sha }}" in workflow
         assert "hashFiles('CMakeLists.txt'" not in workflow
         assert "restore-keys:" not in workflow
 
-    assert "name: Publish" in release
+    assert "name: Build Release Candidate" in candidate
+    assert "name: Promote Release Candidate" in release
     release_triggers = release.split("\npermissions:", 1)[0]
     assert "workflow_dispatch:" in release_triggers
     assert "\n  release:" not in release_triggers
     assert "\n  pull_request:" not in release_triggers
     assert "\n  push:" not in release_triggers
-    assert "ref: ${{ inputs.tag }}" in release
-    assert 'test "$GITHUB_REF" = "refs/tags/$RELEASE_TAG"' in release
-    assert 'test "$(git rev-parse HEAD)" = "$(git rev-parse "$GITHUB_SHA^{commit}")"' in release
+    assert "ref: ${{ inputs.source_revision }}" in candidate
+    assert 'test "${{ inputs.source_revision }}" = "$GITHUB_SHA"' in candidate
 
-    assert release.count("scripts/build_release_candidate.py") == 2
-    assert "--platform ${{ matrix.platform }}" in release
-    assert "out/release-candidate/${{ matrix.platform }}/wheelhouse/*.whl" in release
-    assert "out/release-candidate/wasm/wasm-dist.zip" in release
+    assert candidate.count("scripts/build_release_candidate.py") == 2
+    assert "--platform ${{ matrix.platform }}" in candidate
+    assert "out/release-candidate/${{ matrix.platform }}/wheelhouse/*.whl" in candidate
+    assert "out/release-candidate/wasm/wasm-dist.zip" in candidate
+    assert "scripts/build_release_candidate.py" not in release
+    assert "cmake" not in release.lower()
+    assert "cargo" not in release.lower()
     for duplicate_script in (
         "hlr_static_site_validation.mjs",
         "illustration_static_site_validation.mjs",
         "wasm_client_validation.mjs",
     ):
         assert duplicate_script not in ci
-        assert duplicate_script not in release
+        assert duplicate_script not in candidate
     for implementation_detail in (
         "scripts/build_static_sdk.py",
         "scripts/validate_static_sdk.py",
@@ -264,39 +268,32 @@ def test_ci_is_manual_only_and_release_uses_shared_candidate_command() -> None:
         "scripts/validate_python_package.py",
         "scripts/package_release_artifacts.py",
     ):
+        assert implementation_detail not in candidate
         assert implementation_detail not in release
-    assert "scripts/validate_release_inventory.py" in release
+    assert "scripts/validate_release_inventory.py" in candidate
     assert "scripts/verify_release_inventory.py" in release
-    assert "scripts/candidate_root.py create-checkout out/candidate-root.json" in release
-    assert "--candidate-root out/candidate-root.json" in release
-    assert release.count('--source-revision "$(git rev-parse HEAD)"') == 4
-    assert release.count("mkdir -p out/draft-release") == 2
-    assert release.count("mkdir -p out/public-release") == 1
-    assert "mkdir out/draft-release" not in release
-    assert "mkdir out/public-release" not in release
-    assert "name: qualified-release" in release
-    assert 'pattern: "*-dist*"' in release
-    assert "name: ci-ledger-${{ matrix.platform }}" in release
-    assert "name: ci-ledger-wasm" in release
-    assert 'notes="docs/releases/$(python scripts/ci_release_metadata.py date).md"' in release
-    assert 'notes="docs/releases/${RELEASE_TAG#v}.md"' not in release
+    assert "scripts/candidate_root.py create-checkout out/candidate-root.json" in candidate
+    assert "--candidate-root out/candidate-root.json" in candidate
+    assert "name: qualified-release" in candidate
+    assert 'pattern: "*-dist*"' in candidate
+    assert "name: ci-ledger-${{ matrix.platform }}" in candidate
+    assert "name: ci-ledger-wasm" in candidate
+    assert "scripts/fetch_release_candidate.py" in release
+    assert "scripts/publish_release_tag.py" in release
     assert "--clobber" not in release
-    assert "needs: qualify-release" in release
-    assert "needs: github-assets" in release
     assert "needs: pypi" in release
-    assert "needs: publish-release" in release
-    assert "actions/attest@v4" in release
-    assert "artifact-metadata: write" in release
+    assert "needs: qualify-release" in candidate
+    assert "actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4" in candidate
+    assert "attestations: write" in candidate
     assert "gh attestation verify" in release
-    assert "mapfile -d '' attestable_archives" in release
+    assert "mapfile -d '' archives" in release
     assert "-name 'geometer-sdk-*.zip'" in release
     assert "geometer-static-illustration-demo" not in release
-    assert 'test "${#attestable_archives[@]}" -eq 4' in release
-    assert 'for asset in "${attestable_archives[@]}"; do' in release
-    assert '--signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml"' in release
-    assert '--source-ref "$GITHUB_REF"' in release
-    assert '--source-digest "$GITHUB_SHA"' in release
-    assert "wn-dev-std audit . --mode release --format json" in release
+    assert 'test "${#archives[@]}" -eq 4' in release
+    assert 'for asset in "${archives[@]}"; do' in release
+    assert '--signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-candidate.yml"' in release
+    assert '--source-digest "$SOURCE_REVISION"' in release
+    assert "wn-dev-std audit . --mode release --format json" in candidate
     assert "-eq 4" in release
 
 
@@ -356,6 +353,7 @@ def test_experimental_qualification_is_outside_normal_ci_and_release() -> None:
     command = "uv run pytest tests/wasm/test_analytic_cross_transport_parity.py -q"
     ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
     experimental = (ROOT / ".github/workflows/wasm.yml").read_text(encoding="utf-8")
+    candidate = (ROOT / ".github/workflows/release-candidate.yml").read_text(encoding="utf-8")
     release = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
 
     assert command not in ci
@@ -368,8 +366,8 @@ def test_experimental_qualification_is_outside_normal_ci_and_release() -> None:
     assert "--include-experimental-tests" not in ci
     assert "--include-experimental-tests" not in release
     assert "  cross-transport:" not in release
-    assert release.count("needs: [build, wasm]") == 1
-    assert release.count("needs: qualify-release") == 1
+    assert candidate.count("needs: [build, wasm]") == 1
+    assert candidate.count("needs: qualify-release") == 1
 
 
 def test_occt_consumers_use_only_the_explicit_lock() -> None:
@@ -377,6 +375,7 @@ def test_occt_consumers_use_only_the_explicit_lock() -> None:
         name: (ROOT / ".github" / "workflows" / name).read_text(encoding="utf-8")
         for name in (
             "ci.yml",
+            "release-candidate.yml",
             "release.yml",
             "wasm.yml",
             "macos-wheel.yml",

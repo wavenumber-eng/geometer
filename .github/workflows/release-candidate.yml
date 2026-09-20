@@ -1,0 +1,367 @@
+---
+# yamllint disable rule:line-length
+name: Build Release Candidate
+
+"on":
+  workflow_dispatch:
+    inputs:
+      source_revision:
+        description: Exact reviewed 40-character source commit to build
+        required: true
+        type: string
+      tag:
+        description: Expected vYYYY-MM-DD tag embedded by that source commit
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  CARGO_BUILD_JOBS: "1"
+  CMAKE_BUILD_PARALLEL_LEVEL: "2"
+  GEOMETER_OCCT_BINARY: only
+  GEOMETER_REQUIRE_NATIVE_TEST_SERVERS: "1"
+  RELEASE_TAG: ${{ inputs.tag }}
+
+jobs:
+  verify:
+    name: release metadata
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ inputs.source_revision }}
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Set up Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: "24"
+
+      - name: Run non-mutating release orchestration preflight
+        run: >-
+          uv run --no-project python scripts/ci_execution_ledger.py run
+          --ledger out/ci-execution-ledger.json
+          --lane release-verify
+          --kind test
+          --name "release orchestration preflight"
+          --
+          uv run --group dev pytest
+          tests/python/test_candidate_root.py
+          tests/python/test_ci_execution_ledger.py
+          tests/python/test_release_promotion_plan.py
+          tests/python/test_release_inventory.py
+          -q
+      - name: Report release orchestration timing
+        if: always() && hashFiles('out/ci-execution-ledger.json') != ''
+        shell: bash
+        run: >-
+          uv run --no-project python scripts/ci_execution_ledger.py summary
+          --ledger out/ci-execution-ledger.json >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload release orchestration ledger
+        if: always() && hashFiles('out/ci-execution-ledger.json') != ''
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ci-ledger-release-verify
+          path: out/ci-execution-ledger.json
+          if-no-files-found: error
+
+      - name: Verify generated contracts
+        run: |
+          npm install --global npm@11.16.0
+          test "$(npm --version)" = "11.16.0"
+          npm ci
+          npm run check:contracts
+      - name: Verify source and expected tag match package metadata
+        shell: bash
+        run: |
+          uv run python scripts/ci_release_metadata.py check-tag "$RELEASE_TAG"
+          test "$(git rev-parse HEAD)" = "${{ inputs.source_revision }}"
+          test "${{ inputs.source_revision }}" = "$GITHUB_SHA"
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor HEAD origin/main
+      - name: Verify release notes mention package version
+        shell: bash
+        run: uv run python scripts/ci_release_metadata.py check-notes
+      - name: Run release signoff gate
+        run: uv run --group dev rack run L99_release
+      - name: Run standards check
+        run: |
+          uvx --from wn-dev-std==2026.9.8 wn-dev-std check . --format json
+          uvx --from wn-dev-std==2026.9.8 wn-dev-std audit . --mode release --format json
+
+  build:
+    name: build (${{ matrix.platform }}, py3.12)
+    needs: verify
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            platform: windows-x64
+            compiler: msvc
+          - os: ubuntu-22.04
+            platform: linux-x64
+            compiler: gcc
+          - os: ubuntu-22.04-arm
+            platform: linux-arm64
+            compiler: gcc
+          - os: macos-15
+            platform: macos-arm64
+            compiler: apple-clang
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ inputs.source_revision }}
+
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Set up Node
+        if: matrix.platform == 'linux-x64'
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: "24"
+
+      - name: Restore pinned browser-test dependencies
+        if: matrix.platform == 'linux-x64'
+        run: |
+          npm install --global npm@11.16.0
+          npm ci
+          npm run check:node-toolchain
+
+      - name: Read dependency versions
+        id: dependency_versions
+        run: uv run --no-project python scripts/dependency_versions.py --github-output
+
+      - name: Set up MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1
+
+      - name: Install Linux build tools
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential ninja-build libgl1-mesa-dev libdbus-1-dev libudev-dev libx11-dev libxcursor-dev libxext-dev libxi-dev libxinerama-dev libxkbcommon-dev libxrandr-dev libwayland-dev wayland-protocols
+
+      - name: Install macOS build tools
+        if: runner.os == 'macOS'
+        run: brew list ninja >/dev/null 2>&1 || brew install ninja
+
+      - name: Build and qualify native release candidate
+        run: >-
+          uv run --group dev python scripts/build_release_candidate.py
+          --ledger out/ci-execution-ledger.json
+          native
+          --platform ${{ matrix.platform }}
+
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: python-dist-${{ matrix.platform }}
+          path: out/release-candidate/${{ matrix.platform }}/wheelhouse/*.whl
+          if-no-files-found: error
+
+      - name: Upload native artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: native-dist-${{ matrix.platform }}
+          path: out/release-candidate/${{ matrix.platform }}/native-${{ matrix.platform }}.zip
+          if-no-files-found: error
+
+      - name: Upload static SDK candidate
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: sdk-dist-${{ matrix.platform }}
+          path: |
+            out/release-candidate/${{ matrix.platform }}/geometer-sdk-*.zip
+            out/release-candidate/${{ matrix.platform }}/geometer-sdk-*.zip.sha256
+            out/release-candidate/${{ matrix.platform }}/geometer-sdk-*.zip.provenance.json
+          if-no-files-found: error
+
+      - name: Report native lane timing
+        if: always() && hashFiles('out/ci-execution-ledger.json') != ''
+        shell: bash
+        run: >-
+          uv run --no-project python scripts/ci_execution_ledger.py summary
+          --ledger out/ci-execution-ledger.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload native lane ledger
+        if: always() && hashFiles('out/ci-execution-ledger.json') != ''
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ci-ledger-${{ matrix.platform }}
+          path: out/ci-execution-ledger.json
+          if-no-files-found: error
+
+  wasm:
+    name: wasm dist
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ inputs.source_revision }}
+
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Read dependency versions
+        id: dependency_versions
+        run: uv run --no-project python scripts/dependency_versions.py --github-output
+
+      - name: Set up Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: "24"
+
+      - name: Install Node toolchain
+        run: |
+          npm install --global npm@11.16.0
+          test "$(npm --version)" = "11.16.0"
+          npm ci
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build
+
+      - name: Cache Emscripten SDK
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: .deps/emsdk
+          key: emsdk-v2-linux-x64-${{ steps.dependency_versions.outputs.emsdk_version }}
+
+      - name: Cache Geometer WASM build
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: build-wasm
+          key: geometer-wasm-v3-linux-x64-${{ github.sha }}
+
+      - name: Build and qualify WASM release candidate
+        run: >-
+          uv run --group dev python scripts/build_release_candidate.py
+          --ledger out/ci-execution-ledger.json
+          wasm
+
+      - name: Upload WASM artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: wasm-dist
+          path: out/release-candidate/wasm/wasm-dist.zip
+          if-no-files-found: error
+
+      - name: Report WASM lane timing
+        if: always() && hashFiles('out/ci-execution-ledger.json') != ''
+        run: >-
+          uv run --no-project python scripts/ci_execution_ledger.py summary
+          --ledger out/ci-execution-ledger.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload WASM lane ledger
+        if: always() && hashFiles('out/ci-execution-ledger.json') != ''
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ci-ledger-wasm
+          path: out/ci-execution-ledger.json
+          if-no-files-found: error
+
+  qualify-release:
+    name: immutable release inventory
+    needs: [build, wasm]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      attestations: write
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ inputs.source_revision }}
+
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Download every release candidate
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: "*-dist*"
+          path: out/release-candidate
+
+      - name: Validate exact release inventory
+        run: |
+          uv run --no-project python scripts/candidate_root.py create-checkout out/candidate-root.json
+          uv run --no-project python scripts/validate_release_inventory.py \
+            out/release-candidate \
+            --tag "$RELEASE_TAG" \
+            --candidate-root out/candidate-root.json \
+            --output "out/geometer-release-inventory-${RELEASE_TAG}.json"
+
+      - name: Attest the qualified static SDK archives
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: out/release-candidate/**/geometer-*.zip
+
+      - name: Attest the canonical release inventory
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: out/geometer-release-inventory-*.json
+
+      - name: Upload qualified immutable payload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: qualified-release
+          path: |
+            out/release-candidate/**
+            out/geometer-release-inventory-*.json
+          if-no-files-found: error
+
+  ingest-r2:
+    name: immutable R2 candidate ingestion
+    needs: qualify-release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: release-candidate-production
+    permissions:
+      contents: read
+    steps:
+      - name: Check out trusted workflow revision
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Download qualified candidate as inert data
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: qualified-release
+          path: out/qualified-release
+
+      - name: Revalidate and conditionally store exact candidate bytes
+        env:
+          R2_BUCKET: ${{ vars.R2_BUCKET || secrets.R2_BUCKET }}
+          R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL || vars.R2_ENDPOINT_URL }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: >-
+          python scripts/publish_release_candidate.py out/qualified-release
+          --tag "$RELEASE_TAG"
+          --source-revision "${{ inputs.source_revision }}"

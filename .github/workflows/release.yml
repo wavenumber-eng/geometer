@@ -1,12 +1,20 @@
 ---
 # yamllint disable rule:line-length
-name: Publish
+name: Promote Release Candidate
 
 "on":
   workflow_dispatch:
     inputs:
       tag:
-        description: Exact existing vYYYY-MM-DD tag to build, qualify, and publish
+        description: Exact existing vYYYY-MM-DD tag to promote
+        required: true
+        type: string
+      source_revision:
+        description: Exact 40-character candidate source commit
+        required: true
+        type: string
+      inventory_sha256:
+        description: Exact immutable candidate inventory SHA-256
         required: true
         type: string
 
@@ -15,372 +23,149 @@ permissions:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
-  CARGO_BUILD_JOBS: "1"
-  CMAKE_BUILD_PARALLEL_LEVEL: "2"
-  GEOMETER_OCCT_BINARY: only
-  GEOMETER_REQUIRE_NATIVE_TEST_SERVERS: "1"
   RELEASE_TAG: ${{ inputs.tag }}
+  SOURCE_REVISION: ${{ inputs.source_revision }}
+  INVENTORY_SHA256: ${{ inputs.inventory_sha256 }}
 
 jobs:
+  fetch:
+    name: fetch immutable R2 candidate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: release-candidate-read
+    steps:
+      - name: Check out trusted promotion code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Fetch exact candidate bytes without executing them
+        env:
+          R2_BUCKET: ${{ vars.R2_BUCKET || secrets.R2_BUCKET }}
+          R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL || vars.R2_ENDPOINT_URL }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: >-
+          python scripts/fetch_release_candidate.py out/promotion-payload
+          --tag "$RELEASE_TAG"
+          --source-revision "$SOURCE_REVISION"
+          --inventory-sha256 "$INVENTORY_SHA256"
+
+      - name: Upload inert promotion handoff
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: promotion-payload
+          path: out/promotion-payload/**
+          if-no-files-found: error
+          retention-days: 7
+
   verify:
-    name: release metadata
+    name: verify tag and candidate without channel credentials
+    needs: fetch
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
+      - name: Check out trusted promotion code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v8.2.0
-      - name: Set up Python
-        run: uv python install 3.12
-      - name: Set up Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: "24"
 
-      - name: Run non-mutating release orchestration preflight
-        run: >-
-          uv run --no-project python scripts/ci_execution_ledger.py run
-          --ledger out/ci-execution-ledger.json
-          --lane release-verify
-          --kind test
-          --name "release orchestration preflight"
-          --
-          uv run --group dev pytest
-          tests/python/test_candidate_root.py
-          tests/python/test_ci_execution_ledger.py
-          tests/python/test_release_promotion_plan.py
-          tests/python/test_release_inventory.py
-          -q
-      - name: Report release orchestration timing
-        if: always() && hashFiles('out/ci-execution-ledger.json') != ''
-        shell: bash
-        run: >-
-          uv run --no-project python scripts/ci_execution_ledger.py summary
-          --ledger out/ci-execution-ledger.json >> "$GITHUB_STEP_SUMMARY"
-      - name: Upload release orchestration ledger
-        if: always() && hashFiles('out/ci-execution-ledger.json') != ''
-        uses: actions/upload-artifact@v7
+      - name: Download inert promotion handoff
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
-          name: ci-ledger-release-verify
-          path: out/ci-execution-ledger.json
-          if-no-files-found: error
+          name: promotion-payload
+          path: out/promotion-payload
 
-      - name: Verify generated contracts
-        run: |
-          npm install --global npm@11.16.0
-          test "$(npm --version)" = "11.16.0"
-          npm ci
-          npm run check:contracts
-      - name: Verify tag matches package version
+      - name: Verify immutable tag and every candidate byte
         shell: bash
         run: |
-          uv run python scripts/ci_release_metadata.py check-tag "$RELEASE_TAG"
-          test "$GITHUB_REF" = "refs/tags/$RELEASE_TAG"
-          test "$(git rev-parse HEAD)" = "$(git rev-parse "$RELEASE_TAG^{commit}")"
-          test "$(git rev-parse HEAD)" = "$(git rev-parse "$GITHUB_SHA^{commit}")"
-      - name: Verify release notes mention package version
-        shell: bash
-        run: uv run python scripts/ci_release_metadata.py check-notes
-      - name: Run release signoff gate
-        run: uv run --group dev rack run L99_release
-      - name: Run standards check
-        run: |
-          uvx --from wn-dev-std==2026.9.8 wn-dev-std check . --format json
-          uvx --from wn-dev-std==2026.9.8 wn-dev-std audit . --mode release --format json
-
-  build:
-    name: build (${{ matrix.platform }}, py3.12)
-    needs: verify
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 90
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-2022
-            platform: windows-x64
-            compiler: msvc
-          - os: ubuntu-22.04
-            platform: linux-x64
-            compiler: gcc
-          - os: ubuntu-22.04-arm
-            platform: linux-arm64
-            compiler: gcc
-          - os: macos-15
-            platform: macos-arm64
-            compiler: apple-clang
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ inputs.tag }}
-
-      - uses: astral-sh/setup-uv@v8.2.0
-
-      - name: Set up Python
-        run: uv python install 3.12
-
-      - name: Set up Node
-        if: matrix.platform == 'linux-x64'
-        uses: actions/setup-node@v6
-        with:
-          node-version: "24"
-
-      - name: Restore pinned browser-test dependencies
-        if: matrix.platform == 'linux-x64'
-        run: |
-          npm install --global npm@11.16.0
-          npm ci
-          npm run check:node-toolchain
-
-      - name: Read dependency versions
-        id: dependency_versions
-        run: uv run --no-project python scripts/dependency_versions.py --github-output
-
-      - name: Set up MSVC
-        if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
-
-      - name: Install Linux build tools
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential ninja-build libgl1-mesa-dev libdbus-1-dev libudev-dev libx11-dev libxcursor-dev libxext-dev libxi-dev libxinerama-dev libxkbcommon-dev libxrandr-dev libwayland-dev wayland-protocols
-
-      - name: Install macOS build tools
-        if: runner.os == 'macOS'
-        run: brew list ninja >/dev/null 2>&1 || brew install ninja
-
-      - name: Build and qualify native release candidate
-        run: >-
-          uv run --group dev python scripts/build_release_candidate.py
-          --ledger out/ci-execution-ledger.json
-          native
-          --platform ${{ matrix.platform }}
-
-      - name: Upload wheel artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: python-dist-${{ matrix.platform }}
-          path: out/release-candidate/${{ matrix.platform }}/wheelhouse/*.whl
-          if-no-files-found: error
-
-      - name: Upload native artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: native-dist-${{ matrix.platform }}
-          path: out/release-candidate/${{ matrix.platform }}/native-${{ matrix.platform }}.zip
-          if-no-files-found: error
-
-      - name: Upload static SDK candidate
-        uses: actions/upload-artifact@v7
-        with:
-          name: sdk-dist-${{ matrix.platform }}
-          path: |
-            out/release-candidate/${{ matrix.platform }}/geometer-sdk-*.zip
-            out/release-candidate/${{ matrix.platform }}/geometer-sdk-*.zip.sha256
-            out/release-candidate/${{ matrix.platform }}/geometer-sdk-*.zip.provenance.json
-          if-no-files-found: error
-
-      - name: Report native lane timing
-        if: always() && hashFiles('out/ci-execution-ledger.json') != ''
-        shell: bash
-        run: >-
-          uv run --no-project python scripts/ci_execution_ledger.py summary
-          --ledger out/ci-execution-ledger.json >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload native lane ledger
-        if: always() && hashFiles('out/ci-execution-ledger.json') != ''
-        uses: actions/upload-artifact@v7
-        with:
-          name: ci-ledger-${{ matrix.platform }}
-          path: out/ci-execution-ledger.json
-          if-no-files-found: error
-
-  wasm:
-    name: wasm dist
-    needs: verify
-    runs-on: ubuntu-24.04
-    timeout-minutes: 90
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ inputs.tag }}
-
-      - uses: astral-sh/setup-uv@v8.2.0
-
-      - name: Set up Python
-        run: uv python install 3.12
-
-      - name: Read dependency versions
-        id: dependency_versions
-        run: uv run --no-project python scripts/dependency_versions.py --github-output
-
-      - name: Set up Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: "24"
-
-      - name: Install Node toolchain
-        run: |
-          npm install --global npm@11.16.0
-          test "$(npm --version)" = "11.16.0"
-          npm ci
-
-      - name: Install build tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake ninja-build
-
-      - name: Cache Emscripten SDK
-        uses: actions/cache@v5
-        with:
-          path: .deps/emsdk
-          key: emsdk-v2-linux-x64-${{ steps.dependency_versions.outputs.emsdk_version }}
-
-      - name: Cache Geometer WASM build
-        uses: actions/cache@v5
-        with:
-          path: build-wasm
-          key: geometer-wasm-v3-linux-x64-${{ github.sha }}
-
-      - name: Build and qualify WASM release candidate
-        run: >-
-          uv run --group dev python scripts/build_release_candidate.py
-          --ledger out/ci-execution-ledger.json
-          wasm
-
-      - name: Upload WASM artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: wasm-dist
-          path: out/release-candidate/wasm/wasm-dist.zip
-          if-no-files-found: error
-
-      - name: Report WASM lane timing
-        if: always() && hashFiles('out/ci-execution-ledger.json') != ''
-        run: >-
-          uv run --no-project python scripts/ci_execution_ledger.py summary
-          --ledger out/ci-execution-ledger.json >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload WASM lane ledger
-        if: always() && hashFiles('out/ci-execution-ledger.json') != ''
-        uses: actions/upload-artifact@v7
-        with:
-          name: ci-ledger-wasm
-          path: out/ci-execution-ledger.json
-          if-no-files-found: error
-
-  qualify-release:
-    name: immutable release inventory
-    needs: [build, wasm]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    permissions:
-      attestations: write
-      artifact-metadata: write
-      contents: read
-      id-token: write
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ inputs.tag }}
-
-      - uses: astral-sh/setup-uv@v8.2.0
-
-      - name: Set up Python
-        run: uv python install 3.12
-
-      - name: Download every release candidate
-        uses: actions/download-artifact@v8
-        with:
-          pattern: "*-dist*"
-          path: out/release-candidate
-
-      - name: Validate exact release inventory
-        run: |
-          uv run --no-project python scripts/candidate_root.py create-checkout out/candidate-root.json
-          uv run --no-project python scripts/validate_release_inventory.py \
-            out/release-candidate \
+          git fetch --force origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+          test "$(git rev-parse "$RELEASE_TAG^{commit}")" = "$SOURCE_REVISION"
+          inventory="out/promotion-payload/geometer-release-inventory-${RELEASE_TAG}.json"
+          test "$(sha256sum "$inventory" | cut -d ' ' -f 1)" = "$INVENTORY_SHA256"
+          python scripts/verify_release_inventory.py \
+            out/promotion-payload \
             --tag "$RELEASE_TAG" \
-            --candidate-root out/candidate-root.json \
-            --output "out/geometer-release-inventory-${RELEASE_TAG}.json"
+            --source-revision "$SOURCE_REVISION"
 
-      - name: Attest the qualified static SDK archives
-        uses: actions/attest@v4
-        with:
-          subject-path: out/release-candidate/**/geometer-*.zip
-
-      - name: Attest the canonical release inventory
-        uses: actions/attest@v4
-        with:
-          subject-path: out/geometer-release-inventory-*.json
-
-      - name: Upload qualified immutable payload
-        uses: actions/upload-artifact@v7
-        with:
-          name: qualified-release
-          path: |
-            out/release-candidate/**
-            out/geometer-release-inventory-*.json
-          if-no-files-found: error
-
-  github-assets:
-    name: immutable draft assets
-    needs: qualify-release
+  github-draft:
+    name: reconcile immutable GitHub draft
+    needs: verify
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 10
     permissions:
       contents: write
     steps:
-      - name: Check out exact release tag
-        uses: actions/checkout@v6
+      - name: Check out trusted promotion code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ github.sha }}
+          fetch-depth: 0
 
-      - name: Download release artifacts
-        uses: actions/download-artifact@v8
+      - name: Download verified promotion handoff
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
-          name: qualified-release
-          path: out/qualified-release
+          name: promotion-payload
+          path: out/promotion-payload
 
-      - name: Create draft and upload immutable GitHub release assets
+      - name: Create or resume the draft with exact assets
         env:
           GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
+          inventory="geometer-release-inventory-${RELEASE_TAG}.json"
+          mkdir -p out/github-observed
           if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "Release $RELEASE_TAG already exists; refusing to overwrite it." >&2
+            gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir out/github-observed
+          else
+            git fetch origin "$SOURCE_REVISION"
+            git show "$SOURCE_REVISION:docs/releases/${RELEASE_TAG:1:10}.md" > out/release-notes.md
+            gh release create "$RELEASE_TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --verify-tag \
+              --draft \
+              --title "Geometer ${RELEASE_TAG#v}" \
+              --notes-file out/release-notes.md
+          fi
+
+          inventory_present=false
+          if test -f "out/github-observed/$inventory"; then
+            cmp "out/github-observed/$inventory" "out/promotion-payload/$inventory"
+            rm "out/github-observed/$inventory"
+            inventory_present=true
+          fi
+          python scripts/snapshot_release_channel.py out/github-observed \
+            --channel github \
+            --output out/github-observed.json
+          python scripts/plan_release_promotion.py \
+            "out/promotion-payload/$inventory" \
+            out/github-observed.json \
+            --output out/github-plan.json
+          if test "$inventory_present" = true && test "$(jq '.uploads | length' out/github-plan.json)" -ne 0; then
+            echo "GitHub inventory commit marker exists before all assets" >&2
             exit 1
           fi
-          notes="docs/releases/$(python scripts/ci_release_metadata.py date).md"
-          test -f "$notes"
-          gh release create "$RELEASE_TAG" \
-            --repo "$GITHUB_REPOSITORY" \
-            --verify-tag \
-            --draft \
-            --title "Geometer ${RELEASE_TAG#v}" \
-            --notes-file "$notes"
-          mapfile -d '' assets < <(find out/qualified-release -type f -print0)
-          gh release upload "$RELEASE_TAG" "${assets[@]}" --repo "$GITHUB_REPOSITORY"
+          while IFS= read -r name; do
+            gh release upload "$RELEASE_TAG" "out/promotion-payload/$name" --repo "$GITHUB_REPOSITORY"
+          done < <(jq -r '.uploads[].name' out/github-plan.json)
+          if test "$inventory_present" = false; then
+            gh release upload "$RELEASE_TAG" "out/promotion-payload/$inventory" --repo "$GITHUB_REPOSITORY"
+          fi
 
-      - name: Re-download and verify the draft asset bytes
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          mkdir -p out/draft-release
-          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir out/draft-release
-          python scripts/verify_release_inventory.py out/draft-release --tag "$RELEASE_TAG" --source-revision "$(git rev-parse HEAD)"
+          mkdir -p out/github-verified
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir out/github-verified
+          python scripts/verify_release_inventory.py \
+            out/github-verified \
+            --tag "$RELEASE_TAG" \
+            --source-revision "$SOURCE_REVISION"
 
   pypi:
-    name: PyPI trusted publish
-    needs: github-assets
+    name: reconcile PyPI trusted publication
+    needs: github-draft
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 10
     environment:
       name: pypi
       url: https://pypi.org/p/wn-geometer
@@ -388,85 +173,128 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - name: Check out exact release tag
-        uses: actions/checkout@v6
+      - name: Check out trusted promotion code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ github.sha }}
 
-      - name: Download qualified release payload
-        uses: actions/download-artifact@v8
+      - name: Download verified promotion handoff
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
-          name: qualified-release
-          path: out/qualified-release
+          name: promotion-payload
+          path: out/promotion-payload
 
-      - name: Verify payload and select the four qualified platform wheels
+      - name: Verify payload and inspect PyPI state
+        id: pypi_state
+        shell: bash
         run: |
-          python scripts/verify_release_inventory.py out/qualified-release --tag "$RELEASE_TAG" --source-revision "$(git rev-parse HEAD)"
+          python scripts/verify_release_inventory.py \
+            out/promotion-payload \
+            --tag "$RELEASE_TAG" \
+            --source-revision "$SOURCE_REVISION"
+          python scripts/check_pypi_release.py \
+            "out/promotion-payload/geometer-release-inventory-${RELEASE_TAG}.json"
           mkdir dist-pypi
-          find out/qualified-release -type f -name '*.whl' -exec cp '{}' dist-pypi/ \;
+          cp out/promotion-payload/*.whl dist-pypi/
           test "$(find dist-pypi -maxdepth 1 -type f -name '*.whl' | wc -l)" -eq 4
 
-      - name: Publish package distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Publish only missing wheels
+        if: steps.pypi_state.outputs.needs_upload == 'true'
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
         with:
           packages-dir: dist-pypi
+          skip-existing: true
 
-  publish-release:
-    name: publish qualified GitHub release
+  github-release:
+    name: publish exact GitHub release
     needs: pypi
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 10
     permissions:
       contents: write
     steps:
-      - name: Check out exact release tag
-        uses: actions/checkout@v6
+      - name: Check out trusted promotion code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ github.sha }}
 
-      - name: Verify draft assets and publish
+      - name: Download and verify GitHub assets before publication
         env:
           GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
-          test "$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = "true"
-          mkdir -p out/draft-release
-          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir out/draft-release
-          python scripts/verify_release_inventory.py out/draft-release --tag "$RELEASE_TAG" --source-revision "$(git rev-parse HEAD)"
-          gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false
+          mkdir out/github-release
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir out/github-release
+          python scripts/verify_release_inventory.py \
+            out/github-release \
+            --tag "$RELEASE_TAG" \
+            --source-revision "$SOURCE_REVISION"
+          if test "$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = true; then
+            gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false
+          fi
+
+  r2-tag:
+    name: commit immutable R2 tag alias
+    needs: [pypi, github-release]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: release-production
+    steps:
+      - name: Check out trusted promotion code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Create or verify the final R2 tag alias
+        env:
+          R2_BUCKET: ${{ vars.R2_BUCKET || secrets.R2_BUCKET }}
+          R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL || vars.R2_ENDPOINT_URL }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: >-
+          python scripts/publish_release_tag.py
+          --tag "$RELEASE_TAG"
+          --source-revision "$SOURCE_REVISION"
+          --inventory-sha256 "$INVENTORY_SHA256"
 
   verify-public:
-    name: verify public release
-    needs: publish-release
+    name: verify public channel identity
+    needs: r2-tag
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 10
     permissions:
       attestations: read
       contents: read
     steps:
-      - name: Check out exact release tag
-        uses: actions/checkout@v6
+      - name: Check out trusted promotion code
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ github.sha }}
 
-      - name: Download and verify public assets
+      - name: Download and verify public GitHub bytes
         env:
           GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
-          test "$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = "false"
-          mkdir -p out/public-release
+          test "$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = false
+          mkdir out/public-release
           gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir out/public-release
-          python scripts/verify_release_inventory.py out/public-release --tag "$RELEASE_TAG" --source-revision "$(git rev-parse HEAD)"
-          mapfile -d '' attestable_archives < <(find out/public-release -maxdepth 1 -type f -name 'geometer-sdk-*.zip' -print0)
-          test "${#attestable_archives[@]}" -eq 4
-          for asset in "${attestable_archives[@]}"; do
+          python scripts/verify_release_inventory.py \
+            out/public-release \
+            --tag "$RELEASE_TAG" \
+            --source-revision "$SOURCE_REVISION"
+          python scripts/check_pypi_release.py \
+            "out/public-release/geometer-release-inventory-${RELEASE_TAG}.json"
+          mapfile -d '' archives < <(find out/public-release -maxdepth 1 -type f -name 'geometer-sdk-*.zip' -print0)
+          test "${#archives[@]}" -eq 4
+          for asset in "${archives[@]}"; do
             gh attestation verify "$asset" \
               --repo "$GITHUB_REPOSITORY" \
-              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" \
-              --source-ref "$GITHUB_REF" \
-              --source-digest "$GITHUB_SHA"
+              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-candidate.yml" \
+              --source-digest "$SOURCE_REVISION"
           done
           gh attestation verify "out/public-release/geometer-release-inventory-${RELEASE_TAG}.json" \
             --repo "$GITHUB_REPOSITORY" \
-            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" \
-            --source-ref "$GITHUB_REF" \
-            --source-digest "$GITHUB_SHA"
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-candidate.yml" \
+            --source-digest "$SOURCE_REVISION"

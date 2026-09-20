@@ -46,7 +46,7 @@ jobs:
       - name: Run non-mutating release orchestration preflight
         run: >-
           uv run --no-project python scripts/ci_execution_ledger.py run
-          --ledger out/ci-execution-ledger.json
+          --ledger out/ci-ledger-release-verify.json
           --lane release-verify
           --kind test
           --name "release orchestration preflight"
@@ -58,17 +58,17 @@ jobs:
           tests/python/test_release_inventory.py
           -q
       - name: Report release orchestration timing
-        if: always() && hashFiles('out/ci-execution-ledger.json') != ''
+        if: always() && hashFiles('out/ci-ledger-release-verify.json') != ''
         shell: bash
         run: >-
           uv run --no-project python scripts/ci_execution_ledger.py summary
-          --ledger out/ci-execution-ledger.json >> "$GITHUB_STEP_SUMMARY"
+          --ledger out/ci-ledger-release-verify.json >> "$GITHUB_STEP_SUMMARY"
       - name: Upload release orchestration ledger
-        if: always() && hashFiles('out/ci-execution-ledger.json') != ''
+        if: always() && hashFiles('out/ci-ledger-release-verify.json') != ''
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: ci-ledger-release-verify
-          path: out/ci-execution-ledger.json
+          path: out/ci-ledger-release-verify.json
           if-no-files-found: error
 
       - name: Verify generated contracts
@@ -162,7 +162,7 @@ jobs:
       - name: Build and qualify native release candidate
         run: >-
           uv run --group dev python scripts/build_release_candidate.py
-          --ledger out/ci-execution-ledger.json
+          --ledger out/ci-ledger-${{ matrix.platform }}.json
           native
           --platform ${{ matrix.platform }}
 
@@ -191,18 +191,18 @@ jobs:
           if-no-files-found: error
 
       - name: Report native lane timing
-        if: always() && hashFiles('out/ci-execution-ledger.json') != ''
+        if: always() && hashFiles(format('out/ci-ledger-{0}.json', matrix.platform)) != ''
         shell: bash
         run: >-
           uv run --no-project python scripts/ci_execution_ledger.py summary
-          --ledger out/ci-execution-ledger.json >> "$GITHUB_STEP_SUMMARY"
+          --ledger out/ci-ledger-${{ matrix.platform }}.json >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload native lane ledger
-        if: always() && hashFiles('out/ci-execution-ledger.json') != ''
+        if: always() && hashFiles(format('out/ci-ledger-{0}.json', matrix.platform)) != ''
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: ci-ledger-${{ matrix.platform }}
-          path: out/ci-execution-ledger.json
+          path: out/ci-ledger-${{ matrix.platform }}.json
           if-no-files-found: error
 
   wasm:
@@ -256,7 +256,7 @@ jobs:
       - name: Build and qualify WASM release candidate
         run: >-
           uv run --group dev python scripts/build_release_candidate.py
-          --ledger out/ci-execution-ledger.json
+          --ledger out/ci-ledger-wasm.json
           wasm
 
       - name: Upload WASM artifact
@@ -267,17 +267,17 @@ jobs:
           if-no-files-found: error
 
       - name: Report WASM lane timing
-        if: always() && hashFiles('out/ci-execution-ledger.json') != ''
+        if: always() && hashFiles('out/ci-ledger-wasm.json') != ''
         run: >-
           uv run --no-project python scripts/ci_execution_ledger.py summary
-          --ledger out/ci-execution-ledger.json >> "$GITHUB_STEP_SUMMARY"
+          --ledger out/ci-ledger-wasm.json >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload WASM lane ledger
-        if: always() && hashFiles('out/ci-execution-ledger.json') != ''
+        if: always() && hashFiles('out/ci-ledger-wasm.json') != ''
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: ci-ledger-wasm
-          path: out/ci-execution-ledger.json
+          path: out/ci-ledger-wasm.json
           if-no-files-found: error
 
   qualify-release:
@@ -306,9 +306,23 @@ jobs:
           pattern: "*-dist*"
           path: out/release-candidate
 
+      - name: Download every candidate execution ledger
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: ci-ledger-*
+          path: out/ci-ledgers
+          merge-multiple: true
+
       - name: Validate exact release inventory
         run: |
           uv run --no-project python scripts/candidate_root.py create-checkout out/candidate-root.json
+          uv run --no-project python scripts/candidate_validation.py \
+            out/release-candidate \
+            out/ci-ledgers \
+            --tag "$RELEASE_TAG" \
+            --candidate-root out/candidate-root.json \
+            --log-reference "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            --output "out/release-candidate/geometer-release-validation-${RELEASE_TAG}.json"
           uv run --no-project python scripts/validate_release_inventory.py \
             out/release-candidate \
             --tag "$RELEASE_TAG" \

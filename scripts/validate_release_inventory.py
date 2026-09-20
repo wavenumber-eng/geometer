@@ -5,47 +5,23 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import re
 import zipfile
 from pathlib import Path
 from typing import Any
 
 from candidate_root import candidate_root_sha256, load_candidate_root, validate_candidate_root
+from candidate_validation import validate_candidate_validation_file
+from release_asset_names import (
+    PLATFORMS,
+    WHEEL_SUFFIXES,
+    expected_asset_names,
+    release_version,
+    validation_asset_name,
+)
 from validate_release_artifacts import validate_native, validate_sdk, validate_wasm, validate_wheel
 
 
-PLATFORMS = ("windows-x64", "linux-x64", "linux-arm64", "macos-arm64")
-WHEEL_SUFFIXES = {
-    "windows-x64": "win_amd64.whl",
-    "linux-x64": "manylinux_2_35_x86_64.whl",
-    "linux-arm64": "manylinux_2_35_aarch64.whl",
-    "macos-arm64": "macosx_11_0_arm64.whl",
-}
 SCHEMA = "wn.geometer.release_inventory.b0"
-
-
-def release_version(tag: str) -> str:
-    match = re.fullmatch(r"v([0-9]{4})-([0-9]{2})-([0-9]{2})(?:-(0|[1-9][0-9]*))?", tag)
-    if match is None:
-        raise ValueError(f"invalid date-version release tag: {tag}")
-    return ".".join(str(int(part)) for part in match.groups() if part is not None)
-
-
-def expected_asset_names(tag: str) -> set[str]:
-    version = release_version(tag)
-    names = {"wasm-dist.zip"}
-    for target in PLATFORMS:
-        sdk = f"geometer-sdk-{version}-{target}.zip"
-        names.update(
-            {
-                f"native-{target}.zip",
-                f"wn_geometer-{version}-py3-none-{WHEEL_SUFFIXES[target]}",
-                sdk,
-                f"{sdk}.sha256",
-                f"{sdk}.provenance.json",
-            }
-        )
-    return names
 
 
 def sha256_file(path: Path) -> str:
@@ -111,6 +87,12 @@ def validate_inventory(root: Path, tag: str, candidate_root: dict[str, Any]) -> 
         validate_native_wheel_pair(native_path, wheel_path)
         validate_sdk(assets[f"geometer-sdk-{release_version(tag)}-{platform_name}.zip"])
     validate_wasm(assets["wasm-dist.zip"])
+    validate_candidate_validation_file(
+        assets[validation_asset_name(tag)],
+        root,
+        candidate,
+        tag,
+    )
 
     return {
         "schema": SCHEMA,

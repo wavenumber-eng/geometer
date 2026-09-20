@@ -79,8 +79,8 @@ and STEP-to-GLB.
 
 ## Remaining before this step is complete
 
-- Run the clean isolated Windows x64 native, wheel, static-SDK, and relocated
-  SDK sequence end to end and record clean/warm timings.
+- Publish the corrected Windows-2022 `/MT` OCCT archive, move the immutable
+  lock to its digest, then complete the static-SDK and relocated SDK sequence.
 - Turn the proven commands into one shared candidate command before registering
   a manual-only one-job runner.
 - Run three clean and three warm measurements for the final command; the
@@ -109,3 +109,20 @@ governed `msvc-v143` lock and this workstation's Visual Studio 2022 toolchain.
 The mislabeled `/MT` object remains immutable historical input; it must be
 replaced by a newly built Windows-2022 candidate and the lock must move to that
 new digest before Windows SDK qualification can complete.
+
+## Windows x64 observations
+
+The isolated checkout on the `D:` data volume was advanced to
+`5255bbdf1838568470e5ae782513ae395ca40a9a`. It contains no `.env` and uses the
+locked `/MD` OCCT dependency for the normal native/package path.
+
+| Work | Wall time | Result |
+| --- | ---: | --- |
+| Clean native configure/build/smoke/20 CTests | about 135 sec | pass; filesystem timestamp span, promotion-attested clean source |
+| Warm native validation | 12.37 sec | pass |
+| Wheel build and installed-package qualification | 27.32 sec | pass |
+
+The native binary reports `2026.9.19` with ABI generation `20260919`; all 20
+production CTests passed. The `/MT` static-SDK path remains intentionally
+blocked rather than accepting the Visual Studio 18 archive under a false v143
+identity.

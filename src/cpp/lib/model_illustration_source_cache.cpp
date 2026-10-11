@@ -17,7 +17,20 @@ namespace
 {
 #ifndef __EMSCRIPTEN__
 constexpr std::size_t maximum_source_bytes = 268435456;
-constexpr char policy[] = "illustration-source-tessellation-v1";
+#endif
+
+#ifndef __EMSCRIPTEN__
+std::string digest_hex(const std::array<std::uint8_t, 32>& digest)
+{
+    constexpr char digits[] = "0123456789abcdef";
+    std::string text(64, '0');
+    for (std::size_t index = 0; index < digest.size(); ++index)
+    {
+        text[index * 2] = digits[digest[index] >> 4];
+        text[index * 2 + 1] = digits[digest[index] & 15];
+    }
+    return text;
+}
 #endif
 
 struct Entry
@@ -52,16 +65,16 @@ Cache& cache()
 }
 
 #ifndef __EMSCRIPTEN__
-bool matches(const Entry& entry, const std::array<std::uint8_t, 32>& digest,
-             const unsigned char* data, std::size_t size, const std::string& options)
+bool matches(const Entry& entry, const unsigned char* data, std::size_t size,
+             const std::string& options)
 {
-    // The digest is only a lookup filter; it is never an equality proof.
-    return entry.digest == digest && entry.options == options && entry.source.size() == size &&
+    // Exact bytes remain the equality proof. A successful hit also authenticates
+    // the retained raw-byte SHA without repeating a full cryptographic scan.
+    return entry.options == options && entry.source.size() == size &&
            std::memcmp(entry.source.data(), data, size) == 0;
 }
 
-std::shared_ptr<const Entry> lookup(const std::array<std::uint8_t, 32>& digest,
-                                    const unsigned char* data, std::size_t size,
+std::shared_ptr<const Entry> lookup(const unsigned char* data, std::size_t size,
                                     const std::string& options, std::size_t* generation)
 {
     auto& state = cache();
@@ -69,7 +82,7 @@ std::shared_ptr<const Entry> lookup(const std::array<std::uint8_t, 32>& digest,
     *generation = state.generation;
     for (auto iterator = state.entries.begin(); iterator != state.entries.end(); ++iterator)
     {
-        if (!matches(**iterator, digest, data, size, options))
+        if (!matches(**iterator, data, size, options))
             continue;
         auto result = *iterator;
         state.entries.splice(state.entries.begin(), state.entries, iterator);
@@ -108,8 +121,7 @@ void insert(std::shared_ptr<const Entry> entry, std::size_t generation)
         return;
     }
     for (const auto& existing : state.entries)
-        if (matches(*existing, entry->digest, entry->source.data(), entry->source.size(),
-                    entry->options))
+        if (matches(*existing, entry->source.data(), entry->source.size(), entry->options))
             return; // Concurrent successful miss already retained this exact input.
     // Allocate the new list node before eviction, so failed retention does not
     // destroy previously useful entries. No cache lock spans OCCT work.
@@ -164,14 +176,24 @@ void retain(const unsigned char* data, std::size_t size, std::string options,
 int tessellate_illustration_source(const unsigned char* data, std::size_t size,
                                    const contracts::ModelTessellationRequestA0& options,
                                    contracts::MeshCollectionA0* collection, Status* status,
-                                   std::vector<std::string>* warnings)
+                                   std::vector<std::string>* warnings, std::string* source_sha256)
 {
+    if (source_sha256)
+        source_sha256->clear();
+    const auto uncached = [&]()
+    {
+        const int code =
+            model_tessellation_from_bytes(data, size, options, collection, status, warnings);
+        if (code == 0 && source_sha256)
+            *source_sha256 = sha256_hex(data, size);
+        return code;
+    };
 #ifdef __EMSCRIPTEN__
-    return model_tessellation_from_bytes(data, size, options, collection, status, warnings);
+    return uncached();
 #else
     // Preserve the original validation order, warning clearing and errors.
     if (!collection || !data || size == 0 || size > maximum_source_bytes)
-        return model_tessellation_from_bytes(data, size, options, collection, status, warnings);
+        return uncached();
     std::string encoded;
     bool valid = false;
     try
@@ -185,13 +207,9 @@ int tessellate_illustration_source(const unsigned char* data, std::size_t size,
         // tessellator's existing exception boundary, never a cache success.
     }
     if (!valid)
-        return model_tessellation_from_bytes(data, size, options, collection, status, warnings);
-    Sha256Builder hash;
-    hash.update(reinterpret_cast<const std::uint8_t*>(policy), sizeof(policy));
-    hash.update(data, size);
-    const auto digest = hash.digest();
+        return uncached();
     std::size_t generation = 0;
-    const auto hit = lookup(digest, data, size, encoded, &generation);
+    const auto hit = lookup(data, size, encoded, &generation);
     if (hit)
     {
         try
@@ -199,6 +217,8 @@ int tessellate_illustration_source(const unsigned char* data, std::size_t size,
             auto copy = hit->collection;
             if (warnings)
                 *warnings = hit->warnings;
+            if (source_sha256)
+                *source_sha256 = digest_hex(hit->digest);
             *collection = std::move(copy);
             if (status)
                 *status = {};
@@ -217,7 +237,12 @@ int tessellate_illustration_source(const unsigned char* data, std::size_t size,
     const int code =
         model_tessellation_from_bytes(data, size, options, collection, status, &captured_warnings);
     if (code == 0)
+    {
+        const auto digest = sha256(data, size);
+        if (source_sha256)
+            *source_sha256 = digest_hex(digest);
         retain(data, size, std::move(encoded), digest, *collection, captured_warnings, generation);
+    }
     if (warnings)
         *warnings = std::move(captured_warnings);
     return code;

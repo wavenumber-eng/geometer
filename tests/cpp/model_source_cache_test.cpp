@@ -1,5 +1,6 @@
 #include "geometer/model_tessellation.h"
 #include "geometer/operation_registry.h"
+#include "geometer/sha256.h"
 #include "model_illustration_source_cache.h"
 
 #include <BRepBuilderAPI_MakeEdge.hxx>
@@ -59,17 +60,24 @@ struct Tessellation
     MeshCollectionA0 meshes;
     Status status;
     std::vector<std::string> warnings;
+    std::string source_digest;
 };
 
 Tessellation tessellate(const Bytes& source, const ModelTessellationRequestA0& request, bool cached,
                         bool wants_warnings = true)
 {
     Tessellation result{};
+    result.source_digest = "stale-output-must-be-replaced";
     auto* warnings = wants_warnings ? &result.warnings : nullptr;
     result.code = cached ? tessellate_illustration_source(source.data(), source.size(), request,
-                                                          &result.meshes, &result.status, warnings)
+                                                          &result.meshes, &result.status, warnings,
+                                                          &result.source_digest)
                          : model_tessellation_from_bytes(source.data(), source.size(), request,
                                                          &result.meshes, &result.status, warnings);
+    if (cached)
+        require(result.source_digest ==
+                    (result.code == 0 ? sha256_hex(source.data(), source.size()) : std::string{}),
+                "cold/warm/bypass digest differs from bytes or failure kept a stale digest");
     return result;
 }
 
@@ -207,9 +215,10 @@ void tiny_capacity_and_oversized_input_preserve_operation_results()
             "oversized retained entry was not a success-preserving bypass");
     MeshCollectionA0 output;
     Status status;
+    std::string refused_digest = "stale";
     require(tessellate_illustration_source(source.data(), 256 * 1024 * 1024 + 1, options(), &output,
-                                           &status, nullptr) != 0 &&
-                output.meshes.empty(),
+                                           &status, nullptr, &refused_digest) != 0 &&
+                output.meshes.empty() && refused_digest.empty(),
             "oversized attachment was accessed or admitted");
     reset_illustration_source_cache_for_tests({2, 16 * 1024 * 1024});
     auto second = source;

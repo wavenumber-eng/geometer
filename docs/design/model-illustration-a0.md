@@ -59,8 +59,10 @@ The lookup requires identical raw STEP bytes and identical generated tessellatio
 options: linear and angular deflection, root placement, triangle limit, and
 partial-result policy. Authored option presence is retained in the key, so an
 absent option and its explicit default may occupy separate entries; the original
-tessellator still resolves their effective values. A digest filters lookups but
-does not replace byte equality.
+tessellator still resolves their effective values. Lookup compares source size,
+options and every raw byte. Successful preparation retains the actual raw-byte
+SHA alongside those bytes; an exact hit reuses it in the current Source summary
+without another cryptographic scan. Public hashes and result identity are unchanged.
 
 Each hit returns a deep copy of the mesh collection and its complete warnings
 before applying the current source transform, material override, view, or B0

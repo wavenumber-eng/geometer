@@ -351,8 +351,8 @@ int prepare_model_illustration(const Request& request, const ModelIllustrationAt
             tessellation.allow_partial = model_source.tessellation->allow_partial;
         }
         code = model_illustration_detail::tessellate_illustration_source(
-            model->data, model->size, tessellation, &output->collection, &nested,
-            &output->warnings);
+            model->data, model->size, tessellation, &output->collection, &nested, &output->warnings,
+            &source_hash);
         if (code != 0)
             return set_status(status, code == 102 || code == 103 ? code : tessellation_failed,
                               nested.message);
@@ -376,7 +376,6 @@ int prepare_model_illustration(const Request& request, const ModelIllustrationAt
         summary.media_type = model->media_type == "model/step"
                                  ? contracts::ModelAttachmentMediaTypeA0::model_step
                                  : contracts::ModelAttachmentMediaTypeA0::application_step;
-        source_hash = sha256_hex(model->data, model->size);
         summary.source_sha256 = source_hash;
         summary.meshes = static_cast<std::uint32_t>(output->collection.meshes.size());
         for (const auto& mesh : output->collection.meshes)

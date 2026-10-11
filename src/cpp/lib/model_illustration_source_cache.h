@@ -14,7 +14,8 @@ namespace geometer::model_illustration_detail
 int tessellate_illustration_source(const unsigned char* data, std::size_t size,
                                    const contracts::ModelTessellationRequestA0& options,
                                    contracts::MeshCollectionA0* collection, Status* status,
-                                   std::vector<std::string>* warnings);
+                                   std::vector<std::string>* warnings,
+                                   std::string* source_sha256 = nullptr);
 
 struct SourceCacheLimits
 {

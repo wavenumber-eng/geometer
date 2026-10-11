@@ -629,6 +629,23 @@ configure_geometer_fixture_test(geometer_model_tessellation_test
     tests/fixtures/step/embedded_models/SOT-23.STEP)
 add_test(NAME geometer_model_tessellation_test COMMAND geometer_model_tessellation_test)
 
+if(NOT EMSCRIPTEN)
+    find_package(Threads REQUIRED)
+    add_executable(geometer_model_source_cache_test model_source_cache_test.cpp)
+    target_include_directories(geometer_model_source_cache_test PRIVATE
+                               ${PROJECT_SOURCE_DIR}/src/cpp/lib)
+    target_link_libraries(geometer_model_source_cache_test PRIVATE geometer_lib Threads::Threads)
+    configure_geometer_fixture_test(geometer_model_source_cache_test
+        tests/fixtures/step/embedded_models/SOT-23.STEP
+        tests/fixtures/step/embedded_models/GT-USB-7010C.STEP
+        tests/fixtures/step/generated_topology/generated_fused_slab.step)
+    add_test(NAME geometer_model_source_cache_test COMMAND geometer_model_source_cache_test)
+    if(WIN32 AND OpenCASCADE_BINARY_DIR)
+        set_tests_properties(geometer_model_source_cache_test PROPERTIES
+            ENVIRONMENT_MODIFICATION "PATH=path_list_prepend:${OpenCASCADE_BINARY_DIR}")
+    endif()
+endif()
+
 add_executable(geometer_mesh_illustration_test mesh_illustration_test.cpp)
 add_executable(geometer_mesh_illustration_geometry_test mesh_illustration_geometry_test.cpp)
 add_executable(geometer_model_illustration_native_test model_illustration_native_test.cpp)

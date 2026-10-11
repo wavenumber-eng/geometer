@@ -2,6 +2,7 @@
 #include "analytic_illustration_lowering.h"
 #include "illustration_clipping.h"
 #include "mesh_illustration_internal.h"
+#include "model_illustration_source_cache.h"
 #include "model_illustration_transform.h"
 
 #include "geometer/fast_hlr.h"
@@ -349,8 +350,9 @@ int prepare_model_illustration(const Request& request, const ModelIllustrationAt
             tessellation.max_triangles = model_source.tessellation->max_triangles;
             tessellation.allow_partial = model_source.tessellation->allow_partial;
         }
-        code = model_tessellation_from_bytes(model->data, model->size, tessellation,
-                                             &output->collection, &nested, &output->warnings);
+        code = model_illustration_detail::tessellate_illustration_source(
+            model->data, model->size, tessellation, &output->collection, &nested,
+            &output->warnings);
         if (code != 0)
             return set_status(status, code == 102 || code == 103 ? code : tessellation_failed,
                               nested.message);

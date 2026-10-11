@@ -51,6 +51,38 @@ Geometer retries once after cleaning the model; any faces still marked outdated
 are omitted under the same partial-result policy. A model with no usable
 prepared geometry fails the operation.
 
+### Native source reuse
+
+Native model illustration privately retains successful STEP tessellations in a
+process-local LRU, up to 64 entries and 256 MiB of accounted retained storage.
+The lookup requires identical raw STEP bytes and identical generated tessellation
+options: linear and angular deflection, root placement, triangle limit, and
+partial-result policy. Authored option presence is retained in the key, so an
+absent option and its explicit default may occupy separate entries; the original
+tessellator still resolves their effective values. A digest filters lookups but
+does not replace byte equality.
+
+Each hit returns a deep copy of the mesh collection and its complete warnings
+before applying the current source transform, material override, view, or B0
+clipping. No OCCT document or mutable mesh is shared between requests. Failed
+preparation is never retained, and oversized entries or retention allocation
+failure leave successful geometry usable. The storage limit counts source bytes,
+container capacities, and conservative allocation overhead; it is not a process
+RSS or transient-work limit. Concurrent misses can perform duplicate preparation.
+
+This memo changes neither result/cache identity nor the public colored
+tessellation operation. Direct `model_tessellation_from_bytes` and WASM model
+illustration remain stateless. It does not cache analytic lowering or completed
+view-dependent illustrations.
+
+Local Windows qualification compared three one-worker, result-cache-disabled
+Loz runs per executable: median elapsed time was 85.325 s before and 37.368 s
+with this memo, with byte-identical SVG output. Six additional paired controls
+also preserved SVG bytes. See [native API readiness](../developer/native-api-readiness.md#native-source-memo-candidate)
+for the exact candidate identity, workload conditions, focused controls and
+remaining release gates. These measurements do not change any public package
+pin or establish performance for other workloads.
+
 ## Analytic 2.5D source
 
 Each reached definition is validated and lowered once per request. Every
@@ -101,6 +133,10 @@ triangle totals and reserves each contiguous array once; cost therefore remains
 linear for STEP files split into many face meshes. Phase timings therefore
 report source preparation, linework, illustration, and raw-attachment encoding
 without implying that OCCT import and tessellation are separately observable.
+On a native source-memo hit, `source_preparation_ms` measures the current lookup,
+mesh/warning copy, placement, source hashing, and fragment preparation rather than
+replaying the original import duration. Later phase timings likewise measure the
+current operation; source reuse adds no wire timing or cache-statistics fields.
 
 See [technical illustration algorithms](technical-illustration-algorithms.md)
 for the pipeline and determinism rules and [illustration drawing geometry](mesh-illustration-geometry.md)

@@ -33,6 +33,49 @@ placement and view. Arbitrary 2D lines cannot authenticate those relationships.
 Experimental AO remains unavailable, raw mesh lines remain diagnostic, and
 the unrelated analytic planar solver has not been promoted.
 
+## Native source-memo candidate
+
+The private [native source reuse](../design/model-illustration-a0.md#native-source-reuse)
+change is a local candidate, not a tagged or published release. Its native test
+target, `geometer_model_source_cache_test`, compares complete colored meshes and
+B0 outcomes/geometry against uncached execution, excluding elapsed timings only.
+It also covers option and source-byte separation, root placement, partial
+warnings with a null first caller, refusals, bounded eviction, and independent
+concurrent warm copies. Five focused CTest targets passed locally: the eight
+memo controls (8.14 s), existing tessellation (2.74 s), native illustration
+(0.05 s), B0 operation (0.04 s) and clipping (0.03 s). The new target is included
+in the normal native validator's explicit build list.
+
+The Windows candidate executable SHA-256 is
+`8e1b18e8de596aa02cfb2a124b8fdc6db7e198338c1a99d86054550b677cb6da`.
+On the Loz workload, three runs per executable used one process-cold native
+worker, disabled the consumer result cache, and held the current consumer,
+canonical input and configuration immutable. Each run completed 1,020 fresh
+requests. Median elapsed time fell from 85.325 s to 37.368 s; median summed
+source preparation fell from 61.222 s to 12.889 s. Both generated SVGs were
+byte-identical. The OS file cache was not flushed, and these are local workload
+measurements rather than a guarantee for other boards or worker counts.
+
+Six additional old/new controls also produced byte-identical SVGs: projection,
+through-hole bottom, analytic bodies, Yoshi, Fenton and ModuleTesterA. These
+were single paired runs; ModuleTesterA elapsed time was 324.949 s before and
+100.940 s with source reuse. The analytic-only control also preserves the path
+that does not use the STEP memo. Source and configuration hashes stayed
+unchanged throughout the qualification.
+
+`source_preparation_ms` on a hit includes the current copy and downstream
+placement, hashing and fragment preparation, not historical OCCT time. The
+64-entry / 256 MiB limit describes accounted retained storage, not peak RSS.
+Public package pins remain unchanged. No SDK, ABI, schema, version, or WASM
+behavior change is implied by this candidate.
+
+Release promotion still requires a clean authoritative-source build, verified
+OCCT provenance and validation of the exact distributed executable's build
+attestation. Follow the [native build and attestation commands](README.md) and
+the release qualification below; installed-wheel, static-SDK, remaining
+platform and release gates are separate from these local runtime controls.
+Do not copy this candidate into a public package or restamp its attestation.
+
 ## Historical feature-build package evidence
 
 For the 2026-09-11 illustration optimization and additive drawing API, see

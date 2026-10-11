@@ -26,6 +26,7 @@ PRODUCTION_VALIDATION_TARGETS = (
     "geometer_planar_step_test",
     "geometer_model_bounds_test",
     "geometer_model_tessellation_test",
+    "geometer_model_source_cache_test",
     "geometer_model_illustration_native_test",
     "geometer_mesh_illustration_geometry_test",
     "geometer_mesh_illustration_test",

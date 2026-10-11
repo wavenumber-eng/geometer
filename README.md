@@ -1,5 +1,11 @@
 # Geometer
 
+This is Geometer's public distribution repository. Active development is
+maintained in [Appz](https://github.com/wavenumber-eng/appz) under
+`cad/geometer/`. Existing public PyPI wheels, releases and package interfaces
+remain available and unchanged. Development fixes belong in the Appz copy;
+public distribution and release updates are handled separately.
+
 Geometer is a generic C++ geometry library with an executable, Python package,
 and browser WASM interfaces. It provides STEP conversion, hidden-line projection
 (HLR), planar geometry, and mesh illustration. Board/domain policy and

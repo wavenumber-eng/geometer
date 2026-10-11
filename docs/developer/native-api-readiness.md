@@ -76,6 +76,30 @@ the release qualification below; installed-wheel, static-SDK, remaining
 platform and release gates are separate from these local runtime controls.
 Do not copy this candidate into a public package or restamp its attestation.
 
+## Coplanar material numeric candidate
+
+A retained consumer translation witness isolated material fusion from shading:
+the real STEP's 336 unfused triangles preserved their filled geometry, exact
+color and opacity associations after placement, while fused output reassigned
+five paints on otherwise matching supports. The source meshes all supplied
+normals; changing normal generation or the shader was not justified.
+
+The candidate now uses origin-relative triangle/ring area calculations and
+compensated material-area totals. It preserves the existing exact largest-area
+comparison and first-member tie rule, with no epsilon ranking or integer-grid
+policy. No PCB, SDK, geometry, or metadata format changes accompany this fix.
+The existing `geometer_mesh_illustration_test` covers translated two-material
+quads, true unequal-area dominance, first-member ties, and small nonzero signed
+areas. Its focused run passed, alongside the existing source-cache, native
+illustration, B0 and clipping controls.
+
+The same official SDK witness improved from five paint/support disagreements
+to one zero-area boundary difference; this is not a pixel-identity assertion.
+Qualification of the consumer's integer-nanometre scenes and real boards is
+still pending. These checks do not qualify a final distributed executable,
+change public package pins, or establish the end-to-end consumer performance
+exit. A newly built artifact must be used by both consumers for that comparison.
+
 ## Historical feature-build package evidence
 
 For the 2026-09-11 illustration optimization and additive drawing API, see

@@ -122,6 +122,15 @@ is rejected. `show_hlr_outline` and `show_hlr_detail` select the visible Fast
 layers; fill styling and same-color fusion reuse the mesh illustration A0
 contract. One normalized view governs fills and linework.
 
+Coplanar material layering measures triangle and ring areas relative to a
+vertex of that geometry, then uses compensated sums for each material's area.
+This avoids cancellation from products of large absolute XY coordinates that
+can otherwise change the selected base material after translation. The largest
+area still selects the base; exact ties retain the existing first-member
+priority. There is no epsilon rank, area bucket, or change to overlap priority,
+lighting, normals, clipping, or drawing formats. This is a numerical stability
+correction, not a guarantee of byte-identical output for arbitrary translations.
+
 Successful results include the prepared source bounds in millimeters. The raw
 drawing geometry also carries physical line widths in projected millimeters;
 SVG and custom renderers therefore receive the same lineweight intent without

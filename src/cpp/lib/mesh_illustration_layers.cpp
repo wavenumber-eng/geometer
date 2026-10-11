@@ -83,7 +83,26 @@ std::optional<Surface> layered_surface(const std::vector<TriangleCommand>& comma
     {
         std::string key;
         double area;
+        double correction;
         std::size_t first;
+
+        void add(double value)
+        {
+            const double next = area + value;
+            correction +=
+                std::abs(area) >= std::abs(value) ? (area - next) + value : (value - next) + area;
+            if (!std::isfinite(next) || !std::isfinite(correction))
+                throw std::runtime_error("Mesh illustration numeric overflow.");
+            area = next;
+        }
+
+        double total() const
+        {
+            const double result = area + correction;
+            if (!std::isfinite(result))
+                throw std::runtime_error("Mesh illustration numeric overflow.");
+            return result;
+        }
     };
     std::vector<Area> areas;
     std::unordered_map<std::string, std::size_t> area_indices;
@@ -93,15 +112,15 @@ std::optional<Surface> layered_surface(const std::vector<TriangleCommand>& comma
         const double area = std::abs(signed_area(commands[member].triangle->points));
         const auto entry = area_indices.emplace(key, areas.size());
         if (entry.second)
-            areas.push_back({key, area, member});
+            areas.push_back({key, area, 0, member});
         else
-            areas[entry.first->second].area += area;
+            areas[entry.first->second].add(area);
     }
     if (areas.size() < 2)
         return {};
-    const auto base =
-        std::min_element(areas.begin(), areas.end(), [](const auto& a, const auto& b)
-                         { return a.area != b.area ? a.area > b.area : a.first < b.first; });
+    const auto base = std::min_element(
+        areas.begin(), areas.end(), [](const auto& a, const auto& b)
+        { return a.total() != b.total() ? a.total() > b.total() : a.first < b.first; });
     const auto components = style_components(members, adjacency);
     const auto layer_count =
         1 + static_cast<std::size_t>(

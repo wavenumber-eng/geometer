@@ -4,6 +4,7 @@
 #include "mesh_illustration_internal.h"
 #include "mesh_illustration_svg.h"
 
+#include <algorithm>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -104,9 +105,62 @@ void material_key_regressions()
             "raw material differences bypassed rounded-key equivalence");
 }
 
+geometer::illustration_detail::Surface layered_quad(double x, double y, bool unequal)
+{
+    using namespace geometer::illustration_detail;
+    // A compact two-material diagonal strip exercises the witnessed equal-area
+    // base choice without a private STEP fixture or any board-specific policy.
+    const std::array<Vec2, 4> points{
+        {{-0.5 + x, -0.25 + y}, {-0.25 + x, -0.5 + y}, {0.5 + x, 0.25 + y}, {0.25 + x, 0.5 + y}}};
+    std::array<Triangle, 2> triangles{};
+    triangles[0].points = {{points[0], points[1], points[2]}};
+    triangles[1].points = {{points[0], points[2], points[3]}};
+    if (unequal)
+        triangles[1].points[2] = {x, y + 0.75};
+    std::vector<TriangleCommand> commands;
+    for (std::size_t i = 0; i < triangles.size(); ++i)
+    {
+        auto& triangle = triangles[i];
+        triangle.geometric_normal = {0, 0, 1};
+        triangle.color = i == 0 ? Vec3{.8, .2, .1} : Vec3{.1, .2, .8};
+        triangle.opacity = 1;
+        commands.push_back({&triangle, 0, i, i == 0 ? "red" : "blue", 1});
+    }
+    WorkBudget budget;
+    // The caller's adjacency connects same-style fusion members only. Red and
+    // blue are distinct components even though their geometric edge is shared.
+    const std::vector<std::vector<std::size_t>> adjacency(2);
+    const auto surface = layered_surface(commands, {0, 1}, adjacency, 1e-9, 1e-9, budget);
+    require(surface.has_value(), "translated material quad did not complete");
+    return *surface;
+}
+
+void translated_material_area_regressions()
+{
+    using namespace geometer::illustration_detail;
+    for (const auto offset : std::array<Vec2, 3>{{{0, 0}, {171.65, -151.9}, {-171.65, 151.9}}})
+    {
+        const auto tied = layered_quad(offset[0], offset[1], false);
+        require(tied.layers[0].fill == "red", "equal material areas lost first-member priority");
+        require(tied.layers.size() == 2 && tied.layers[1].fill == "blue",
+                "equal-area material overlay changed under translation");
+        const auto larger = layered_quad(offset[0], offset[1], true);
+        require(larger.layers[0].fill == "blue", "true larger material area lost dominance");
+    }
+    const std::array<Vec2, 3> triangle{
+        {{171.65, -151.9}, {171.650001, -151.9}, {171.65, -151.899999}}};
+    const double area = signed_area(triangle);
+    require(area > 0 && area < 1e-12, "translated small nonzero triangle collapsed");
+    Ring ring(triangle.begin(), triangle.end());
+    require(signed_area(ring) == area, "relative ring and triangle areas disagree");
+    std::reverse(ring.begin(), ring.end());
+    require(signed_area(ring) < 0, "relative ring area lost winding sign");
+}
+
 void smoke()
 {
     material_key_regressions();
+    translated_material_area_regressions();
     using geometer::illustration_detail::fixed_text;
     using geometer::illustration_detail::integer_text;
     using geometer::illustration_detail::number_text;

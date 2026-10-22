@@ -21,6 +21,7 @@ import sys
 from pathlib import Path
 
 import dependency_versions
+from check_tls_trust import require_node
 import occt_lock
 import occt_producer
 
@@ -155,16 +156,16 @@ def _emsdk_version_sentinel() -> Path:
 
 def _emscripten_env() -> dict[str, str]:
     """Return env with EMSDK paths activated."""
+    node = require_node()
     env = os.environ.copy()
     upstream = EMSDK_DIR / "upstream" / "emscripten"
-    node_dir = next((EMSDK_DIR / "node").glob("*/bin"), None)
-    paths = [str(upstream)]
-    if node_dir:
-        paths.append(str(node_dir))
-    paths.append(str(EMSDK_DIR))
+    paths = [str(upstream), str(EMSDK_DIR)]
     env["PATH"] = os.pathsep.join(paths) + os.pathsep + env.get("PATH", "")
     env["EMSDK"] = str(EMSDK_DIR)
     env["EM_CONFIG"] = str(EMSDK_DIR / ".emscripten")
+    # Cached SDKs may bundle an older Node and name it in .emscripten.
+    env["EMSDK_NODE"] = node
+    env["EM_NODE_JS"] = node
     return env
 
 

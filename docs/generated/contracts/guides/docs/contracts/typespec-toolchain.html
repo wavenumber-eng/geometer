@@ -48,7 +48,7 @@ records alongside schema roots.</p>
 <tbody>
 <tr>
 <td>Node.js CI/tooling generation</td>
-<td>24</td>
+<td>24.22.1</td>
 </tr>
 <tr>
 <td>npm package manager declaration</td>
@@ -78,7 +78,7 @@ not native, WASM, executable, Rust-client, or Python-package runtime
 dependencies. <code>@typespec/http</code> is not part of the foundation because Geometer's
 governed transports are C ABI and framed stdio rather than HTTP.</p>
 <p>The <code>packageManager</code> declaration documents the pin but does not provision npm.
-After <code>actions/setup-node@v6</code> installs Node 24, CI explicitly runs:</p>
+After <code>actions/setup-node@v6</code> installs Node 24.22.1, CI explicitly runs:</p>
 <pre><code class="language-text">npm install --global npm@11.16.0
 npm --version
 npm ci

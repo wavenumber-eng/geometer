@@ -133,7 +133,7 @@ verifying the official archive SHA-256, or it can be prepared explicitly:</p>
 <p>The archive cache and extracted headers are generated <code>.deps/</code> state and must
 not be committed.</p>
 <h2 id="typespec-contract-toolchain">TypeSpec Contract Toolchain</h2>
-<p>Contract generation uses Node 24 and exact npm 11.16.0 as build/test tools;
+<p>Contract generation uses exact Node 24.22.1 and npm 11.16.0 as build/test tools;
 neither is a Geometer runtime dependency. Provision and restore the pinned
 toolchain from the repository root:</p>
 <pre><code class="language-powershell">npm install --global npm@11.16.0
@@ -186,7 +186,7 @@ refreshing dependencies. Those operations remove the cached dependency builds.</
 <ul>
 <li>Git.</li>
 <li>Python 3.</li>
-<li>uv.</li>
+<li>uv 0.13.4 or newer.</li>
 <li>CMake 3.24 or newer.</li>
 <li>Ninja.</li>
 <li>A C++17 compiler toolchain.</li>
@@ -208,6 +208,39 @@ sudo apt install -y build-essential git cmake ninja-build python3 python3-venv
 </code></pre>
 <p>WASM builds additionally require enough disk space for emsdk and a WASM OCCT
 build. The script manages emsdk locally under <code>.deps/</code>.</p>
+<h3 id="certificate-trust-and-the-october-2026-ca-incident">Certificate trust and the October 2026 CA incident</h3>
+<p>The <a href="https://discuss.python.org/t/information-for-python-users-regarding-emudhra-emsign-ca-certificate-security-incident/109576">Python incident notice</a>
+requires Certifi <code>&gt;=2026.10.19</code>, uv <code>&gt;=0.13.4</code>, and pip <code>&gt;=26.2.2</code> wherever
+pip is installed. Node tooling is pinned to the fixed Node <code>24.22.1</code> release.
+The root development environment and Python examples both require the updated
+Certifi bundle. The published Python package still has no external runtime
+dependencies or bundled CA store; this tooling patch requires no product
+version change or PyPI republication.</p>
+<p>Install a verified fixed uv before restoring dependencies. For an old pip,
+use the checksum-pinned bootstrap in the incident notice rather than asking
+the affected pip to download an unpinned upgrade. Existing environments can
+then be repaired with fixed uv:</p>
+<pre><code class="language-powershell">uv pip install --python &lt;environment-python&gt; --upgrade &quot;pip&gt;=26.2.2&quot; &quot;certifi&gt;=2026.10.19&quot;
+uv sync --frozen --group dev
+uv run --frozen python scripts/check_tls_trust.py
+</code></pre>
+<p>The read-only audit checks the project bundle, default OS trust store, uv,
+Node, and pip when present. An empty <code>errors</code> list and exit code zero are
+required. Update host OS certificates as well as Python packages; Linux CI
+refreshes <code>ca-certificates</code> before builds and publication. Refresh container
+base images without cached layers if running these tools in containers.
+Review custom CA overrides separately.</p>
+<p>Local verification on 2026-10-22 found <code>AAA Certificate Services</code> remaining in
+the Windows system trust store. The audit correctly fails on that host even
+after the project bundle is fixed. Updating the repository does not remove
+machine-wide roots; update the host trust store and rerun the audit before
+claiming full host remediation.</p>
+<p>Wheel validation bootstraps fixed pip through verified uv before invoking
+pip, and nested wheel-build environments use <code>build --installer uv</code>.
+Emscripten uses the pinned external Node via <code>EM_NODE_JS</code> and
+<code>EMSDK_NODE</code>, rather than a stale Node in an SDK cache. The PyPI publishing
+action is pinned to upstream's Certifi <code>2026.10.19</code> and Sigstore <code>4.5.1</code> fix.
+Existing content-addressed OCCT archives and runtime binaries are unchanged.</p>
 <h2 id="native-build">Native Build</h2>
 <p>From the repository root:</p>
 <pre><code class="language-powershell">uv sync --group dev
@@ -321,8 +354,8 @@ runtime files is retired; <code>dist/</code> should not persist those files.</p>
 <code>geometer</code>.</p>
 <p>To build a local Python wheel, first build the native CLI so
 <code>dist/native/&lt;platform&gt;/geometer(.exe)</code> exists. Then run:</p>
-<pre><code class="language-powershell">python -m build --wheel --outdir out\wheelhouse
-python -m twine check out\wheelhouse\*.whl
+<pre><code class="language-powershell">uv run --frozen python -m build --installer uv --wheel --outdir out\wheelhouse
+uv run --frozen twine check out\wheelhouse\*.whl
 </code></pre>
 <p>The package validation script builds the local wheel, installs it into a clean
 temporary environment, verifies that Python resolves the bundled executable from

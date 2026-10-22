@@ -6,6 +6,7 @@ runner = "pytest"
 concerns = ["python", "package", "scripts"]
 
 objectives = [
+    "Verify fixed CA bundles, safe pip bootstrapping, and patched Node selection for cached Emscripten SDKs.",
     "Verify executable-backed Python helpers and package behavior.",
     "Verify strict executable IPC A0 framing, handshake, attachments, and graceful shutdown.",
     "Require native fake-server timeout and crash coverage in post-build qualification lanes.",
@@ -264,4 +265,11 @@ id = "PY_035"
 file = "test_candidate_validation.py"
 name = "Candidate Validation Evidence"
 description = "Checks that canonical successful lane ledgers bind every release product exactly once to the candidate root, source revision, run log, and inventory."
+test_case_type = "unit"
+
+[[subtests]]
+id = "PY_036"
+file = "test_tls_toolchain.py"
+name = "TLS Build Toolchain"
+description = "Checks removal of affected roots, rejection of old uv before downloads, safe pip bootstrapping, and exclusion of cached SDK Node."
 test_case_type = "unit"

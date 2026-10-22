@@ -19,6 +19,13 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v8.2.0
+        with:
+          version: "0.13.4"
+      - name: Refresh Linux CA certificates
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ca-certificates
       - name: Sync dev tools
         run: uv sync --group dev
       - name: Read dependency versions

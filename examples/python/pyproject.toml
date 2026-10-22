@@ -3,6 +3,7 @@ name = "geometer-python-examples"
 version = "0.0.0"
 requires-python = ">=3.10"
 dependencies = [
+    "certifi>=2026.10.19",
     "numpy",
     "pyside6",
     "pyvista",
@@ -12,6 +13,7 @@ dependencies = [
 ]
 
 [tool.uv]
+required-version = ">=0.13.4"
 package = false
 
 [tool.uv.sources]

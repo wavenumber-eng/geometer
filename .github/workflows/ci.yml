@@ -25,13 +25,22 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v8.2.0
+        with:
+          version: "0.13.4"
+      - name: Refresh Linux CA certificates
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ca-certificates
       - name: Set up Python
         run: uv python install 3.12
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: "24"
+          node-version: "24.22.1"
           cache: npm
+      - name: Audit TLS build trust
+        run: uv run --frozen --group dev python scripts/check_tls_trust.py
       - name: Verify generated contracts
         run: |
           npm install --global npm@11.16.0
@@ -50,12 +59,19 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v8.2.0
+        with:
+          version: "0.13.4"
+      - name: Refresh Linux CA certificates
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ca-certificates
       - name: Set up Python
         run: uv python install 3.12
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: "24"
+          node-version: "24.22.1"
           cache: npm
       - name: Restore pinned client dependencies
         run: |
@@ -101,6 +117,13 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v8.2.0
+        with:
+          version: "0.13.4"
+      - name: Refresh Linux CA certificates
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ca-certificates
       - name: Set up Python
         run: uv python install 3.12
       - name: Read dependency versions
@@ -109,7 +132,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: "24"
+          node-version: "24.22.1"
           cache: npm
       - name: Install Node toolchain
         run: |

@@ -10,6 +10,8 @@ import tempfile
 import time
 from pathlib import Path
 
+from check_tls_trust import require_uv
+
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_STEP = ROOT / "tests" / "fixtures" / "step" / "embedded_models" / "SOT-23.STEP"
@@ -290,6 +292,7 @@ def main() -> int:
 
 
 def build_wheel(wheelhouse: Path) -> Path:
+    uv = require_uv()
     wheelhouse.mkdir(parents=True, exist_ok=True)
     env = package_build_env()
     started_at = time.time()
@@ -297,8 +300,8 @@ def build_wheel(wheelhouse: Path) -> Path:
         build_venv = Path(temp_text) / "venv"
         run([sys.executable, "-m", "venv", str(build_venv)], env=env)
         build_python = venv_python(build_venv)
-        run([str(build_python), "-m", "pip", "install", "--upgrade", "pip", "build"], env=env)
-        run([str(build_python), "-m", "build", "--wheel", "--outdir", str(wheelhouse)], env=env)
+        run([uv, "pip", "install", "--python", str(build_python), "pip>=26.2.2", "build"], env=env)
+        run([str(build_python), "-m", "build", "--installer", "uv", "--wheel", "--outdir", str(wheelhouse)], env=env)
 
     candidates = [path for path in wheelhouse.glob("wn_geometer-*.whl") if path.stat().st_mtime >= started_at - 1.0]
     if not candidates:
@@ -307,6 +310,7 @@ def build_wheel(wheelhouse: Path) -> Path:
 
 
 def validate_wheel_install(wheel: Path, step_path: Path, *, keep_temp: bool) -> None:
+    uv = require_uv()
     temp_dir_context: tempfile.TemporaryDirectory[str] | None = None
     if keep_temp:
         temp_dir = Path(tempfile.mkdtemp(prefix="geometer-package-validation-"))
@@ -322,7 +326,7 @@ def validate_wheel_install(wheel: Path, step_path: Path, *, keep_temp: bool) -> 
 
         run([sys.executable, "-m", "venv", str(venv_dir)])
         test_python = venv_python(venv_dir)
-        run([str(test_python), "-m", "pip", "install", "--upgrade", "pip"])
+        run([uv, "pip", "install", "--python", str(test_python), "pip>=26.2.2"])
         run([str(test_python), "-m", "pip", "install", "--force-reinstall", str(wheel)])
 
         env = clean_package_env()

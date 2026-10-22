@@ -4,6 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "packageManager": "npm@11.16.0",
+  "engines": {
+    "node": "24.22.1",
+    "npm": "11.16.0"
+  },
   "scripts": {
     "check:node-toolchain": "node scripts/check-node-toolchain.mjs",
     "generate:contracts": "npm run check:node-toolchain && node scripts/generate-contracts.mjs && node scripts/generate-cpp-contracts.mjs && node scripts/generate-typescript-contracts.mjs && node scripts/generate-rust-contracts.mjs && node scripts/generate-python-contracts.mjs && node scripts/generate-contract-docs.mjs && node scripts/build-typescript-package.mjs && node scripts/build-typescript-examples.mjs && node scripts/build-node-reference-example.mjs",

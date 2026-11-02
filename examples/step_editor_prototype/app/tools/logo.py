@@ -1,7 +1,7 @@
 """Apply LOGO (M7): emboss the WN3D.dxf watermark onto a picked planar face.
 The extruded tool body is built by geometer.planar_step from the DXF contours;
 engrave cuts it into the surface (raised fuses it on top), and the faces the
-boolean creates take the chosen logo colour."""
+boolean creates take the chosen logo color."""
 
 from __future__ import annotations
 
@@ -131,7 +131,7 @@ class LogoTool(ToolMode):
         self.mode_combo = QComboBox()
         self.mode_combo.addItems(["engrave (cut)", "raised (fuse)"])
         style_row.addWidget(self.mode_combo, 1)
-        self.color_button = QPushButton("Logo colour")
+        self.color_button = QPushButton("Logo color")
         self.color_button.clicked.connect(self._pick_color)
         style_row.addWidget(self.color_button)
         layout.addLayout(style_row)

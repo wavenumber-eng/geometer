@@ -1,14 +1,17 @@
 # WN3D STEP Conditioning Editor (prototype)
 
 A desktop GUI for **conditioning** electronic-component STEP files: take any
-vendor model (AP203 / AP214 / AP242), stand it upright, find and name its pins,
-draw connection hitboxes, assign pin functions, recolor bodies, emboss a logo —
-and write a clean **AP242** file with all of that captured as embedded metadata
-next to the original:
+vendor model (AP203 / AP214 / AP242), walk it through the 10 conditioning steps
+(repair, identity, Z-sit, pins, front, separate, hitboxes, pin functions,
+footprint, colours) and write a clean **AP242** file with all of that captured
+as embedded metadata next to the original:
 
 ```
-wheel4506.step  ->  wheel4506_AP242_conditioned.step
+wheel4506.step  ->  wheel4506_AP242_WNC1.step   (re-conditioning bumps WNC2, ...)
 ```
+
+Opening a conditioned file restores its pins and journal so work continues, and
+every Apply autosaves the journal (`<file>.wn3d-journal.json`) for crash recovery.
 
 The conditioned file carries a JSON metadata block (frame, bodies, pins with
 number / name / function / net / hitbox) **plus the operation journal** — the
@@ -16,8 +19,8 @@ declarative list of tool steps that produced it. The journal replays headlessly,
 which is what lets the same hand-edits later be done automatically.
 
 > **Status:** working prototype on branch `prototype/step-file-editor`. The full
-> tool chain (load → Z-sit → front → detect pins → separate → hitboxes →
-> functions → colors → logo → export) runs end-to-end, with a headless
+> tool chain (the 10 steps of the conditioning pipeline, then export) runs
+> end-to-end, with a headless
 > auto-conditioner (`--auto`) and per-milestone selftests. See
 > [`docs/DESIGN_INTENT.md`](docs/DESIGN_INTENT.md) for the spec it implements and
 > [`docs/BIG_DREAM.md`](docs/BIG_DREAM.md) for where it is headed.
@@ -114,8 +117,10 @@ kicad_mod → AP242 → kicad_mod → AP242 → kicad_mod
 ```
 
 KiCad embedding is built in. The Altium bake runs through `eval/altium_bake.py`
-in `toolz/altium_monkey`'s own venv (its OCP pin differs) — see that file's
-header for the invocation.
+(shipped next to `step_editor.py` in the packaged skill) in an altium_monkey
+environment (its OCP pin differs): a toolz checkout found via
+`WN3D_ALTIUM_MONKEY` or the usual clone / wn-hw-workspace folders (`uv run`),
+else a system Python with altium_monkey installed. See `app/vendor_files.py`.
 
 ---
 

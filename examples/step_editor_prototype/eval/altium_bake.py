@@ -260,7 +260,23 @@ def replace_main(lib_path: str, model_name: str, step_path: str, out_path: str) 
     return 0 if ok else 1
 
 
+def symbol_pins(schlib: Path, key: str | None) -> list[dict]:
+    """Pins of a .SchLib symbol (the one named `key`, else the first):
+    number (designator), name and electrical type."""
+    from altium_monkey import AltiumSchLib
+
+    symbols = AltiumSchLib(str(schlib)).symbols
+    if not symbols:
+        return []
+    symbol = next((s for s in symbols if key and s.name == key), symbols[0])
+    return [{"number": str(pin.designator), "name": str(pin.name or ""),
+             "type": str(getattr(pin, "electrical_name", "") or "")} for pin in symbol.pins]
+
+
 if __name__ == "__main__":
+    if sys.argv[1] == "--symbol-pins":
+        print(json.dumps(symbol_pins(Path(sys.argv[2]), sys.argv[3] if len(sys.argv) > 3 else None)))
+        raise SystemExit(0)
     if sys.argv[1] == "--replace":
         raise SystemExit(replace_main(*sys.argv[2:6]))
     if sys.argv[1] == "--list":

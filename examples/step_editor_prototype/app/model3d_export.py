@@ -100,24 +100,35 @@ def resolve_entity_refs(step_path: Path, document) -> list[EntityRef]:
     return refs
 
 
+def _obb_hitbox(hitbox: dict, hitbox_id: str, owner_ref: str) -> Model3dHitbox:
+    center = hitbox.get("center", [0, 0, 0])
+    half = hitbox.get("half_extents", [0, 0, 0])
+    return Model3dHitbox(
+        id=hitbox_id, owner_ref=owner_ref, kind="male_box",
+        obb=Obb(
+            center=Coordinate3D(_mm_to_nm(center[0]), _mm_to_nm(center[1]),
+                                _mm_to_nm(center[2])),
+            half_x_nm=_mm_to_nm(half[0]), half_y_nm=_mm_to_nm(half[1]),
+            half_z_nm=_mm_to_nm(half[2]),
+            rotation_z_deg=float(hitbox.get("rotation_z_deg", 0.0) or 0.0)))
+
+
+def _points_hitbox(hitbox: dict, hitbox_id: str, owner_ref: str, kind: str, metadata: dict) -> Model3dHitbox:
+    return Model3dHitbox(
+        id=hitbox_id, owner_ref=owner_ref, kind=kind,
+        hull_points=[[_mm_to_nm(c) for c in v] for v in hitbox.get("vertices", [])],
+        metadata=metadata)
+
+
 def _hitbox_to_model(hitbox: dict, hitbox_id: str, owner_ref: str) -> Model3dHitbox:
     kind = str(hitbox.get("type", "") or "")
     if kind == "obb":
-        center = hitbox.get("center", [0, 0, 0])
-        half = hitbox.get("half_extents", [0, 0, 0])
-        return Model3dHitbox(
-            id=hitbox_id, owner_ref=owner_ref, kind="male_box",
-            obb=Obb(
-                center=Coordinate3D(_mm_to_nm(center[0]), _mm_to_nm(center[1]),
-                                    _mm_to_nm(center[2])),
-                half_x_nm=_mm_to_nm(half[0]), half_y_nm=_mm_to_nm(half[1]),
-                half_z_nm=_mm_to_nm(half[2]),
-                rotation_z_deg=float(hitbox.get("rotation_z_deg", 0.0) or 0.0)))
-    if kind == "convex_hull":
-        return Model3dHitbox(
-            id=hitbox_id, owner_ref=owner_ref, kind="convex_hull",
-            hull_points=[[_mm_to_nm(c) for c in v]
-                         for v in hitbox.get("vertices", [])])
+        return _obb_hitbox(hitbox, hitbox_id, owner_ref)
+    if kind == "shallow_concave":  # a ring on a concave face: its exact mesh + its fit
+        return _points_hitbox(hitbox, hitbox_id, owner_ref, "shallow_concave",
+                              {k: v for k, v in hitbox.items() if k != "vertices"})
+    if kind in ("convex_hull", "shrink_wrap"):  # no concave kind here: its points as a hull
+        return _points_hitbox(hitbox, hitbox_id, owner_ref, "convex_hull", {})
     return Model3dHitbox(id=hitbox_id, owner_ref=owner_ref, kind="male_box",
                          metadata={"raw": hitbox})
 

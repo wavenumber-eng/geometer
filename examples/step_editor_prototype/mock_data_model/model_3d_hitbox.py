@@ -22,7 +22,7 @@ class Model3dHitbox:
 
     id: str = ""
     owner_ref: str = ""          # the Model3dPin id this hitbox belongs to
-    kind: str = "male_box"       # male_box | female_cavity | bga_cube | pad_prism | convex_hull
+    kind: str = "male_box"       # male_box | female_cavity | bga_cube | pad_prism | convex_hull | shallow_concave
     obb: Obb | None = None       # set for box-shaped kinds
     hull_points: list[list[int]] = field(default_factory=list)  # nm verts, convex_hull kind
     geometry_ref: EntityRef | None = None

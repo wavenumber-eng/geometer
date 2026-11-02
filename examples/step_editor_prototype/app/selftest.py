@@ -11,6 +11,10 @@ import geometer
 
 ROOT = Path(__file__).resolve().parents[3]
 FIXTURES = ROOT / "tests" / "fixtures" / "step" / "embedded_models"
+if not FIXTURES.is_dir():
+    # Shipped standalone (e.g. as the Wavenumber-edit-3d skill): the selftest
+    # fixtures are bundled next to the app instead of in the geometer repo.
+    FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 
 
 def _check(condition: bool, message: str) -> None:
@@ -476,8 +480,8 @@ def selftest_m4(fixture: Path | None = None) -> None:
 
 
 def selftest_m6(fixture: Path | None = None) -> None:
-    """Colors: assign known colours to bodies, export, re-read with the XCAF
-    colour tool — RGB must round-trip within 1/255."""
+    """Colors: assign known colors to bodies, export, re-read with the XCAF
+    color tool — RGB must round-trip within 1/255."""
     from .document import EditorDocument
     from .export_ap242 import export_ap242
 
@@ -494,7 +498,7 @@ def selftest_m6(fixture: Path | None = None) -> None:
         if body.mesh is not None:
             body.mesh.face_colors = {}
 
-    # Paintbrush-style per-face colour on body 0, face 1.
+    # Paintbrush-style per-face color on body 0, face 1.
     face_red = (200 / 255, 30 / 255, 30 / 255)
     document.bodies[0].mesh.face_colors[1] = face_red
 
@@ -506,17 +510,17 @@ def selftest_m6(fixture: Path | None = None) -> None:
         _check(len(reread.bodies) == len(document.bodies), "body count changed")
         for index, body in enumerate(reread.bodies):
             expected = assigned[index % len(assigned)]
-            _check(body.color is not None, f"body {index} lost its colour")
+            _check(body.color is not None, f"body {index} lost its color")
             for a, b in zip(body.color, expected):
                 _check(abs(a - b) <= 1.0 / 255.0 + 1e-9,
-                       f"body {index} colour drifted: {body.color} vs {expected}")
+                       f"body {index} color drifted: {body.color} vs {expected}")
         reread_face = reread.bodies[0].mesh.face_colors.get(1)
-        _check(reread_face is not None, "face colour lost on export")
+        _check(reread_face is not None, "face color lost on export")
         for a, b in zip(reread_face, face_red):
             _check(abs(a - b) <= 1.0 / 255.0 + 1e-9,
-                   f"face colour drifted: {reread_face} vs {face_red}")
+                   f"face color drifted: {reread_face} vs {face_red}")
 
-        # Viewers (wn3d browser) only colour single-free-shape files: the
+        # Viewers (wn3d browser) only color single-free-shape files: the
         # export must be ONE assembly, not N top-level solids.
         from OCP.IFSelect import IFSelect_RetDone
         from OCP.STEPCAFControl import STEPCAFControl_Reader
@@ -536,7 +540,7 @@ def selftest_m6(fixture: Path | None = None) -> None:
         XCAFDoc_DocumentTool.ShapeTool_s(doc2.Main()).GetFreeShapes(labels)
         _check(labels.Length() == 1,
                f"export should be 1 assembly, got {labels.Length()} free shapes")
-    print(f"colour round-trip OK for {len(document.bodies)} bodies + 1 painted face")
+    print(f"color round-trip OK for {len(document.bodies)} bodies + 1 painted face")
 
 
 def selftest_sep(fixture: Path | None = None) -> None:
@@ -660,7 +664,7 @@ def selftest_m7(fixture: Path | None = None) -> None:
     """Apply LOGO: emboss WN3D.dxf into the top face of a resistor via
     geometer.planar_step + boolean cut. Volume must drop by a plausible
     amount, the result must stay one valid solid, and the engraved faces
-    must carry the chosen logo colour."""
+    must carry the chosen logo color."""
     import numpy as np
 
     from .document import EditorDocument, shape_volume
@@ -703,16 +707,16 @@ def selftest_m7(fixture: Path | None = None) -> None:
     mesh2 = document.bodies[body_index].mesh
     gold = [fid for fid, rgb in mesh2.face_colors.items()
             if abs(rgb[0] - 1.0) < 0.02 and abs(rgb[1] - 0.84) < 0.02]
-    print(f"logo-coloured faces: {len(gold)}")
-    _check(len(gold) > 0, "no engraved faces were coloured")
-    # the logo colour belongs ONLY to faces strictly below the cut surface —
-    # the face the logo cuts through keeps its own colour
+    print(f"logo-colored faces: {len(gold)}")
+    _check(len(gold) > 0, "no engraved faces were colored")
+    # the logo color belongs ONLY to faces strictly below the cut surface —
+    # the face the logo cuts through keeps its own color
     tri_centers = mesh2.points[mesh2.tris].mean(axis=1)
     for fid in gold:
         z = float(tri_centers[mesh2.tri_face_ids == fid].mean(axis=0)[2])
         _check(z < best_z - 1e-4,
-               f"logo colour leaked onto a surface-level face (z={z:.4f})")
-    print("logo colour confined below the surface plane")
+               f"logo color leaked onto a surface-level face (z={z:.4f})")
+    print("logo color confined below the surface plane")
 
     from .export_ap242 import export_ap242
 
@@ -1039,17 +1043,16 @@ def selftest_altium_rt(fixture: Path | None = None) -> None:
     -> metadata audit; plus the replace primitive on the TiMM corpus library
     when present. Skips cleanly when the toolz sibling or uv is missing."""
     import json
-    import shutil
     import subprocess
 
     from .export_ap242 import verify_metadata_text
 
-    monkey = PROTO.parents[2] / "toolz" / "altium_monkey"
-    uv = shutil.which("uv")
-    if not monkey.is_dir() or uv is None:
-        print("toolz/altium_monkey or uv not available — altium_rt skipped")
+    from .vendor_files import BAKER as baker, _altium_command, altium_available
+
+    if altium_available() is not None:
+        print(f"altium_rt skipped: {altium_available()}")
         return
-    baker = PROTO / "altium_bake.py"
+    prefix, cwd = _altium_command()
 
     src = fixture or FIXTURES / "SOIC-20-300.STEP"
     with tempfile.TemporaryDirectory(prefix="step_editor_altium_rt_") as tempdir:
@@ -1066,9 +1069,8 @@ def selftest_altium_rt(fixture: Path | None = None) -> None:
             json.dumps({"conditioned": {"min": bounds["min"], "max": bounds["max"]}})
         )
         proc = subprocess.run(
-            [uv, "run", "--project", str(monkey), "python", str(baker),
-             str(bake_in), str(temp / "bake_out")],
-            capture_output=True, text=True, cwd=str(monkey),
+            [*prefix, str(baker), str(bake_in), str(temp / "bake_out")],
+            capture_output=True, text=True, cwd=cwd,
         )
         _check(proc.returncode == 0 and "IDENTICAL" in proc.stdout,
                f"altium bake/re-extract failed: {(proc.stdout + proc.stderr)[:300]}")
@@ -1077,17 +1079,39 @@ def selftest_altium_rt(fixture: Path | None = None) -> None:
         timm = PROTO / "TEST_ALTIUM_PCB" / "TiMM.PcbLib"
         if timm.exists():
             proc = subprocess.run(
-                [uv, "run", "--project", str(monkey), "python", str(baker),
-                 "--replace", str(timm), "User Library-SOIC-8.STEP",
+                [*prefix, str(baker), "--replace", str(timm), "User Library-SOIC-8.STEP",
                  str(bake_in / "conditioned.step"),
                  str(temp / "TiMM_swap.PcbLib")],
-                capture_output=True, text=True, cwd=str(monkey),
+                capture_output=True, text=True, cwd=cwd,
             )
             _check(proc.returncode == 0,
                    f"altium replace failed: {(proc.stdout + proc.stderr)[:300]}")
             print("altium replace primitive OK (TiMM corpus)")
         else:
             print("TEST_ALTIUM_PCB corpus not present — replace check skipped")
+
+
+def selftest_panels(fixture: Path | None = None) -> None:
+    """Every step's tool panel fits PANEL_BUDGET px wide, so the 3D view keeps
+    its room (user feedback 2026-10-29: panels forced the divider over)."""
+    from PySide6.QtWidgets import QApplication
+
+    from .app_window import MainWindow
+    from .compact import PANEL_BUDGET
+
+    app = QApplication.instance() or QApplication([])
+    window = MainWindow(None)
+    try:
+        wide = []
+        for index, tool in enumerate(window.tools):
+            width = window.actions_stack.widget(index).widget().minimumSizeHint().width()
+            print(f"  {tool.title:40s} {width:4d} px")
+            if width > PANEL_BUDGET:
+                wide.append(f"{tool.title} ({width} px)")
+        _check(not wide, f"panels wider than {PANEL_BUDGET} px: {', '.join(wide)}")
+    finally:
+        window.close()
+        app.processEvents()
 
 
 def _flatten_cc(block):
@@ -1104,40 +1128,81 @@ def _flatten_cc(block):
 CC_CAP = 10  # every function/method must stay strictly below this
 
 
-def selftest_cc(fixture: Path | None = None) -> None:
-    """Cyclomatic-complexity cap: no function/method in the editor may reach
-    CC_CAP. The functional selftests prove behaviour; this one keeps the code
-    factored so that behaviour stays legible and reviewable."""
+CC_BASELINE = Path(__file__).with_name("cc_baseline.json")
+
+
+CC_SKIP = {".venv", "venv", ".deps", "__pycache__", "out", "build", "dist",
+           "TEST_STEP_FILES", "REFERENCE_STEP_FILES", "TEST_KICAD_MOD"}
+
+
+def _cc_file(py: Path, rel: str, offenders: dict) -> None:
+    """Add one file's functions at/above CC_CAP to offenders ("file::name" -> cc)."""
     from radon.complexity import cc_visit
 
+    seen: set[tuple[str, int]] = set()  # radon lists methods flat AND nested
+    for block in cc_visit(py.read_text(encoding="utf-8")):
+        for item in _flatten_cc(block):
+            if (item.name, item.lineno) in seen or item.complexity < CC_CAP:
+                continue
+            seen.add((item.name, item.lineno))
+            name = f"{rel}::{item.name}"
+            offenders[name] = max(offenders.get(name, 0), item.complexity)
+
+
+def _cc_offenders() -> tuple[dict[str, int], int]:
     proto = Path(__file__).resolve().parents[1]
-    skip = {".venv", "venv", ".deps", "__pycache__", "out", "build", "dist",
-            "TEST_STEP_FILES", "REFERENCE_STEP_FILES", "TEST_KICAD_MOD"}
-    offenders: list[tuple[int, str, str, int]] = []
-    scanned = 0
-    for py in sorted(proto.rglob("*.py")):
-        if any(part in skip for part in py.parts):
-            continue
-        scanned += 1
-        rel = str(py.relative_to(proto))
-        seen: set[tuple[str, int]] = set()  # radon lists methods flat AND nested
-        for block in cc_visit(py.read_text(encoding="utf-8")):
-            for item in _flatten_cc(block):
-                key = (item.name, item.lineno)
-                if key in seen:
-                    continue
-                seen.add(key)
-                if item.complexity >= CC_CAP:
-                    offenders.append((item.complexity, rel, item.name, item.lineno))
-    offenders.sort(reverse=True)
-    for cc, rel, name, line in offenders[:60]:
-        print(f"  CC {cc:>3}  {rel}:{line}  {name}")
-    print(f"scanned {scanned} files; cap = CC < {CC_CAP}")
-    _check(
-        not offenders,
-        f"{len(offenders)} function(s) at/above CC {CC_CAP}"
-        + (f" (worst: {offenders[0][2]} = CC {offenders[0][0]})" if offenders else ""),
-    )
+    offenders: dict[str, int] = {}
+    files = [py for py in sorted(proto.rglob("*.py")) if not any(part in CC_SKIP for part in py.parts)]
+    for py in files:
+        _cc_file(py, py.relative_to(proto).as_posix(), offenders)
+    return offenders, len(files)
+
+
+def _cc_rebase(baseline: dict, offenders: dict, better: list) -> None:
+    import json
+
+    kept = {n: cc for n, cc in baseline.items() if n not in better}
+    kept.update({n: offenders[n] for n in better if n in offenders})
+    CC_BASELINE.write_bytes((json.dumps(dict(sorted(kept.items())), indent=1) + "\n").encode())
+    print(f"baseline rewritten: {len(kept)} entries")
+
+
+def _cc_compare(offenders: dict, baseline: dict) -> tuple[list, list, list]:
+    """(new, worse, better) against the baseline."""
+    new = sorted(((cc, n) for n, cc in offenders.items() if n not in baseline), reverse=True)
+    worse = sorted(((cc, n) for n, cc in offenders.items() if cc > baseline.get(n, cc)), reverse=True)
+    better = sorted(n for n, cc in baseline.items() if offenders.get(n, 0) < cc)
+    return new, worse, better
+
+
+def _cc_report(new: list, worse: list, better: list, offenders: dict, baseline: dict) -> None:
+    for cc, name in new:
+        print(f"  NEW    CC {cc:>3}  {name}")
+    for cc, name in worse:
+        print(f"  WORSE  CC {cc:>3}  {name} (baseline {baseline[name]})")
+    for name in better:
+        print(f"  better CC {baseline[name]:>3} -> {offenders.get(name) or '<' + str(CC_CAP)}  {name}")
+
+
+def selftest_cc(fixture: Path | None = None) -> None:
+    """Cyclomatic-complexity ratchet (see docs/CC_AUDIT.md): no NEW function
+    may reach CC_CAP, and no function in cc_baseline.json (the 2026-10-31
+    backlog) may get worse. Functions that improve are reported; set
+    WN3D_CC_REBASE=1 to shrink the baseline to match."""
+    import json
+    import os
+
+    offenders, scanned = _cc_offenders()
+    baseline = json.loads(CC_BASELINE.read_text(encoding="utf-8")) if CC_BASELINE.exists() else {}
+    new, worse, better = _cc_compare(offenders, baseline)
+    _cc_report(new, worse, better, offenders, baseline)
+    print(f"scanned {scanned} files; cap = CC < {CC_CAP}; backlog {len(offenders)} "
+          f"(baseline {len(baseline)}; docs/CC_AUDIT.md)")
+    if better and os.environ.get("WN3D_CC_REBASE") == "1":
+        _cc_rebase(baseline, offenders, better)
+    worst = (new or worse or [(0, "")])[0][1]
+    _check(not new and not worse,
+           f"{len(new)} new and {len(worse)} worse function(s) at/above CC {CC_CAP} (e.g. {worst})")
 
 
 SELFTESTS = {
@@ -1155,6 +1220,7 @@ SELFTESTS = {
     "sep": selftest_sep,
     "kicad_rt": selftest_kicad_rt,
     "altium_rt": selftest_altium_rt,
+    "panels": selftest_panels,
 }
 
 

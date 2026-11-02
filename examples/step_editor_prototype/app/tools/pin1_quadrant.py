@@ -212,6 +212,8 @@ class Pin1QuadrantTool(ToolMode):
     def _apply(self, angle_rad: float, *, action: str, inputs: dict, pin1_hint=None) -> None:
         matrix = rotation_z_matrix(angle_rad)
         self.ctx.document.apply_trsf(matrix)
+        from ..pins import transform_pins
+        transform_pins(self.ctx.window.pins.pins, matrix)
         degrees = math.degrees(angle_rad)
         self.cumulative_deg = (self.cumulative_deg + degrees) % 360.0
 

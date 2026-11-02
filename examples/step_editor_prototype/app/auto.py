@@ -767,9 +767,9 @@ def auto_inherit_functions(registry: PinRegistry) -> int:
 
 
 def auto_color_pins(document: EditorDocument, registry: PinRegistry) -> list:
-    """Conditioning palette: every pin body/face that carries NO colour gets
+    """Conditioning palette: every pin body/face that carries NO color gets
     bare-metal tin, so conditioned exports always show their contacts.
-    Returns the colour keys changed (the colors tool's journal format)."""
+    Returns the color keys changed (the colors tool's journal format)."""
     changed: list = []
     for pin in registry.pins:
         for body_id in pin.body_ids:
@@ -1085,15 +1085,11 @@ def condition_auto(document: EditorDocument, journal) -> PinRegistry:
         apply_pin_body_names(document, registry.pins)
 
     if registry.pins:
-        from .hitbox import obb_from_points
-        from .pins import pin_mesh_points
+        from .hitbox import pin_hitbox
 
         applied = []
         for pin in registry.pins:
-            points = pin_mesh_points(document, pin)
-            if not len(points):
-                continue
-            box = obb_from_points(points, margin=0.05)
+            box = pin_hitbox(document, pin, registry.pins, margin=0.05)
             if box is not None:
                 pin.hitbox = box
                 applied.append({"pin": pin.number, "variant": "auto",

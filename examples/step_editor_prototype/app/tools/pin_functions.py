@@ -6,6 +6,8 @@ embedding (M8)."""
 
 from __future__ import annotations
 
+import numpy as np
+
 from PySide6.QtCore import QPointF, QRectF, Qt, Signal
 from PySide6.QtGui import QColor, QFont, QPainter, QPen
 from PySide6.QtWidgets import (
@@ -14,74 +16,78 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
 
 from ..style import ACCENT_HOVER, BORDER, CONSOLE_BG, SELECT_BG, TEXT_MUTED, TEXT_PRIMARY
+from ..pins import specialty
 from .base import ToolMode
 
 # (designator, short description shown in the dropdown) — grouped: power,
 # grounds, digital buses, control, analog, switch/relay, diode/LED, misc.
 FUNCTIONS = [
-    ("INHERIT", "flag: takes whatever function the other pins on this NET have"),
-    ("PWR", "power supply, generic"),
-    ("VCC", "positive supply (bipolar convention)"),
-    ("VDD", "positive supply (MOS convention)"),
-    ("VIN", "voltage input (regulator/converter)"),
-    ("VOUT", "voltage output (regulator/converter)"),
-    ("VBAT", "battery supply input"),
-    ("VBUS", "USB 5 V bus power"),
+    ("INHERIT", "takes its net's type"),
+    ("UNKNOWN", "no data on this pin's function (no datasheet / part record): a valid answer, not a gap"),
+    ("PWR", "power, generic"),
+    ("VCC", "+ supply (bipolar)"),
+    ("VDD", "+ supply (MOS)"),
+    ("VIN", "voltage in"),
+    ("VOUT", "voltage out"),
+    ("VBAT", "battery in"),
+    ("VBUS", "USB 5 V bus"),
     ("VREF", "voltage reference"),
-    ("GND", "ground / 0 V return"),
+    ("GND", "ground"),
     ("AGND", "analog ground"),
     ("DGND", "digital ground"),
-    ("PGND", "power ground (high current)"),
-    ("VSS", "negative/ground supply (MOS convention)"),
-    ("EP", "exposed pad (thermal/ground slug)"),
-    ("GPIO", "general-purpose I/O"),
-    ("IO", "digital input/output"),
-    ("PWM", "pulse-width modulated output"),
-    ("CLK", "clock signal"),
-    ("XTAL", "crystal oscillator pin"),
+    ("PGND", "power ground"),
+    ("VSS", "- supply / ground"),
+    ("EP", "exposed pad"),
+    ("GPIO", "general I/O"),
+    ("IO", "digital I/O"),
+    ("PWM", "PWM output"),
+    ("CLK", "clock"),
+    ("XTAL", "crystal pin"),
     ("SDA", "I2C data"),
     ("SCL", "I2C clock"),
     ("SCK", "SPI clock"),
     ("CS", "SPI chip select"),
-    ("MISO", "SPI data, peripheral to host"),
-    ("MOSI", "SPI data, host to peripheral"),
+    ("MISO", "SPI data in"),
+    ("MOSI", "SPI data out"),
     ("RX", "UART receive"),
     ("TX", "UART transmit"),
-    ("RTS", "UART request to send"),
-    ("CTS", "UART clear to send"),
+    ("RTS", "UART RTS"),
+    ("CTS", "UART CTS"),
     ("DP", "USB data +"),
     ("DM", "USB data -"),
-    ("CANH", "CAN bus high"),
-    ("CANL", "CAN bus low"),
-    ("EN", "enable / shutdown control"),
-    ("RST", "reset input"),
-    ("BOOT", "boot mode select / bootstrap"),
-    ("INT", "interrupt request output"),
+    ("CANH", "CAN high"),
+    ("CANL", "CAN low"),
+    ("EN", "enable"),
+    ("RST", "reset"),
+    ("BOOT", "boot select"),
+    ("INT", "interrupt out"),
     ("WP", "write protect"),
-    ("PG", "power good indicator"),
-    ("FB", "regulator feedback"),
-    ("SW", "switch node (DC-DC inductor pin)"),
+    ("PG", "power good"),
+    ("FB", "feedback"),
+    ("SW", "switch node"),
     ("SS", "soft start"),
-    ("AIN", "analog input (ADC)"),
-    ("AOUT", "analog output (DAC)"),
-    ("INP", "amplifier non-inverting input (+)"),
-    ("INN", "amplifier inverting input (-)"),
-    ("OUT", "output, generic"),
-    ("ANT", "RF antenna"),
-    ("NO", "normally-open contact (switch/relay)"),
-    ("COM", "common terminal (switch/relay)"),
-    ("A", "anode (diode/LED +)"),
-    ("K", "cathode (diode/LED -)"),
-    ("SHIELD", "shield / chassis connection"),
-    ("MNT", "mechanical mount, not electrical"),
+    ("AIN", "analog in"),
+    ("AOUT", "analog out"),
+    ("INP", "amp input +"),
+    ("INN", "amp input -"),
+    ("OUT", "output"),
+    ("ANT", "antenna"),
+    ("NO", "normally open"),
+    ("COM", "common"),
+    ("A", "anode (+)"),
+    ("K", "cathode (-)"),
+    ("SHIELD", "shield / chassis"),
+    ("MNT", "mount, not electrical"),
     ("TP", "test point"),
-    ("NC", "not connected (on switches: normally-closed contact)"),
-    ("DNC", "do not connect (internally used)"),
+    ("NC", "not connected"),
+    ("DNC", "do not connect"),
 ]
 _SEPARATOR = " — "
 
@@ -108,6 +114,82 @@ def parse_function_assignments(text: str) -> dict[int, str]:
 SIDE_MODES = ["Auto", "2 sides", "4 sides"]
 
 
+STUB_MM = 0.8  # length of a ghost-symbol pin stub out of the body edge
+
+
+def _edge_stub(rect: tuple, x: float, y: float) -> tuple:
+    """A pin stub (x0, y0, x1, y1) leaving the symbol body's nearest edge at
+    the pin's own position along that edge (a schematic pin always sits on
+    the body's outline, wherever the real pin is)."""
+    x0, x1, y0, y1 = rect
+    gaps = {"left": x - x0, "right": x1 - x, "bottom": y - y0, "top": y1 - y}
+    side = min(gaps, key=gaps.get)
+    px, py = min(max(x, x0), x1), min(max(y, y0), y1)
+    return {"left": (x0, py, x0 - STUB_MM, py), "right": (x1, py, x1 + STUB_MM, py),
+            "bottom": (px, y0, px, y0 - STUB_MM), "top": (px, y1, px, y1 + STUB_MM)}[side]
+
+
+def _symbol_layout(shown: list, rect: tuple, grid: bool) -> tuple[list, list, list]:
+    """(stubs, labels, leaders) of the ghost symbol: each pin's stub on the
+    body edge with its label at the stub's tip and a leader from the real
+    pin; a BGA (grid) gets each ball's label in place and no stubs."""
+    stubs, labels, leaders = [], [], []
+    for pin in shown:
+        x, y = float(pin.centroid[0]), float(pin.centroid[1])
+        tag = f"{pin.name or pin.number} {pin.function}".strip()
+        if grid:
+            stubs.append(None)
+            labels.append((x, y, tag, 0.0, 0.0))
+            continue
+        stub = _edge_stub(rect, x, y)
+        stubs.append(stub)
+        out = np.array([stub[2] - stub[0], stub[3] - stub[1]])
+        out = out / (np.linalg.norm(out) or 1.0)
+        labels.append((stub[2], stub[3], tag, float(out[0]), float(out[1])))
+        leaders.append((x, y, stub[0], stub[1]))
+    return stubs, labels, leaders
+
+
+PIN_PITCH_PX = 26.0  # spacing of pins along a symbol side
+
+
+def _symbol_body(sides: dict, width: float, height: float, margin: float) -> QRectF:
+    """The symbol box sized by its pins, not stretched to the widget: each
+    side as long as its pins need at PIN_PITCH_PX (a square when pins sit on
+    all four sides, as on a QFN / QFP), shrunk to fit, centred."""
+    across = (max(len(sides["top"]), len(sides["bottom"]), 1) + 1) * PIN_PITCH_PX
+    down = (max(len(sides["left"]), len(sides["right"]), 1) + 1) * PIN_PITCH_PX
+    across = max(across, 150.0)  # room for the pin-type labels inside
+    if all(sides[k] for k in ("left", "right", "top", "bottom")):
+        across = down = max(across, down)
+    room_w, room_h = max(width - 2 * margin, 40.0), max(height - 2 * margin, 40.0)
+    scale = min(1.0, room_w / across, room_h / down)
+    across, down = across * scale, down * scale
+    return QRectF((width - across) / 2, (height - down) / 2, across, down)
+
+
+_NAME_RULES = (  # symbol pin name -> function, first match wins (names upper-cased)
+    (("AGND",), "AGND"), (("DGND",), "DGND"), (("PGND",), "PGND"),
+    (("GND", "VSS", "EPAD"), "GND"), (("VBUS",), "VBUS"), (("VBAT",), "VBAT"),
+    (("VREF",), "VREF"), (("VIN",), "VIN"), (("VOUT",), "VOUT"), (("VDD",), "VDD"),
+    (("VCC",), "VCC"), (("SDA",), "SDA"), (("SCL",), "SCL"), (("CLK", "SCK"), "CLK"),
+    (("XTAL", "XIN", "XOUT"), "XTAL"), (("GPIO",), "GPIO"), (("PWM",), "PWM"),
+)
+_TYPE_RULES = {"power": "PWR", "input": "IO", "output": "IO", "i/o": "IO", "io": "IO",
+               "open collector": "IO", "open emitter": "IO", "hiz": "IO", "bidirectional": "IO"}
+
+
+def function_from_symbol(name: str, electrical: str) -> str:
+    """A pin-type acronym from a symbol pin's name (GND, VBUS, SDA ...),
+    else from its electrical type (power -> PWR, input/output -> IO); ''
+    when neither says (passive), for the person to set."""
+    upper = name.upper()
+    for keys, function in _NAME_RULES:
+        if any(key in upper for key in keys):
+            return function
+    return _TYPE_RULES.get(electrical.strip().lower(), "")
+
+
 class MiniSchematicWidget(QWidget):
     pin_clicked = Signal(int)        # index into the registry
     pins_band_selected = Signal(list)  # indices captured by a drag rectangle
@@ -120,7 +202,7 @@ class MiniSchematicWidget(QWidget):
         self._side_mode = "Auto"
         self._band_origin: QPointF | None = None
         self._band_rect: QRectF | None = None
-        self.setMinimumSize(220, 240)
+        self.setMinimumSize(220, 320)
 
     def set_pins(self, pins, selected=()) -> None:
         self._pins = pins
@@ -211,15 +293,14 @@ class MiniSchematicWidget(QWidget):
             sides["top"].sort(key=lambda i: key(i)[0])
             sides["bottom"].sort(key=lambda i: key(i)[0])
 
-        # classic KiCad symbol colours
+        # classic KiCad symbol colors
         BODY_FILL = QColor(255, 255, 194)
         OUTLINE = QColor(132, 0, 0)
         PIN_NAME = QColor(0, 132, 132)
         PIN_NUMBER = QColor(132, 0, 0)
 
-        margin, stub = 70.0, 16.0
-        body = QRectF(margin, margin,
-                      self.width() - 2 * margin, self.height() - 2 * margin)
+        margin, stub = 44.0, 16.0  # room for the leads and their numbers
+        body = _symbol_body(sides, self.width(), self.height(), margin)
         painter.setBrush(BODY_FILL)
         painter.setPen(QPen(OUTLINE, 2.0))
         painter.drawRect(body)
@@ -298,19 +379,25 @@ class MiniSchematicWidget(QWidget):
 
 class PinFunctionsTool(ToolMode):
     id = "pin_functions"
-    title = "Assign Pin Functions/Names"
+    title = "8 Embedded Schematic"
     accent = "#9e2f6e"
+    auto_method = "_run_auto"
 
     def build_actions_widget(self) -> QWidget:
         widget = QWidget()
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(8, 8, 8, 8)
-        layout.addWidget(QLabel(
-            "<b>Assign Pin Functions/Names</b><br>"
-            "Click a pin (or drag a rectangle over several) in the schematic "
-            "or the 3D view, pick a function, press Set — it applies to the "
-            "whole selection and steps to the next pin."
-        ))
+        # the pin table: designator | type | schematic name (Type and Name edit in place)
+        self.table = QTableWidget(0, 3)
+        self.table.setHorizontalHeaderLabels(["Pin", "Type", "Schematic name"])
+        self.table.verticalHeader().setVisible(False)
+        self.table.verticalHeader().setDefaultSectionSize(18)
+        self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.setToolTip("Type: the function acronym (GND, PWR, SDA ...). Schematic name: what\n"
+                              "the datasheet / symbol calls the pin. Double-click a cell to edit.")
+        self.table.itemChanged.connect(self._on_table_edit)
+        self.table.currentCellChanged.connect(lambda row, _c, _pr, _pc: self._select_row(row))
+        layout.addWidget(self.table, 3)
 
         sides_row = QHBoxLayout()
         auto_button = QPushButton("Auto")
@@ -336,7 +423,8 @@ class PinFunctionsTool(ToolMode):
         self.schematic = MiniSchematicWidget()
         self.schematic.pin_clicked.connect(self._select)
         self.schematic.pins_band_selected.connect(self._select_many)
-        layout.addWidget(self.schematic, 3)
+        self.schematic.setMinimumHeight(150)
+        layout.addWidget(self.schematic, 2)
 
         row = QHBoxLayout()
         self.selected_label = QLabel("—")
@@ -347,6 +435,8 @@ class PinFunctionsTool(ToolMode):
             self.function_combo.addItem(f"{token}{_SEPARATOR}{description}")
         # the description is information only: picking an item puts just the
         # designator in the text field; the description shows greyed below
+        self.function_combo.setEditText("")
+        self.function_combo.lineEdit().setPlaceholderText("type for several pins")
         self.function_combo.activated.connect(self._on_combo_pick)
         self.function_combo.lineEdit().textEdited.connect(self._update_description)
         row.addWidget(self.function_combo, 1)
@@ -376,7 +466,10 @@ class PinFunctionsTool(ToolMode):
 
     def enter(self) -> None:
         self._selection: list[int] = []
+        if self.ctx.document is not None:
+            self.ctx.window.snap_camera("top")  # pins read best from above
         self._refresh()
+        self._show_pins()
         self.status(
             "Pin Functions: click a pin (or drag over several), choose a "
             "function, press Set"
@@ -410,6 +503,34 @@ class PinFunctionsTool(ToolMode):
 
     def exit(self) -> None:
         self.ctx.scene.clear_highlight()
+        self.ctx.scene.clear_pins_xray()
+        self.ctx.scene.clear_ghost_symbol()
+        self.ctx.scene.plotter.render()
+
+    def _pin_pieces(self, pin) -> list:
+        """(points, tris) of a pin: its own solid, else its faces."""
+        from ..document import _face_triangles
+
+        bodies = self.ctx.document.bodies
+        if pin.body_ids:
+            return [_face_triangles(bodies[b].mesh, range(1, bodies[b].mesh.face_count + 1))
+                    for b in pin.body_ids if 0 <= b < len(bodies) and bodies[b].mesh is not None]
+        by_body: dict[int, list[int]] = {}
+        for body_index, face in pin.face_ids:
+            by_body.setdefault(body_index, []).append(face)
+        return [_face_triangles(bodies[b].mesh, faces) for b, faces in by_body.items()
+                if 0 <= b < len(bodies) and bodies[b].mesh is not None]
+
+    def _show_pins(self) -> None:
+        """Every pin grey through the model, the selected one(s) green."""
+        if self.ctx.document is None:
+            return
+        registry = self.ctx.window.pins
+        chosen = set(getattr(self, "_selection", []))
+        selected, others = [], []
+        for index, pin in enumerate(registry.pins):
+            (selected if index in chosen else others).extend(self._pin_pieces(pin))
+        self.ctx.scene.show_pins_xray(selected, others)
 
     def on_document_changed(self) -> None:
         if self._actions_widget is not None:
@@ -448,10 +569,7 @@ class PinFunctionsTool(ToolMode):
         if pin.function:
             self.function_combo.setEditText(pin.function)
             self._update_description(pin.function)
-        if pin.body_ids:
-            self.ctx.scene.highlight_body(pin.body_ids[0])
-        elif pin.face_ids:
-            self.ctx.scene.highlight_faces(pin.face_ids)
+        self._show_pins()
         self._refresh()
 
     def _select_many(self, indices: list[int]) -> None:
@@ -460,13 +578,7 @@ class PinFunctionsTool(ToolMode):
         if not self._selection:
             return
         self.selected_label.setText(f"{len(self._selection)} pins")
-        faces = [
-            key
-            for i in self._selection
-            for key in registry.pins[i].face_ids
-        ]
-        if faces:
-            self.ctx.scene.highlight_faces(faces)
+        self._show_pins()
         self._refresh()
         self.status(
             f"Pin Functions: {len(self._selection)} pins selected — choose a "
@@ -539,14 +651,76 @@ class PinFunctionsTool(ToolMode):
         self._refresh()
         self.status(f"Pin Functions: {applied} function(s) assigned")
 
+    def _shown_pins(self) -> list:
+        """The schematic's pins: no mouth pins (second exposures of a contact)
+        and no GUIDE pegs (an unplated hole, never on a net); ANCHOR pins
+        stay, they are soldered and netted."""
+        return [pin for pin in self.ctx.window.pins.pins if pin.role != "mouth" and specialty(pin) != "guide"]
+
+    def _fill_table(self) -> None:
+        self.table.blockSignals(True)
+        pins = self._shown_pins()
+        self.table.setRowCount(len(pins))
+        for row, pin in enumerate(pins):
+            designator = QTableWidgetItem(pin.name or str(pin.number))
+            designator.setFlags(designator.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            self.table.setItem(row, 0, designator)
+            self.table.setItem(row, 1, QTableWidgetItem(pin.function))
+            self.table.setItem(row, 2, QTableWidgetItem(getattr(pin, "signal", "")))
+        self.table.resizeColumnsToContents()
+        self.table.blockSignals(False)
+
+    def _select_row(self, row: int) -> None:
+        pins = self._shown_pins()
+        if 0 <= row < len(pins):
+            index = self.ctx.window.pins.pins.index(pins[row])
+            if getattr(self, "_selection", []) != [index]:
+                self._select(index)
+
+    def _on_table_edit(self, item) -> None:
+        pins = self._shown_pins()
+        if not (0 <= item.row() < len(pins)) or item.column() == 0:
+            return
+        pin = pins[item.row()]
+        text = item.text().strip()
+        if item.column() == 1:
+            pin.function = text.upper()
+            self.ctx.journal.record(tool=self.id, params={}, inputs={"pin_number": pin.number},
+                                    result={"function": pin.function})
+        else:
+            pin.signal = text
+            self.ctx.journal.record(tool=self.id, params={"action": "signal"},
+                                    inputs={"pin_number": pin.number}, result={"signal": text})
+        self._refresh()
+
     def _refresh(self) -> None:
         if self._actions_widget is None:
             return
+        self._fill_table()
         registry = self.ctx.window.pins
         # mouth pins are second exposures of a primary contact (joined by
         # designator) — drawing them would double every schematic stub
-        self.schematic.set_pins(
-            [(pin.number, pin.name, pin.function, pin.centroid)
-             for pin in registry.pins if pin.role != "mouth"],
-            set(getattr(self, "_selection", [])),
-        )
+        shown = self._shown_pins()
+        chosen = {id(registry.pins[i]) for i in getattr(self, "_selection", []) if 0 <= i < len(registry.pins)}
+        selected = {k for k, pin in enumerate(shown) if id(pin) in chosen}
+        self.schematic.set_pins([(pin.number, pin.name, pin.function, pin.centroid) for pin in shown], selected)
+        self._show_ghost_symbol(shown, selected)
+
+    def _show_ghost_symbol(self, shown: list, selected: set) -> None:
+        """The symbol on the Z=0 plane in the 3D view: the package outline as
+        a faint symbol body, a stub out of its edge at each edge pin's real
+        position, and each pin's number + type at the pin (balls under a BGA
+        get their label in place)."""
+        if not self.is_active():
+            return  # refreshed while another tool is on screen: draw nothing
+        if self.ctx.document is None or not shown:
+            self.ctx.scene.clear_ghost_symbol()
+            return
+        from .footprint_embed import _package_xy
+
+        from ..pins import pin_pattern
+
+        rect = _package_xy(self.ctx.document, self.ctx.window.pins.pins)
+        grid = len(shown) >= 4 and pin_pattern([p.centroid for p in shown]) == "grid"
+        stubs, labels, leaders = _symbol_layout(shown, rect, grid)
+        self.ctx.scene.show_ghost_symbol(rect, stubs, labels, selected, leaders=leaders)

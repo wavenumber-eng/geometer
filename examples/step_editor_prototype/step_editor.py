@@ -74,7 +74,12 @@ def main() -> int:
     from PySide6.QtGui import QIcon
     from PySide6.QtWidgets import QApplication
 
-    from app.app_window import LOGO_PATH, MainWindow
+    from app.app_window import LOGO_PATH, MainWindow, install_error_log
+
+    install_error_log()
+    from app.no_console import install as no_console_windows
+
+    no_console_windows()  # helper programs (geometer.exe) must not pop console windows
     from app.style import apply_wavenumber_style
 
     step_path = Path(args.step) if args.step else None
@@ -89,8 +94,15 @@ def main() -> int:
     if LOGO_PATH.is_file():
         app.setWindowIcon(QIcon(str(LOGO_PATH)))
     apply_wavenumber_style(app)
-    window = MainWindow(step_path if step_path and step_path.is_file() else None)
+    window = MainWindow(None)
     window.show()
+    if step_path and step_path.is_file():
+        # open the file once the window is up: its questions ("Already
+        # conditioned ... Restore?", "Recover previous session?") need a
+        # visible window to appear over, or they wait unseen
+        from PySide6.QtCore import QTimer
+
+        QTimer.singleShot(0, lambda: window.load_any(step_path))
     return int(app.exec())
 
 

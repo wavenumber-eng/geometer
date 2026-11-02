@@ -10,3 +10,7 @@ REFERENCE_STEP_FILES/
 # Generated diagnostic sweep / triage output
 _pin_sweep_results.txt
 _pdet_triage.txt
+editor_errors.log
+
+# Reference photos dropped on the Colours page (cached by hash, machine-local)
+photo_cache/

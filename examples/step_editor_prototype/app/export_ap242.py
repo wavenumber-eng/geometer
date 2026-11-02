@@ -1,5 +1,5 @@
 """AP242 export: rebuild a fresh XCAF document from the editor's body table
-(names + colours), write with the AP242 schema, then validate the result by
+(names + colors), write with the AP242 schema, then validate the result by
 re-reading it with OCP and geometer.
 
 The pin/hitbox metadata entity injection lands in M8; this module already owns
@@ -9,6 +9,7 @@ the writer + validation skeleton so every milestone exports through one path.
 from __future__ import annotations
 
 import json
+import time
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -42,9 +43,9 @@ CONDITIONED_SUFFIX = "_AP242_conditioned"
 # tag counts as version 1.
 _COND_TAG_RE = re.compile(r"^(?P<base>.*?)_AP242_(?:conditioned|WNC(?P<n>\d+))$")
 
-# OCCT writes face colours as OVER_RIDING_STYLED_ITEM when the owning solid
+# OCCT writes face colors as OVER_RIDING_STYLED_ITEM when the owning solid
 # also carries a style. Several non-OCCT importers (SolidWorks, Altium) ignore
-# the overriding form entirely, so the exported file looks uncoloured there.
+# the overriding form entirely, so the exported file looks uncolored there.
 # Plain STYLED_ITEM is what SolidWorks itself writes and every reader
 # (including OCCT) resolves it identically, so the writer flattens the
 # overrides in place after the STEP is on disk.
@@ -283,7 +284,9 @@ def verify_metadata_text(text: str) -> dict:
     endsec = text.rfind("ENDSEC;")
     if endsec < 0:
         errors.append("no ENDSEC")
-    elif text[pdr.end() : endsec].strip():
+    elif text[pdr.end() : endsec].strip() and not _only_wn3d_blocks(text[pdr.end() : endsec]):
+        # The model_3d_a0 block (WN3D_MODEL_3D) is appended after this one;
+        # anything else between here and ENDSEC is foreign.
         errors.append("metadata block is not flush against ENDSEC")
     report["tail_gap"] = max(0, endsec - pdr.end()) if endsec >= 0 else None
 
@@ -304,6 +307,16 @@ def verify_metadata_text(text: str) -> dict:
     return report
 
 
+_WN3D_TAIL_TYPES = {"DESCRIPTIVE_REPRESENTATION_ITEM", "REPRESENTATION",
+                    "PROPERTY_DEFINITION", "PROPERTY_DEFINITION_REPRESENTATION"}
+
+
+def _only_wn3d_blocks(tail: str) -> bool:
+    """True when the text is nothing but further embedded WN3D blocks."""
+    types = re.findall(r"#\d+\s*=\s*([A-Z_]+)\(", tail)
+    return bool(types) and set(types) <= _WN3D_TAIL_TYPES and "'WN3D_" in tail
+
+
 def extract_metadata(step_path: Path, tag: str = "WN3D_CONDITIONING") -> dict | None:
     """Read an embedded JSON block back out of a STEP file by its tag
     (WN3D_CONDITIONING = legacy blob, WN3D_MODEL_3D = model_3d_a0)."""
@@ -318,7 +331,7 @@ def extract_metadata(step_path: Path, tag: str = "WN3D_CONDITIONING") -> dict | 
 
 
 def write_step(document: EditorDocument, out_path: Path) -> None:
-    """Write the live body table (names + colours) as AP242, no validation.
+    """Write the live body table (names + colors) as AP242, no validation.
     Also used to feed the current in-memory geometry to geometer for HLR
     footprint projections."""
     doc = TDocStd_Document(TCollection_ExtendedString("MDTV-XCAF"))
@@ -327,18 +340,23 @@ def write_step(document: EditorDocument, out_path: Path) -> None:
     color_tool = XCAFDoc_DocumentTool.ColorTool_s(doc.Main())
 
     # One assembly root, bodies as components: viewers (incl. the wn3d
-    # browser) only resolve XCAF colours reliably for a single free shape —
-    # N top-level shapes made them fall back to uncoloured.
+    # browser) only resolve XCAF colors reliably for a single free shape —
+    # N top-level shapes made them fall back to uncolored.
+    from .lean_brep import lean_solids
+
+    # Separate leaves edges chopped into collinear pieces: merged, the file
+    # is about half the size and reloads several times faster (lean_brep).
+    solids = lean_solids(document.bodies)
     builder = BRep_Builder()
     compound = TopoDS_Compound()
     builder.MakeCompound(compound)
-    for body in document.bodies:
-        builder.Add(compound, body.solid)
-    root = shape_tool.AddShape(compound, False)  # one free shape, sub-shape colours
+    for solid in solids:
+        builder.Add(compound, solid)
+    root = shape_tool.AddShape(compound, False)  # one free shape, sub-shape colors
     TDataStd_Name.Set_s(root, TCollection_ExtendedString(document.path.stem))
 
-    for body in document.bodies:
-        label = shape_tool.AddSubShape(root, body.solid)
+    for body, solid in zip(document.bodies, solids):
+        label = shape_tool.AddSubShape(root, solid)
         if label is None or label.IsNull():
             continue
         TDataStd_Name.Set_s(label, TCollection_ExtendedString(body.name))
@@ -346,10 +364,10 @@ def write_step(document: EditorDocument, out_path: Path) -> None:
             color = Quantity_Color(*body.color, Quantity_TOC_RGB)
             color_tool.SetColor(label, color, XCAFDoc_ColorType.XCAFDoc_ColorGen)
             color_tool.SetColor(label, color, XCAFDoc_ColorType.XCAFDoc_ColorSurf)
-        # Per-face colours (originals and paintbrush edits) as sub-shapes.
+        # Per-face colors (originals and paintbrush edits) as sub-shapes.
         if body.mesh is not None and body.mesh.face_colors:
             face_map = TopTools_IndexedMapOfShape()
-            TopExp.MapShapes_s(body.solid, TopAbs_FACE, face_map)
+            TopExp.MapShapes_s(solid, TopAbs_FACE, face_map)
             for face_id, rgb in body.mesh.face_colors.items():
                 if not (1 <= face_id <= face_map.Extent()):
                     continue
@@ -383,7 +401,7 @@ def write_step(document: EditorDocument, out_path: Path) -> None:
 
 def _flatten_styled_overrides(step_path: Path) -> None:
     """Rewrite OVER_RIDING_STYLED_ITEM entities as plain STYLED_ITEM so face
-    colours survive import into non-OCCT viewers (see _OVERRIDING_STYLE_RE)."""
+    colors survive import into non-OCCT viewers (see _OVERRIDING_STYLE_RE)."""
     text = step_path.read_text(encoding="utf-8", errors="replace")
     fixed, count = _OVERRIDING_STYLE_RE.subn(r"STYLED_ITEM('color',\1,\2)", text)
     if count:
@@ -400,13 +418,33 @@ def document_step_bytes(document: EditorDocument) -> bytes:
         return path.read_bytes()
 
 
-def _validate(document: EditorDocument, out_path: Path) -> ExportReport:
-    reread = EditorDocument.load(out_path)
+def _geometer_bounds_ok(out_path: Path) -> bool:
     try:
         geometer.model_bounds(out_path)
-        bounds_ok = True
-    except Exception:
-        bounds_ok = False
+        return True
+    except Exception:  # noqa: BLE001 - reported, never raised
+        return False
+
+
+def _validate(document: EditorDocument, out_path: Path) -> ExportReport:
+    """Re-read the written file (structure only: no meshing) while geometer
+    checks its bounds in its own process at the same time."""
+    import threading
+
+    result = {}
+    started = threading.Event()
+
+    def check() -> None:
+        started.set()
+        result["ok"] = _geometer_bounds_ok(out_path)
+
+    worker = threading.Thread(target=check, daemon=True)
+    worker.start()
+    started.wait(1.0)
+    time.sleep(0.2)  # let geometer.exe launch: OCC's read below holds the GIL throughout
+    reread = EditorDocument.load(out_path, mesh=False)
+    worker.join()
+    bounds_ok = result.get("ok", False)
     return ExportReport(
         path=out_path,
         body_count=len(document.bodies),

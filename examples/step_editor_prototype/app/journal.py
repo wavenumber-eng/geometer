@@ -7,7 +7,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 
 @dataclass
@@ -21,9 +21,16 @@ class Operation:
 @dataclass
 class Journal:
     operations: list[Operation] = field(default_factory=list)
+    # Called after every record (the GUI autosaves a crash-recovery checkpoint).
+    listener: Callable[["Journal"], None] | None = field(default=None, repr=False, compare=False)
 
     def record(self, tool: str, params: dict, inputs: dict, result: dict) -> None:
         self.operations.append(Operation(tool, params, inputs, result))
+        if self.listener is not None:
+            self.listener(self)
+
+    def tools_used(self) -> set[str]:
+        return {op.tool for op in self.operations}
 
     def to_jsonable(self) -> list[dict[str, Any]]:
         return [

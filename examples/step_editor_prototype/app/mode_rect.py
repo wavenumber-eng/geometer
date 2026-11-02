@@ -1,6 +1,8 @@
-"""The tool-mode rectangle: current tool in a solid accent box, the NEXT tool
-in the chain as a 0.5-alpha box to its right. Pressing Tab slides the next box
-left into place while a new next-box grows in from the right."""
+"""The tool carousel: the current tool in a large solid accent box in the
+middle, the previous and next tools as smaller faded boxes on either side,
+labelled PREV TOOL / NEXT TOOL underneath (box + label together are as tall as
+the main box). Moving forward slides everything left; moving back (Ctrl+Tab,
+Left arrow) slides everything right."""
 
 from __future__ import annotations
 
@@ -11,55 +13,48 @@ from PySide6.QtWidgets import QMenu, QSizePolicy, QWidget
 
 class ModeRect(QWidget):
     tool_selected = Signal(str)  # tool id
-    next_clicked = Signal()      # ghost box clicked -> cycle
+    next_clicked = Signal()      # NEXT box clicked
+    prev_clicked = Signal()      # PREV box clicked
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
-        self._title = ""
-        self._accent = QColor("#4477aa")
-        self._next_title = ""
-        self._next_accent = QColor("#4477aa")
-        self._old_title = ""
-        self._old_accent = QColor("#4477aa")
+        self._slots = {"prev": ("", QColor("#4477aa")), "cur": ("", QColor("#4477aa")),
+                       "next": ("", QColor("#4477aa"))}
+        self._old = dict(self._slots)
+        self._direction = 1
         self._tools: list[tuple[str, str]] = []
-        self._main_w = 240.0
-        self._ghost_w = 130.0
-        self._t = 1.0  # animation progress; 1 = idle
+        self._automatic: set[str] = set()
+        self._t = 1.0
         self._anim = QVariantAnimation(self)
-        self._anim.setDuration(190)
+        self._anim.setDuration(200)
         self._anim.setEasingCurve(QEasingCurve.Type.OutCubic)
         self._anim.valueChanged.connect(self._on_anim)
-        self.setMinimumSize(300, 44)
-        self.setMaximumHeight(48)
-        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        self.setMinimumSize(420, 58)
+        self.setMaximumHeight(62)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.setToolTip("Click to choose a tool; click the faded box (or Tab) for the next one")
+        self.setToolTip("Current tool (click to choose any tool). Side boxes, Tab / Ctrl+Tab or the "
+                        "arrow keys move to the next / previous tool.")
 
     def set_tools(self, tools: list[tuple[str, str]]) -> None:
         self._tools = tools
 
-    def set_current(
-        self, title: str, accent: str,
-        next_title: str = "", next_accent: str = "",
-        animate: bool = False,
-    ) -> None:
-        animate = animate and title == self._next_title and bool(self._title)
-        self._old_title, self._old_accent = self._title, self._accent
-        self._title = title
-        self._accent = QColor(accent)
-        self._next_title = next_title
-        self._next_accent = QColor(next_accent or "#4477aa")
+    def set_automatic(self, tool_ids) -> None:
+        self._automatic = set(tool_ids)
 
-        title_font = QFont(self.font())
-        title_font.setBold(True)
-        title_font.setPointSizeF(title_font.pointSizeF() + 1.5)
-        metrics = QFontMetrics(title_font)
-        self._main_w = metrics.horizontalAdvance(f"TOOL: {title}") + 44
-        self._ghost_w = max(
-            96.0, min(220.0, metrics.horizontalAdvance(next_title) * 0.78 + 36)
-        )
-        self.setMinimumWidth(int(self._main_w + self._ghost_w + 10))
-
+    def set_current(self, title: str, accent: str, next_title: str = "", next_accent: str = "",
+                    prev_title: str = "", prev_accent: str = "", animate: bool = False) -> None:
+        new = {"prev": (prev_title, QColor(prev_accent or "#4477aa")),
+               "cur": (title, QColor(accent)),
+               "next": (next_title, QColor(next_accent or "#4477aa"))}
+        if animate and self._slots["cur"][0]:
+            if title == self._slots["next"][0]:
+                self._direction = 1
+            elif title == self._slots["prev"][0]:
+                self._direction = -1
+            else:
+                animate = False
+        self._old, self._slots = self._slots, new
         if animate:
             self._anim.stop()
             self._anim.setStartValue(0.0)
@@ -73,10 +68,25 @@ class ModeRect(QWidget):
         self._t = float(value)
         self.update()
 
+    # ------------------------------------------------------------- geometry
+
+    def _rects(self) -> dict[str, QRectF]:
+        h = self.height() - 2.0
+        w = self.width() - 2.0
+        main_w = min(max(w * 0.42, 220.0), 380.0)
+        side_w = (w - main_w) / 2 - 10
+        label_h = 13.0
+        side_h = h - label_h
+        main = QRectF(1 + (w - main_w) / 2, 1, main_w, h)
+        prev = QRectF(1, 1, side_w, side_h)
+        nxt = QRectF(main.right() + 10, 1, side_w, side_h)
+        return {"prev": prev, "cur": main, "next": nxt}
+
     # ------------------------------------------------------------- painting
 
-    def _draw_box(self, painter, rect: QRectF, accent: QColor, alpha: float,
-                  title: str, *, big: bool, hint: str = "") -> None:
+    def _draw_box(self, painter, rect: QRectF, accent: QColor, alpha: float, title: str, big: bool) -> None:
+        if not title or rect.width() < 4:
+            return
         color = QColor(accent)
         color.setAlphaF(max(0.0, min(1.0, alpha)))
         border = QColor(accent.darker(130))
@@ -84,80 +94,88 @@ class ModeRect(QWidget):
         painter.setPen(QPen(border, 2))
         painter.setBrush(color)
         painter.drawRoundedRect(rect, 8, 8)
-
         text = QColor(255, 255, 255)
-        text.setAlphaF(min(1.0, alpha + 0.25))
+        text.setAlphaF(min(1.0, alpha + 0.3))
         painter.setPen(text)
         font = QFont(self.font())
-        font.setBold(big)
-        font.setPointSizeF(font.pointSizeF() + (1.5 if big else -0.5))
+        font.setBold(True)
+        font.setPointSizeF(font.pointSizeF() + (3.0 if big else -0.5))
         painter.setFont(font)
-        label = f"TOOL: {title}" if big else title
-        flags = Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter
-        text_rect = rect.adjusted(8, 2, -8, -12 if hint else -2)
-        painter.drawText(text_rect, flags, label)
-        if hint:
-            hint_font = QFont(self.font())
-            hint_font.setPointSizeF(max(hint_font.pointSizeF() - 2.0, 6.5))
-            painter.setFont(hint_font)
-            faded = QColor(255, 255, 255)
-            faded.setAlphaF(min(1.0, alpha + 0.1))
-            painter.setPen(faded)
-            painter.drawText(
-                rect.adjusted(8, 0, -8, -4),
-                Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignBottom,
-                hint,
-            )
+        label = QFontMetrics(font).elidedText(title, Qt.TextElideMode.ElideRight, int(rect.width() - 12))
+        painter.drawText(rect, int(Qt.AlignmentFlag.AlignCenter), label)
+
+    def _draw_caption(self, painter, rect: QRectF, text: str, alpha: float) -> None:
+        if rect.width() < 4:
+            return
+        font = QFont(self.font())
+        font.setBold(True)
+        font.setPointSizeF(max(font.pointSizeF() - 2.0, 6.5))
+        painter.setFont(font)
+        color = QColor(200, 200, 200)
+        color.setAlphaF(max(0.0, min(1.0, alpha)))
+        painter.setPen(color)
+        caption = QRectF(rect.x(), rect.bottom() + 1, rect.width(), 12)
+        painter.drawText(caption, int(Qt.AlignmentFlag.AlignCenter), text)
 
     def paintEvent(self, _event) -> None:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-        height = self.height() - 2
-        gap = 8.0
-        main = QRectF(1, 1, self._main_w, height)
-        ghost = QRectF(self._main_w + gap, 1 + height * 0.1,
-                       self._ghost_w, height * 0.8)
-        self._main_rect, self._ghost_rect = main, ghost
+        rects = self._rects()
+        self._hit = rects
         t = self._t
-
         if t >= 1.0:
-            self._draw_box(painter, main, self._accent, 1.0, self._title, big=True)
-            if self._next_title:
-                self._draw_box(painter, ghost, self._next_accent, 0.5,
-                               self._next_title, big=False, hint="Tab ⇥")
+            for slot in ("prev", "next"):
+                title, accent = self._slots[slot]
+                self._draw_box(painter, rects[slot], accent, 0.45, title, big=False)
+                if title:
+                    self._draw_caption(painter, rects[slot], "PREV TOOL" if slot == "prev" else "NEXT TOOL", 0.8)
+            title, accent = self._slots["cur"]
+            self._draw_box(painter, rects["cur"], accent, 1.0, title, big=True)
             return
+        # sliding: forward (+1) moves boxes left, back (-1) moves them right
+        d = self._direction
+        order = ["prev", "cur", "next"]
 
-        # outgoing current slides left and fades
-        out_rect = main.translated(-36.0 * t, 0)
-        self._draw_box(painter, out_rect, self._old_accent, (1.0 - t) * 0.8,
-                       self._old_title, big=True)
-        # the old ghost slides left and solidifies into the main slot
-        x = ghost.x() + (main.x() - ghost.x()) * t
-        y = ghost.y() + (main.y() - ghost.y()) * t
-        w = ghost.width() + (main.width() - ghost.width()) * t
-        h = ghost.height() + (main.height() - ghost.height()) * t
-        self._draw_box(painter, QRectF(x, y, w, h), self._accent,
-                       0.5 + 0.5 * t, self._title, big=True)
-        # the new ghost grows in from the right edge
-        if self._next_title:
-            gw = ghost.width() * t
-            grow = QRectF(ghost.right() - gw, ghost.y(), gw, ghost.height())
-            self._draw_box(painter, grow, self._next_accent, 0.5 * t,
-                           self._next_title, big=False)
+        def lerp(a: QRectF, b: QRectF, k: float) -> QRectF:
+            return QRectF(a.x() + (b.x() - a.x()) * k, a.y() + (b.y() - a.y()) * k,
+                          a.width() + (b.width() - a.width()) * k, a.height() + (b.height() - a.height()) * k)
+
+        for k, slot in enumerate(order):
+            title, accent = self._old[slot]
+            target_index = k - d
+            if 0 <= target_index < 3:
+                target = rects[order[target_index]]
+            else:  # slides out past the edge
+                target = rects[slot].translated(-d * (rects[slot].width() + 20), 0)
+            rect = lerp(rects[slot], target, t)
+            alpha_from = 1.0 if slot == "cur" else 0.45
+            alpha_to = 1.0 if 0 <= target_index < 3 and order[target_index] == "cur" else (
+                0.45 if 0 <= target_index < 3 else 0.0)
+            self._draw_box(painter, rect, accent, alpha_from + (alpha_to - alpha_from) * t, title,
+                           big=(slot == "cur" and t < 0.5) or (alpha_to == 1.0 and t >= 0.5))
+        incoming = "next" if d == 1 else "prev"
+        title, accent = self._slots[incoming]
+        self._draw_box(painter, rects[incoming], accent, 0.45 * t, title, big=False)
 
     def mousePressEvent(self, event) -> None:
         if event.button() != Qt.MouseButton.LeftButton:
             return
         position = event.position()
-        if getattr(self, "_ghost_rect", None) and self._ghost_rect.contains(position):
+        rects = getattr(self, "_hit", None) or self._rects()
+        if rects["next"].adjusted(0, 0, 0, 14).contains(position):
             self.next_clicked.emit()
+            return
+        if rects["prev"].adjusted(0, 0, 0, 14).contains(position):
+            self.prev_clicked.emit()
             return
         if not self._tools:
             return
         menu = QMenu(self)
         for tool_id, title in self._tools:
-            action = menu.addAction(title)
+            automatic = tool_id in self._automatic
+            action = menu.addAction(f"{title}   (automatic)" if automatic else title)
             action.setData(tool_id)
-        chosen = menu.exec(self.mapToGlobal(self.rect().bottomLeft()))
+            action.setEnabled(not automatic)
+        chosen = menu.exec(self.mapToGlobal(rects["cur"].bottomLeft().toPoint()))
         if chosen is not None:
             self.tool_selected.emit(chosen.data())

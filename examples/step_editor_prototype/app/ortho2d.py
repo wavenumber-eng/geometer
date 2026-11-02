@@ -9,7 +9,7 @@ from typing import Any, Mapping
 
 import geometer
 from PySide6.QtCore import QPointF, Qt
-from PySide6.QtGui import QColor, QFont, QPainter, QPen
+from PySide6.QtGui import QColor, QFont, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import QWidget
 
 from .style import ACCENT_HOVER, BORDER, CONSOLE_BG, ERROR, TEXT_MUTED, TEXT_PRIMARY
@@ -23,16 +23,30 @@ class Ortho2DCanvas(QWidget):
         self._pins: list[tuple[float, float, str]] = []      # x, y, label (world XY)
         self._band: tuple[float, float, float, float] | None = None
         self._rects: list[tuple[float, float, float, float, float]] = []  # cx, cy, hw, hh, rot_deg
+        self._geometry = None   # the projection's line work, read once per result
+        self._layer = None      # (key, QPixmap): the line work drawn once per size / framing
+        self.on_request = None  # called on a click when the view is waiting to be drawn
+        self.waiting = False    # a large model: the top view is drawn on request
         self.setMinimumSize(240, 200)
 
     def set_projection(self, result: geometer.HlrProjectionResult | None, view_id: str = "top") -> None:
         self._result = result
         self._view_id = view_id
+        self._geometry = None
+        self._layer = None
         self.update()
 
     def set_pins(self, pins: list[tuple[float, float, str]]) -> None:
         self._pins = pins
         self.update()
+
+    def mousePressEvent(self, event) -> None:  # noqa: N802 (Qt override)
+        if self._result is None and self.waiting and self.on_request is not None:
+            self.waiting = False
+            self.update()
+            self.on_request()
+            return
+        super().mousePressEvent(event)
 
     def set_band(self, band: tuple[float, float, float, float] | None) -> None:
         self._band = band
@@ -52,17 +66,19 @@ class Ortho2DCanvas(QWidget):
         painter.drawRect(self.rect().adjusted(0, 0, -1, -1))
         if self._result is None:
             painter.setPen(QColor(TEXT_MUTED))
-            painter.drawText(16, 24, "No footprint projection")
+            painter.drawText(16, 24, "Large model: click to draw the top view" if self.waiting
+                             else "No footprint projection")
             return
 
-        try:
-            geometry = self._result.geometry(self._view_id, "detail")
-        except KeyError:
-            painter.setPen(QColor(ERROR))
-            painter.drawText(16, 24, "Projection view missing")
-            return
-
-        bounds = _geometry_bounds(geometry)
+        if self._geometry is None:
+            try:
+                geometry = self._result.geometry(self._view_id, "detail")
+            except KeyError:
+                painter.setPen(QColor(ERROR))
+                painter.drawText(16, 24, "Projection view missing")
+                return
+            self._geometry = (geometry, _geometry_bounds(geometry))
+        geometry, bounds = self._geometry
         for x, y, _label in self._pins:
             bounds = _include(bounds, x, y)
         if self._band is not None:
@@ -75,18 +91,31 @@ class Ortho2DCanvas(QWidget):
 
         project = _projector(bounds, self.width(), self.height())
 
-        painter.setPen(QPen(QColor(TEXT_PRIMARY), 1.2, Qt.PenStyle.SolidLine,
-                            Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
-        for segment in geometry.get("segments", []):
-            if len(segment) == 4:
-                painter.drawLine(
-                    QPointF(*project(segment[0], segment[1])),
-                    QPointF(*project(segment[2], segment[3])),
-                )
-        for arc in geometry.get("arcs", []):
-            points = [QPointF(*project(x, y)) for x, y in _arc_points(arc)]
-            for a, b in zip(points, points[1:]):
-                painter.drawLine(a, b)
+        # the line work is drawn once per size / framing and reused: redrawing
+        # a big part's hundreds of thousands of segments on every paint stalled
+        # the tool panel on large models
+        key = (self.width(), self.height(), tuple(round(v, 6) for v in bounds))
+        if self._layer is None or self._layer[0] != key:
+            layer = QPixmap(self.size())
+            layer.fill(Qt.GlobalColor.transparent)
+            lines = QPainter(layer)
+            many = len(geometry.get("segments", [])) > 20000
+            lines.setRenderHint(QPainter.RenderHint.Antialiasing, not many)
+            lines.setPen(QPen(QColor(TEXT_PRIMARY), 1.2, Qt.PenStyle.SolidLine,
+                              Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
+            for segment in geometry.get("segments", []):
+                if len(segment) == 4:
+                    lines.drawLine(
+                        QPointF(*project(segment[0], segment[1])),
+                        QPointF(*project(segment[2], segment[3])),
+                    )
+            for arc in geometry.get("arcs", []):
+                points = [QPointF(*project(x, y)) for x, y in _arc_points(arc)]
+                for a, b in zip(points, points[1:]):
+                    lines.drawLine(a, b)
+            lines.end()
+            self._layer = (key, layer)
+        painter.drawPixmap(0, 0, self._layer[1])
 
         if self._band is not None:
             x0, y0 = project(self._band[0], self._band[1])

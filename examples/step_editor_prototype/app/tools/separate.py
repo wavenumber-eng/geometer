@@ -2,7 +2,7 @@
 The pins found by Detect Pins tell us where each pin STARTS; from those seed
 faces the flow expands across shared edges for as long as the faces stay
 pin-scaled and stops when it reaches the BODY. The grown shapes preview in
-body colours (the browse-3d 'Bodies' look); Apply caps each pin/body junction
+body colors (the browse-3d 'Bodies' look); Apply caps each pin/body junction
 loop and splits the solid there — every pin becomes its own whole body, which
 makes the hitbox stage (and the exported AP242) far more useful."""
 
@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QListWidget,
     QPushButton,
     QVBoxLayout,
     QWidget,
@@ -27,13 +28,16 @@ from PySide6.QtWidgets import (
 from pyvistaqt import QtInteractor
 
 from ..pins import (
+    stays_with_body,
     capture_pin_face_anchors,
     dominant_face_color,
     grow_pin_regions,
     mesh_region_centroid,
     remap_pin_faces,
 )
-from .base import ToolMode, make_apply_button
+from ..compact import frame_close
+from ..style import TEXT_MUTED
+from .base import OperationCancelled, ToolMode, make_apply_button
 
 
 class _AxisLineEdit(QLineEdit):
@@ -63,10 +67,10 @@ def pastel(index: int) -> tuple[float, float, float]:
 
 
 # CON/HEAD pins not yet joined to an SMT/THR tail (no designator to share a
-# colour with) paint in this neutral blue — the mouth-detector accent.
+# color with) paint in this neutral blue — the mouth-detector accent.
 UNJOINED_MOUTH_RGB = (0.35, 0.55, 0.95)
 
-# Pick-marker colours: axis picks use the X/Y/Z basis colours; the box-corner
+# Pick-marker colors: axis picks use the X/Y/Z basis colors; the box-corner
 # pick uses two yellow points.
 AXIS_MARKER_COLORS = ("#e0524d", "#4dd158", "#5a86ff")  # X red, Y green, Z blue
 BOX_MARKER_COLOR = "#ffd23f"  # yellow
@@ -74,7 +78,7 @@ BOX_MARKER_COLOR = "#ffd23f"  # yellow
 
 def designator_pastels(pins) -> dict[str, tuple[float, float, float]]:
     """Pastel per designator, keyed off the SMT/THR (primary) pins — a joined
-    CON/HEAD pin paints in its tail's colour so the pair reads as one net."""
+    CON/HEAD pin paints in its tail's color so the pair reads as one net."""
     return {
         (pin.name or str(pin.number)): pastel(index)
         for index, pin in enumerate(pins)
@@ -82,9 +86,20 @@ def designator_pastels(pins) -> dict[str, tuple[float, float, float]]:
     }
 
 
+class _SquareViews(QWidget):
+    """The BODIES NOW / SPLIT PREVIEW pair, kept square: its height follows
+    its width (two square views side by side, plus their titles)."""
+
+    def resizeEvent(self, event) -> None:  # noqa: N802 (Qt override)
+        super().resizeEvent(event)
+        height = max(int((self.width() - 4) / 2) + 22, 160)
+        if self.height() != height:
+            self.setFixedHeight(height)
+
+
 class SeparateUnibodyTool(ToolMode):
     id = "separate"
-    title = "Separate Unibody"
+    title = "6 Separate Unibody"
     accent = "#5a3e9e"
 
     def __init__(self, ctx) -> None:
@@ -99,6 +114,8 @@ class SeparateUnibodyTool(ToolMode):
         # [{"limits": [xlo,xhi,ylo,yhi,zlo,zhi], "normal": [..], "location": f}]
         # sliced by the boolean cutter on Apply. Pastel-previewed live.
         self._cuts: list[dict] = []
+        self._selected_cut: int | None = None  # index into _cuts being edited
+        self._cyl_pick: list | None = None      # circles picked for a cylinder cut
         self._cut_actor_names: list[str] = []
         self._axis_hl_names: list[str] = []  # focus-highlight plane actors
         # per-axis vertex pick: (axis_index, [collected vertices]) while picking
@@ -112,36 +129,39 @@ class SeparateUnibodyTool(ToolMode):
         widget = QWidget()
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(8, 8, 8, 8)
-        header = QLabel(
-            "<b>Separate Unibody</b> — cut a single solid into one body per pin. "
-            "Two ways (toggle below):<br>"
-            "• <b>Body-Face Cutoff</b> — grows each pin from its seed faces by "
-            "edge flow (best for clean protrusions).<br>"
-            "• <b>Box Cut</b> — box a pin and slice it out with a boolean cut "
-            "(works when growth can't, e.g. mid-face junctions)."
-        )
-        header.setWordWrap(True)
-        layout.addWidget(header)
+        mode_row = QHBoxLayout()
+        mode_style = ("QPushButton {padding: 6px; font-weight: 700;}"
+                      "QPushButton:checked {background-color: #5a3e9e; color: #ffffff;}")
+        self.mode_buttons = {}
+        for mode, label, tip in (
+                ("paint", "Paint", "Paint each pin's faces yourself (or split by color); Stage exact\n"
+                                   "paint copies finds every matching pin from one painted example."),
+                ("boolean", "Boolean", "Carve pins out with box and cylinder cuts you can drag;\n"
+                                       "Find Matching repeats a cut on every identical feature."),
+                ("growth", "Growth", "Grow every pin from its seed faces until a region boundary stops\n"
+                                     "it (the body-face cutoff): mostly automatic.")):
+            button = QPushButton(label)
+            button.setCheckable(True)
+            button.setStyleSheet(mode_style)
+            button.setToolTip(tip)
+            button.clicked.connect(lambda _c=False, m=mode: self.set_mode(m))
+            mode_row.addWidget(button)
+            self.mode_buttons[mode] = button
+        layout.addLayout(mode_row)
+        self.mode_hint = QLabel("Choose a mode above: Paint, Boolean or Growth.")
+        self.mode_hint.setStyleSheet(f"color: {TEXT_MUTED};")
+        self.mode_hint.setWordWrap(True)
+        layout.addWidget(self.mode_hint)
 
         self.info_label = QLabel("")
         self.info_label.setWordWrap(True)
         layout.addWidget(self.info_label)
 
-        # Sub-mode toggle (flathead vs phillips): Body-Face Cutoff <-> Box Cut.
+        # the Boolean mode switch the cut logic reads (driven by the mode buttons)
         self.cut_button = QPushButton("Box Cut mode")
         self.cut_button.setCheckable(True)
-        self.cut_button.setToolTip(
-            "Switch this tool's application: OFF = Body-Face Cutoff (edge-flow\n"
-            "growth); ON = Box Cut (box a pin and carve that chunk out with a\n"
-            "boolean cut). The box cuts THROUGH faces, so pins whose junction\n"
-            "with the body runs mid-face still separate. Same tool, two ways to\n"
-            "drive it; the other mode's controls hide while active."
-        )
-        self.cut_button.setStyleSheet(
-            "QPushButton:checked {background-color: #5a3e9e; color: #ffffff; "
-            "font-weight: 700;}"
-        )
         self.cut_button.toggled.connect(self._arm_cut)
+        self.cut_button.setVisible(False)
         layout.addWidget(self.cut_button)
 
         # ===== Body-Face Cutoff sub-mode (hidden while Box Cut is active) =====
@@ -175,7 +195,10 @@ class SeparateUnibodyTool(ToolMode):
             lambda _v: self._regrow_timer.start()
         )
         factor_row.addWidget(self.factor_spin, 1)
-        repaint_button = QPushButton("Regrow preview")
+        repaint_button = QPushButton("Preview growth")
+        repaint_button.setToolTip(
+            "Grow every pin from its seed faces and show the split preview\n"
+            "(large models wait for this button; Cancel stops it).")
         repaint_button.clicked.connect(self._regrow)
         factor_row.addWidget(repaint_button)
         auto_button = QPushButton("Auto")
@@ -214,7 +237,26 @@ class SeparateUnibodyTool(ToolMode):
         )
         propagate_button.clicked.connect(self._propagate_bundle)
         paint_row.addWidget(propagate_button)
-        cutoff_layout.addLayout(paint_row)
+        self.paint_group = QWidget()
+        paint_layout = QVBoxLayout(self.paint_group)
+        paint_layout.setContentsMargins(0, 0, 0, 0)
+        paint_layout.addLayout(paint_row)
+        paint_tools = QHBoxLayout()
+        color_button = QPushButton("Split by color")
+        color_button.setToolTip(
+            "Each pin's bundle is every face connected to its seed with the SAME\n"
+            "color (paint pins gold in Colors first). Fast, and exactly what you painted.")
+        color_button.clicked.connect(self._bundles_from_color)
+        paint_tools.addWidget(color_button)
+        copies_button = QPushButton("Stage exact paint copies")
+        copies_button.setToolTip(
+            "Take the selected pin's painted faces as the example: every other\n"
+            "place in the model with the same faces (same shape, any rotation) is\n"
+            "painted for the pin sitting there and staged as its own body.")
+        copies_button.clicked.connect(self._stage_paint_copies)
+        paint_tools.addWidget(copies_button)
+        paint_layout.addLayout(paint_tools)
+        layout.addWidget(self.paint_group)
 
         # ===== Box Cut sub-mode (hidden until armed) =====
         self.cut_group = QWidget()
@@ -224,13 +266,21 @@ class SeparateUnibodyTool(ToolMode):
         cut_guide.setStyleSheet("color: #8a8f98;")
         cut_layout.addWidget(cut_guide)
 
-        box_pick_button = QPushButton("⊙ Box from 2 points")
+        create_row = QHBoxLayout()
+        box_pick_button = QPushButton("CREATE BOX")
         box_pick_button.setToolTip(
-            "Click two model vertices (opposite corners); their axis-aligned "
-            "box becomes the X/Y/Z limits. The box carves out that chunk as the pin."
-        )
+            "Click two model vertices (opposite corners): the box between them is\n"
+            "added as a cut right away. Click it later to drag its 6 faces.")
         box_pick_button.clicked.connect(self._arm_box_pick)
-        cut_layout.addWidget(box_pick_button)
+        create_row.addWidget(box_pick_button)
+        cylinder_button = QPushButton("CREATE CYLINDER")
+        cylinder_button.setToolTip(
+            "Click two round edges (a pin's top and bottom rims, or the hole it\n"
+            "sits in): their centres make the axis, the larger radius (+5%) the\n"
+            "size. Banks a cylinder cut you can then drag or resize.")
+        cylinder_button.clicked.connect(self._arm_cylinder_pick)
+        create_row.addWidget(cylinder_button)
+        cut_layout.addLayout(create_row)
 
         grid = QGridLayout()
         self._cut_fields: dict[str, QLineEdit] = {}
@@ -294,18 +344,63 @@ class SeparateUnibodyTool(ToolMode):
         self.cut_label.setWordWrap(True)
         self.cut_label.setStyleSheet("color: #8a8f98;")
         cut_layout.addWidget(self.cut_label)
+
+        # Every banked cut, editable on its own: select it here or click it in
+        # the 3D view, then drag its handles, retype its numbers, give it a pin,
+        # or delete it.
+        self.cut_list = QListWidget()
+        self.cut_list.setMaximumHeight(110)
+        self.cut_list.currentRowChanged.connect(self._select_cut)
+        cut_layout.addWidget(self.cut_list)
+        cut_edit_row = QHBoxLayout()
+        cut_edit_row.addWidget(QLabel("Pin"))
+        self.cut_pin_combo = QComboBox()
+        self.cut_pin_combo.setToolTip("Which pin this cut carves (auto = the pin inside it)")
+        self.cut_pin_combo.currentIndexChanged.connect(self._assign_cut_pin)
+        cut_edit_row.addWidget(self.cut_pin_combo, 1)
+        delete_cut_button = QPushButton("Delete cut")
+        delete_cut_button.clicked.connect(self._delete_selected_cut)
+        cut_edit_row.addWidget(delete_cut_button)
+        cut_layout.addLayout(cut_edit_row)
+        radius_row = QHBoxLayout()
+        radius_row.addWidget(QLabel("Cylinder radius"))
+        self.cyl_radius_spin = QDoubleSpinBox()
+        self.cyl_radius_spin.setRange(0.01, 100.0)
+        self.cyl_radius_spin.setDecimals(3)
+        self.cyl_radius_spin.setSingleStep(0.05)
+        self.cyl_radius_spin.setSuffix(" mm")
+        self.cyl_radius_spin.valueChanged.connect(self._cylinder_radius_changed)
+        radius_row.addWidget(self.cyl_radius_spin, 1)
+        self.cyl_radius_widget = QWidget()
+        self.cyl_radius_widget.setLayout(radius_row)
+        self.cyl_radius_widget.setVisible(False)
+        cut_layout.addWidget(self.cyl_radius_widget)
         layout.addWidget(self.cut_group)
         self.cut_group.setVisible(False)
 
-        preview_header = QLabel("SPLIT PREVIEW — each future body in its own colour")
-        preview_header.setStyleSheet(
-            "font-weight: 700; color: #8a8f98; padding-top: 6px;"
-        )
-        layout.addWidget(preview_header)
-        self.preview_plotter = QtInteractor(widget)
-        self.preview_plotter.interactor.setMinimumHeight(190)
-        self.preview_plotter.set_background("#15171c")
-        layout.addWidget(self.preview_plotter.interactor, 1)
+        # Two small views side by side: the bodies as they are now (each its
+        # own pastel, see-through) and what Apply will produce.
+        from ..compact import make_panel_view
+
+        views = QHBoxLayout()
+        views.setSpacing(4)
+        self.bodies_plotter = None
+        for title, attr in (("BODIES NOW", "bodies_plotter"), ("SPLIT PREVIEW", "preview_plotter")):
+            column = QVBoxLayout()
+            column.setSpacing(2)
+            header = QLabel(title)
+            header.setStyleSheet("font-weight: 700; color: #8a8f98; padding-top: 6px;")
+            column.addWidget(header)
+            view = QtInteractor(widget)
+            make_panel_view(view)  # wheel scrolls the panel, not the view
+            view.interactor.setMinimumSize(140, 140)
+            view.set_background("#15171c")
+            column.addWidget(view.interactor, 1)
+            setattr(self, attr, view)
+            views.addLayout(column, 1)
+        square = _SquareViews()
+        square.setLayout(views)
+        layout.addWidget(square)
 
         self.apply_button = make_apply_button("Apply Separate")
         self.apply_button.clicked.connect(self.apply)
@@ -318,7 +413,73 @@ class SeparateUnibodyTool(ToolMode):
         self.undo_button.setEnabled(False)
         self.undo_button.clicked.connect(self.undo)
         layout.addWidget(self.undo_button)
+        self._clear_mode()
         return widget
+
+    def _clear_mode(self) -> None:
+        """No mode chosen: only the mode buttons, a grey hint and the two
+        previews show until the person picks Paint, Boolean or Growth."""
+        self.mode = None
+        for button in self.mode_buttons.values():
+            button.setChecked(False)
+        for group in (self.cutoff_group, self.paint_group, self.cut_group):
+            group.setVisible(False)
+        self.mode_hint.setVisible(True)
+
+    def set_mode(self, mode: str) -> None:
+        """Paint / Boolean / Growth: one mode's controls at a time; the two
+        previews stay in every mode."""
+        self.mode = mode
+        for key, button in self.mode_buttons.items():
+            button.setChecked(key == mode)
+        if self.cut_button.isChecked() != (mode == "boolean"):
+            self.cut_button.setChecked(mode == "boolean")
+        if self.paint_button.isChecked() != (mode == "paint"):
+            self.paint_button.setChecked(mode == "paint")
+        self.cutoff_group.setVisible(mode == "growth")
+        self.paint_group.setVisible(mode == "paint")
+        self.cut_group.setVisible(mode == "boolean")
+        self.mode_hint.setVisible(False)
+        if not self.ctx.window.pins.pins and mode != "boolean":
+            self.status("Separate Unibody: run Detect Pins first (Boolean cuts work without pins)")
+            return
+        if mode == "growth" and self.ctx.document is not None and not self.ctx.window._model_is_heavy():
+            self._regrow()
+
+    def _stage_paint_copies(self) -> None:
+        """Every place shaped like the selected pin's painted faces is painted
+        for the pin sitting there."""
+        from ..pins import find_similar_regions
+
+        document = self.ctx.document
+        registry = self.ctx.window.pins
+        row = self.bundle_combo.currentIndex()
+        index = self._bundle_pins[row] if 0 <= row < len(self._bundle_pins) else None
+        if document is None or self._manual is None or index is None or not self._manual.get(index):
+            self.status("Paint: paint one pin's faces first, then select it")
+            return
+        example = sorted(self._manual[index])
+        body = example[0][0]
+        region = {f for b, f in example if b == body}
+        matches = find_similar_regions(document, body, region, claimed=set(example),
+                                       area_tol=0.06, dim_tol=0.08)
+        # a copy replaces whatever growth guessed for the pin sitting there
+        free = [i for i, pin in enumerate(registry.pins)
+                if i != index and not pin.body_ids and not stays_with_body(pin)]
+        staged = 0
+        for match in matches:
+            mesh = document.bodies[match[0][0]].mesh
+            pts = mesh.points[np.unique(mesh.tris[np.isin(mesh.tri_face_ids, [f for _b, f in match])])]
+            centre = pts.mean(axis=0)
+            if not free:
+                break
+            nearest = min(free, key=lambda i: float(np.linalg.norm(np.asarray(registry.pins[i].centroid) - centre)))
+            self._manual[nearest] = set(match)
+            free.remove(nearest)
+            staged += 1
+        self._populate_bundle_combo(registry)
+        self._paint_manual()
+        self.status(f"Paint: {staged} copy(ies) of pin {registry.pins[index].number}'s paint staged")
 
     # ------------------------------------------------------------ lifecycle
 
@@ -331,10 +492,26 @@ class SeparateUnibodyTool(ToolMode):
             self.info_label.setText("No pins detected yet — run Detect Pins first.")
             self.status("Separate Unibody: run Detect Pins first")
             return
-        self._regrow()
         self._draw_spines(registry)
         # whole model at 0.5 alpha so the pin regions show through the body
         self.ctx.scene.set_model_opacity(0.5)
+        if not getattr(self, "mode", None):
+            if self._manual is None:
+                self._clear_mode()  # the person picks the mode; nothing runs until then
+                return
+            self.set_mode("paint")  # painting was under way: carry on
+        if self._manual is not None:
+            self._paint_manual()
+        elif self._grown is None and self.ctx.window._model_is_heavy():
+            # Big model: growth + preview cost seconds to minutes, so entering
+            # the tool never runs them; the user starts them on purpose.
+            self.info_label.setText(
+                "Large model — press <b>Preview growth</b> (or <b>Split by color</b> "
+                "if the pins are painted). GUIDE pegs stay with the body; ANCHOR pins split.")
+            self.status("Separate Unibody: press Preview growth or Split by color")
+            return
+        else:
+            self._regrow()
         self.status(
             "Separate Unibody: check the grown pin shapes (model at 0.5 alpha), "
             "then Apply"
@@ -356,6 +533,8 @@ class SeparateUnibodyTool(ToolMode):
         self.ctx.scene.show_pin_spines(segments)
 
     def exit(self) -> None:
+        self._clear_cut_widgets()
+        self._cyl_pick = None
         self.ctx.scene.show_pin_spines([])
         self.ctx.scene.set_hover_callback(None)
         self._axis_pick = None
@@ -365,11 +544,10 @@ class SeparateUnibodyTool(ToolMode):
             self.cut_button.blockSignals(True)
             self.cut_button.setChecked(False)
             self.cut_button.blockSignals(False)
-            self.cut_group.setVisible(False)
-            self.cutoff_group.setVisible(True)
+            self._clear_mode()
         if self.ctx.document is not None:
             if self._preview_painted:
-                self.ctx.scene.rebuild(self.ctx.document)  # restore real colours
+                self.ctx.scene.rebuild(self.ctx.document)  # restore real colors
                 self._preview_painted = False
             else:
                 self.ctx.scene.set_model_opacity(1.0)
@@ -379,6 +557,11 @@ class SeparateUnibodyTool(ToolMode):
         self._grown = None
         self._manual = None
         self._cuts = []
+        self._selected_cut = None
+        self._cyl_pick = None
+        if self._actions_widget is not None:
+            self._clear_cut_widgets()
+            self._refresh_cut_list()
         self._axis_pick = None
         self._box_pick = None
         self._clear_cut_visuals()
@@ -387,8 +570,7 @@ class SeparateUnibodyTool(ToolMode):
             self.cut_button.blockSignals(True)  # don't trigger a scene repaint here
             self.cut_button.setChecked(False)
             self.cut_button.blockSignals(False)
-            self.cut_group.setVisible(False)
-            self.cutoff_group.setVisible(True)
+            self._clear_mode()
             self._update_cut_label()
             self._update_split_preview()
 
@@ -408,7 +590,7 @@ class SeparateUnibodyTool(ToolMode):
         if self._manual is None:
             self._manual = {}
             for index, (pin, region) in enumerate(zip(registry.pins, self._grown)):
-                if pin.body_ids:
+                if pin.body_ids or stays_with_body(pin):
                     continue
                 faces = region if region else pin.face_ids
                 if faces:
@@ -441,10 +623,14 @@ class SeparateUnibodyTool(ToolMode):
 
     def on_pick(self, pick) -> None:
         if self._actions_widget is not None and self.cut_button.isChecked():
-            if self._box_pick is not None:
+            if getattr(self, "_cyl_pick", None) is not None:
+                self._pick_circle(pick)
+            elif self._box_pick is not None:
                 self._pick_box_corner(pick)
             elif self._axis_pick is not None:
                 self._pick_axis_vertex(pick)
+            else:
+                self._select_cut_at(pick.world_point)
             return
         if (
             self._actions_widget is None
@@ -484,7 +670,7 @@ class SeparateUnibodyTool(ToolMode):
         )
 
     def _show_axis_guide(self, axis: int) -> None:
-        """A bold, drawn-on-front coloured tube along the axis being picked
+        """A bold, drawn-on-front colored tube along the axis being picked
         (X red / Y green / Z blue) so the active axis stands out — same
         always-visible style as the 3D browser's reference axes."""
         document = self.ctx.document
@@ -594,10 +780,194 @@ class SeparateUnibodyTool(ToolMode):
         world = np.asarray(pick.world_point, dtype=float)
         return mesh.points[int(np.argmin(np.linalg.norm(mesh.points - world, axis=1)))]
 
-    def _arm_box_pick(self) -> None:
+    # ------------------------------------------------------ cut objects
+
+    def _arm_cylinder_pick(self) -> None:
         if not self.cut_button.isChecked():
             self.status("Box Cut: enable Box Cut mode first")
             return
+        self._cyl_pick = []
+        self._box_pick = None
+        self._axis_pick = None
+        self.status("Cylinder cut: click the FIRST round edge (rim of the pin or its hole)")
+
+    def _pick_circle(self, pick) -> None:
+        circle = self.ctx.document.circle_near(pick.body_index, pick.face_index, pick.world_point)
+        if circle is None:
+            self.status("Cylinder cut: that face has no round edge — click a rim or a hole")
+            return
+        self._cyl_pick.append(circle)
+        self.ctx.scene.set_markers([c[0] for c in self._cyl_pick], name="sep-pick",
+                                   color=BOX_MARKER_COLOR, point_size=18, on_top=True)
+        if len(self._cyl_pick) < 2:
+            self.status(f"Cylinder cut: circle 1 (r {circle[2]:.3f} mm) — click the second round edge")
+            return
+        (c0, _a0, r0), (c1, _a1, r1) = self._cyl_pick
+        self._cyl_pick = None
+        self.ctx.scene.set_markers([], name="sep-pick")
+        if float(np.linalg.norm(np.asarray(c1) - np.asarray(c0))) < 1e-6:
+            self.status("Cylinder cut: both clicks found the same circle — pick the other end")
+            return
+        axis = (np.asarray(c1) - np.asarray(c0)) / np.linalg.norm(np.asarray(c1) - np.asarray(c0))
+        ext = 0.01  # reach just past both rims so the cut faces aren't coplanar
+        self._cuts.append({"type": "cylinder", "p0": (np.asarray(c0) - axis * ext).tolist(),
+                           "p1": (np.asarray(c1) + axis * ext).tolist(),
+                           "radius": max(r0, r1) * 1.05 + 0.02, "pin": None})
+        self._refresh_cut_list(select=len(self._cuts) - 1)
+        self._update_cut_preview()
+        self.status(f"Cylinder cut #{len(self._cuts)} banked — drag its end spheres or set the radius")
+
+    def _select_cut_at(self, point) -> None:
+        """A click on the model selects the (smallest) cut containing the click."""
+        from ..document import cut_kind, points_in_cut
+
+        hits = []
+        for index, cut in enumerate(self._cuts):
+            if points_in_cut(np.asarray(point), cut, margin=1e-3)[0]:
+                if cut_kind(cut) == "box":
+                    b = cut["limits"]
+                    size = (b[1] - b[0]) * (b[3] - b[2]) * (b[5] - b[4])
+                else:
+                    size = cut["radius"] ** 2 * float(np.linalg.norm(np.subtract(cut["p1"], cut["p0"])))
+                hits.append((size, index))
+        if hits:
+            self.cut_list.setCurrentRow(min(hits)[1])
+        else:
+            self.cut_list.setCurrentRow(-1)
+
+    def _cut_text(self, index: int, cut: dict) -> str:
+        from ..document import cut_kind
+
+        pin = f"→ pin {cut['pin']}" if cut.get("pin") else "→ auto"
+        if cut_kind(cut) == "box":
+            b = cut["limits"]
+            return (f"#{index + 1} box {b[1] - b[0]:.2f}×{b[3] - b[2]:.2f}×{b[5] - b[4]:.2f} {pin}")
+        length = float(np.linalg.norm(np.subtract(cut["p1"], cut["p0"])))
+        return f"#{index + 1} cylinder r{cut['radius']:.3f} L{length:.2f} {pin}"
+
+    def _refresh_cut_list(self, select: int | None = None) -> None:
+        if self._actions_widget is None:
+            return
+        self.cut_list.blockSignals(True)
+        self.cut_list.clear()
+        for index, cut in enumerate(self._cuts):
+            self.cut_list.addItem(self._cut_text(index, cut))
+        self.cut_list.blockSignals(False)
+        registry = self.ctx.window.pins
+        self.cut_pin_combo.blockSignals(True)
+        self.cut_pin_combo.clear()
+        self.cut_pin_combo.addItem("auto", None)
+        for pin in registry.pins:
+            self.cut_pin_combo.addItem(f"{pin.name or pin.number}"
+                                       + (" (head)" if pin.role == "mouth" else ""), pin.number)
+        self.cut_pin_combo.blockSignals(False)
+        if select is not None:
+            self.cut_list.setCurrentRow(select)
+        else:
+            self._select_cut(self.cut_list.currentRow())
+
+    def _select_cut(self, row: int) -> None:
+        from ..document import cut_kind
+
+        self._selected_cut = row if 0 <= row < len(self._cuts) else None
+        self._clear_cut_widgets()
+        if self._selected_cut is None:
+            self.cyl_radius_widget.setVisible(False)
+            self._update_cut_preview()
+            return
+        cut = self._cuts[self._selected_cut]
+        self.cut_pin_combo.blockSignals(True)
+        index = self.cut_pin_combo.findData(cut.get("pin"))
+        self.cut_pin_combo.setCurrentIndex(max(index, 0))
+        self.cut_pin_combo.blockSignals(False)
+        plotter = self.ctx.scene.plotter
+        if cut_kind(cut) == "box":
+            self.cyl_radius_widget.setVisible(False)
+            self._write_cut_fields(cut["limits"])
+            # six draggable sides (rotation off: cuts stay axis-aligned)
+            self._placing = True  # widgets report their placement once: not a drag
+            try:
+                plotter.add_box_widget(callback=self._on_box_dragged, bounds=tuple(cut["limits"]),
+                                       factor=1.0, rotation_enabled=False, interaction_event="end",
+                                       color="#ffd24a")
+            finally:
+                self._placing = False
+        else:
+            self.cyl_radius_widget.setVisible(True)
+            self.cyl_radius_spin.blockSignals(True)
+            self.cyl_radius_spin.setValue(float(cut["radius"]))
+            self.cyl_radius_spin.blockSignals(False)
+            radius = max(float(cut["radius"]) * 0.6, 0.05)
+            self._placing = True
+            try:
+                plotter.add_sphere_widget(callback=self._on_cylinder_end_dragged,
+                                          center=np.array([cut["p0"], cut["p1"]], dtype=float),
+                                          radius=radius, color="#ffd24a", interaction_event="end",
+                                          pass_widget=False)
+            finally:
+                self._placing = False
+        self._update_cut_preview()
+        self.status(f"Cut #{self._selected_cut + 1} selected — drag its handles, set its pin, or Delete")
+
+    def _clear_cut_widgets(self) -> None:
+        plotter = self.ctx.scene.plotter
+        for clear in ("clear_box_widgets", "clear_sphere_widgets"):
+            try:
+                getattr(plotter, clear)()
+            except Exception:  # noqa: BLE001 - nothing to clear
+                pass
+
+    def _on_box_dragged(self, polydata) -> None:
+        if self._selected_cut is None or getattr(self, "_placing", False):
+            return
+        b = polydata.bounds
+        self._cuts[self._selected_cut]["limits"] = [float(v) for v in b]
+        self._write_cut_fields(list(b))
+        self._refresh_cut_row()
+        self._update_cut_preview()
+
+    def _on_cylinder_end_dragged(self, point, index) -> None:
+        if self._selected_cut is None or getattr(self, "_placing", False):
+            return
+        cut = self._cuts[self._selected_cut]
+        cut["p0" if index == 0 else "p1"] = [float(v) for v in point]
+        self._refresh_cut_row()
+        self._update_cut_preview()
+
+    def _cylinder_radius_changed(self, value: float) -> None:
+        from ..document import cut_kind
+
+        if self._selected_cut is None or cut_kind(self._cuts[self._selected_cut]) != "cylinder":
+            return
+        self._cuts[self._selected_cut]["radius"] = float(value)
+        self._refresh_cut_row()
+        self._update_cut_preview()
+
+    def _refresh_cut_row(self) -> None:
+        item = self.cut_list.item(self._selected_cut) if self._selected_cut is not None else None
+        if item is not None:
+            item.setText(self._cut_text(self._selected_cut, self._cuts[self._selected_cut]))
+
+    def _assign_cut_pin(self, _index: int) -> None:
+        if self._selected_cut is None:
+            return
+        self._cuts[self._selected_cut]["pin"] = self.cut_pin_combo.currentData()
+        self._refresh_cut_row()
+
+    def _delete_selected_cut(self) -> None:
+        if self._selected_cut is None:
+            self.status("Box Cut: select a cut first (in the list or by clicking it)")
+            return
+        del self._cuts[self._selected_cut]
+        self._selected_cut = None
+        self._clear_cut_widgets()
+        self._refresh_cut_list()
+        self._update_cut_preview()
+        self.status(f"Box Cut: cut deleted — {len(self._cuts)} left")
+
+    def _arm_box_pick(self) -> None:
+        if not self.cut_button.isChecked():
+            self.set_mode("boolean")
         self._box_pick = []
         self._axis_pick = None
         self._hide_axis_guide()
@@ -629,7 +999,8 @@ class SeparateUnibodyTool(ToolMode):
         self._box_pick = None
         self.ctx.scene.set_markers([], name="sep-pick")
         self._update_cut_preview()
-        self.status("Box Cut: box set from the two picked corners")
+        self._add_cut()  # a created box is a cut straight away
+        self.status("Boolean: box created and added as a cut; click it to drag its faces")
 
     def _faces_in_box(self, limits, normal, location):
         """(body, {face ids}) for the body with the most faces inside the box."""
@@ -814,15 +1185,12 @@ class SeparateUnibodyTool(ToolMode):
             self.cut_button.setChecked(False)
             return
         self.cut_group.setVisible(checked)
-        self.cutoff_group.setVisible(not checked)
-        if not checked:
+        if not checked:  # set_mode decides what shows next (and whether to regrow)
             self._cuts = []
             self._axis_pick = None
             self._box_pick = None
             self._clear_cut_visuals()
             self.ctx.scene.set_hover_callback(None)
-            self.status("Box Cut mode: off")
-            self._regrow()  # back to the edge-flow growth preview
             return
         if self.paint_button.isChecked():
             self.paint_button.setChecked(False)
@@ -840,7 +1208,7 @@ class SeparateUnibodyTool(ToolMode):
         )
 
     def _on_cut_hover(self, pick) -> None:
-        """Preview dot at the vertex a pick will snap to, coloured for the
+        """Preview dot at the vertex a pick will snap to, colored for the
         active pick (yellow box-corner / X-red Y-green Z-blue axis)."""
         scene = self.ctx.scene
         armed = self._box_pick is not None or self._axis_pick is not None
@@ -941,27 +1309,46 @@ class SeparateUnibodyTool(ToolMode):
         document = self.ctx.document
         if document is None:
             return
+        from ..document import cut_kind, points_in_cut
+
         self._erase_banked_cuts()
-        # (cut, colour, name): banked cuts pastel, the live box red
-        overlays = [(cut, pastel(index), f"sep-cut-{index}")
-                    for index, cut in enumerate(self._cuts)]
+        selected = getattr(self, "_selected_cut", None)
         live = self._read_cut_fields()
+        # Typing in the X/Y/Z fields edits the SELECTED box; with nothing
+        # selected they describe the red live box that Add Cut banks.
+        if selected is not None and live is not None and cut_kind(self._cuts[selected]) == "box":
+            self._cuts[selected]["limits"] = list(live[0])
+            live = None
+        elif selected is not None:
+            live = None
+        # (cut, color, name): banked cuts pastel (selected yellow), live box red
+        overlays = [(cut, (1.0, 0.82, 0.29) if index == selected else pastel(index), f"sep-cut-{index}")
+                    for index, cut in enumerate(self._cuts)]
         if live is not None:
-            overlays.append(({"limits": live[0], "normal": live[1],
+            overlays.append(({"type": "box", "limits": live[0], "normal": live[1],
                               "location": live[2]}, (0.88, 0.30, 0.28), "sep-cut-live"))
         plotter = self.ctx.scene.plotter
         for cut, rgb, name in overlays:
             box_name = f"{name}-box"
-            plotter.add_mesh(pv.Box(bounds=tuple(cut["limits"])), name=box_name,
-                             color=rgb, style="wireframe", line_width=3,
-                             pickable=False)
+            if cut_kind(cut) == "box":
+                outline = pv.Box(bounds=tuple(cut["limits"]))
+            else:
+                p0, p1 = np.asarray(cut["p0"], float), np.asarray(cut["p1"], float)
+                outline = pv.Cylinder(center=(p0 + p1) / 2, direction=p1 - p0, radius=cut["radius"],
+                                      height=float(np.linalg.norm(p1 - p0)), resolution=32)
+            plotter.add_mesh(outline, name=box_name, color=rgb, style="wireframe",
+                             line_width=4 if name.endswith(f"-{selected}") else 2, pickable=False)
             self._cut_actor_names.append(box_name)
             # the contained region (what actually becomes the carved body)
             for body_index, body in enumerate(document.bodies):
                 if body.mesh is None or not len(body.mesh.tris):
                     continue
-                mask = self._contained_mask(
-                    body.mesh, cut["limits"], cut.get("normal"), cut.get("location"))
+                if cut_kind(cut) == "cylinder":
+                    centroids = body.mesh.points[body.mesh.tris].mean(axis=1)
+                    mask = points_in_cut(centroids, cut)
+                else:
+                    mask = self._contained_mask(
+                        body.mesh, cut["limits"], cut.get("normal"), cut.get("location"))
                 poly = self._region_polydata(body.mesh, mask)
                 if poly is None:
                     continue
@@ -978,8 +1365,9 @@ class SeparateUnibodyTool(ToolMode):
             self.status("Box Cut: set a valid X/Y/Z box first")
             return
         limits, normal, location = live
-        self._cuts.append({"limits": list(limits), "normal": list(normal),
-                           "location": float(location)})
+        self._cuts.append({"type": "box", "limits": list(limits), "normal": list(normal),
+                           "location": float(location), "pin": None})
+        self._refresh_cut_list(select=len(self._cuts) - 1)
         self._update_cut_preview()
         self.status(
             f"Box Cut: banked cut #{len(self._cuts)} — keep adding, then Apply Separate"
@@ -987,6 +1375,9 @@ class SeparateUnibodyTool(ToolMode):
 
     def _clear_cuts(self) -> None:
         self._cuts = []
+        self._selected_cut = None
+        self._clear_cut_widgets()
+        self._refresh_cut_list()
         self._update_cut_preview()
         self.status("Box Cut: banked cuts cleared")
 
@@ -1061,6 +1452,53 @@ class SeparateUnibodyTool(ToolMode):
                 matched += 1
         return matched
 
+    @staticmethod
+    def _cut_of_piece(document, body_index, cuts):
+        from ..document import points_in_cut
+
+        mesh = document.bodies[body_index].mesh
+        if mesh is None or not len(mesh.points):
+            return None
+        for index, cut in enumerate(cuts):
+            if points_in_cut(mesh.points, cut, margin=1e-3).all():
+                return index
+        return None
+
+    def _link_assigned_cuts(self, document, registry, carved, cuts) -> int:
+        """Cuts given a pin by hand link their carved piece to exactly that pin."""
+        by_number = {pin.number: pin for pin in registry.pins}
+        linked = 0
+        for body_index in carved:
+            index = self._cut_of_piece(document, body_index, cuts)
+            if index is None or not cuts[index].get("pin"):
+                continue
+            pin = by_number.get(cuts[index]["pin"])
+            if pin is None:
+                continue
+            pin.body_ids = [body_index]
+            pin.face_ids = []
+            document.bodies[body_index].role = "pin"
+            document.bodies[body_index].name = pin.name or f"PIN_{pin.number}"
+            linked += 1
+        return linked
+
+    def _record_cuts(self, document, registry, carved, cuts) -> None:
+        """Keep every applied cut with the pin it carved: exported as
+        `separate_cuts`, the ground truth for a split algorithm or an ML model
+        that proposes cut volumes."""
+        owner = {b: pin for pin in registry.pins for b in pin.body_ids}
+        record = list(getattr(document, "separate_cuts", None) or [])
+        for body_index in carved:
+            index = self._cut_of_piece(document, body_index, cuts)
+            if index is None:
+                continue
+            pin = owner.get(body_index)
+            entry = {k: v for k, v in cuts[index].items() if k in ("type", "limits", "p0", "p1", "radius")}
+            entry["pin"] = (pin.name or str(pin.number)) if pin is not None else None
+            entry["pin_role"] = pin.role if pin is not None else None
+            record.append(entry)
+        document.separate_cuts = record
+
     def _journal_cuts(self, document, before, cuts, matched, remapped) -> None:
         self.ctx.journal.record(
             tool=self.id,
@@ -1092,8 +1530,11 @@ class SeparateUnibodyTool(ToolMode):
                      for pin in registry.pins if pin.body_ids]
         b = document.bounds()
         diag = float(np.linalg.norm([b[1] - b[0], b[3] - b[2], b[5] - b[4]]))
-        cuts = [{"limits": list(c["limits"]), "normal": list(c["normal"]),
-                 "location": float(c["location"])} for c in self._cuts]
+        import copy
+
+        cuts = copy.deepcopy(self._cuts)
+        for cut in cuts:
+            cut.setdefault("type", "box" if "limits" in cut else "cylinder")
         try:
             window.progress("Carving banked cuts", 0, 0)
             # Capture each cut's carved PIN objects from split_by_box's own
@@ -1113,7 +1554,8 @@ class SeparateUnibodyTool(ToolMode):
                 for c in cuts)
             carved_objs: list = []
             if pure_boxes:
-                pin_indices = document.split_by_boxes(cuts, remesh=False)
+                # boxes and cylinders together, one boolean per body
+                pin_indices = document.split_by_cuts(cuts, remesh=False)
                 carved_objs = [document.bodies[i] for i in pin_indices]
             else:
                 for cut in cuts:
@@ -1132,13 +1574,18 @@ class SeparateUnibodyTool(ToolMode):
             # so the linker can claim each pin by identity (the carved body its
             # own faces landed on) before falling back to proximity.
             remapped = remap_pin_faces(document, face_anchors, diag * 5.0e-3)
-            matched = self._link_cut_pins(document, registry, carved, diag)
+            matched = self._link_assigned_cuts(document, registry, carved, cuts)
+            matched += self._link_cut_pins(document, registry, carved, diag)
+            self._record_cuts(document, registry, carved, cuts)
             self._journal_cuts(document, before, cuts, matched, remapped)
             window.progress("Rendering bodies", 0, 0)
             window.document_mutated()
         finally:
             window.progress_done()
         self._cuts = []
+        self._selected_cut = None
+        self._clear_cut_widgets()
+        self._refresh_cut_list()
         self._clear_cut_visuals()
         self._preview_painted = False
         self._grown = None
@@ -1217,8 +1664,8 @@ class SeparateUnibodyTool(ToolMode):
     # -------------------------------------------------------------- preview
 
     def _split_preview_color_maps(self, registry, regions):
-        """(face_rgb, body_rgb): face-region pins colour faces; whole-body pins
-        colour their entire solid."""
+        """(face_rgb, body_rgb): face-region pins color faces; whole-body pins
+        color their entire solid."""
         net_pastels = designator_pastels(registry.pins)
         face_rgb: dict[int, dict[int, tuple]] = {}
         body_rgb: dict[int, tuple] = {}
@@ -1234,7 +1681,7 @@ class SeparateUnibodyTool(ToolMode):
         return face_rgb, body_rgb
 
     def _body_preview_colors(self, mesh, body_index, face_rgb, body_rgb, package_rgb):
-        """Per-triangle colours for one body in the post-split preview."""
+        """Per-triangle colors for one body in the post-split preview."""
         colors = np.empty((len(mesh.tris), 3), dtype=np.uint8)
         if body_index in body_rgb:
             colors[:] = [int(c * 255) for c in body_rgb[body_index]]
@@ -1251,7 +1698,7 @@ class SeparateUnibodyTool(ToolMode):
         return colors
 
     def _build_merged_preview(self, document, face_rgb, body_rgb, package_rgb):
-        """ONE merged, per-cell-coloured mesh for the whole preview (per-region
+        """ONE merged, per-cell-colored mesh for the whole preview (per-region
         actors crawl at DDR5 scale — 577 future bodies would mean 577 actors)."""
         point_blocks, cell_blocks, color_blocks = [], [], []
         offset = 0
@@ -1273,6 +1720,15 @@ class SeparateUnibodyTool(ToolMode):
         merged.cell_data["rgb"] = np.vstack(color_blocks)
         return merged
 
+    def _cut_mask(self, mesh, cut):
+        """Triangles of `mesh` inside a cut (box: the cake-slice rule; cylinder:
+        triangle centroid inside it)."""
+        from ..document import cut_kind, points_in_cut
+
+        if cut_kind(cut) == "cylinder":
+            return points_in_cut(mesh.points[mesh.tris].mean(axis=1), cut)
+        return self._contained_mask(mesh, cut["limits"], cut.get("normal"), cut.get("location"))
+
     def _build_cut_preview_mesh(self, document):
         """Per-triangle pastel preview. With cuts banked: each cut's region in
         its pastel (+ the live cut red) on a slate model — the cut decomposition
@@ -1281,7 +1737,7 @@ class SeparateUnibodyTool(ToolMode):
         cuts = list(self._cuts)
         # the live (being-positioned) cut only matters while banking cuts; after
         # Apply the fields still hold the last box, but we want the bodies shown.
-        live = self._read_cut_fields() if cuts else None
+        live = self._read_cut_fields() if cuts and self._selected_cut is None else None
         live_cut = ({"limits": live[0], "normal": live[1], "location": live[2]}
                     if live is not None else None)
         neutral = np.array([0.42, 0.44, 0.50])
@@ -1293,9 +1749,7 @@ class SeparateUnibodyTool(ToolMode):
             base = neutral if cuts else np.array(pastel(body_index))
             colors = np.tile(base, (len(mesh.tris), 1))
             for index, cut in enumerate(cuts):
-                mask = self._contained_mask(
-                    mesh, cut["limits"], cut.get("normal"), cut.get("location"))
-                colors[mask] = pastel(index)
+                colors[self._cut_mask(mesh, cut)] = pastel(index)
             if live_cut is not None:
                 mask = self._contained_mask(
                     mesh, live_cut["limits"], live_cut["normal"], live_cut["location"])
@@ -1330,7 +1784,7 @@ class SeparateUnibodyTool(ToolMode):
                 plotter.add_mesh(poly, color=(0.42, 0.44, 0.50), opacity=0.18,
                                  smooth_shading=False, show_edges=False)
                 continue
-            actor = plotter.add_mesh(poly, color=pastel(index), opacity=1.0,
+            actor = plotter.add_mesh(poly, color=pastel(index), opacity=0.75,
                                      smooth_shading=False, show_edges=False)
             if has_pins:                       # pin: pull on top so it's never hidden
                 try:
@@ -1341,9 +1795,39 @@ class SeparateUnibodyTool(ToolMode):
                 except Exception:  # noqa: BLE001
                     pass
 
+    def _update_bodies_view(self) -> None:
+        """Left pane: every CURRENT body in its own pastel at half opacity, so
+        what is already separated (and what is still one unibody) reads."""
+        plotter = getattr(self, "bodies_plotter", None)
+        if plotter is None:
+            return
+        plotter.clear()
+        document = self.ctx.document
+        if document is not None:
+            # one merged mesh coloured per body: a 574-body connector was 574
+            # actors here (~10 s on every document change)
+            points, cells, colors, offset = [], [], [], 0
+            for index, body in enumerate(document.bodies):
+                mesh = body.mesh
+                if mesh is None or not len(mesh.tris):
+                    continue
+                points.append(mesh.points)
+                cells.append(np.column_stack([np.full(len(mesh.tris), 3, dtype=np.int64), mesh.tris + offset]))
+                rgb = np.array([int(round(c * 255)) for c in pastel(index)], dtype=np.uint8)
+                colors.append(np.tile(rgb, (len(mesh.tris), 1)))
+                offset += len(mesh.points)
+            if points:
+                merged = pv.PolyData(np.vstack(points), np.vstack(cells).ravel())
+                merged.cell_data["rgb"] = np.vstack(colors)
+                plotter.add_mesh(merged, scalars="rgb", rgb=True, opacity=0.5,
+                                 smooth_shading=False, show_edges=False, reset_camera=False, render=False)
+            frame_close(plotter)
+        plotter.render()
+
     def _update_split_preview(self) -> None:
         """The little 3D pane in the actions panel: the POST-SPLIT picture —
         every future body its own solid pastel, package remainder slate."""
+        self._update_bodies_view()
         plotter = getattr(self, "preview_plotter", None)
         if plotter is None:
             return
@@ -1360,8 +1844,7 @@ class SeparateUnibodyTool(ToolMode):
                                      smooth_shading=False, show_edges=False)
             else:
                 self._render_split_bodies(plotter, document)
-            plotter.view_isometric()
-            plotter.reset_camera()
+            frame_close(plotter)
             plotter.render()
             return
         registry = self.ctx.window.pins
@@ -1374,10 +1857,10 @@ class SeparateUnibodyTool(ToolMode):
             document, face_rgb, body_rgb, (0.42, 0.44, 0.50)
         )
         if merged is not None:
-            plotter.add_mesh(merged, scalars="rgb", rgb=True,
+            # semi-transparent so every future body reads through the others
+            plotter.add_mesh(merged, scalars="rgb", rgb=True, opacity=0.55,
                              smooth_shading=False, show_edges=False)
-        plotter.view_isometric()
-        plotter.reset_camera()
+        frame_close(plotter)
         plotter.render()
 
     def _preview_regions(self) -> list:
@@ -1403,7 +1886,7 @@ class SeparateUnibodyTool(ToolMode):
         return tick
 
     def _paint_mouth(self, pin, region, by_body, net_pastels, stats) -> None:
-        """A CON/HEAD pin paints in its net's (tail's) colour. On a unibody it
+        """A CON/HEAD pin paints in its net's (tail's) color. On a unibody it
         grows and splits like a tail; on an already-split contact it stays a
         passive anchor."""
         rgb = net_pastels.get(pin.name, UNJOINED_MOUTH_RGB)
@@ -1417,8 +1900,8 @@ class SeparateUnibodyTool(ToolMode):
             stats["seed_faces"] += len(pin.face_ids)
 
     def _paint_grown(self, registry):
-        """Colour the grown preview; whole-body pins paint directly. Returns
-        (face-colour map for face-region pins, stats dict)."""
+        """Color the grown preview; whole-body pins paint directly. Returns
+        (face-color map for face-region pins, stats dict)."""
         net_pastels = designator_pastels(registry.pins)
         by_body: dict[int, dict[int, tuple[float, float, float]]] = {}
         stats = {"grown_faces": 0, "seed_faces": 0, "body_pins": 0,
@@ -1448,7 +1931,7 @@ class SeparateUnibodyTool(ToolMode):
         if stats["mouth_pins"]:
             joined = sum(1 for p in registry.pins if p.role == "mouth" and p.name)
             parts.append(
-                f"{stats['mouth_pins']} CON/HEAD pin(s) in their net's colour "
+                f"{stats['mouth_pins']} CON/HEAD pin(s) in their net's color "
                 f"({joined} joined, {stats['mouth_grown']} will split, "
                 f"{stats['mouth_pins'] - stats['mouth_grown']} on already-split contacts)"
             )
@@ -1464,12 +1947,18 @@ class SeparateUnibodyTool(ToolMode):
             self._manual = None  # regrowing replaces the painted bundles
             if self._actions_widget is not None:
                 self.paint_button.setChecked(False)
-        self._grown = grow_pin_regions(
-            document, registry.pins, area_factor=float(self.factor_spin.value()),
-            progress=self._grow_progress(),
-        )
-        if hasattr(self.ctx.window, "progress_done"):
-            self.ctx.window.progress_done()
+        try:
+            self._grown = grow_pin_regions(
+                document, registry.pins, area_factor=float(self.factor_spin.value()),
+                progress=self._grow_progress(),
+            )
+        except OperationCancelled:
+            self._grown = None
+            self.status("Separate Unibody: growth cancelled")
+            return
+        finally:
+            if hasattr(self.ctx.window, "progress_done"):
+                self.ctx.window.progress_done()
         if self._preview_painted:
             self.ctx.scene.rebuild(document)
 
@@ -1512,8 +2001,8 @@ class SeparateUnibodyTool(ToolMode):
         return [region for region in self._grown if region], painted_bundles
 
     def _pin_region_colors(self, document, registry, grown_list):
-        """Each pin body's display colour = its region's dominant face colour
-        (face ids die in the split, so colours move to the BODY)."""
+        """Each pin body's display color = its region's dominant face color
+        (face ids die in the split, so colors move to the BODY)."""
         colors = []
         for pin, region in zip(registry.pins, grown_list):
             color = None
@@ -1529,7 +2018,7 @@ class SeparateUnibodyTool(ToolMode):
         return colors
 
     def _remainder_colors(self, document, regions):
-        """Dominant colour of each body's faces that no pin region claimed."""
+        """Dominant color of each body's faces that no pin region claimed."""
         all_region_faces: dict[int, set[int]] = {}
         for region in regions:
             for body_index, face_index in region:
@@ -1581,7 +2070,7 @@ class SeparateUnibodyTool(ToolMode):
         return matched, unsplit
 
     def _color_package_pieces(self, document, old_records, pin_indices, remainder_colors):
-        """New package pieces inherit the dominant colour of the non-pin faces."""
+        """New package pieces inherit the dominant color of the non-pin faces."""
         fallback = next((c for c in remainder_colors.values() if c is not None), None)
         pin_set = set(pin_indices)
         for body_index, body in enumerate(document.bodies):
@@ -1606,8 +2095,8 @@ class SeparateUnibodyTool(ToolMode):
         )
 
     def _pastel_preview_split(self, registry):
-        """Pastel-preview the new pin bodies (display only — exported colours
-        stay real), still translucent. CON/HEAD pins paint in their net colour."""
+        """Pastel-preview the new pin bodies (display only — exported colors
+        stay real), still translucent. CON/HEAD pins paint in their net color."""
         net_pastels = designator_pastels(registry.pins)
         mouth_paint: dict[int, dict[int, tuple[float, float, float]]] = {}
         for pin_index, pin in enumerate(registry.pins):
@@ -1687,9 +2176,14 @@ class SeparateUnibodyTool(ToolMode):
         try:
             # Cut EXACTLY what the preview shows: the grown regions' junction
             # loops (preview/apply must never disagree).
-            region_bodies = document.split_by_face_regions(
-                regions, progress=window.progress
-            )
+            try:
+                region_bodies = document.split_by_face_regions(
+                    regions, progress=window.progress
+                )
+            except OperationCancelled:
+                self._restore_undo_state(document)
+                self.status("Separate Unibody: cancelled — model unchanged")
+                return
             self._preview_painted = False
             self._grown = None
             pin_indices = [bi for bi in region_bodies if bi is not None]
@@ -1703,6 +2197,9 @@ class SeparateUnibodyTool(ToolMode):
                 document, registry, grown_list, region_bodies, pin_region_colors
             )
             remapped = remap_pin_faces(document, face_anchors, remap_tol)
+            from ..pins import apply_pin_body_names, link_pin_pieces
+            if link_pin_pieces(document, registry.pins):
+                apply_pin_body_names(document, registry.pins)
             self._color_package_pieces(document, old_records, pin_indices, remainder_colors)
             self._journal_split(document, before, regions, painted_bundles,
                                 pin_indices, matched, remapped)
@@ -1712,10 +2209,50 @@ class SeparateUnibodyTool(ToolMode):
             window.progress_done()
 
         self._pastel_preview_split(registry)
-        self._preview_painted = True  # exit() rebuilds to restore real colours
+        self._preview_painted = True  # exit() rebuilds to restore real colors
         self.undo_button.setEnabled(True)
         self._report_split(before, document, pin_indices, matched, unsplit)
         self._update_split_preview()  # now shows the real post-split bodies
+
+    def _bundles_from_color(self) -> None:
+        """Split by color: seed every pin's bundle from its same-color faces
+        and preview exactly those (Apply then splits them)."""
+        from ..pins import color_region_bundles
+
+        document = self.ctx.document
+        registry = self.ctx.window.pins
+        if document is None or not registry.pins:
+            self.status("Separate Unibody: run Detect Pins first")
+            return
+        bundles = color_region_bundles(document, registry.pins)
+        if not bundles:
+            self.status(
+                "Split by color: no pin differs in color from its body — paint the "
+                "pins in Colors (e.g. gold), or use Preview growth")
+            return
+        if self._grown is None:
+            self._grown = [None] * len(registry.pins)
+        self._manual = bundles
+        self._populate_bundle_combo(registry)
+        self._paint_manual()
+        skipped = sum(1 for i, p in enumerate(registry.pins)
+                      if i not in bundles and not p.body_ids)
+        self.status(f"Split by color: {len(bundles)} pin bundle(s) from face color"
+                    + (f", {skipped} pin(s) without a distinct color" if skipped else "")
+                    + " — Apply splits exactly these")
+
+    def _restore_undo_state(self, document) -> None:
+        state = getattr(self, "_undo_state", None)
+        if not state:
+            return
+        bodies, pin_links = state
+        document.bodies = list(bodies)
+        for pin, body_ids, face_ids in pin_links:
+            pin.body_ids = body_ids
+            pin.face_ids = face_ids
+        document.remesh_all()
+        self._undo_state = None
+        self.ctx.window.document_mutated()
 
     def undo(self) -> None:
         """Restore the pre-split body table and pin links — separation only

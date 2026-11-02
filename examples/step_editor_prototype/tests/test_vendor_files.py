@@ -91,7 +91,7 @@ class TestKicadOpen:
         # A parasolid payload behind a .step name must be refused.
         src = tmp_path / "sneaky.kicad_mod"
         write_scaffold(src, b"**ABCDEF parasolid transmit file **", name="fake.step")
-        with pytest.raises(RuntimeError, match="not STEP"):
+        with pytest.raises(RuntimeError, match="unsupported embedded model format: parasolid"):
             open_vendor_file(src, tmp_path)
 
 

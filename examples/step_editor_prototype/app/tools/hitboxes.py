@@ -5,6 +5,8 @@ flat prism, convex hull."""
 
 from __future__ import annotations
 
+import numpy as np
+
 from PySide6.QtWidgets import (
     QComboBox,
     QDoubleSpinBox,
@@ -17,39 +19,88 @@ from PySide6.QtWidgets import (
 )
 
 from ..hitbox import (
+    keep_above_board,
+    cavity_hitbox,
+    leg_below_seat,
     convex_hull_hitbox,
+    shallow_concave_hitbox,
     cube_from_point,
     obb_from_points,
     obb_from_three_clicks,
     obb_xy_cross_section,
+    pin_hitbox,
+    pin_solid_ids,
+    resize_hitbox,
+    shrink_wrap_hitbox,
+    thicken_flat,
 )
 from ..ortho2d import FootprintPadsCanvas, Ortho2DCanvas
-from ..pins import pin_mesh_points
+from ..pins import pin_mesh_points, specialty
 from .base import ToolMode, make_apply_button
 
 VARIANTS = (
     "male box (3 clicks)",
     "auto-box from pin",
-    "female interior box",
+    "cavity (fills to rim)",
+    "shallow concave (ring on the face)",
     "BGA cube (1 click)",
     "pad flat prism",
     "convex hull",
+    "shrink wrap",
 )
 
 VARIANT_KINDS = {
     "male box (3 clicks)": "male",
     "auto-box from pin": "male",
-    "female interior box": "female",
+    "cavity (fills to rim)": "female",
     "BGA cube (1 click)": "bga",
     "pad flat prism": "pad",
     "convex hull": "curved",
+    "shrink wrap": "curved",
 }
+
+
+def package_index(document) -> int | None:
+    """The housing: the body with the most surface (pins are always smaller).
+    Face pins on it are not their own entity."""
+    sizes = [len(b.mesh.tris) if b.mesh is not None else 0 for b in document.bodies]
+    return max(range(len(sizes)), key=sizes.__getitem__) if sizes else None
+
+
+def pin_entity(document, pin) -> frozenset:
+    """The solids this pin is: its own bodies, else the bodies its faces lie
+    on, minus the housing (a contact face on the housing is not an entity)."""
+    bodies = set(pin.body_ids) or {b for b, _f in pin.face_ids}
+    return frozenset(bodies - {package_index(document)})
+
+
+def entity_owner(document, pins, pin):
+    """Hitboxes are per ENTITY (solid), not per pin face: when several pins sit
+    on one solid (a contact's tail and its mouth, an anchor's two faces) only
+    one of them carries the hitbox. The owner is the first non-mouth pin on the
+    solid by pin number (a mouth only owns a solid no tail is on). Returns the
+    owner when it is another pin, else None."""
+    entity = pin_entity(document, pin)
+    if not entity or specialty(pin) == "guide":
+        return None
+    sharing = [p for p in pins if specialty(p) != "guide" and entity & pin_entity(document, p)]
+    owner = min(sharing, key=lambda p: (p.role == "mouth", str(p.number).isdigit() is False,
+                                        int(p.number) if str(p.number).isdigit() else 0))
+    return None if owner is pin else owner
+
+
+def extrude_flat_to_seat(points: np.ndarray, size: float, toward=None) -> np.ndarray:
+    """A pin known only by its flat tip face (a THT lead end, an SMT foot) has
+    a zero-height hull, so its hitbox would be invisible: see `thicken_flat`
+    (to Z = 0 off the board, upward on it, into the part for side faces)."""
+    return thicken_flat(points, size, toward)
 
 
 class HitboxTool(ToolMode):
     id = "hitboxes"
-    title = "Assign Pin Hitboxes"
+    title = "7 Pin Hitboxes"
     accent = "#0e8a8a"
+    auto_method = "_auto_all"
 
     def __init__(self, ctx) -> None:
         super().__init__(ctx)
@@ -116,7 +167,10 @@ class HitboxTool(ToolMode):
         all_button.clicked.connect(self._auto_all)
         clear_button = QPushButton("Clear hitbox")
         clear_button.clicked.connect(self._clear_selected)
-        for button in (auto_button, all_button, clear_button):
+        clear_all_button = QPushButton("Clear ALL")
+        clear_all_button.setToolTip("Remove every pin's hitbox (applied and staged)")
+        clear_all_button.clicked.connect(self._clear_all)
+        for button in (auto_button, all_button, clear_button, clear_all_button):
             button.setMinimumWidth(36)  # let the panel compress to 1/3 width
             action_row.addWidget(button)
         layout.addLayout(action_row)
@@ -132,6 +186,7 @@ class HitboxTool(ToolMode):
         self.apply_button.clicked.connect(self.apply)
         layout.addWidget(self.apply_button)
 
+        # the two previews side by side
         views_row = QHBoxLayout()
         hlr_column = QVBoxLayout()
         hlr_column.addWidget(QLabel("Cross-sections (geometer HLR)"))
@@ -141,6 +196,8 @@ class HitboxTool(ToolMode):
         pads_column.addWidget(QLabel("PCB footprint (hitboxes only)"))
         self.pads_canvas = FootprintPadsCanvas()
         pads_column.addWidget(self.pads_canvas, 1)
+        for canvas in (self.canvas, self.pads_canvas):
+            canvas.setMinimumSize(140, 140)  # side by side within the panel budget
         views_row.addLayout(hlr_column, 1)
         views_row.addLayout(pads_column, 1)
         layout.addLayout(views_row, 3)
@@ -150,7 +207,9 @@ class HitboxTool(ToolMode):
 
     def enter(self) -> None:
         self.clicks = []
-        self.ctx.window.request_footprint(self._on_footprint)
+        self.canvas.on_request = lambda: self.ctx.window.request_footprint(self._on_footprint, force=True)
+        self.canvas.waiting = not self.ctx.window.request_footprint(self._on_footprint)
+        self.canvas.update()
         self._refresh_views()
         registry = self.ctx.window.pins
         if registry.pins:
@@ -159,6 +218,7 @@ class HitboxTool(ToolMode):
             self.status("Hitboxes: no pins yet — run Detect Pins first")
 
     def exit(self) -> None:
+        self._hide_handles()
         self.ctx.scene.set_markers([])
         self.ctx.scene.clear_highlight()
 
@@ -190,7 +250,7 @@ class HitboxTool(ToolMode):
             return
 
         if variant != "male box (3 clicks)":
-            self.status("Hitboxes: this variant uses the Auto buttons, not clicks")
+            self._select_pin_at(pick)
             return
 
         self.clicks.append(pick.world_point)
@@ -219,41 +279,144 @@ class HitboxTool(ToolMode):
 
     # -------------------------------------------------------------- actions
 
+    # ---- handles: resize the selected pin's hitbox -------------------------
+    def _select_pin_at(self, pick) -> None:
+        """A click on a pin selects it and puts resize handles on its hitbox."""
+        registry = self.ctx.window.pins
+        for row, pin in enumerate(registry.pins):
+            if pick.body_index in pin.body_ids or (pick.body_index, pick.face_index) in pin.face_ids:
+                self.pin_list.setCurrentRow(row)
+                self._show_handles(pin)
+                self.status(f"Hitboxes: pin {pin.number}: drag the handles to resize (0.01 mm steps)")
+                return
+        self.status("Hitboxes: click a pin to resize its hitbox")
+
+    def _hide_handles(self) -> None:
+        try:
+            self.ctx.scene.plotter.clear_box_widgets()
+        except Exception:  # noqa: BLE001 - no widget to clear
+            pass
+
+    def _show_handles(self, pin) -> None:
+        self._hide_handles()
+        staged = self.pending.get(pin.number)
+        hitbox = staged[0] if staged else pin.hitbox
+        if not hitbox:
+            return
+        if hitbox.get("type") == "obb":
+            hitbox = resize_hitbox(hitbox, [c for pair in zip(
+                np.asarray(hitbox["center"]) - np.asarray(hitbox["half_extents"]),
+                np.asarray(hitbox["center"]) + np.asarray(hitbox["half_extents"])) for c in pair])
+        vertices = np.asarray(hitbox["vertices"], dtype=np.float64)
+        lo, hi = vertices.min(axis=0), vertices.max(axis=0)
+        bounds = [lo[0], hi[0], lo[1], hi[1], lo[2], hi[2]]
+
+        placing = [True]  # the widget calls back once as it is created: not a resize
+
+        def on_resize(box) -> None:
+            if placing[0]:
+                return
+            new = resize_hitbox(hitbox, box.bounds)
+            self._stage(pin, new, "resized")
+
+        self.ctx.scene.plotter.add_box_widget(
+            on_resize, bounds=bounds, factor=1.0, rotation_enabled=False,
+            color="#ffd24a", interaction_event="end")
+        placing[0] = False
+
     def _auto_selected(self) -> None:
         row = self.pin_list.currentRow()
         registry = self.ctx.window.pins
-        if 0 <= row < len(registry.pins):
-            self._auto_one(registry.pins[row])
+        if not 0 <= row < len(registry.pins):
+            return
+        owner = self._body_owner(registry.pins[row])
+        if owner is not None:
+            self.status(f"Hitboxes: pin {registry.pins[row].number} is on the same solid as pin "
+                        f"{owner.number}: one solid, one hitbox (pin {owner.number}'s)")
+            return
+        self._auto_one(registry.pins[row])
 
     def _auto_all(self) -> None:
         # Stage everything first, then refresh ONCE — refreshing per pin
         # rebuilds every hitbox actor each time (O(n^2) on big BGAs).
+        cavities = shared = 0
         for pin in self.ctx.window.pins.pins:
+            if specialty(pin) == "guide":
+                continue  # a GUIDE peg is not on a net: no hitbox
+            if self._body_owner(pin) is not None:
+                shared += 1
+                continue  # one solid, one hitbox: its owner's covers it
+            if pin.role == "mouth" and pin.face_ids and not pin.body_ids:
+                # a mating contact inside an opening: fill the cavity to its rim
+                hitbox = cavity_hitbox(self.ctx.document, pin)
+                if hitbox is not None:
+                    self._stage(pin, hitbox, "cavity (fills to rim)", refresh=False)
+                    cavities += 1
+                    continue
             self._auto_one(pin, refresh=False)
         self._refresh_views()
         self.status(
-            f"Hitboxes: {len(self.pending)} staged — press Apply"
+            f"Hitboxes: {len(self.pending)} staged ({cavities} filling their cavity"
+            + (f"; {shared} pin(s) share another pin's solid and its hitbox" if shared else "")
+            + ") — press Apply"
         )
 
+    def _body_owner(self, pin):
+        """The pin whose hitbox covers this pin's solid, or None when this pin
+        owns its own hitbox (see entity_owner)."""
+        return entity_owner(self.ctx.document, self.ctx.window.pins.pins, pin)
+
     def _auto_one(self, pin, *, refresh: bool = True) -> None:
-        points = pin_mesh_points(self.ctx.document, pin)
-        if not len(points):
-            self.status(f"Hitboxes: pin {pin.number} has no mesh points")
-            return
         variant = self.variant_combo.currentText()
         margin = float(self.margin_spin.value())
         size = float(self.size_spin.value())
+        pins = self.ctx.window.pins.pins
         if variant == "convex hull":
-            hitbox = convex_hull_hitbox(points, margin=margin)
-        elif variant == "pad flat prism":
-            hitbox = obb_from_points(points, margin=margin, flat_height=size)
-        elif variant == "female interior box":
-            hitbox = obb_from_points(points, margin=-margin, height_override=size)
-        elif variant == "BGA cube (1 click)":
-            hitbox = cube_from_point(points.mean(axis=0), size)
-        else:
-            hitbox = obb_from_points(points, margin=margin)
+            # the rule: hull of the pin's own solid (a separate lead: the whole
+            # lead), else its faces thickened the right way
+            hitbox = pin_hitbox(self.ctx.document, pin, pins, margin=margin, size=size)
+            if hitbox is None:
+                self.status(f"Hitboxes: pin {pin.number} has no mesh points")
+                return
+            self._stage(pin, hitbox, variant, refresh=refresh)
+            return
+        solids = pin_solid_ids(self.ctx.document, pin, pins)
+        if solids:
+            points = np.concatenate([self.ctx.document.bodies[b].mesh.points for b in solids])
+        else:  # a face-marked pin below the board: follow its metal up to Z = 0
+            leg = leg_below_seat(self.ctx.document, pin)
+            points = leg if leg is not None else pin_mesh_points(self.ctx.document, pin)
+        if not len(points):
+            self.status(f"Hitboxes: pin {pin.number} has no mesh points")
+            return
+        points = extrude_flat_to_seat(points, size)
+        hitbox = keep_above_board(self._variant_hitbox(variant, pin, points, margin, size), points)
+        if hitbox is None:
+            self.status(f"Hitboxes: pin {pin.number} has no curved face for a shallow concave ring")
+            return
         self._stage(pin, hitbox, variant, refresh=refresh)
+
+    def _variant_hitbox(self, variant, pin, points, margin, size):
+        """The chosen variant's hitbox from the pin's points (None: not possible)."""
+        makers = {
+            "convex hull": lambda: convex_hull_hitbox(points, margin=margin),
+            "shrink wrap": lambda: shrink_wrap_hitbox(points, margin=margin),
+            "pad flat prism": lambda: obb_from_points(points, margin=margin, flat_height=size),
+            "cavity (fills to rim)": lambda: self._cavity_or_box(pin, points, margin, size),
+            "shallow concave (ring on the face)": lambda: shallow_concave_hitbox(
+                self.ctx.document, pin, depth=size, margin=margin),
+            "BGA cube (1 click)": lambda: cube_from_point(points.mean(axis=0), size),
+        }
+        return makers.get(variant, lambda: obb_from_points(points, margin=margin))()
+
+    def _cavity_or_box(self, pin, points, margin, size):
+        """Fill the cavity the contact sits in (walls grown across concave
+        edges, stopping at the convex rim); the old interior box if none."""
+        hitbox = cavity_hitbox(self.ctx.document, pin, margin=margin)
+        if hitbox is None:
+            self.status(f"Hitboxes: pin {pin.number}: no cavity found around it, using a box")
+            return obb_from_points(points, margin=-margin, height_override=size)
+        return hitbox
 
     def _clear_selected(self) -> None:
         row = self.pin_list.currentRow()
@@ -262,7 +425,19 @@ class HitboxTool(ToolMode):
             pin = registry.pins[row]
             pin.hitbox = None
             self.pending.pop(pin.number, None)
+            self.ctx.journal.record(tool=self.id, params={"action": "clear"},
+                                    inputs={"pin_number": pin.number}, result={})
             self._refresh_views()
+
+    def _clear_all(self) -> None:
+        registry = self.ctx.window.pins
+        cleared = sum(1 for pin in registry.pins if pin.hitbox) + len(self.pending)
+        for pin in registry.pins:
+            pin.hitbox = None
+        self.pending = {}
+        self.ctx.journal.record(tool=self.id, params={"action": "clear_all"}, inputs={}, result={})
+        self._refresh_views()
+        self.status(f"Hitboxes: cleared all ({cleared})")
 
     def _stage(self, pin, hitbox: dict, variant: str, *, refresh: bool = True) -> None:
         """Hitboxes preview in orange until the green Apply commits them."""
@@ -289,6 +464,7 @@ class HitboxTool(ToolMode):
             pin.hitbox = hitbox
             pin.kind = VARIANT_KINDS.get(variant, pin.kind)
             applied.append({"pin": number, "variant": variant, "hitbox": hitbox})
+            self._clear_sharers(pin)
         self.pending = {}
         self.ctx.journal.record(
             tool=self.id,
@@ -303,6 +479,14 @@ class HitboxTool(ToolMode):
         self.status(f"Hitboxes: applied {len(applied)} hitboxes")
 
     # ---------------------------------------------------------------- views
+
+    def _clear_sharers(self, owner) -> None:
+        """One solid, one hitbox: a hitbox applied to a solid's owner replaces
+        any older hitbox another pin on the same solid still carried."""
+        document, pins = self.ctx.document, self.ctx.window.pins.pins
+        for other in pins:
+            if other is not owner and other.hitbox and entity_owner(document, pins, other) is owner:
+                other.hitbox = None
 
     def _refresh_views(self) -> None:
         if self._actions_widget is None:

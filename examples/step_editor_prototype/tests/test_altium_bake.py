@@ -11,7 +11,7 @@ from pathlib import Path
 import geometer
 import pytest
 
-from app.vendor_files import ALTIUM_MONKEY, BAKER, altium_available
+from app.vendor_files import BAKER, _altium_command, altium_available
 from conftest import PROTO
 
 FIXTURE = PROTO.parents[1] / "tests" / "fixtures" / "step" / "embedded_models" / "SOIC-20-300.STEP"
@@ -24,8 +24,8 @@ pytestmark = pytest.mark.skipif(
 
 def run_baker(*args: str) -> str:
     proc = subprocess.run(
-        ["uv", "run", "--project", str(ALTIUM_MONKEY), "python", str(BAKER), *args],
-        capture_output=True, text=True, cwd=str(ALTIUM_MONKEY), timeout=600,
+        [*_altium_command()[0], str(BAKER), *args],
+        capture_output=True, text=True, cwd=_altium_command()[1], timeout=600,
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
     return proc.stdout

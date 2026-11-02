@@ -1,5 +1,5 @@
 """SceneManager: owns everything in the PyVista plotter — body actors with
-per-face STEP colours, click picking that resolves back to (body, B-rep face),
+per-face STEP colors, click picking that resolves back to (body, B-rep face),
 rubber-band selection, and highlight overlays. No OCP imports here; geometry
 arrives as numpy from EditorDocument."""
 
@@ -7,6 +7,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Callable
+
+import time
 
 import numpy as np
 import pyvista as pv
@@ -24,7 +26,54 @@ from .viewcam import (
     material_settings,
 )
 
+FLASH_FILL = 0.35    # change flash / preview: semi-transparent green fill...
+FLASH_EDGES = 0.75   # ...and its outline
+FLASH_FADE = 1.0     # seconds the flash takes to fade out
+FADE_TICK_S = 0.04
 
+
+ZOOM_STEP = 1.15  # one wheel notch
+HATCH_PLANES = 40  # selection stripes: one plane every model-size / 40
+SLOW_FRAME_S = 0.25  # a 3D frame slower than this is logged
+RENDER_CHECK_MS = 200  # how often an unrendered scene change is looked for
+
+
+def _scene_stamp(plotter) -> int:
+    """The newest modification time of anything drawn: the renderers, their
+    cameras and every prop with its mapper and mapper input. Raw VTK calls
+    only (through PyVista's wrappers this took 25-45 ms on a 578-body model,
+    five times a second)."""
+    stamp = 0
+    renderers = plotter.render_window.GetRenderers()
+    renderers.InitTraversal()
+    for _ in range(renderers.GetNumberOfItems()):
+        renderer = renderers.GetNextItem()
+        stamp = max(stamp, renderer.GetMTime(), renderer.GetActiveCamera().GetMTime(), _props_stamp(renderer))
+    return stamp
+
+
+def _props_stamp(renderer) -> int:
+    props = renderer.GetViewProps()
+    props.InitTraversal()
+    stamp = 0
+    for _ in range(props.GetNumberOfItems()):
+        stamp = max(stamp, _mapper_stamp(props.GetNextProp()))
+    return stamp
+
+
+def _mapper_stamp(prop) -> int:
+    """A prop's own time with its mapper's and the mapper input's."""
+    stamp = prop.GetMTime()
+    mapper = prop.GetMapper() if hasattr(prop, "GetMapper") else None
+    if mapper is None:
+        return stamp
+    data = mapper.GetInputDataObject(0, 0) if mapper.GetNumberOfInputPorts() else None
+    return max(stamp, mapper.GetMTime(), data.GetMTime() if data is not None else 0)
+
+
+LAND_OPACITY = 0.8
+GHOST_OPACITY = 0.2   # ghost PCB board / ghost schematic symbol
+BOARD_THICKNESS = 1.6  # mm, a standard FR-4 board under the ghost footprint  # footprint preview: 20% see-through, the part shows under it
 CLICK_SLOP_PX = 4  # press→release movement beyond this is a drag, not a pick
 
 
@@ -51,11 +100,171 @@ class PickResult:
     shift: bool = False      # Shift was held during the click (multi-select)
 
 
+def _radii(pad: dict, which: str, grow: float) -> tuple[float, float]:
+    """Half-sizes of a through-hole's pad or drill, grown by `grow`."""
+    if which == "pad":
+        return pad["w"] / 2 + grow, pad["h"] / 2 + grow
+    drill = pad.get("drill") or [pad["w"], pad["h"]]
+    drill = [drill, drill] if isinstance(drill, (int, float)) else drill
+    return drill[0] / 2 + grow, drill[1] / 2 + grow
+
+
+def _stadium(cx: float, cy: float, hx: float, hy: float, t: np.ndarray) -> np.ndarray:
+    """Outline points of a slot (a stadium: two half-circles joined by
+    straight sides) with half-sizes hx, hy; equal half-sizes give a circle.
+    t: angles round the outline."""
+    r = min(hx, hy)
+    straight_x, straight_y = hx - r, hy - r
+    return np.column_stack([cx + np.sign(np.cos(t)) * straight_x + r * np.cos(t),
+                            cy + np.sign(np.sin(t)) * straight_y + r * np.sin(t)])
+
+
+def _ring_mesh(pads: list, radii, z: float, steps: int = 40):
+    """Flat rings (outer, inner half-sizes per pad; inner None = a disc)."""
+    t = np.linspace(0.0, 2 * np.pi, steps, endpoint=False)
+    points, faces = [], []
+    for pad in pads:
+        (ox, oy), inner = radii(pad)
+        outer = _stadium(pad["x"], pad["y"], ox, oy, t)
+        start = len(points)
+        points += [[x, y, z] for x, y in outer]
+        if inner is None:
+            faces += [steps, *range(start, start + steps)]
+            continue
+        hole = _stadium(pad["x"], pad["y"], inner[0], inner[1], t)
+        points += [[x, y, z] for x, y in hole]
+        for k in range(steps):
+            j = (k + 1) % steps
+            faces += [4, start + k, start + j, start + steps + j, start + steps + k]
+    return pv.PolyData(np.array(points), np.array(faces))
+
+
+def _drill_cutters(pad: dict, thickness: float) -> list:
+    """Solids to cut out of the board for one drill: a cylinder, or a slot's
+    two round ends plus the box between them."""
+    from OCP.BRepPrimAPI import BRepPrimAPI_MakeBox, BRepPrimAPI_MakeCylinder
+    from OCP.gp import gp_Ax2, gp_Dir, gp_Pnt
+
+    drill = pad["drill"]
+    dx, dy = (drill, drill) if isinstance(drill, (int, float)) else drill
+    r, half = min(dx, dy) / 2, max(dx, dy) / 2 - min(dx, dy) / 2
+    along = (1.0, 0.0) if dx >= dy else (0.0, 1.0)
+    ends = [-half, half] if half > 1e-6 else [0.0]
+    cutters = [BRepPrimAPI_MakeCylinder(gp_Ax2(gp_Pnt(pad["x"] + along[0] * k, pad["y"] + along[1] * k,
+                                                      -thickness - 0.1), gp_Dir(0, 0, 1)), r, thickness + 0.2).Shape()
+               for k in ends]
+    if half > 1e-6:
+        w, h = (2 * half, 2 * r) if dx >= dy else (2 * r, 2 * half)
+        cutters.append(BRepPrimAPI_MakeBox(gp_Pnt(pad["x"] - w / 2, pad["y"] - h / 2, -thickness - 0.1),
+                                           w, h, thickness + 0.2).Shape())
+    return cutters
+
+
+_BOARD_CACHE: dict = {}  # (rect, drills, thickness) -> board mesh; re-entering Tool 9 reuses it
+
+
+def _board_key(rect: tuple, pads: list[dict], thickness: float) -> tuple:
+    drills = tuple(sorted((round(p["x"], 4), round(p["y"], 4), str(p["drill"])) for p in pads
+                          if p.get("drill") and p.get("type") != "smd"))
+    return tuple(round(v, 4) for v in rect), drills, thickness
+
+
+def _board_with_holes(rect: tuple, pads: list[dict], thickness: float):
+    """The ghost board as a mesh: a slab below Z=0 with every drill cut
+    (round holes and oval slots), via OpenCascade, in ONE boolean with all the
+    cutters as tools (cutting hole by hole took 7 s for a 294-pin DIMM socket).
+    Cached: the same board is not rebuilt when Tool 9 is entered again."""
+    key = _board_key(rect, pads, thickness)
+    if key not in _BOARD_CACHE:
+        if len(_BOARD_CACHE) > 8:
+            _BOARD_CACHE.clear()
+        _BOARD_CACHE[key] = _build_board(rect, pads, thickness)
+    return _BOARD_CACHE[key]
+
+
+def _build_board(rect: tuple, pads: list[dict], thickness: float):
+    from OCP.BRepAlgoAPI import BRepAlgoAPI_Cut
+    from OCP.BRepPrimAPI import BRepPrimAPI_MakeBox
+    from OCP.gp import gp_Pnt
+    from OCP.TopTools import TopTools_ListOfShape
+
+    from .document import tessellate_body
+
+    x0, x1, y0, y1 = rect
+    slab = BRepPrimAPI_MakeBox(gp_Pnt(x0, y0, -thickness), x1 - x0, y1 - y0, thickness).Shape()
+    tools = TopTools_ListOfShape()
+    for pad in (p for p in pads if p.get("drill") and p.get("type") != "smd"):
+        for cutter in _drill_cutters(pad, thickness):
+            tools.Append(cutter)
+    solid = slab
+    if tools.Size():
+        arguments = TopTools_ListOfShape()
+        arguments.Append(slab)
+        cut = BRepAlgoAPI_Cut()
+        cut.SetArguments(arguments)
+        cut.SetTools(tools)
+        cut.SetRunParallel(True)
+        cut.Build()
+        solid = cut.Shape() if cut.IsDone() else slab
+    mesh = tessellate_body(solid, max(x1 - x0, y1 - y0) / 400.0)
+    if not len(mesh.tris):
+        return None
+    return pv.PolyData(mesh.points, np.column_stack([np.full(len(mesh.tris), 3), mesh.tris]).ravel())
+
+
+def _barrel(pad: dict, thickness: float):
+    """The copper lining of a plated hole, through the board."""
+    hx, hy = _radii(pad, "drill", 0.0)
+    if abs(hx - hy) < 1e-6:
+        return pv.Cylinder(center=(pad["x"], pad["y"], -thickness / 2), direction=(0, 0, 1),
+                           radius=hx, height=thickness, capping=False, resolution=32)
+    # a plated slot: its stadium outline swept through the board
+    outline = _stadium(pad["x"], pad["y"], hx, hy, np.linspace(0.0, 2 * np.pi, 48, endpoint=False))
+    ring = pv.PolyData(np.column_stack([outline, np.zeros(len(outline))]),
+                       lines=np.array([len(outline) + 1, *range(len(outline)), 0]))
+    return ring.extrude((0.0, 0.0, -thickness), capping=False)
+
+
+def _flat_label(label: tuple, height: float):
+    """Text lying flat on the Z plane. label = (x, y, text, dx, dy): with a
+    direction (a pin stub's, outward) the text starts just past (x, y), is
+    centred on the stub's line and runs along it, turned to read left to
+    right / bottom to top (so on left and bottom pins it ends at the tip);
+    with dx = dy = 0 it is centred on (x, y) (a BGA ball)."""
+    x, y, text, dx, dy = label
+    flat = pv.Text3D(text, depth=0.0, height=height)
+    b = flat.bounds
+    width = b[1] - b[0]
+    flat = flat.translate((-(b[0] + b[1]) / 2, -(b[2] + b[3]) / 2, 0.0), inplace=False)
+    if dx == 0 and dy == 0:
+        return flat.translate((x, y, 0.0), inplace=False)
+    reading = (dx, dy) if (dx > 0.5 or dy > 0.5) else (-dx, -dy)
+    flat = flat.rotate_z(float(np.degrees(np.arctan2(reading[1], reading[0]))), inplace=False)
+    reach = 0.25 * height + width / 2
+    return flat.translate((x + dx * reach, y + dy * reach, 0.0), inplace=False)
+
+
+def _split_stubs(stubs: list, selected: set) -> tuple[list, list]:
+    """(unselected, selected) pin stubs, skipping pins without one."""
+    kept = [(i, st) for i, st in enumerate(stubs) if st is not None]
+    return [st for i, st in kept if i not in selected], [st for i, st in kept if i in selected]
+
+
+def _box_lines(pads: list[dict], margin: float) -> list:
+    """The four sides of the box round all pads, grown by `margin`."""
+    lo = np.array([[p["x"] - p["w"] / 2, p["y"] - p["h"] / 2] for p in pads]).min(axis=0) - margin
+    hi = np.array([[p["x"] + p["w"] / 2, p["y"] + p["h"] / 2] for p in pads]).max(axis=0) + margin
+    return [(lo[0], lo[1], hi[0], lo[1]), (hi[0], lo[1], hi[0], hi[1]),
+            (hi[0], hi[1], lo[0], hi[1]), (lo[0], hi[1], lo[0], lo[1])]
+
+
 class SceneManager:
     def __init__(self, plotter) -> None:
         self.plotter = plotter
         self.on_pick: Callable[[PickResult], None] | None = None
         self.on_miss: Callable[[], None] | None = None  # click on empty space
+        self.on_right_miss: Callable[[], None] | None = None  # right-click on empty space
+        self._right_press = None
         self._body_polydata: list[pv.PolyData] = []
         self._display_polydata: list = []  # the smooth-shaded copies the mappers render
         self._actor_to_body: dict[int, int] = {}  # id(vtkActor) -> body index
@@ -78,12 +287,117 @@ class SceneManager:
         plotter.enable_anti_aliasing()
         plotter.enable_parallel_projection()
         configure_lighting(plotter)
+        self._watch_frame_times(plotter)
+        self._render_on_change(plotter)
         plotter.iren.add_observer("LeftButtonPressEvent", self._on_left_press)
         plotter.iren.add_observer("LeftButtonReleaseEvent", self._on_left_release)
+        plotter.iren.add_observer("RightButtonPressEvent", self._on_right_press)
+        plotter.iren.add_observer("RightButtonReleaseEvent", self._on_right_release)
+        # The wheel zooms toward the point under the cursor (not the view
+        # centre): an observer on the style replaces its own wheel zoom.
+        style = plotter.iren.interactor.GetInteractorStyle()
+        style.AddObserver("MouseWheelForwardEvent", lambda _o, _e: self.zoom_at_cursor(ZOOM_STEP))
+        style.AddObserver("MouseWheelBackwardEvent", lambda _o, _e: self.zoom_at_cursor(1.0 / ZOOM_STEP))
+        # VTK's right-drag dolly zoomed on every right-click (the hand drifts a
+        # pixel): the right button is the editor's own (its handlers sit on the
+        # interactor); zoom is the wheel only.
+        style.AddObserver("RightButtonPressEvent", lambda _o, _e: None)
+        style.AddObserver("RightButtonReleaseEvent", lambda _o, _e: None)
+
+    def _render_on_change(self, plotter) -> None:
+        """Replace pyvistaqt's auto-update (a full render + GPU present 5x a
+        second, forever, even with nothing changing) with a check that renders
+        only when something in the scene was modified and not yet drawn. An
+        idle editor then presents no frames at all: the endless presents kept
+        the NVIDIA overlay / multiplane-overlay compositor path busy and the
+        whole Windows desktop could drop to ~13 fps."""
+        from PySide6.QtCore import QTimer
+
+        timer = getattr(plotter, "render_timer", None)
+        if timer is not None:
+            timer.stop()
+        clock = vtk.vtkTimeStamp()
+        drawn = {"stamp": -1}
+
+        def rendered(_obj, _event) -> None:  # VTK's global modified counter: one cheap call
+            clock.Modified()
+            drawn["stamp"] = clock.GetMTime()
+
+        plotter.render_window.AddObserver("EndEvent", rendered)
+        self._change_timer = QTimer(plotter)
+        self._change_timer.timeout.connect(lambda: self._check_unrendered(plotter, drawn))
+        self._change_timer.start(RENDER_CHECK_MS)
+
+    def _check_unrendered(self, plotter, drawn: dict) -> None:
+        """Render when something changed after the last frame. The walk over
+        every actor costs ~27 ms on a 585-body model, so the check spaces
+        itself out to stay near 2% of the UI thread (200 ms on small parts,
+        ~1.4 s on huge ones); explicit renders never wait for it."""
+        if not plotter.isVisible():
+            return
+        start = time.perf_counter()
+        changed = _scene_stamp(plotter) > drawn["stamp"]
+        cost_ms = (time.perf_counter() - start) * 1000.0
+        self._change_timer.setInterval(int(min(max(RENDER_CHECK_MS, cost_ms * 50), 2000)))
+        if changed:
+            plotter.render()
+
+    def _watch_frame_times(self, plotter) -> None:
+        """Log any 3D frame slower than SLOW_FRAME_S to editor_errors.log
+        (at most once per 10 s), with what was being drawn: a stalling GPU
+        frame can freeze the whole Windows desktop while the CPU sits idle."""
+        import time
+
+        window = plotter.render_window
+        state = {"start": 0.0, "logged": 0.0}
+
+        def started(_obj, _event) -> None:
+            state["start"] = time.perf_counter()
+
+        def ended(_obj, _event) -> None:
+            took = time.perf_counter() - state["start"]
+            if took < SLOW_FRAME_S or time.perf_counter() - state["logged"] < 10.0:
+                return
+            state["logged"] = time.perf_counter()
+            from .app_window import log_error
+
+            xray = getattr(self, "_xray_layer", None)
+            log_error("slow 3D frame", f"{took:.2f} s; main actors {plotter.renderer.GetActors().GetNumberOfItems()}, "
+                                       f"x-ray actors {xray.GetActors().GetNumberOfItems() if xray else 0}")
+
+        window.AddObserver("StartEvent", started)
+        window.AddObserver("EndEvent", ended)
+
+    def zoom_at_cursor(self, factor: float) -> None:
+        """Zoom by `factor` (> 1 in) keeping the point under the cursor where
+        it is on screen, so a small feature can be zoomed straight into."""
+        interactor = self.plotter.iren.interactor
+        renderer = self.plotter.renderer
+        camera = renderer.GetActiveCamera()
+        x, y = interactor.GetEventPosition()
+        focal = np.array(camera.GetFocalPoint())
+        renderer.SetWorldPoint(*focal, 1.0)
+        renderer.WorldToDisplay()
+        depth = renderer.GetDisplayPoint()[2]
+        renderer.SetDisplayPoint(x, y, depth)
+        renderer.DisplayToWorld()
+        world = np.array(renderer.GetWorldPoint())
+        under = world[:3] / (world[3] or 1.0)
+        if camera.GetParallelProjection():
+            camera.SetParallelScale(camera.GetParallelScale() / factor)
+        else:
+            camera.Dolly(factor)
+        shift = (under - focal) * (1.0 - 1.0 / factor)
+        camera.SetFocalPoint(*(np.array(camera.GetFocalPoint()) + shift))
+        camera.SetPosition(*(np.array(camera.GetPosition()) + shift))
+        renderer.ResetCameraClippingRange()
+        self.plotter.render()
 
     # -------------------------------------------------------------- building
 
     def rebuild(self, document: EditorDocument, *, show_feature_edges: bool = True) -> None:
+        b = document.bounds()
+        self._model_size = float(max(b[1] - b[0], b[3] - b[2], b[5] - b[4]))  # hatch spacing
         self.plotter.clear()
         configure_lighting(self.plotter, LightingSettings())
         material = material_settings()
@@ -131,6 +445,8 @@ class SceneManager:
                 roughness=material["roughness"],
                 metallic=0.0,
                 name=f"body-{index}",
+                reset_camera=False,  # once per model below, not once per body
+                render=False,
             )
             self._actor_to_body[id(actor)] = index
             self._actors.append(actor)
@@ -153,10 +469,14 @@ class SceneManager:
                     self.plotter.add_mesh(
                         edges, color="#9fb0c4", line_width=1.0,
                         pickable=False, name=f"edges-{index}",
+                        reset_camera=False, render=False,
                     )
 
         self.plotter.add_axes()
         self.show_ground_grid(document.bounds())
+        # Everything present now is the model itself; anything added later is
+        # a tool overlay that clear_tool_overlays() may remove.
+        self._base_actor_names = set(self.plotter.renderer.actors.keys())
         self.plotter.render()
 
     @staticmethod
@@ -198,11 +518,19 @@ class SceneManager:
 
     def paint_faces(self, body_index: int, face_rgb: dict) -> None:
         """Batch per-face recolor (display only) with a single render."""
+        if not face_rgb:
+            return
+        lookup_ids = np.fromiter(face_rgb.keys(), dtype=np.int64, count=len(face_rgb))
+        lookup_rgb = np.array([[int(round(c * 255)) for c in rgb] for rgb in face_rgb.values()],
+                              dtype=np.uint8)
         for polydata in self._color_targets(body_index):
             colors = np.asarray(polydata.cell_data["rgb"])
-            face_ids = polydata.cell_data["face_id"]
-            for face_index, rgb in face_rgb.items():
-                colors[face_ids == face_index] = [int(round(c * 255)) for c in rgb]
+            face_ids = np.asarray(polydata.cell_data["face_id"])
+            order = np.argsort(lookup_ids)
+            pos = np.searchsorted(lookup_ids[order], face_ids)
+            pos = np.clip(pos, 0, len(order) - 1)
+            hit = lookup_ids[order][pos] == face_ids
+            colors[hit] = lookup_rgb[order][pos[hit]]
             polydata.cell_data["rgb"] = colors
         self.plotter.render()
 
@@ -223,6 +551,21 @@ class SceneManager:
     def _on_left_press(self, _obj, _event) -> None:
         self._press_position = self.plotter.iren.interactor.GetEventPosition()
 
+    def _on_right_press(self, _obj, _event) -> None:
+        self._right_press = self.plotter.iren.interactor.GetEventPosition()
+
+    def _on_right_release(self, _obj, _event) -> None:
+        if self._right_press is None:
+            return
+        x0, y0 = self._right_press
+        self._right_press = None
+        x1, y1 = self.plotter.iren.interactor.GetEventPosition()
+        if abs(x1 - x0) > CLICK_SLOP_PX or abs(y1 - y0) > CLICK_SLOP_PX:
+            return  # a right-drag zooms
+        if self.pick_at(x1, y1) is None and self.on_right_miss is not None:
+            self.on_right_miss()
+            self.plotter.render()
+
     def _on_left_release(self, _obj, _event) -> None:
         if self._press_position is None:
             return
@@ -233,7 +576,7 @@ class SceneManager:
             return  # camera drag
         pick = self.pick_at(x1, y1)
         if pick is None:
-            self.clear_highlight()
+            # a click on the background keeps the selection; right-click clears it
             if self.on_miss is not None:
                 self.on_miss()
             self.plotter.render()
@@ -341,8 +684,10 @@ class SceneManager:
         )
         self.plotter.render()
 
-    def highlight_faces(self, pairs) -> None:
-        """Highlight a set of (body_index, face_index) pairs."""
+    def highlight_faces(self, pairs, hatched: bool = False) -> None:
+        """Highlight a set of (body_index, face_index) pairs. `hatched` draws
+        yellow stripes over the faces instead of a solid fill, so the
+        color underneath stays visible (Colors tool)."""
         self.clear_highlight()
         subsets = []
         by_body: dict[int, list[int]] = {}
@@ -359,21 +704,366 @@ class SceneManager:
             self.plotter.render()
             return
         combined = subsets[0] if len(subsets) == 1 else subsets[0].merge(subsets[1:])
-        self.plotter.add_mesh(
-            combined,
-            color="#ffd24a",
-            opacity=1.0,
-            lighting=False,
-            pickable=False,
-            name="highlight-face",
-        )
+        if hatched:
+            self._add_hatch(combined)
+        else:
+            self.plotter.add_mesh(
+                combined,
+                color="#ffd24a",
+                opacity=1.0,
+                lighting=False,
+                pickable=False,
+                name="highlight-face",
+            )
+        self.plotter.render()
+
+    def _add_hatch(self, surface) -> None:
+        """Diagonal yellow stripes over `surface` (contour lines of a
+        diagonal ramp) plus a faint tint, under the one highlight name."""
+        surface = surface.extract_surface(algorithm="dataset_surface") if hasattr(surface, "extract_surface") else surface
+        # ONE fixed array of parallel planes for the whole model (spacing from
+        # the model's size, positioned from the world origin): any selection,
+        # of any size, on any face, cuts the same planes, so the stripes keep
+        # their spacing and run on seamlessly from face to face.
+        size = max(getattr(self, "_model_size", 0.0), 1e-6)
+        ramp = surface.points @ np.array([0.577, 0.577, 0.577])
+        surface.point_data["hatch"] = ramp
+        period = size / HATCH_PLANES
+        levels = np.arange(np.ceil(ramp.min() / period), np.floor(ramp.max() / period) + 1) * period
+        tint = surface.copy()
+        tint.point_data.clear()
+        self.plotter.add_mesh(tint, color="#ffd24a", opacity=0.15, lighting=False,
+                              pickable=False, name="highlight-face")
+        if len(levels):
+            lines = surface.contour(isosurfaces=levels, scalars="hatch")
+            if lines.n_lines:
+                lines.point_data.clear()
+                self.plotter.add_mesh(lines.tube(radius=size / 260.0), color="#ffd24a",
+                                      lighting=False, pickable=False, name="highlight-hatch")
+
+    def clear_tool_overlays(self) -> None:
+        """Drop every overlay a tool added (pin faces, leaders, labels,
+        markers, sections, hitboxes, triads...). Called on every tool switch so
+        nothing leaks into the next tool, whichever steps were skipped."""
+        base = getattr(self, "_base_actor_names", None)
+        if base is None:
+            return
+        for name in list(self.plotter.renderer.actors.keys()):
+            if name not in base:
+                self.remove_overlay(name)
+        self._label_groups = 0
+        self._pinface_groups = 0
+        self._pinaxis_groups = 0
+        self._hitbox_overlays = []
+        self.hide_band_2d()
         self.plotter.render()
 
     def clear_highlight(self) -> None:
-        try:
-            self.plotter.remove_actor("highlight-face", render=False)
-        except Exception:
-            pass
+        for name in ("highlight-face", "highlight-hatch"):
+            try:
+                self.plotter.remove_actor(name, render=False)
+            except Exception:
+                pass
+        layer = getattr(self, "_xray_layer", None)
+        for actor in getattr(self, "_mark_actors", []):
+            if layer is not None:
+                layer.RemoveActor(actor)
+        self._mark_actors = []
+
+    def _xray(self):
+        """A renderer on layer 1 sharing the main camera: what it draws is
+        always on top, so marks inside or behind a body show through."""
+        layer = getattr(self, "_xray_layer", None)
+        window = self.plotter.render_window
+        if layer is None or layer.GetRenderWindow() is not window:
+            layer = vtk.vtkRenderer()
+            layer.SetLayer(1)
+            layer.InteractiveOff()
+            window.SetNumberOfLayers(max(2, window.GetNumberOfLayers()))
+            window.AddRenderer(layer)
+            self._xray_layer = layer
+        layer.SetActiveCamera(self.plotter.renderer.GetActiveCamera())
+        return layer
+
+    def show_marks(self, lines, points, color: str = "#ffb000") -> None:
+        """Light up edges (polylines) and vertices on top of the model, so
+        the ones inside or behind a body show through it (Model Health)."""
+        self.clear_highlight()
+        layer = self._xray()
+        rgb = [int(color[k:k + 2], 16) / 255.0 for k in (1, 3, 5)]
+        if len(lines):
+            stacked = np.vstack(lines)
+            cells, start = [], 0
+            for line in lines:
+                cells.append(np.concatenate([[len(line)], np.arange(start, start + len(line))]))
+                start += len(line)
+            self._mark_actors.append(
+                self._add_xray_actor(layer, pv.PolyData(stacked, lines=np.concatenate(cells)), rgb, line_width=3.0))
+        if len(points):
+            self._mark_actors.append(
+                self._add_xray_actor(layer, pv.PolyData(np.asarray(points, dtype=float)), rgb, point_size=11.0))
+        self.plotter.render()
+
+    def flash_geometry(self, pieces, seconds: float | None = 5.0, color: str = "#2ee66b") -> None:
+        """Show what a fix changes: the pieces ((points, tris) meshes) in
+        green, on top of the model, for `seconds` (None: until end_flash, as a
+        preview)."""
+        from PySide6.QtCore import QTimer
+
+        self.end_flash()
+        pieces = [(p, t) for p, t in pieces if len(t)]
+        if not pieces:
+            return
+        layer = self._xray()
+        rgb = [int(color[k:k + 2], 16) / 255.0 for k in (1, 3, 5)]
+        points, cells, offset = [], [], 0
+        for p, t in pieces:
+            points.append(p)
+            cells.append(np.column_stack([np.full(len(t), 3), t + offset]))
+            offset += len(p)
+        surface = pv.PolyData(np.vstack(points), np.vstack(cells).ravel())
+        fill = self._add_xray_actor(layer, surface, rgb)
+        edges = self._add_xray_actor(layer, surface.extract_feature_edges(30.0), rgb, line_width=2.0)
+        self._flash_actors = [fill, edges]
+        self._flash_opacity = [(fill, FLASH_FILL), (edges, FLASH_EDGES)]
+        for actor, opacity in self._flash_opacity:
+            actor.GetProperty().SetOpacity(opacity)
+        self._flash_token = getattr(self, "_flash_token", 0) + 1
+        if seconds is not None:  # hold, then fade out over the last FLASH_FADE seconds
+            token = self._flash_token
+            QTimer.singleShot(int(max(seconds - FLASH_FADE, 0) * 1000), lambda: self._fade_step(token, 1.0))
+        self.plotter.render()
+
+    def _fade_step(self, token: int, level: float) -> None:
+        """One step of the flash fading out; a newer flash cancels it."""
+        from PySide6.QtCore import QTimer
+
+        if token != getattr(self, "_flash_token", 0):
+            return
+        level -= FADE_TICK_S / FLASH_FADE
+        if level <= 0:
+            self.end_flash()
+            return
+        for actor, opacity in getattr(self, "_flash_opacity", []):
+            actor.GetProperty().SetOpacity(opacity * level)
+        self.plotter.render()
+        QTimer.singleShot(int(FADE_TICK_S * 1000), lambda: self._fade_step(token, level))
+
+    def show_pins_xray(self, selected: list, others: list) -> None:
+        """Pins on top of the model (they show through it): every pin a
+        faint grey, the selected one(s) green. Pieces are (points, tris)."""
+        self.clear_pins_xray()
+        layer = self._xray()
+        for pieces, color, opacity in ((others, "#8a8f98", 0.35), (selected, "#2ee66b", 0.9)):
+            pieces = [(p, t) for p, t in pieces if len(t)]
+            if not pieces:
+                continue
+            points, cells, offset = [], [], 0
+            for p, t in pieces:
+                points.append(p)
+                cells.append(np.column_stack([np.full(len(t), 3), t + offset]))
+                offset += len(p)
+            rgb = [int(color[k:k + 2], 16) / 255.0 for k in (1, 3, 5)]
+            actor = self._add_xray_actor(layer, pv.PolyData(np.vstack(points), np.vstack(cells).ravel()), rgb)
+            actor.GetProperty().SetOpacity(opacity)
+            self._pin_xray_actors.append(actor)
+        self.plotter.render()
+
+    def show_land_pattern(self, pads: list[dict], courtyard: float = 0.25, z: float = 0.0, mask: float = 0.05,
+                          silk: list | None = None, courtyard_lines: list | None = None) -> None:
+        """A footprint's land pattern in the model's frame, on top of the
+        model so it shows through the part, in PCB-tool colours: bare copper
+        yellow, the solder-mask opening (pad + `mask` per side) an orange
+        ring, silkscreen green, courtyard a faint grey. Each pad: x, y, w, h."""
+        self.clear_land_pattern()
+        if not pads:
+            return
+        layer = self._xray()
+        by_type = {kind: [p for p in pads if p.get("type", "smd") == kind]
+                   for kind in ("smd", "thru_hole", "np_thru_hole")}
+        self._land_actors = self._smd_actors(layer, by_type["smd"], mask, z)
+        self._land_actors += self._hole_actors(layer, by_type["thru_hole"], by_type["np_thru_hole"], mask, z)
+        if not courtyard_lines:  # no courtyard in the footprint: pads + margin
+            courtyard_lines = _box_lines(pads, mask + courtyard)
+        for segments, rgb, opacity in ((courtyard_lines, [0.62, 0.64, 0.66], 0.45), (silk or [], [0.35, 0.85, 0.45], 0.9)):
+            if segments:
+                self._land_actors.append(self._land_lines(layer, segments, z, rgb, opacity))
+        self.plotter.render()
+
+    def _land_fill(self, layer, pads, grow: float, z: float, rgb, opacity: float):
+        quads, points = [], []
+        for pad in pads:
+            x, y, hw, hh = pad["x"], pad["y"], pad["w"] / 2 + grow, pad["h"] / 2 + grow
+            start = len(points)
+            points += [[x - hw, y - hh, z], [x + hw, y - hh, z], [x + hw, y + hh, z], [x - hw, y + hh, z]]
+            quads += [4, start, start + 1, start + 2, start + 3]
+        actor = self._add_xray_actor(layer, pv.PolyData(np.array(points), np.array(quads)), rgb)
+        actor.GetProperty().SetOpacity(opacity)
+        return actor
+
+    def _land_ring(self, layer, pads, grow: float, z: float, rgb, opacity: float):
+        """The band between each pad and its opening grown by `grow` (four
+        strips per pad), so it never covers the copper."""
+        quads, points = [], []
+        for pad in pads:
+            x, y, hw, hh = pad["x"], pad["y"], pad["w"] / 2, pad["h"] / 2
+            ow, oh = hw + grow, hh + grow
+            inner = [(x - hw, y - hh), (x + hw, y - hh), (x + hw, y + hh), (x - hw, y + hh)]
+            outer = [(x - ow, y - oh), (x + ow, y - oh), (x + ow, y + oh), (x - ow, y + oh)]
+            for k in range(4):
+                start = len(points)
+                points += [[*outer[k], z], [*outer[(k + 1) % 4], z], [*inner[(k + 1) % 4], z], [*inner[k], z]]
+                quads += [4, start, start + 1, start + 2, start + 3]
+        actor = self._add_xray_actor(layer, pv.PolyData(np.array(points), np.array(quads)), rgb)
+        actor.GetProperty().SetOpacity(opacity)
+        return actor
+
+    def _smd_actors(self, layer, smd: list, mask: float, z: float) -> list:
+        """SMT lands: the orange mask-opening ring, then the bare copper."""
+        if not smd:
+            return []
+        return [self._land_ring(layer, smd, mask, z, [1.00, 0.50, 0.10], LAND_OPACITY),
+                self._land_fill(layer, smd, 0.0, z, [1.00, 0.88, 0.30], LAND_OPACITY)]
+
+    def _hole_actors(self, layer, plated: list, unplated: list, mask: float, z: float) -> list:
+        """Through-holes as non-overlapping rings: plated = orange mask ring,
+        yellow copper annulus, dark drill; unplated = light rim, dark drill."""
+        dark, light = [0.06, 0.06, 0.07], [0.80, 0.82, 0.85]
+        layers = [
+            (plated, lambda p: (_radii(p, "pad", mask), _radii(p, "pad", 0.0)), [1.00, 0.50, 0.10]),
+            (plated, lambda p: (_radii(p, "pad", 0.0), _radii(p, "drill", 0.0)), [1.00, 0.88, 0.30]),
+            (plated, lambda p: (_radii(p, "drill", 0.0), None), dark),
+            (unplated, lambda p: (_radii(p, "drill", 0.05), _radii(p, "drill", 0.0)), light),
+            (unplated, lambda p: (_radii(p, "drill", 0.0), None), dark),
+        ]
+        actors = []
+        for pads, radii, rgb in layers:
+            if pads:
+                actor = self._add_xray_actor(layer, _ring_mesh(pads, radii, z), rgb)
+                actor.GetProperty().SetOpacity(LAND_OPACITY)
+                actors.append(actor)
+        return actors
+
+    def _land_lines(self, layer, segments, z: float, rgb, opacity: float):
+        pts = np.array([[x, y, z] for a, b, c, d in segments for x, y in ((a, b), (c, d))])
+        cells = np.array([[2, 2 * k, 2 * k + 1] for k in range(len(segments))]).ravel()
+        actor = self._add_xray_actor(layer, pv.PolyData(pts, lines=cells), rgb, line_width=2.0)
+        actor.GetProperty().SetOpacity(opacity)
+        return actor
+
+    def show_ghost_board(self, pads: list[dict], rect: tuple, thickness: float = BOARD_THICKNESS) -> None:
+        """A generic PCB under the part, like a CAD 3D preview: a green board
+        `thickness` thick below Z=0 over `rect` (xmin, xmax, ymin, ymax), 20%
+        opaque, with every drill cut through; plated holes get a copper
+        barrel, unplated holes stay bare."""
+        self.clear_ghost_board()
+        board = _board_with_holes(rect, pads, thickness)
+        if board is None:
+            return
+        self.plotter.add_mesh(board, color="#1f7a3a", opacity=GHOST_OPACITY, lighting=True,
+                              pickable=False, name="ghost-board", reset_camera=False, render=False)
+        self._ghost_names = ["ghost-board"]
+        barrels = [_barrel(p, thickness) for p in pads if p.get("type") == "thru_hole"]
+        if barrels:
+            merged = barrels[0] if len(barrels) == 1 else barrels[0].merge(barrels[1:])
+            self.plotter.add_mesh(merged, color="#e8b830", opacity=0.6, pickable=False,
+                                  name="ghost-barrels", reset_camera=False, render=False)
+            self._ghost_names.append("ghost-barrels")
+        self.plotter.render()
+
+    def clear_ghost_board(self) -> None:
+        for name in getattr(self, "_ghost_names", []):
+            self.remove_overlay(name)
+        self._ghost_names = []
+
+    def show_ghost_symbol(self, rect: tuple, stubs: list, labels: list, selected: set,
+                          leaders: list | None = None) -> None:
+        """A schematic symbol lying on the Z=0 plane, on top of the model so
+        it shows through the part: the body rectangle (xmin, xmax, ymin,
+        ymax) 20% opaque in symbol yellow with a dark red outline, a stub per
+        pin [(x0, y0, x1, y1) or None], thin leaders from the real pins to
+        their stubs, and labels [(x, y, text)]; `selected` stubs draw green."""
+        self.clear_ghost_symbol()
+        layer = self._xray()
+        x0, x1, y0, y1 = rect
+        z = 0.0
+        body = pv.PolyData(np.array([[x0, y0, z], [x1, y0, z], [x1, y1, z], [x0, y1, z]]), np.array([4, 0, 1, 2, 3]))
+        fill = self._add_xray_actor(layer, body, [1.0, 1.0, 0.76])
+        fill.GetProperty().SetOpacity(GHOST_OPACITY)
+        outline = [(x0, y0, x1, y0), (x1, y0, x1, y1), (x1, y1, x0, y1), (x0, y1, x0, y0)]
+        plain, chosen = _split_stubs(stubs, selected)
+        styles = ((outline, [0.52, 0.0, 0.0], 2.0, 0.9), (leaders or [], [0.75, 0.5, 0.5], 1.0, 0.6),
+                  (plain, [0.52, 0.0, 0.0], 3.0, 1.0), (chosen, [0.18, 0.9, 0.42], 3.0, 1.0))
+        self._symbol_actors = [fill] + [self._segments_actor(layer, segs, rgb, width, opacity)
+                                        for segs, rgb, width, opacity in styles if segs]
+        height = min(max(0.035 * min(x1 - x0, y1 - y0), 0.12), 0.6)
+        for group, rgb in ((set(range(len(labels))) - selected, [0.37, 0.88, 0.88]), (selected, [0.18, 0.9, 0.42])):
+            texts = [_flat_label(labels[i], height) for i in sorted(group) if i < len(labels)]
+            if texts:
+                merged = texts[0] if len(texts) == 1 else texts[0].merge(texts[1:])
+                self._symbol_actors.append(self._add_xray_actor(layer, merged, rgb))
+        self._symbol_names = []
+        self.plotter.render()
+
+    def _segments_actor(self, layer, segments: list, rgb, width: float, opacity: float):
+        pts = np.array([[a, b, 0.0] for s in segments for a, b in ((s[0], s[1]), (s[2], s[3]))])
+        cells = np.array([[2, 2 * k, 2 * k + 1] for k in range(len(segments))]).ravel()
+        actor = self._add_xray_actor(layer, pv.PolyData(pts, lines=cells), rgb, line_width=width)
+        actor.GetProperty().SetOpacity(opacity)
+        return actor
+
+    def clear_ghost_symbol(self) -> None:
+        for name in getattr(self, "_symbol_names", []):
+            self.remove_overlay(name)
+        self._symbol_names = []
+        layer = getattr(self, "_xray_layer", None)
+        for actor in getattr(self, "_symbol_actors", []):
+            if layer is not None:
+                layer.RemoveActor(actor)
+        self._symbol_actors = []
+
+    def clear_land_pattern(self) -> None:
+        self.clear_ghost_board()
+        layer = getattr(self, "_xray_layer", None)
+        for actor in getattr(self, "_land_actors", []):
+            if layer is not None:
+                layer.RemoveActor(actor)
+        self._land_actors = []
+
+    def clear_pins_xray(self) -> None:
+        layer = getattr(self, "_xray_layer", None)
+        for actor in getattr(self, "_pin_xray_actors", []):
+            if layer is not None:
+                layer.RemoveActor(actor)
+        self._pin_xray_actors = []
+
+    def end_flash(self) -> None:
+        self._flash_token = getattr(self, "_flash_token", 0) + 1  # stops a running fade
+        layer = getattr(self, "_xray_layer", None)
+        for actor in getattr(self, "_flash_actors", []):
+            if layer is not None:
+                layer.RemoveActor(actor)
+        if getattr(self, "_flash_actors", None):
+            self._flash_actors = []
+            self.plotter.render()
+
+    @staticmethod
+    def _add_xray_actor(layer, polydata, rgb, line_width: float = 1.0, point_size: float = 1.0):
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInputData(polydata)
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+        actor.PickableOff()
+        prop = actor.GetProperty()
+        prop.SetColor(*rgb)
+        prop.SetLighting(False)
+        prop.SetLineWidth(line_width)
+        prop.SetPointSize(point_size)
+        if point_size > 1.0:
+            prop.SetRepresentationToPoints()
+            prop.RenderPointsAsSpheresOn()
+        layer.AddActor(actor)
+        return actor
 
     # -------------------------------------------------------------- overlays
 
@@ -599,7 +1289,7 @@ class SceneManager:
         self, hitboxes: list[dict], *, selected: int = -1, colors: list[str] | None = None
     ) -> None:
         """Translucent metadata volumes; never part of the B-rep. Boxes are
-        merged into one actor per colour — per-box actors made big BGAs crawl."""
+        merged into one actor per color — per-box actors made big BGAs crawl."""
         for name in self._hitbox_overlays:
             self.remove_overlay(name)
         self._hitbox_overlays = []
@@ -617,6 +1307,10 @@ class SceneManager:
                 elif hitbox.get("type") == "convex_hull":
                     cloud = pv.PolyData(np.asarray(hitbox["vertices"], dtype=np.float64))
                     mesh = cloud.delaunay_3d().extract_geometry()
+                elif hitbox.get("type") in ("shrink_wrap", "shallow_concave"):
+                    tris = np.asarray(hitbox["faces"], dtype=np.int64)
+                    cells = np.column_stack([np.full(len(tris), 3), tris]).ravel()
+                    mesh = pv.PolyData(np.asarray(hitbox["vertices"], dtype=np.float64), cells)
                 else:
                     continue
             except Exception:
@@ -644,8 +1338,8 @@ class SceneManager:
         self.plotter.render()
 
     def show_pin_labels(self, points, labels, colors=None) -> None:
-        """Pin labels, optionally per-label text colour (anchored green,
-        predicted orange, default dark) — one label actor per colour group."""
+        """Pin labels, optionally per-label text color (anchored green,
+        predicted orange, default dark) — one label actor per color group."""
         for index in range(self._label_groups):
             self.remove_overlay(f"pin-labels-{index}")
         self._label_groups = 0
@@ -695,7 +1389,7 @@ class SceneManager:
     def show_pin_faces(self, faces_by_color: dict) -> None:
         """Tint the detected pin-tip faces and render them ON TOP of the body
         (xray) so you can see exactly where each face is, even buried inside a
-        model. faces_by_color maps a hex colour -> list of (body, face) pairs."""
+        model. faces_by_color maps a hex color -> list of (body, face) pairs."""
         for index in range(self._pinface_groups):
             self.remove_overlay(f"pin-faces-{index}")
         self._pinface_groups = 0
@@ -722,10 +1416,10 @@ class SceneManager:
         self.plotter.render()
 
     def show_pin_axes(self, segments, colors) -> None:
-        """Per-pin leader lines (face -> off-the-face label), coloured by
+        """Per-pin leader lines (face -> off-the-face label), colored by
         designation (orange THR/SMT tails, blue CON/HEAD mouths) and drawn on
         top so the whole callout reads through the body. `segments` is
-        (N, 2, 3) world-space endpoints; `colors` a hex colour per segment."""
+        (N, 2, 3) world-space endpoints; `colors` a hex color per segment."""
         for index in range(self._pinaxis_groups):
             self.remove_overlay(f"pin-axes-{index}")
         self._pinaxis_groups = 0

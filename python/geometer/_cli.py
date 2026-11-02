@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+import sys
 import tempfile
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -21,11 +22,19 @@ from ._types import (
 )
 
 
+def _run(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess[Any]:
+    """subprocess.run without a console window on Windows: a GUI host
+    (pythonw) would otherwise flash a visible console for every call."""
+    if sys.platform == "win32":
+        kwargs.setdefault("creationflags", subprocess.CREATE_NO_WINDOW)
+    return subprocess.run(*args, **kwargs)
+
+
 _VERSION_RE = re.compile(r"^geometer\s+(\d+)\.(\d+)\.(\d+)(?:\.(\d+))?\s+\(abi\s+(\d+)\)\s*$")
 
 
 def version() -> Version:
-    completed = subprocess.run(
+    completed = _run(
         [str(executable_path()), "--version"],
         capture_output=True,
         check=False,
@@ -127,7 +136,7 @@ def planar_step(request: Mapping[str, Any] | str | bytes | bytearray) -> bytes:
         else:
             request_path.write_text(str(request), encoding="utf-8")
 
-        completed = subprocess.run(
+        completed = _run(
             [str(executable_path()), "planar-step", str(request_path), str(output_path)],
             capture_output=True,
             check=False,
@@ -144,7 +153,7 @@ def planar_batch_solve_json(request: PlanarBatchInput) -> str:
         directory = Path(directory_text)
         request_path = _materialize_planar_batch_request(request, directory)
         output_path = directory / "rings.json"
-        completed = subprocess.run(
+        completed = _run(
             [
                 str(executable_path()),
                 "planar-batch-solve",
@@ -190,7 +199,7 @@ def _run_single_job(directory: Path, job: dict[str, Any]) -> dict[str, Any]:
     }
     request_path.write_text(json.dumps(request, separators=(",", ":")), encoding="utf-8")
 
-    completed = subprocess.run(
+    completed = _run(
         [str(executable_path()), "run", str(request_path), str(response_path)],
         capture_output=True,
         check=False,
@@ -223,7 +232,7 @@ def _run_batch_in_directory(
         request["options"] = options_value
     request_path.write_text(json.dumps(request, separators=(",", ":")), encoding="utf-8")
 
-    completed = subprocess.run(
+    completed = _run(
         [str(executable_path()), "run", str(request_path), str(response_path)],
         capture_output=True,
         check=False,

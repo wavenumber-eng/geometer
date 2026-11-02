@@ -8,12 +8,15 @@ it headlessly; the GUI only collects the four picks and the parameters."""
 from __future__ import annotations
 
 import numpy as np
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
+    QDoubleSpinBox,
     QHBoxLayout,
     QLabel,
     QPushButton,
+    QSlider,
     QVBoxLayout,
     QWidget,
 )
@@ -21,6 +24,11 @@ from PySide6.QtWidgets import (
 from .base import ToolMode, make_apply_button
 
 ORIGIN_RULES = ("rect-center", "centroid", "first-pick", "hull-center")
+PLANE_MODES = ("4 points", "3 points", "candidate plane (pick a face)", "midplane of two parallel faces")
+# the Origin choices; "point pick" and "custom point" are solved on top of the
+# centroid frame by a final in-plane shift
+ORIGIN_CHOICES = ("hull-center", "rect-center", "centroid", "point pick", "custom point")
+CUSTOM_COLOR = "#f5d800"  # the custom origin point: yellow
 _EPS = 1.0e-9
 
 
@@ -422,13 +430,15 @@ def rect_corners(plane_points) -> np.ndarray:
 
 class ZSitTool(ToolMode):
     id = "zsit"
-    title = "Redefine Z-Sit Plane"
+    title = "3 Z-Sit Plane"
     accent = "#1f5fd6"
 
     def __init__(self, ctx) -> None:
         super().__init__(ctx)
         self.points: list[tuple[float, float, float]] = []
         self._auto: tuple | None = None  # staged (matrix, count, centroids)
+        self._mid_faces: list[dict] = []  # midplane mode: the two face frames
+        self.custom_point: tuple[float, float, float] | None = None
 
     # ----------------------------------------------------------------- UI
 
@@ -436,47 +446,93 @@ class ZSitTool(ToolMode):
         widget = QWidget()
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(8, 8, 8, 8)
-        layout.addWidget(QLabel(
-            "<b>Redefine Z-Sit plane</b><br>"
-            "Click 3 points on the surface the part should sit on, "
-            "then a 4th point on the side that becomes +Z."
-        ))
-
         rule_row = QHBoxLayout()
-        rule_row.addWidget(QLabel("Plane picks"))
+        rule_row.addWidget(QLabel("Plane"))
         self.count_combo = QComboBox()
-        self.count_combo.addItems(["3 points", "4 points", "candidate plane (pick a face)"])
+        self.count_combo.addItems(PLANE_MODES)
         self.count_combo.setToolTip(
             "How to define the seating plane:\n"
-            "• 3 points — three picks define the plane, a 4th picks +Z\n"
-            "• 4 points — best-fit plane through all four picks\n"
-            "• candidate plane — click ONE existing flat face on the model to "
-            "use as the seat; origin defaults to hull-center, +Z toward the body."
-        )
-        self.count_combo.setCurrentText("candidate plane (pick a face)")
+            "- 4 points: best-fit plane through four picks, then one pick on the +Z side\n"
+            "- 3 points: three picks define the plane, then one pick on the +Z side\n"
+            "- candidate plane: click one flat face to use as the seat\n"
+            "- midplane: click two parallel flat faces; the seat is halfway between them")
+        self.count_combo.setCurrentText("4 points")
         self.count_combo.currentTextChanged.connect(self._on_plane_mode_changed)
-        rule_row.addWidget(self.count_combo)
-        rule_row.addWidget(QLabel("Origin"))
-        self.origin_combo = QComboBox()
-        self.origin_combo.addItems(ORIGIN_RULES)
-        self.origin_combo.setToolTip(
-            "Where X/Y=0 lands in the seating plane:\n"
-            "• rect-center — centre of the picks' bounding rectangle\n"
-            "• centroid — average of the picks\n"
-            "• first-pick — the first picked point\n"
-            "• hull-center — geometric centre of the model's orthographic\n"
-            "  silhouette (convex hull) projected onto this plane. Use it\n"
-            "  when the seat pads are off to one side and the body overhangs,\n"
-            "  so there's no good pick-based centre."
-        )
-        rule_row.addWidget(self.origin_combo, 1)
+        rule_row.addWidget(self.count_combo, 1)
         layout.addLayout(rule_row)
 
-        self.snap_check = QCheckBox("Snap picks to mesh vertices")
+        offset_row = QHBoxLayout()
+        offset_row.addWidget(QLabel("Offset"))
+        self.offset_spin = QDoubleSpinBox()
+        self.offset_spin.setRange(-100.0, 100.0)
+        self.offset_spin.setDecimals(3)
+        self.offset_spin.setSingleStep(0.05)
+        self.offset_spin.setSuffix(" mm")
+        self.offset_spin.setToolTip("Move the seat plane this far along +Z from the picked plane "
+                                    "(e.g. a standoff height)")
+        self.offset_spin.valueChanged.connect(lambda _v: self._refresh_preview())
+        offset_row.addWidget(self.offset_spin, 1)
+        layout.addLayout(offset_row)
+
+        origin_row = QHBoxLayout()
+        origin_row.addWidget(QLabel("XY origin"))
+        self.origin_combo = QComboBox()
+        self.origin_combo.addItems(ORIGIN_CHOICES)
+        self.origin_combo.setToolTip(
+            "Where X/Y = 0 lands in the seating plane:\n"
+            "- hull-center: centre of the model's silhouette (default)\n"
+            "- rect-center: centre of the picks' bounding rectangle\n"
+            "- centroid: average of the picks\n"
+            "- point pick: one of the picked points (choose which)\n"
+            "- custom point: click a yellow point after the plane, then type its X / Y")
+        self.origin_combo.setCurrentText("hull-center")
+        self.origin_combo.currentTextChanged.connect(self._on_origin_changed)
+        origin_row.addWidget(self.origin_combo, 1)
+        self.point_combo = QComboBox()
+        self.point_combo.addItems([f"pick {k}" for k in range(1, 5)])
+        self.point_combo.setToolTip("Which picked point becomes the origin")
+        self.point_combo.currentIndexChanged.connect(lambda _i: self._refresh_preview())
+        origin_row.addWidget(self.point_combo)
+        layout.addLayout(origin_row)
+
+        custom_row = QHBoxLayout()
+        self.custom_label = QLabel("Point at X")
+        custom_row.addWidget(self.custom_label)
+        self.custom_x = QDoubleSpinBox()
+        self.custom_y = QDoubleSpinBox()
+        for spin in (self.custom_x, self.custom_y):
+            spin.setRange(-1000.0, 1000.0)
+            spin.setDecimals(3)
+            spin.setSuffix(" mm")
+            spin.valueChanged.connect(lambda _v: self._refresh_preview())
+        custom_row.addWidget(self.custom_x, 1)
+        self.custom_y_label = QLabel("Y")
+        custom_row.addWidget(self.custom_y_label)
+        custom_row.addWidget(self.custom_y, 1)
+        layout.addLayout(custom_row)
+        self._custom_widgets = (self.custom_label, self.custom_x, self.custom_y_label, self.custom_y)
+
+        snap_row = QHBoxLayout()
+        self.snap_check = QCheckBox("Snap to vertices")
         self.snap_check.setChecked(True)
-        layout.addWidget(self.snap_check)
-        self.flip_check = QCheckBox("Flip Z")
+        snap_row.addWidget(self.snap_check)
+        self.snap_slider = QSlider(Qt.Orientation.Horizontal)
+        self.snap_slider.setRange(1, 10)
+        self.snap_slider.setValue(2)
+        self.snap_slider.setToolTip("Snap distance: up to this % of the model size")
+        snap_row.addWidget(self.snap_slider, 1)
+        self.snap_value = QLabel("2%")
+        self.snap_slider.valueChanged.connect(lambda v: self.snap_value.setText(f"{v}%"))
+        snap_row.addWidget(self.snap_value)
+        layout.addLayout(snap_row)
+
+        self.flip_check = QCheckBox("Flip Z")  # state only; the Flip Z button drives it
+        self.flip_check.setVisible(False)
         layout.addWidget(self.flip_check)
+        flip_button = QPushButton("Flip Z")
+        flip_button.setToolTip("Turn the staged seat upside down (+Z the other way)")
+        flip_button.clicked.connect(lambda: self.flip_check.setChecked(not self.flip_check.isChecked()))
+        layout.addWidget(flip_button)
 
         self.points_label = QLabel("No points picked.")
         self.points_label.setWordWrap(True)
@@ -519,9 +575,49 @@ class ZSitTool(ToolMode):
         layout.addLayout(apply_row)
         layout.addStretch(1)
 
-        self.origin_combo.currentTextChanged.connect(lambda _t: self._refresh_preview())
         self.flip_check.stateChanged.connect(lambda _s: self._refresh_preview())
+        self._on_origin_changed(self.origin_combo.currentText())
         return widget
+
+    def _on_origin_changed(self, choice: str) -> None:
+        self.point_combo.setVisible(choice == "point pick")
+        for widget in self._custom_widgets:
+            widget.setVisible(choice == "custom point")
+        if choice != "custom point":
+            self.custom_point = None
+        self._refresh_preview()
+
+    def _rule(self) -> str:
+        choice = self.origin_combo.currentText()
+        return choice if choice in ORIGIN_RULES else "centroid"
+
+    def _final_matrix(self):
+        """The full staged transform: the plane frame (or AUTO), then the
+        point-pick / custom-point origin shift and the plane offset."""
+        needed = self._plane_count()
+        if len(self.points) >= needed + 1:
+            rule = self._rule()
+            matrix = compute_zsit_matrix(
+                self.points[:needed], self.points[needed], origin_rule=rule,
+                flip_z=self.flip_check.isChecked(),
+                model_points=self._model_points() if rule == "hull-center" else None)
+        elif self._auto is not None:
+            matrix = np.asarray(self._auto[0], dtype=np.float64).copy()
+        else:
+            return None
+        shift = np.zeros(3)
+        choice = self.origin_combo.currentText()
+        if choice == "point pick" and self.points:
+            k = min(self.point_combo.currentIndex(), len(self.points) - 1)
+            moved = matrix @ np.append(np.asarray(self.points[k], dtype=float), 1.0)
+            shift[:2] = -moved[:2]
+        elif choice == "custom point" and self.custom_point is not None:
+            moved = matrix @ np.append(np.asarray(self.custom_point, dtype=float), 1.0)
+            shift[:2] = [self.custom_x.value() - moved[0], self.custom_y.value() - moved[1]]
+        shift[2] = -self.offset_spin.value()
+        final = np.eye(4)
+        final[:3, 3] = shift
+        return final @ matrix
 
     # ------------------------------------------------------------ lifecycle
 
@@ -550,12 +646,41 @@ class ZSitTool(ToolMode):
         return 4 if self.count_combo.currentText().startswith("4") else 3
 
     def _is_face_mode(self) -> bool:
-        return self.count_combo.currentText().startswith("candidate")
+        return self.count_combo.currentText().startswith(("candidate", "midplane"))
 
     def _on_plane_mode_changed(self, _text: str) -> None:
         if self._is_face_mode():
             self.origin_combo.setCurrentText("hull-center")  # the sensible default
+        self._mid_faces = []
         self.reset_points()
+
+    def _pick_midplane_face(self, pick) -> None:
+        """Midplane mode: two parallel flat faces; the seat plane is halfway."""
+        frame = self.ctx.document.face_plane(pick.body_index, pick.face_index)
+        if frame is None:
+            self.status("Z-Sit: pick a flat (planar) face")
+            return
+        self._mid_faces.append(frame)
+        if len(self._mid_faces) < 2:
+            self.status("Z-Sit: now click the second, parallel face")
+            return
+        f1, f2 = self._mid_faces[:2]
+        self._mid_faces = []
+        n1 = np.asarray(f1["normal"], dtype=np.float64)
+        n2 = np.asarray(f2["normal"], dtype=np.float64)
+        if abs(float(n1 @ n2)) < 0.995:
+            self.status("Z-Sit: those faces aren't parallel; pick two parallel faces")
+            return
+        o1 = np.asarray(f1["origin"], dtype=np.float64)
+        o2 = np.asarray(f2["origin"], dtype=np.float64)
+        origin = o1 + n1 * float((o2 - o1) @ n1) / 2.0  # halfway along the normal
+        u = np.asarray(f1["u"], dtype=np.float64)
+        v = np.asarray(f1["v"], dtype=np.float64)
+        model_points = self._model_points()
+        above = model_points.mean(axis=0) if model_points is not None else origin + n1
+        self.points = [tuple(origin), tuple(origin + u), tuple(origin + v), tuple(above)]
+        self._refresh_preview()
+        self.status("Z-Sit: seat plane set halfway between the two faces; CONFIRM")
 
     def _pick_candidate_plane(self, pick) -> None:
         """Use a clicked flat face as the whole seating plane: its plane frame
@@ -583,10 +708,20 @@ class ZSitTool(ToolMode):
     def on_pick(self, pick) -> None:
         if self.ctx.document is None:
             return
+        if self.count_combo.currentText().startswith("midplane"):
+            self._pick_midplane_face(pick)
+            return
         if self._is_face_mode():
             self._pick_candidate_plane(pick)
             return
         if len(self.points) >= self._plane_count() + 1:
+            if self.origin_combo.currentText() == "custom point":
+                point = np.asarray(pick.world_point, dtype=np.float64)
+                if self.snap_check.isChecked():
+                    point = self._snap_to_vertex(pick.body_index, point)
+                self.custom_point = tuple(float(v) for v in point)
+                self._refresh_preview()
+                self.status("Z-Sit: custom origin point set; type its X / Y, then CONFIRM")
             return
         if self._auto is not None:
             # manual picking overrides the staged auto result silently —
@@ -620,7 +755,7 @@ class ZSitTool(ToolMode):
         nearest = int(np.argmin(distances))
         bounds = self.ctx.document.bounds()
         diag = float(np.linalg.norm([bounds[1] - bounds[0], bounds[3] - bounds[2], bounds[5] - bounds[4]]))
-        if distances[nearest] <= diag * 0.02:
+        if distances[nearest] <= diag * self.snap_slider.value() / 100.0:
             return mesh.points[nearest].copy()
         return point
 
@@ -629,6 +764,7 @@ class ZSitTool(ToolMode):
     def reset_points(self) -> None:
         self.points = []
         self._auto = None
+        self.custom_point = None
         if self.ctx.scene is not None:
             self.ctx.scene.set_markers([], name="zsit-auto-pads")
         self._refresh_preview()
@@ -658,6 +794,39 @@ class ZSitTool(ToolMode):
             f"Auto Z-Sit: {count} face(s) seat flat at Z=0 (green) — "
             f"press Apply to accept, or pick points to redo manually"
         )
+
+    def _staged_matrix(self):
+        """The transform the staged picks (or AUTO) would apply, or None."""
+        try:
+            return self._final_matrix()
+        except ValueError:
+            return None
+
+    def staged_rows(self) -> list[tuple[str, str, str]]:
+        """Each pick in the old frame and, once the plane is complete, where
+        it lands in the new (seated) frame."""
+        def xyz(p):
+            return "(" + ", ".join(f"{float(c):.3f}" for c in p[:3]) + ")"
+
+        matrix = self._staged_matrix()
+        needed = self._plane_count()
+        picks = list(self.points)
+        if not picks and self._auto is not None:
+            picks = list(self._auto[2])
+        rows = []
+        for k, point in enumerate(picks):
+            role = ("auto seat" if not self.points else "plane" if k < needed else "origin")
+            moved = ""
+            if matrix is not None:
+                moved = "→ " + xyz(np.asarray(matrix) @ np.append(np.asarray(point, dtype=float)[:3], 1.0))
+            rows.append((f"{role} {k + 1}", xyz(point), moved))
+        return rows
+
+    def deny(self) -> None:
+        self.points = []
+        self._auto = None
+        self.ctx.scene.set_markers([], name="zsit-auto-pads")
+        self._refresh_preview()
 
     def undo_pick(self) -> None:
         if self.points:
@@ -721,15 +890,14 @@ class ZSitTool(ToolMode):
         arrow_starts: list = []
         z_dir = (0.0, 0.0, 1.0)
         diag = 1.0
+        scene.set_markers([self.custom_point] if self.custom_point else [], name="zsit-custom",
+                          color=CUSTOM_COLOR, point_size=16.0)
         if len(self.points) >= needed + 1 and self.ctx.document is not None:
             try:
-                rule = self.origin_combo.currentText()
-                origin, x_dir, y_dir, z_dir = compute_zsit_frame(
-                    self.points[:needed], self.points[needed],
-                    origin_rule=rule,
-                    flip_z=self.flip_check.isChecked(),
-                    model_points=self._model_points() if rule == "hull-center" else None,
-                )
+                final = self._final_matrix()
+                rotation = final[:3, :3]
+                x_dir, y_dir, z_dir = rotation[0], rotation[1], rotation[2]
+                origin = -rotation.T @ final[:3, 3]
             except ValueError as exc:
                 scene.show_arrows([], z_dir, scale=1.0, name="zsit-z-arrows")
                 self.status(f"Z-Sit: {exc}")
@@ -752,31 +920,25 @@ class ZSitTool(ToolMode):
         needed = self._plane_count()
         if self.ctx.document is None:
             return
-        if len(self.points) >= needed + 1:
-            origin_rule = self.origin_combo.currentText()
-            flip_z = self.flip_check.isChecked()
-            try:
-                matrix = compute_zsit_matrix(
-                    self.points[:needed], self.points[needed],
-                    origin_rule=origin_rule, flip_z=flip_z,
-                    model_points=(
-                        self._model_points()
-                        if origin_rule == "hull-center" else None
-                    ),
-                )
-            except ValueError as exc:
-                self.status(f"Z-Sit: {exc}")
-                return
-            params = {"origin_rule": origin_rule, "flip_z": flip_z,
-                      "plane_points": needed}
-            inputs = {"points": [list(p) for p in self.points[:needed + 1]]}
-        elif self._auto is not None:
-            matrix, count, _centroids = self._auto
-            params = {"action": "auto"}
-            inputs = {"seat_faces": count}
-        else:
+        try:
+            matrix = self._final_matrix()
+        except ValueError as exc:
+            self.status(f"Z-Sit: {exc}")
             return
+        if matrix is None:
+            return
+        extra = {"origin": self.origin_combo.currentText(), "offset_mm": self.offset_spin.value()}
+        if len(self.points) >= needed + 1:
+            params = {"origin_rule": self._rule(), "flip_z": self.flip_check.isChecked(),
+                      "plane_points": needed, **extra}
+            inputs = {"points": [list(p) for p in self.points[:needed + 1]],
+                      "custom_point": list(self.custom_point) if self.custom_point else None}
+        else:
+            params = {"action": "auto", **extra}
+            inputs = {"seat_faces": self._auto[1]}
         self.ctx.document.apply_trsf(matrix)
+        from ..pins import transform_pins
+        transform_pins(self.ctx.window.pins.pins, matrix)  # re-seating moves any pins too
         self.ctx.journal.record(
             tool=self.id, params=params, inputs=inputs,
             result={"matrix": np.asarray(matrix).tolist()},

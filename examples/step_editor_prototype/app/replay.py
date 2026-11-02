@@ -75,21 +75,29 @@ def _logo_undo_skips(journal: Journal) -> set[int]:
 
 # --------------------------------------------------------------- geometry ops
 
+def _move_all(state: _ReplayState, matrix) -> None:
+    """Geometry transforms move the pins with the model (as the GUI does)."""
+    from .pins import transform_pins
+
+    state.document.apply_trsf(matrix)
+    transform_pins(state.registry.pins, matrix)
+
+
 def _replay_zsit(state: _ReplayState, op) -> None:
-    state.document.apply_trsf(np.asarray(op.result["matrix"]))
+    _move_all(state, np.asarray(op.result["matrix"]))
 
 
 def _replay_pin1(state: _ReplayState, op) -> None:
     if op.params.get("action") == "reset":
-        state.document.apply_trsf(_rotation_z(-op.inputs.get("undone_deg", 0.0)))
+        _move_all(state, _rotation_z(-op.inputs.get("undone_deg", 0.0)))
     else:
-        state.document.apply_trsf(_rotation_z(op.result["angle_deg"]))
+        _move_all(state, _rotation_z(op.result["angle_deg"]))
 
 
 def _replay_front(state: _ReplayState, op) -> None:
     """Redefine Front: every action (constraints/manual/reset) replays as the
     recorded in-plane spin about Z."""
-    state.document.apply_trsf(_rotation_z(op.result.get("angle_deg", 0.0)))
+    _move_all(state, _rotation_z(op.result.get("angle_deg", 0.0)))
 
 
 # ------------------------------------------------------- detect_pins actions
@@ -157,6 +165,14 @@ def _detect_join_mouth(state: _ReplayState, op) -> None:
             pin.name_source = "joined"
 
 
+def _detect_isolated(state: _ReplayState, op) -> None:
+    for centroid, name in zip(op.result.get("centroids", []), op.result.get("names", [])):
+        pin = state.nearest_pin(centroid)
+        if pin is not None:
+            pin.name = name
+            pin.name_source = "isolated"
+
+
 def _detect_renumber(state: _ReplayState, op) -> None:
     primaries = [p for p in state.registry.pins if p.role != "mouth"]
     mouths = [p for p in state.registry.pins if p.role == "mouth"]
@@ -167,7 +183,14 @@ def _detect_renumber(state: _ReplayState, op) -> None:
 
 
 def _detect_predict(state: _ReplayState, op) -> None:
+    """Names (and the order) a numbering step gave. With recorded centroids
+    each name goes to the pin at that place: replayed detection can find the
+    same pins in another order (BTN8982TA, ADXL1001 came back scrambled).
+    Older journals without centroids fall back to the recorded order."""
     names = op.result.get("names", [])
+    if op.result.get("centroids") and len(op.result["centroids"]) == len(names):
+        _predict_by_place(state, names, op.result["centroids"])
+        return
     numbers = op.result.get("order", [])
     by_number = {pin.number: pin for pin in state.registry.pins}
     ordered = [by_number[n] for n in numbers if n in by_number]
@@ -175,6 +198,17 @@ def _detect_predict(state: _ReplayState, op) -> None:
         state.registry.set_pins(ordered)
     for pin, name in zip(state.registry.pins, names):
         pin.name = name
+
+
+def _predict_by_place(state: _ReplayState, names: list, centroids: list) -> None:
+    ordered = []
+    for name, centroid in zip(names, centroids):
+        pin = state.nearest_pin(centroid)
+        if pin is not None and pin not in ordered:
+            pin.name = name
+            ordered.append(pin)
+    rest = [pin for pin in state.registry.pins if pin not in ordered]
+    state.registry.set_pins(ordered + rest)
 
 
 def _detect_rename(state: _ReplayState, op) -> None:
@@ -230,17 +264,45 @@ def _detect_bands(state: _ReplayState, op) -> None:
     state.registry.reorder(order)
 
 
+def _pin_role(value) -> str:
+    return "mouth" if value == "mouth" else "primary"
+
+
+def _detect_select_group(state: _ReplayState, op) -> None:
+    """Select Group: a ticked group adds its regions as pins, an unticked
+    one removes them."""
+    regions = [[tuple(pair) for pair in region] for region in op.inputs.get("regions", [])]
+    keys = {tuple(region) for region in regions}
+    if not op.params.get("on", True):
+        state.registry.set_pins([p for p in state.registry.pins if tuple(p.face_ids) not in keys])
+        return
+    have = {tuple(p.face_ids) for p in state.registry.pins}
+    found = []
+    for region in regions:
+        if tuple(region) in have:
+            continue
+        mesh = state.document.bodies[region[0][0]].mesh
+        centroid = mesh_region_centroid(mesh, sorted(face for _b, face in region))
+        if centroid is not None:
+            found.append(Pin(number=0, centroid=centroid, face_ids=region,
+                             role=_pin_role(op.params.get("role"))))
+    state.registry.set_pins(state.registry.pins + found)
+
+
 _DETECT_ACTIONS = {
     "context_plane": _detect_context_plane,
     "seed_pin": _detect_seed_pin,
     "detect_similar": _detect_similar,
     "join_mouth": _detect_join_mouth,
+    "isolated_contacts": _detect_isolated,
     "renumber": _detect_renumber,
     "predict": _detect_predict,
+    "number_from_footprint": _detect_predict,  # names + order recorded the same way
     "rename": _detect_rename,
     "delete": _detect_delete,
     "set_order": _detect_set_order,
     "clear": _detect_clear,
+    "select_group": _detect_select_group,
 }
 
 
@@ -389,7 +451,7 @@ def _replay_separate(state: _ReplayState, op) -> None:
             for c in cuts)
         carved_objs: list = []
         if pure_boxes:
-            pin_indices = state.document.split_by_boxes(cuts, remesh=False)
+            pin_indices = state.document.split_by_cuts(cuts, remesh=False)
             carved_objs = [state.document.bodies[i] for i in pin_indices]
         else:
             for cut in cuts:
@@ -417,6 +479,15 @@ def _replay_separate(state: _ReplayState, op) -> None:
 
 def _replay_hitboxes(state: _ReplayState, op) -> None:
     by_number = {pin.number: pin for pin in state.registry.pins}
+    if op.params.get("action") == "clear_all":
+        for pin in state.registry.pins:
+            pin.hitbox = None
+        return
+    if op.params.get("action") == "clear":
+        pin = by_number.get(op.inputs.get("pin_number"))
+        if pin is not None:
+            pin.hitbox = None
+        return
     for item in op.result.get("applied", []):
         pin = by_number.get(item["pin"])
         if pin is not None:
@@ -444,21 +515,47 @@ def _pf_bulk(op, by_number) -> None:
             by_number[number].function = function
 
 
+def _pf_auto_inherit(state, op, by_number) -> None:
+    from .auto import auto_inherit_functions
+
+    auto_inherit_functions(state.registry)
+
+
+def _pf_from_mpn(state, op, by_number) -> None:
+    for number, (function, signal) in op.result.get("assigned", {}).items():
+        pin = by_number.get(int(number))
+        if pin is not None:
+            pin.function, pin.signal = function, signal
+
+
+def _pf_signal(state, op, by_number) -> None:
+    pin = by_number.get(op.inputs.get("pin_number"))
+    if pin is not None:
+        pin.signal = op.result.get("signal", "")
+
+
+def _pf_single(state, op, by_number) -> None:
+    pin = by_number.get(op.inputs.get("pin_number"))
+    if pin is not None:
+        pin.function = op.result.get("function", "")
+
+
+_PF_ACTIONS = {
+    "auto_inherit": _pf_auto_inherit,
+    "set_multi": lambda state, op, by_number: _pf_set_multi(op, by_number),
+    "bulk": lambda state, op, by_number: _pf_bulk(op, by_number),
+    "from_mpn": _pf_from_mpn,
+    "signal": _pf_signal,
+}
+
+
 def _replay_pin_functions(state: _ReplayState, op) -> None:
     by_number = {pin.number: pin for pin in state.registry.pins}
-    action = op.params.get("action")
-    if action == "auto_inherit":
-        from .auto import auto_inherit_functions
-
-        auto_inherit_functions(state.registry)
-    elif action == "set_multi":
-        _pf_set_multi(op, by_number)
-    elif action == "bulk":
-        _pf_bulk(op, by_number)
+    handler = _PF_ACTIONS.get(op.params.get("action"))
+    if handler is not None:
+        handler(state, op, by_number)
     elif "pin_number" in op.inputs:
-        pin = by_number.get(op.inputs["pin_number"])
-        if pin is not None:
-            pin.function = op.result.get("function", "")
+        _pf_single(state, op, by_number)
 
 
 def _apply_color_key(document: EditorDocument, key, rgb) -> None:
@@ -470,13 +567,17 @@ def _apply_color_key(document: EditorDocument, key, rgb) -> None:
             mesh = document.bodies[body_index].mesh
             if mesh is not None:
                 mesh.face_colors[face_index] = rgb
-    elif 0 <= int(key) < len(document.bodies):  # body-level colour
+    elif 0 <= int(key) < len(document.bodies):  # body-level color
         document.bodies[int(key)].color = rgb
         if document.bodies[int(key)].mesh is not None:
             document.bodies[int(key)].mesh.face_colors = {}
 
 
 def _replay_colors(state: _ReplayState, op) -> None:
+    if op.params.get("action") == "split_face":
+        state.document.split_face(op.inputs["body"], op.inputs["face"],
+                                  op.inputs["p1"], op.inputs["p2"])
+        return
     color = op.result.get("color")
     if not color:
         return
@@ -507,7 +608,46 @@ def _replay_logo(state: _ReplayState, op) -> None:
     )
 
 
+def _replay_repair(state: _ReplayState, op) -> None:
+    """A recorded single fix (Model Health rows) replays that fix; the
+    'repair all' op re-runs the whole repair."""
+    if op.params.get("action"):
+        from .health import apply_fix
+        from .pins import fix_keeping_pins
+
+        fix_keeping_pins(state.document, state.registry.pins, lambda: apply_fix(state.document, op.params))
+        if op.params["action"] == "far_from_origin":
+            from .pins import transform_pins
+
+            transform_pins(state.registry.pins, op.params["matrix"])
+        return
+    from .tools.repair import repair_document
+
+    repair_document(state.document)
+
+
+def _replay_identity(state: _ReplayState, op) -> None:
+    from .tools.identity import apply_identity
+
+    apply_identity(state.document, op.params)
+
+
+def _replay_footprint(state: _ReplayState, op) -> None:
+    from .tools.footprint_embed import apply_footprint, geometry_footprint
+
+    if op.params.get("action") == "from_geometry":
+        fp = dict(getattr(state.document, "footprint", None) or {})
+        fp["geometry"] = geometry_footprint(state.document, state.registry.pins,
+                                            z=op.params.get("z", 0.01))
+        state.document.footprint = fp
+        return
+    apply_footprint(state.document, op.params.get("file"), op.inputs.get("kicad_mod", ""))
+
+
 _TOOL_HANDLERS = {
+    "repair": _replay_repair,
+    "identity": _replay_identity,
+    "footprint_embed": _replay_footprint,
     "zsit": _replay_zsit,
     "pin1": _replay_pin1,
     "front": _replay_front,
@@ -520,22 +660,24 @@ _TOOL_HANDLERS = {
 }
 
 
-def replay(document: EditorDocument, journal: Journal) -> PinRegistry:
+def replay(document: EditorDocument, journal: Journal,
+           registry: PinRegistry | None = None, start: int = 0) -> PinRegistry:
     """Re-apply a recorded conditioning session. Geometry ops replay their
     computed transforms; detection ops re-run from their recorded inputs;
-    assignment ops (names, functions, hitboxes, colours) re-apply results."""
-    registry = PinRegistry()
+    assignment ops (names, functions, hitboxes, colors) re-apply results."""
+    registry = registry if registry is not None else PinRegistry()
     skip = _logo_undo_skips(journal)
     state = _ReplayState(document, registry)
     for op_index, op in enumerate(journal.operations):
-        if op_index in skip:
+        if op_index < start or op_index in skip:
             continue
         handler = _TOOL_HANDLERS.get(op.tool)
         if handler is not None:
             handler(state, op)
 
-    from .pins import apply_pin_body_names
+    from .pins import apply_pin_body_names, link_own_solids
 
+    link_own_solids(document, registry.pins)
     apply_pin_body_names(document, registry.pins)
     return registry
 

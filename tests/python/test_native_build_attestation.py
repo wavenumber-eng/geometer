@@ -12,7 +12,6 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import native_build_attestation as attestation  # noqa: E402
-from analytic_qualification import environment  # noqa: E402
 
 
 def metadata() -> dict[str, Any]:
@@ -288,40 +287,6 @@ def test_toolchain_metadata_rejects_absolute_paths(
     values[field] = value
     with pytest.raises(attestation.BuildAttestationError, match=message):
         attestation.build_attestation(executable, **values)
-
-
-def test_toolchain_profile_accepts_only_validated_clean_attestation(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    executable, _ = write_sidecar(tmp_path, monkeypatch)
-    monkeypatch.setattr(
-        environment.subprocess,
-        "check_output",
-        lambda *_args, **_kwargs: "geometer 2026.6.23 (abi 20260623)\n",
-    )
-    profile = environment.toolchain_profile(executable)["profile"]
-    assert profile["build_provenance_attested"] is True
-    assert profile["hint_authority"] == "validated_executable_bound_clean_source_attestation"
-    assert profile["build"]["compiler"] == {
-        "authority": "cmake_compiler_id_and_version",
-        "id": "MSVC",
-        "version": "19.44.35207.1",
-    }
-
-
-def test_toolchain_profile_fails_closed_on_invalid_adjacent_sidecar(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    executable = tmp_path / "geometer"
-    executable.write_bytes(b"native-geometer")
-    attestation.sidecar_path(executable).write_text("{}\n", encoding="utf-8")
-    monkeypatch.setattr(
-        environment.subprocess,
-        "check_output",
-        lambda *_args, **_kwargs: "geometer 2026.6.23 (abi 20260623)\n",
-    )
-    with pytest.raises(environment.QualificationError, match="attestation validation failed"):
-        environment.toolchain_profile(executable)
 
 
 def test_cmake_generates_and_copies_fixed_sidecar() -> None:

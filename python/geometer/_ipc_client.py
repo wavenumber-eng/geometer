@@ -54,7 +54,6 @@ from ._generated.contracts.models import (
     OperationOutcomeB0,
     OperationSuccessB0,
     PackedAttachmentProjectionA0,
-    PackedAttachmentReferenceA0,
 )
 from ._ipc_a0 import (
     MAX_ATTACHMENT_BYTES,
@@ -72,6 +71,7 @@ from ._ipc_a0 import (
 )
 from ._generated.contracts.operations import expected_operation_catalog
 from ._paths import executable_path
+from ._step_media_type import STEP_MEDIA_TYPE, canonical_step_media_type
 
 if TYPE_CHECKING:
     from ._model_illustration import ModelIllustrationGeometry
@@ -83,21 +83,9 @@ if TYPE_CHECKING:
         ModelIllustrationResultB0,
     )
     from ._indexed_mesh_packet_a0 import IndexedTriangleMeshA0
-    from ._generated.contracts.models import (
-        AnalyticPlanarBooleanBatchRequestA0,
-        AnalyticPlanarBooleanBatchResultA0,
-    )
 
 
 IPC_IDENTITY = "a0"
-ANALYTIC_OPERATION = "geometry.analytic_planar_boolean_batch.a0"
-ANALYTIC_REQUEST_CONTRACT = "geometry.analytic_planar_boolean_batch.request.a0"
-ANALYTIC_RESULT_CONTRACT = "geometry.analytic_planar_boolean_batch.result.a0"
-ANALYTIC_PACKET_FORMAT = "geometry.analytic_planar_boolean.packet.a0"
-ANALYTIC_REQUEST_ATTACHMENT = "analytic_planar_boolean_request"
-ANALYTIC_RESULT_ATTACHMENT = "analytic_planar_boolean_result"
-ANALYTIC_REQUEST_MEDIA_TYPE = "application/vnd.wavenumber.geometer.analytic-planar-boolean-request"
-ANALYTIC_RESULT_MEDIA_TYPE = "application/vnd.wavenumber.geometer.analytic-planar-boolean-result"
 MODEL_HLR_OPERATION = "geometry.model_hlr_projection.a0"
 MESH_HLR_OPERATION = "geometry.mesh_hlr_projection.a0"
 INDEXED_MESH_MEDIA_TYPE = "application/vnd.wavenumber.geometer.indexed-triangle-mesh"
@@ -374,6 +362,7 @@ class _GeometerIpcExecution(_GeometerIpcSession):
                 raise GeometerIpcError(f"request {self._pending.request_id} timed out locally and is still draining")
             declaration = _operation(self._welcome, operation)
             _validate_request_value(declaration, request)
+            attachments = _normalize_step_inputs(attachments, declaration.input_attachments)
             _validate_declared_attachments(attachments, declaration.input_attachments, "request")
             request_id = client._take_request_id()
             request_json = (
@@ -444,64 +433,6 @@ class _GeometerIpcExecution(_GeometerIpcSession):
 
         return model_illustration_geometry(cast("GeometerIpcClient", self), request, model, timeout)
 
-    def analytic_planar_boolean_batch(
-        self,
-        request: AnalyticPlanarBooleanBatchRequestA0,
-        *,
-        timeout: float | None = None,
-    ) -> AnalyticPlanarBooleanBatchResultA0:
-        """Execute analytic planar Boolean A0 with its governed packed projection."""
-
-        client = cast("GeometerIpcClient", self)
-        from ._analytic_packet_a0 import (
-            decode_analytic_planar_boolean_batch_result_a0_packet,
-            encode_analytic_planar_boolean_batch_request_a0_packet,
-        )
-
-        packet = encode_analytic_planar_boolean_batch_request_a0_packet(request)
-        projection = PackedAttachmentProjectionA0(
-            schema=ANALYTIC_REQUEST_CONTRACT,
-            packet=PackedAttachmentReferenceA0(
-                attachment=ANALYTIC_REQUEST_ATTACHMENT,
-                format=ANALYTIC_PACKET_FORMAT,
-            ),
-        )
-        response = client.execute(
-            ANALYTIC_OPERATION,
-            projection,
-            (
-                Attachment(
-                    name=ANALYTIC_REQUEST_ATTACHMENT,
-                    media_type=ANALYTIC_REQUEST_MEDIA_TYPE,
-                    data=packet,
-                ),
-            ),
-            timeout=timeout,
-        )
-        if isinstance(response.outcome, (OperationFailureA0, OperationFailureB0)):
-            raise GeometerOperationError(response.outcome.operation, response.outcome.diagnostics)
-        try:
-            result_projection = response.outcome.result
-            if not isinstance(result_projection, PackedAttachmentProjectionA0) or result_projection != (
-                PackedAttachmentProjectionA0(
-                    schema=ANALYTIC_RESULT_CONTRACT,
-                    packet=PackedAttachmentReferenceA0(
-                        attachment=ANALYTIC_RESULT_ATTACHMENT,
-                        format=ANALYTIC_PACKET_FORMAT,
-                    ),
-                )
-            ):
-                raise GeometerIpcProtocolError("analytic response contains an incompatible packed projection")
-            if len(response.attachments) != 1:
-                raise GeometerIpcProtocolError("analytic response does not contain exactly one result attachment")
-            return decode_analytic_planar_boolean_batch_result_a0_packet(response.attachments[0].data)
-        except GeometerIpcProtocolError:
-            client._terminate()
-            raise
-        except Exception as error:
-            client._terminate()
-            raise GeometerIpcProtocolError("analytic response contains an invalid packed result") from error
-
     def model_tessellation(
         self,
         model: bytes,
@@ -551,7 +482,7 @@ class _GeometerIpcExecution(_GeometerIpcSession):
         model: bytes,
         options: HlrProjectionOptionsA0 | None = None,
         *,
-        media_type: str = "application/step",
+        media_type: str = STEP_MEDIA_TYPE,
         timeout: float | None = None,
     ) -> HlrProjectionResultA0:
         """Project a STEP attachment through the governed HLR A0 operation."""
@@ -932,31 +863,6 @@ def _validate_welcome(welcome: IpcWelcomeA0) -> None:
     expected_catalog = expected_operation_catalog(welcome.release_version, welcome.c_abi_generation)
     if catalog != expected_catalog:
         raise GeometerIpcProtocolError("welcome operation catalog differs from generated authority")
-    analytic = _operation(welcome, ANALYTIC_OPERATION)
-    if (
-        analytic.request_contract != ANALYTIC_REQUEST_CONTRACT
-        or analytic.result_contract != ANALYTIC_RESULT_CONTRACT
-        or analytic.runtime_dispatch is not IpcRuntimeDispatchA0.PACKED_ATTACHMENT
-        or analytic.request_projection is None
-        or analytic.result_projection is None
-        or analytic.request_projection.attachment_name != ANALYTIC_REQUEST_ATTACHMENT
-        or analytic.result_projection.attachment_name != ANALYTIC_RESULT_ATTACHMENT
-        or analytic.request_projection.format != ANALYTIC_PACKET_FORMAT
-        or analytic.result_projection.format != ANALYTIC_PACKET_FORMAT
-    ):
-        raise GeometerIpcProtocolError("welcome analytic operation declaration is incompatible")
-    _require_exact_declaration(
-        analytic.input_attachments,
-        ANALYTIC_REQUEST_ATTACHMENT,
-        ANALYTIC_REQUEST_MEDIA_TYPE,
-        "analytic request",
-    )
-    _require_exact_declaration(
-        analytic.output_attachments,
-        ANALYTIC_RESULT_ATTACHMENT,
-        ANALYTIC_RESULT_MEDIA_TYPE,
-        "analytic result",
-    )
     bounds = _operation(welcome, "geometry.model_bounds.a0")
     if (
         bounds.request_contract != "geometry.model_bounds.options.a0"
@@ -984,24 +890,6 @@ def _operation(welcome: IpcWelcomeA0, identity: str) -> IpcOperationDeclarationA
     if len(matches) != 1:
         raise GeometerIpcProtocolError(f"operation {identity} is absent or duplicated in negotiated catalog")
     return matches[0]
-
-
-def _require_exact_declaration(
-    declarations: tuple[IpcAttachmentDeclarationA0, ...],
-    name: str,
-    media_type: str,
-    label: str,
-) -> None:
-    if len(declarations) != 1:
-        raise GeometerIpcProtocolError(f"welcome {label} attachment inventory is incompatible")
-    declaration = declarations[0]
-    if (
-        declaration.name != name
-        or not declaration.required
-        or declaration.media_types != (media_type,)
-        or declaration.max_bytes != MAX_ATTACHMENT_BYTES
-    ):
-        raise GeometerIpcProtocolError(f"welcome {label} attachment declaration is incompatible")
 
 
 def _valid_effective_limits(limits: IpcEffectiveLimitsA0) -> bool:
@@ -1037,6 +925,27 @@ def _validate_request_value(
         raise GeometerIpcProtocolError("request value does not match the negotiated HLR contract")
 
 
+def _normalize_step_inputs(
+    attachments: tuple[Attachment, ...],
+    declarations: tuple[IpcAttachmentDeclarationA0, ...],
+) -> tuple[Attachment, ...]:
+    by_name = {declaration.name: declaration for declaration in declarations}
+    normalized: list[Attachment] = []
+    for attachment in attachments:
+        declaration = by_name.get(attachment.name)
+        if declaration is not None and any(
+            value in ("model/step", "application/step") for value in declaration.media_types
+        ):
+            media_type = canonical_step_media_type(attachment.media_type)
+            if media_type is None:
+                if attachment.media_type not in declaration.media_types:
+                    raise GeometerIpcProtocolError("request STEP attachment has invalid media type")
+            else:
+                attachment = replace(attachment, media_type=media_type)
+        normalized.append(attachment)
+    return tuple(normalized)
+
+
 def _validate_declared_attachments(
     attachments: tuple[Attachment, ...],
     declarations: tuple[IpcAttachmentDeclarationA0, ...],
@@ -1051,7 +960,12 @@ def _validate_declared_attachments(
         declaration = by_name.get(attachment.name)
         if declaration is None:
             raise GeometerIpcProtocolError(f"{lane} contains undeclared attachment {attachment.name}")
-        if attachment.media_type not in declaration.media_types:
+        compatible = attachment.media_type in declaration.media_types
+        if lane == "request" and any(
+            value in ("model/step", "application/step") for value in declaration.media_types
+        ):
+            compatible = compatible or canonical_step_media_type(attachment.media_type) is not None
+        if not compatible:
             raise GeometerIpcProtocolError(f"{lane} attachment {attachment.name} has incompatible media type")
         if len(attachment.data) > declaration.max_bytes:
             raise GeometerIpcProtocolError(f"{lane} attachment {attachment.name} exceeds its catalog limit")

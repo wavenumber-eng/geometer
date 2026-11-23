@@ -445,27 +445,6 @@ bool int_field(const JsonValue& value, int* output, std::string* error,
     return true;
 }
 
-bool parse_curve_mode(const JsonValue& value, ProjectionCurveMode* output, std::string* error)
-{
-    if (value.type != JsonValue::Type::String)
-    {
-        *error = "curve_mode must be a string.";
-        return false;
-    }
-    if (value.string_value == "native_arcs" || value.string_value == "native-arcs")
-    {
-        *output = ProjectionCurveMode::NativeArcs;
-        return true;
-    }
-    if (value.string_value == "polyline")
-    {
-        *output = ProjectionCurveMode::Polyline;
-        return true;
-    }
-    *error = "curve_mode must be native_arcs or polyline.";
-    return false;
-}
-
 bool parse_projection_algorithm(const JsonValue& value, ProjectionAlgorithm* output,
                                 std::string* error)
 {
@@ -474,22 +453,12 @@ bool parse_projection_algorithm(const JsonValue& value, ProjectionAlgorithm* out
         *error = "projection_algorithm must be a string.";
         return false;
     }
-    if (value.string_value == "poly")
-    {
-        *output = ProjectionAlgorithm::Poly;
-        return true;
-    }
-    if (value.string_value == "exact")
-    {
-        *output = ProjectionAlgorithm::Exact;
-        return true;
-    }
     if (value.string_value == "fast")
     {
         *output = ProjectionAlgorithm::Fast;
         return true;
     }
-    *error = "projection_algorithm must be poly, exact, or fast.";
+    *error = "projection_algorithm must be fast.";
     return false;
 }
 
@@ -523,12 +492,6 @@ bool parse_projection_outline_algorithm(const JsonValue& value, ProjectionOutlin
         *error = "outline_algorithm must be a string.";
         return false;
     }
-    if (value.string_value == "hlr-close" || value.string_value == "hlr_close" ||
-        value.string_value == "hlr")
-    {
-        *output = ProjectionOutlineAlgorithm::HlrClosedEdges;
-        return true;
-    }
     if (value.string_value == "mesh-shadow" || value.string_value == "mesh_shadow" ||
         value.string_value == "shadow")
     {
@@ -540,7 +503,7 @@ bool parse_projection_outline_algorithm(const JsonValue& value, ProjectionOutlin
         *output = ProjectionOutlineAlgorithm::FastMeshShadow;
         return true;
     }
-    *error = "outline_algorithm must be hlr-close, mesh-shadow, or fast-mesh-shadow.";
+    *error = "outline_algorithm must be mesh-shadow or fast-mesh-shadow.";
     return false;
 }
 
@@ -798,22 +761,6 @@ int parse_hlr_projection_options_json(const char* json, HlrProjectionOptions* op
             return 91;
         }
     }
-    if (const JsonValue* curve_mode = find_any_member(root, {"curve_mode", "curveMode"}))
-    {
-        if (!parse_curve_mode(*curve_mode, &parsed.curve_mode, &error))
-        {
-            set_status(status, 91, error);
-            return 91;
-        }
-    }
-    if (const JsonValue* samples = find_any_member(root, {"samples_per_curve", "samples"}))
-    {
-        if (!int_field(*samples, &parsed.samples_per_curve, &error, "samples_per_curve"))
-        {
-            set_status(status, 91, error);
-            return 91;
-        }
-    }
     if (const JsonValue* round_digits = find_any_member(root, {"round_digits", "roundDigits"}))
     {
         if (!int_field(*round_digits, &parsed.round_digits, &error, "round_digits"))
@@ -842,72 +789,6 @@ int parse_hlr_projection_options_json(const char* json, HlrProjectionOptions* op
                 set_status(status, 91, error);
                 return 91;
             }
-        }
-    }
-    // Back-compat: include_visible toggles all visible edge categories on/off,
-    // include_outline toggles only the visible-outline category. These map onto
-    // the new granular fields; granular fields below override if both provided.
-    if (const JsonValue* include_visible =
-            find_any_member(root, {"include_visible", "includeVisible"}))
-    {
-        bool v = true;
-        if (!bool_field(*include_visible, &v, &error, "include_visible"))
-        {
-            set_status(status, 91, error);
-            return 91;
-        }
-        parsed.edge_v_sharp = v;
-        parsed.edge_v_outline = v;
-    }
-    if (const JsonValue* include_outline =
-            find_any_member(root, {"include_outline", "includeOutline"}))
-    {
-        bool v = true;
-        if (!bool_field(*include_outline, &v, &error, "include_outline"))
-        {
-            set_status(status, 91, error);
-            return 91;
-        }
-        parsed.edge_v_outline = v;
-    }
-    // Granular OCCT HLR edge category flags.
-    struct EdgeFlag
-    {
-        const char* snake;
-        const char* camel;
-        bool HlrProjectionOptions::* member;
-    };
-    const EdgeFlag edge_flags[] = {
-        {"edge_v_sharp", "edgeVSharp", &HlrProjectionOptions::edge_v_sharp},
-        {"edge_v_outline", "edgeVOutline", &HlrProjectionOptions::edge_v_outline},
-        {"edge_v_smooth", "edgeVSmooth", &HlrProjectionOptions::edge_v_smooth},
-        {"edge_v_sewn", "edgeVSewn", &HlrProjectionOptions::edge_v_sewn},
-        {"edge_v_iso", "edgeVIso", &HlrProjectionOptions::edge_v_iso},
-        {"edge_h_sharp", "edgeHSharp", &HlrProjectionOptions::edge_h_sharp},
-        {"edge_h_outline", "edgeHOutline", &HlrProjectionOptions::edge_h_outline},
-        {"edge_h_smooth", "edgeHSmooth", &HlrProjectionOptions::edge_h_smooth},
-        {"edge_h_sewn", "edgeHSewn", &HlrProjectionOptions::edge_h_sewn},
-        {"edge_h_iso", "edgeHIso", &HlrProjectionOptions::edge_h_iso},
-    };
-    for (const EdgeFlag& flag : edge_flags)
-    {
-        if (const JsonValue* node = find_any_member(root, {flag.snake, flag.camel}))
-        {
-            if (!bool_field(*node, &(parsed.*(flag.member)), &error, flag.snake))
-            {
-                set_status(status, 91, error);
-                return 91;
-            }
-        }
-    }
-    if (const JsonValue* union_polygons = find_any_member(
-            root, {"union_outline_polygons", "unionOutlinePolygons", "unionPolygons"}))
-    {
-        if (!bool_field(*union_polygons, &parsed.union_outline_polygons, &error,
-                        "union_outline_polygons"))
-        {
-            set_status(status, 91, error);
-            return 91;
         }
     }
     if (const JsonValue* algorithm =
@@ -971,15 +852,6 @@ int parse_hlr_projection_options_json(const char* json, HlrProjectionOptions* op
     {
         if (!parse_projection_outline_algorithm(*outline_algorithm, &parsed.outline_algorithm,
                                                 &error))
-        {
-            set_status(status, 91, error);
-            return 91;
-        }
-    }
-    if (const JsonValue* angle =
-            find_any_member(root, {"hlr_angle_tolerance", "hlrAngleTolerance"}))
-    {
-        if (!double_field(*angle, &parsed.hlr_angle_tolerance, &error, "hlr_angle_tolerance"))
         {
             set_status(status, 91, error);
             return 91;

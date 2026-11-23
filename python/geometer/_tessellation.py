@@ -37,7 +37,7 @@ def model_tessellation(
     response = client.execute(
         "geometry.model_tessellation.a0",
         options or ModelTessellationRequestA0(schema="geometry.model_tessellation.request.a0"),
-        (Attachment(name="model", media_type="application/step", data=model),),
+        (Attachment(name="model", media_type="model/step", data=model),),
         timeout=timeout,
     )
     if isinstance(response.outcome, (OperationFailureA0, OperationFailureB0)):

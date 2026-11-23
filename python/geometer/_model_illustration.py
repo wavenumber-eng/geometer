@@ -39,7 +39,7 @@ def _attachments(
     if isinstance(source, ModelAttachmentIllustrationSourceA0):
         if model is None:
             raise ValueError("a model illustration source requires STEP model bytes")
-        return (Attachment(name="model", media_type="application/step", data=model),)
+        return (Attachment(name="model", media_type="model/step", data=model),)
     if model is not None:
         raise ValueError("an analytic illustration source does not accept model bytes")
     return ()

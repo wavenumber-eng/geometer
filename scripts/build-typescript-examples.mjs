@@ -10,11 +10,6 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const outputRoot = join(root, "dist", "wasm", "demos");
 const stagingRoot = join(root, "dist", "wasm", `.typescript-demo-stage-${process.pid}`);
 const outputs = [
-  "analytic_canvas_arc.js",
-  "analytic_polygon_pour_bootstrap_guard.js",
-  "analytic_polygon_pour_demo.js",
-  "analytic_polygon_pour_fixture.js",
-  "analytic_polygon_pour_worker.js",
   "demo-tooling/animation.js",
   "demo-tooling/camera2d.js",
   "demo-tooling/commands.js",
@@ -29,9 +24,6 @@ const outputs = [
   "illustration_geometry_renderers.js",
   "model_bounds_demo.js",
   "model_bounds_worker.js",
-  "pcb_polygon_pour_demo.js",
-  "pcb_polygon_pour_model.js",
-  "pcb_polygon_pour_worker.js",
 ];
 const checkOnly = process.argv.slice(2).includes("--check");
 

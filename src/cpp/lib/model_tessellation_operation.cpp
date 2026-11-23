@@ -1,6 +1,7 @@
 #include "model_tessellation_operation.h"
 #include "geometer/model_tessellation.h"
 #include "geometer/sha256.h"
+#include "step_media_type.h"
 
 #include <cstdint>
 #include <utility>
@@ -35,8 +36,7 @@ void execute_model_tessellation(const unsigned char* request, std::size_t size,
         return;
     }
     if (attachments.size() != 1 || attachments[0].name != "model" ||
-        (attachments[0].media_type != "application/step" &&
-         attachments[0].media_type != "model/step") ||
+        !step_media_type_detail::accepts(attachments[0].media_type) ||
         attachments[0].size > 268435456)
     {
         fail("geometer.contract.invalid_attachment",

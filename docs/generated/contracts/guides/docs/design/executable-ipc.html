@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
+  <meta name="wn-catalog-sha256" content="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032">
   <title>Calling The Geometer Executable — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/executable-ipc.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="calling-the-geometer-executable">Calling The Geometer Executable</h1></header>
 <p>Use persistent IPC when an application wants to reuse one geometry process and
@@ -26,7 +26,7 @@ and <a href="python-package.html">Python convenience API</a> are simpler.</p>
 <tbody>
 <tr>
 <td>Python</td>
-<td>Public <code>geometer.GeometerClient</code>: synchronous HLR, tessellation, illustration and experimental analytic calls. The package resolves its bundled executable; <code>executable=</code> selects an explicit compatible binary.</td>
+<td>Public <code>geometer.GeometerClient</code>: synchronous HLR, tessellation and illustration. The package resolves its bundled executable; <code>executable=</code> selects an explicit compatible binary.</td>
 </tr>
 <tr>
 <td>Node/TypeScript</td>
@@ -123,10 +123,6 @@ welcome catalog distinguish portable operations, additional native-only
 experimental operations and structural-only declarations. Clipper2 packed
 entry points and legacy conversion commands are not automatically IPC
 operations. See <a href="../contracts/README.html">contract authority</a>.</p>
-<p>Analytic planar Boolean is experimental and not production-ready even though
-its packed interface is implemented. Prefer Clipper2-backed polygonized
-operations for production visualization where suitable. Protocol generation,
-release version, C ABI generation and packed-format versions are independent.</p>
 <p>Byte offsets, frame-kind values, limits, control messages and connection-fatal
 conditions belong to the <a href="executable-ipc-a0.html">normative A0 reference</a>.</p>
 

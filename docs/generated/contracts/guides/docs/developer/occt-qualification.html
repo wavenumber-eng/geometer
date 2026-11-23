@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
+  <meta name="wn-catalog-sha256" content="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032">
   <title>OCCT Exact-Tag Qualification — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/developer/occt-qualification.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="occt-exact-tag-qualification">OCCT Exact-Tag Qualification</h1></header>
 <p>Use <code>scripts/qualify_occt.py</code> for a governed side-by-side kernel decision. The
@@ -41,8 +41,6 @@ tag, or <code>--prepare-only</code> to stop after the dependency install. Native
 <code>GEOMETER_DIST_ROOT</code>;</li>
 <li>rebuilds and runs the registered native and WASM CTests with bounded test
 timeouts;</li>
-<li>compares the OCCT feasibility output byte for byte across native/WASM; and</li>
-<li>runs every governed exact/synthetic native-WASM parity validator;</li>
 <li>runs the isolated native CLI, Python, HLR, GLB, SVG, and planar validation;</li>
 <li>runs the WASM compatibility and TypeScript package/direct/Worker suites
 against the tag-specific browser artifacts;</li>
@@ -57,7 +55,7 @@ JSON after excluding runtime timings; exact planar STEP after excluding only
 the generated header timestamp; and identical repeated WASM STEP-to-GLB bytes
 and heap observations. It writes <code>out/occt-qualification/comparison.json</code>.</p>
 <p>The JSON report records exact Geometer and OCCT revisions, install sizes,
-per-command wall time, log paths and digests, feasibility digests, isolated
+per-command wall time, log paths and digests, isolated
 consumer outputs, artifact sizes/digests, full-browser results, and runtime
 memory observations. Keep raw logs under <code>out/</code>; commit only the reviewed
 summary evidence required by the active plan.</p>
@@ -75,12 +73,6 @@ baseline, candidate, and comparison report SHA-256 values are respectively:</p>
 <li><code>badd9db71e52ba0ed751e36241ae0bd52fff6e387a85ba3f49a6f9acb10671de</code></li>
 <li><code>931f1cd56a85e59c2924ba034a21339531430c6541f122c07a18a32241e92a7c</code></li>
 </ul>
-<p>The comparison found no governed semantic or byte difference. V8_0_1 adds
-1,157,984 bytes to the Windows native OCCT install, 1,115,658 bytes to the
-WASM OCCT install, 54,784 bytes to the native executable, and 23,267 bytes to
-the browser WASM artifact. This evidence authorizes the exact <code>V8_0_1</code> pin and
-new immutable cache profiles; it does not authorize production analytic
-solver dispatch.</p>
 <h2 id="published-801-cache-profiles">Published 8.0.1 Cache Profiles</h2>
 <p>Both immutable V8_0_1 dependency-cache profiles were published from the
 reviewed local install trees using credentialed producer upload:</p>
@@ -92,14 +84,6 @@ with archive SHA-256
 with archive SHA-256
 <code>44fe6d6294c7a26ac77cfa17e1fd4a312578638a5669b7032c227750d032614e</code></li>
 </ul>
-<p>Publication was verified without credentials: both <code>manifest.json</code> objects are
-served publicly under <code>https://artifacts.wavenumber.net/deps/v1/geometer/occt/</code>
-with schema <code>wavenumber.dependency_cache_manifest.a1</code>, and both profiles were
-restored in <code>only</code> mode into a clean isolated state root using only the public
-HTTPS path. Each restored install tree reports OCCT 8.0.1 and is byte-for-byte
-identical to the local install tree it was packaged from. This completes the
-qualification step's cache-publication evidence; production analytic solver
-dispatch remains unauthorized.</p>
 
 </main>
 </body>

@@ -69,15 +69,6 @@ def main() -> int:
     require_equal(
         "Geometer revision", baseline["geometer_revision"], candidate["geometer_revision"]
     )
-    require_equal(
-        "feasibility digest",
-        baseline["lanes"]["native"]["feasibility_sha256"],
-        candidate["lanes"]["native"]["feasibility_sha256"],
-    )
-    for report in reports.values():
-        if not report.get("feasibility_native_wasm_equal"):
-            raise RuntimeError(f"{report['tag']} native/WASM feasibility output differs")
-
     native_roots = {
         tag: qualification_root / tag / "native-validation" for tag in TAGS
     }
@@ -128,7 +119,6 @@ def main() -> int:
             "occt_revision": candidate["occt_revision"],
             "occt_tag_object": candidate["occt_tag_object"],
         },
-        "feasibility_sha256": baseline["lanes"]["native"]["feasibility_sha256"],
         "native_output_sha256": native_digests,
         "wasm_step_glb_runtime_memory": wasm_runtime["V8_0_0"],
         "full_browser_hlr": browser_results["V8_0_0"],
@@ -155,7 +145,6 @@ def main() -> int:
             ),
         },
         "production_pin_unchanged": True,
-        "production_solver_allowed": False,
     }
     output = args.output or qualification_root / "comparison.json"
     output.parent.mkdir(parents=True, exist_ok=True)

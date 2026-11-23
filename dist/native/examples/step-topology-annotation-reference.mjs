@@ -24111,10 +24111,6 @@ var declarations = {
       }
     }
   },
-  "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrCurveMode": {
-    kind: "enum",
-    values: ["native_arcs", "polyline"]
-  },
   "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrMatrix4x4": {
     kind: "array",
     element: { kind: "primitive", name: "float64" },
@@ -24126,7 +24122,7 @@ var declarations = {
   },
   "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrOutlineAlgorithm": {
     kind: "enum",
-    values: ["hlr-close", "mesh-shadow", "fast-mesh-shadow"]
+    values: ["mesh-shadow", "fast-mesh-shadow"]
   },
   "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectedView": {
     kind: "object",
@@ -24164,7 +24160,7 @@ var declarations = {
   },
   "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionAlgorithm": {
     kind: "enum",
-    values: ["poly", "exact", "fast"]
+    values: ["fast"]
   },
   "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionModes": {
     kind: "object",
@@ -24237,70 +24233,10 @@ var declarations = {
         optional: true,
         constraints: {}
       },
-      curve_mode: {
-        type: {
-          kind: "reference",
-          target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrCurveMode"
-        },
-        optional: true,
-        constraints: {}
-      },
-      samples_per_curve: {
-        type: { kind: "primitive", name: "uint32" },
-        optional: true,
-        constraints: { min_value: 1, max_value: 1e5 }
-      },
       round_digits: {
         type: { kind: "primitive", name: "uint32" },
         optional: true,
         constraints: { min_value: 0, max_value: 9 }
-      },
-      edge_v_sharp: {
-        type: { kind: "primitive", name: "boolean" },
-        optional: true,
-        constraints: {}
-      },
-      edge_v_outline: {
-        type: { kind: "primitive", name: "boolean" },
-        optional: true,
-        constraints: {}
-      },
-      edge_v_smooth: {
-        type: { kind: "primitive", name: "boolean" },
-        optional: true,
-        constraints: {}
-      },
-      edge_v_sewn: {
-        type: { kind: "primitive", name: "boolean" },
-        optional: true,
-        constraints: {}
-      },
-      edge_v_iso: { type: { kind: "primitive", name: "boolean" }, optional: true, constraints: {} },
-      edge_h_sharp: {
-        type: { kind: "primitive", name: "boolean" },
-        optional: true,
-        constraints: {}
-      },
-      edge_h_outline: {
-        type: { kind: "primitive", name: "boolean" },
-        optional: true,
-        constraints: {}
-      },
-      edge_h_smooth: {
-        type: { kind: "primitive", name: "boolean" },
-        optional: true,
-        constraints: {}
-      },
-      edge_h_sewn: {
-        type: { kind: "primitive", name: "boolean" },
-        optional: true,
-        constraints: {}
-      },
-      edge_h_iso: { type: { kind: "primitive", name: "boolean" }, optional: true, constraints: {} },
-      union_outline_polygons: {
-        type: { kind: "primitive", name: "boolean" },
-        optional: true,
-        constraints: {}
       },
       projection_algorithm: {
         type: {
@@ -24345,11 +24281,6 @@ var declarations = {
         },
         optional: true,
         constraints: {}
-      },
-      hlr_angle_tolerance: {
-        type: { kind: "primitive", name: "float64" },
-        optional: true,
-        constraints: { min_value: 0, max_value: Math.PI }
       },
       fast: {
         type: {
@@ -27835,12 +27766,12 @@ var declarations = {
       max_visibility_candidate_pairs: {
         type: { kind: "primitive", name: "uint32" },
         optional: true,
-        constraints: { min_value: 1, max_value: 1e8 }
+        constraints: { min_value: 1 }
       },
       max_drawing_commands: {
         type: { kind: "primitive", name: "uint32" },
         optional: true,
-        constraints: { min_value: 1, max_value: 2e6 }
+        constraints: { min_value: 1 }
       }
     }
   },
@@ -30601,6 +30532,10 @@ var declarations = {
       }
     }
   },
+  "Wavenumber.Geometer.Contracts.StepTopologyA0.StepAp242MediaType": {
+    kind: "enum",
+    values: ["model/step", "application/step"]
+  },
   "Wavenumber.Geometer.Contracts.StepTopologyA0.StepAp242PersistenceArtifact": {
     kind: "object",
     properties: {
@@ -30615,7 +30550,10 @@ var declarations = {
         constraints: {}
       },
       media_type: {
-        type: { kind: "literal", value_type: "string", value: "application/step" },
+        type: {
+          kind: "reference",
+          target: "Wavenumber.Geometer.Contracts.StepTopologyA0.StepAp242MediaType"
+        },
         optional: false,
         constraints: {}
       },
@@ -32019,43 +31957,8 @@ function decodeOperationOutcomeB0Json(data) {
 }
 
 // src/ts/geometer/generated/operations.ts
-var NORMALIZED_CONTRACT_CATALOG_SHA256 = "8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed";
+var NORMALIZED_CONTRACT_CATALOG_SHA256 = "c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032";
 var operationCatalog = {
-  "geometry.analytic_planar_boolean_batch.a0": {
-    identity: "geometry.analytic_planar_boolean_batch.a0",
-    requestContract: "geometry.analytic_planar_boolean_batch.request.a0",
-    resultContract: "geometry.analytic_planar_boolean_batch.result.a0",
-    runtimeAvailable: true,
-    nativeRuntimeAvailable: false,
-    runtimeDispatch: "packed_attachment",
-    inputAttachments: [
-      {
-        name: "analytic_planar_boolean_request",
-        required: true,
-        media_types: ["application/vnd.wavenumber.geometer.analytic-planar-boolean-request"],
-        max_bytes: 268435456
-      }
-    ],
-    outputAttachments: [
-      {
-        name: "analytic_planar_boolean_result",
-        required: true,
-        media_types: ["application/vnd.wavenumber.geometer.analytic-planar-boolean-result"],
-        max_bytes: 268435456
-      }
-    ],
-    requestProjection: {
-      kind: "packed_attachment",
-      attachment_name: "analytic_planar_boolean_request",
-      format: "geometry.analytic_planar_boolean.packet.a0"
-    },
-    resultProjection: {
-      kind: "packed_attachment",
-      attachment_name: "analytic_planar_boolean_result",
-      format: "geometry.analytic_planar_boolean.packet.a0"
-    },
-    documentation: "Execute independent ordered analytic planar Boolean jobs through packed attachments."
-  },
   "geometry.mesh_hlr_projection.a0": {
     identity: "geometry.mesh_hlr_projection.a0",
     requestContract: "geometry.hlr_projection.options.a0",
@@ -32218,7 +32121,7 @@ var operationCatalog = {
       }
     ],
     outputAttachments: [],
-    documentation: "Compute axis-aligned model bounds from the required raw model attachment."
+    documentation: "Compute axis-aligned model bounds from the required raw model attachment. STEP input uses RFC 2045 MIME-value parsing; valid unknown parameters are ignored. New producers use model/step; application/step remains an input compatibility spelling."
   },
   "geometry.model_hlr_projection.a0": {
     identity: "geometry.model_hlr_projection.a0",
@@ -32236,7 +32139,7 @@ var operationCatalog = {
       }
     ],
     outputAttachments: [],
-    documentation: "Project STEP model bytes through the selected polygonal, exact, or Fast HLR backend."
+    documentation: "Project STEP model bytes through Fast HLR. STEP input uses RFC 2045 MIME-value parsing, ignores valid unknown parameters, and retains application/step compatibility; new producers use model/step."
   },
   "geometry.model_illustration_geometry.a0": {
     identity: "geometry.model_illustration_geometry.a0",
@@ -32261,7 +32164,7 @@ var operationCatalog = {
         max_bytes: 268435456
       }
     ],
-    documentation: "Import or lower one source and return renderer-neutral illustration geometry."
+    documentation: "Import or lower one source and return renderer-neutral illustration geometry. STEP input uses RFC 2045 MIME-value parsing and ignores valid unknown parameters. New source summaries use model/step; application/step remains readable for compatibility."
   },
   "geometry.model_illustration_geometry.b0": {
     identity: "geometry.model_illustration_geometry.b0",
@@ -32286,7 +32189,7 @@ var operationCatalog = {
         max_bytes: 268435456
       }
     ],
-    documentation: ""
+    documentation: "STEP input uses RFC 2045 MIME-value parsing and ignores valid unknown parameters. New source summaries use model/step; application/step remains readable for compatibility."
   },
   "geometry.model_illustration.a0": {
     identity: "geometry.model_illustration.a0",
@@ -32304,7 +32207,7 @@ var operationCatalog = {
       }
     ],
     outputAttachments: [],
-    documentation: "Import or lower one source and return a complete deterministic SVG illustration."
+    documentation: "Import or lower one source and return a complete deterministic SVG illustration. STEP input uses RFC 2045 MIME-value parsing and ignores valid unknown parameters. New source summaries use model/step; application/step remains readable for compatibility."
   },
   "geometry.model_illustration.b0": {
     identity: "geometry.model_illustration.b0",
@@ -32322,7 +32225,7 @@ var operationCatalog = {
       }
     ],
     outputAttachments: [],
-    documentation: ""
+    documentation: "STEP input uses RFC 2045 MIME-value parsing and ignores valid unknown parameters. New source summaries use model/step; application/step remains readable for compatibility."
   },
   "geometry.model_tessellation.a0": {
     identity: "geometry.model_tessellation.a0",
@@ -32347,7 +32250,7 @@ var operationCatalog = {
         max_bytes: 268435456
       }
     ],
-    documentation: "Tessellate STEP bytes to bounded colored meshes for native GPU and illustration consumers."
+    documentation: "Tessellate STEP bytes to bounded colored meshes for native GPU and illustration consumers. STEP input uses RFC 2045 MIME-value parsing, ignores valid unknown parameters, and retains application/step compatibility; new producers use model/step."
   },
   "geometry.step_topology.analyze_recovery.a0": {
     identity: "geometry.step_topology.analyze_recovery.a0",
@@ -32456,7 +32359,7 @@ var operationCatalog = {
       }
     ],
     outputAttachments: [],
-    documentation: ""
+    documentation: "STEP input uses RFC 2045 MIME-value parsing; valid unknown parameters are ignored and application/step remains an input compatibility spelling."
   },
   "geometry.step_topology.render.a0": {
     identity: "geometry.step_topology.render.a0",
@@ -32510,7 +32413,7 @@ var operationCatalog = {
       }
     ],
     outputAttachments: [],
-    documentation: ""
+    documentation: "The STEP source uses RFC 2045 MIME-value parsing and ignores valid unknown parameters; journal descriptor and digest matching remain exact."
   },
   "geometry.step_topology.save.a0": {
     identity: "geometry.step_topology.save.a0",
@@ -32528,7 +32431,8 @@ var operationCatalog = {
           "application/step",
           "application/vnd.opencascade.xbf",
           "application/vnd.opencascade.xml-xcaf",
-          "application/vnd.wavenumber.geometer.step-topology-sidecar+json"
+          "application/vnd.wavenumber.geometer.step-topology-sidecar+json",
+          "model/step"
         ],
         max_bytes: 536870912
       }
@@ -32666,11 +32570,10 @@ var GeometerIpcProtocolError = class extends Error {
 };
 function validateIpcRequestOperationPair(envelope) {
   const declaration = operationDeclaration(envelope.operation);
-  const projection = "requestProjection" in declaration ? declaration.requestProjection : void 0;
   const contract = validatePayloadProjection(
     envelope.request,
     declaration.runtimeDispatch,
-    projection,
+    declaration.requestProjection,
     declaration.runtimeDispatch === "logical_dto" ? declaration.requestContract : void 0
   );
   if (contract !== declaration.requestContract) {
@@ -32682,11 +32585,10 @@ function validateIpcRequestOperationPair(envelope) {
 function validateIpcOutcomeOperationPair(outcome) {
   if (!outcome.ok) return;
   const declaration = operationDeclaration(outcome.operation);
-  const projection = "resultProjection" in declaration ? declaration.resultProjection : void 0;
   const contract = validatePayloadProjection(
     outcome.result,
     declaration.runtimeDispatch,
-    projection
+    declaration.resultProjection
   );
   if (contract !== declaration.resultContract) {
     throw new GeometerIpcProtocolError(
@@ -33021,6 +32923,111 @@ function validatePayloadProjection(value, runtimeDispatch, expectedProjection, f
   throw new GeometerIpcProtocolError("IPC payload has no contract schema identity.");
 }
 
+// src/ts/geometer/step-media-type.ts
+var STEP_MEDIA_TYPE = "model/step";
+var specials = new Set('()<>@,;:\\"/[]?=');
+var StepMediaTypeError = class extends Error {
+};
+var Field = class {
+  constructor(value) {
+    this.value = value;
+  }
+  position = 0;
+  take(expected) {
+    this.space();
+    if (this.value[this.position] !== expected)
+      throw new StepMediaTypeError("Invalid STEP MIME syntax");
+    this.position++;
+  }
+  token() {
+    this.space();
+    const start = this.position;
+    while (this.position < this.value.length) {
+      const character = this.value.charAt(this.position);
+      if (specials.has(character) || character === " " || character === "	") break;
+      this.position++;
+    }
+    if (start === this.position) throw new StepMediaTypeError("Invalid STEP MIME token");
+    return this.value.slice(start, this.position);
+  }
+  space() {
+    while (this.position < this.value.length) {
+      const character = this.value[this.position];
+      if (character === " " || character === "	") this.position++;
+      else if (character === "(") this.comment();
+      else return;
+    }
+  }
+  comment() {
+    let depth = 1;
+    this.position++;
+    while (this.position < this.value.length) {
+      const character = this.value[this.position++];
+      if (character === "\\") {
+        if (this.position >= this.value.length)
+          throw new StepMediaTypeError("Invalid STEP MIME escape");
+        this.position++;
+      } else if (character === "(") depth++;
+      else if (character === ")" && --depth === 0) return;
+    }
+    throw new StepMediaTypeError("Unclosed STEP MIME comment");
+  }
+  parameterValue() {
+    this.space();
+    if (this.value[this.position] !== '"') {
+      this.token();
+      return;
+    }
+    this.position++;
+    while (this.position < this.value.length) {
+      const character = this.value[this.position++];
+      if (character === '"') return;
+      if (character === "\\") {
+        if (this.position >= this.value.length)
+          throw new StepMediaTypeError("Invalid STEP MIME escape");
+        this.position++;
+      }
+    }
+    throw new StepMediaTypeError("Unclosed STEP MIME quote");
+  }
+};
+function canonicalStepMediaType(value) {
+  if (value.length === 0 || value.length > 128 || [...value].some((character) => {
+    const code = character.charCodeAt(0);
+    return code > 126 || code < 32 && character !== "	";
+  }))
+    return void 0;
+  const field = new Field(value);
+  try {
+    const major = field.token().toLowerCase();
+    field.take("/");
+    if (!["model", "application"].includes(major) || field.token().toLowerCase() !== "step")
+      return void 0;
+    field.space();
+    while (field.position < value.length) {
+      field.take(";");
+      field.token();
+      field.take("=");
+      field.parameterValue();
+      field.space();
+    }
+    return STEP_MEDIA_TYPE;
+  } catch (error) {
+    if (error instanceof StepMediaTypeError) return void 0;
+    throw error;
+  }
+}
+function stepInputMediaType(value, declared) {
+  if (!declared.some((type) => type === "model/step" || type === "application/step")) return value;
+  const canonical = canonicalStepMediaType(value);
+  if (canonical !== void 0) return canonical;
+  if (declared.includes(value)) return value;
+  throw new StepMediaTypeError("Invalid STEP input media type");
+}
+function stepInputMatchesDeclaration(value, declared) {
+  return declared.includes(value) || declared.some((type) => type === "model/step" || type === "application/step") && canonicalStepMediaType(value) !== void 0;
+}
+
 // src/ts/geometer/ipc-client-a0.ts
 var requiredCapabilities = [
   "serialized_execution",
@@ -33104,6 +33111,18 @@ var GeometerIpcClientA0 = class _GeometerIpcClientA0 {
         "B0 request payload contract does not match the negotiated operation declaration."
       );
     }
+    try {
+      attachments = attachments.map((attachment) => ({
+        ...attachment,
+        mediaType: stepInputMediaType(
+          attachment.mediaType,
+          declaration.input_attachments.find((item) => item.name === attachment.name)?.media_types ?? []
+        )
+      }));
+    } catch (error) {
+      if (!(error instanceof StepMediaTypeError)) throw error;
+      throw new GeometerIpcProtocolError("request STEP attachment has invalid media type.");
+    }
     validateAttachments(attachments, declaration.input_attachments, "request");
     const requestId = this.allocateRequestId();
     const frame = {
@@ -33135,7 +33154,7 @@ var GeometerIpcClientA0 = class _GeometerIpcClientA0 {
     return this.hlrProjection(
       "geometry.model_hlr_projection.a0",
       "model",
-      request.mediaType ?? "application/step",
+      request.mediaType ?? STEP_MEDIA_TYPE,
       request.model,
       request.options
     );
@@ -33518,7 +33537,8 @@ function validateAttachments(attachments, declarations2, direction) {
     if (declaration === void 0) {
       throw new GeometerIpcProtocolError(`Undeclared ${direction} attachment ${attachment.name}.`);
     }
-    if (!declaration.media_types.includes(attachment.mediaType)) {
+    const compatible = direction === "request" ? stepInputMatchesDeclaration(attachment.mediaType, declaration.media_types) : declaration.media_types.includes(attachment.mediaType);
+    if (!compatible) {
       throw new GeometerIpcProtocolError(`${direction} attachment media type is not declared.`);
     }
     if (attachment.data.byteLength > declaration.max_bytes) {
@@ -34320,7 +34340,7 @@ async function main() {
     const openedResponse = await authoringProcess.client.execute(
       "geometry.step_topology.open.a0",
       { schema: "geometry.step_topology.open.request.a0" },
-      [{ data: source, mediaType: "application/step", name: "step" }]
+      [{ data: source, mediaType: "model/step", name: "step" }]
     );
     const opened = expectedResult(
       openedResponse,
@@ -34472,7 +34492,7 @@ async function main() {
         }
       },
       [
-        { data: source, mediaType: "application/step", name: "source" },
+        { data: source, mediaType: "model/step", name: "source" },
         {
           data: journal,
           mediaType: "application/vnd.wavenumber.geometer.step-topology-edit-journal",

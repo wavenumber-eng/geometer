@@ -47,7 +47,7 @@ fn generated_result_mapping_does_not_invent_a_packed_contract() {
         Some("geometry.step_topology.close.result.a0")
     );
     let packed = contracts::decode_json::<contracts::PackedAttachmentProjectionA0>(
-        br#"{"schema":"geometry.analytic_planar_boolean_batch.request.a0","packet":{"attachment":"analytic_planar_boolean_request","format":"geometry.analytic_planar_boolean.packet.a0"}}"#,
+        br#"{"schema":"test.packed.request.a0","packet":{"attachment":"test_packet","format":"test.packet.a0"}}"#,
     ).unwrap();
     assert_eq!(
         logical_request_contract(&IpcRequestValueA0::PackedAttachment(packed.clone())),

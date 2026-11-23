@@ -33,34 +33,14 @@ function geometerModule(backend) {
   return modulePromise;
 }
 
-const EDGE_FLAGS = [
-  "edge_v_sharp", "edge_v_outline", "edge_v_smooth", "edge_v_sewn", "edge_v_iso",
-  "edge_h_sharp", "edge_h_outline", "edge_h_smooth", "edge_h_sewn", "edge_h_iso",
-];
-
 function buildOptionsJson(views, options) {
   const opts = options || {};
   const payload = {
     views: views.map(({ id, direction, up }) => ({ id, direction, up })),
-    curve_mode: opts.curve_mode || "polyline",
-    samples_per_curve: opts.samples_per_curve ?? 24,
     round_digits: opts.round_digits ?? 3,
-    union_outline_polygons: opts.union_outline_polygons ?? true,
   };
   if (Array.isArray(opts.model_transform)) {
     payload.model_transform = opts.model_transform;
-  }
-  // Translate legacy UI aliases before the strict governed contract boundary.
-  if (typeof opts.include_visible === "boolean") {
-    payload.edge_v_sharp = opts.include_visible;
-    payload.edge_v_outline = opts.include_visible;
-  }
-  if (typeof opts.include_outline === "boolean") {
-    payload.edge_v_outline = opts.include_outline;
-  }
-  // Granular OCCT HLR edge categories.
-  for (const flag of EDGE_FLAGS) {
-    if (typeof opts[flag] === "boolean") payload[flag] = opts[flag];
   }
   if (opts.projection_algorithm) {
     payload.projection_algorithm = opts.projection_algorithm;
@@ -83,9 +63,6 @@ function buildOptionsJson(views, options) {
   if (Number.isFinite(opts.mesh_deflection_coefficient)) {
     payload.mesh_deflection_coefficient = opts.mesh_deflection_coefficient;
   }
-  if (Number.isFinite(opts.hlr_angle_tolerance)) {
-    payload.hlr_angle_tolerance = opts.hlr_angle_tolerance;
-  }
   if (opts.fast && typeof opts.fast === "object" && !Array.isArray(opts.fast)) {
     payload.fast = opts.fast;
   }
@@ -98,7 +75,7 @@ function project(module, stepBytes, views, options) {
     module,
     "geometry.model_hlr_projection.a0",
     JSON.parse(optionsJson),
-    { name: "model", mediaType: "application/step", data: stepBytes },
+    { name: "model", mediaType: "model/step", data: stepBytes },
   );
   return JSON.stringify(result);
 }

@@ -1,6 +1,7 @@
 #include "mesh_illustration_fusion.h"
 
 #include <algorithm>
+#include <queue>
 #include <unordered_set>
 
 namespace geometer::illustration_detail
@@ -17,6 +18,8 @@ struct Mobility
 {
     std::vector<std::size_t> low, high;
     std::vector<Pair> overlaps;
+    // Each overlapping pair of different paint, as (behind, in front).
+    std::vector<Pair> ordered;
 };
 
 Mobility mobility_intervals(const std::vector<TriangleCommand>& commands, const Bounds& bounds,
@@ -46,14 +49,112 @@ Mobility mobility_intervals(const std::vector<TriangleCommand>& commands, const 
                             return;
                         if (a.fill == b.fill && std::abs(a.opacity - b.opacity) <= 1e-12)
                         {
-                            if (result.overlaps.size() >= 4000000)
-                                throw ResourceLimit("Mesh illustration exceeds the overlap limit.");
                             result.overlaps.emplace_back(front, back);
                             return;
                         }
+                        result.ordered.emplace_back(back, front);
                         result.low[front] = std::max(result.low[front], back + 1);
                         result.high[back] = std::min(result.high[back], front - 1);
                     });
+    return result;
+}
+
+// Draw order for `count` placements, today's order 0..count-1, in which each
+// (behind, in front) edge's behind comes first. Placements that must each come
+// before the other (a cycle) keep today's order among themselves, at the place
+// of their first. Today's order is kept wherever it already respects the edges.
+std::vector<std::size_t> respect_overlaps(std::size_t count, std::vector<Pair> edges)
+{
+    std::vector<std::size_t> result(count);
+    std::iota(result.begin(), result.end(), 0);
+    std::sort(edges.begin(), edges.end());
+    edges.erase(std::unique(edges.begin(), edges.end()), edges.end());
+    if (std::all_of(edges.begin(), edges.end(), [](Pair edge) { return edge.first < edge.second; }))
+        return result;
+    std::vector<std::vector<std::size_t>> outgoing(count), incoming(count);
+    for (auto [behind, front] : edges)
+    {
+        outgoing[behind].push_back(front);
+        incoming[front].push_back(behind);
+    }
+    // Strongly connected placements (Kosaraju), each named by its first.
+    std::vector<bool> visited(count, false);
+    std::vector<std::size_t> finish;
+    for (std::size_t start = 0; start < count; ++start)
+    {
+        if (visited[start])
+            continue;
+        std::vector<std::pair<std::size_t, std::size_t>> stack{{start, 0}};
+        visited[start] = true;
+        while (!stack.empty())
+        {
+            auto& top = stack.back();
+            const auto node = top.first;
+            if (top.second < outgoing[node].size())
+            {
+                const auto next = outgoing[node][top.second++];
+                if (!visited[next])
+                {
+                    visited[next] = true;
+                    stack.emplace_back(next, 0);
+                }
+            }
+            else
+            {
+                finish.push_back(node);
+                stack.pop_back();
+            }
+        }
+    }
+    std::vector<std::size_t> owner(count, count);
+    for (auto it = finish.rbegin(); it != finish.rend(); ++it)
+    {
+        if (owner[*it] != count)
+            continue;
+        std::vector<std::size_t> stack{*it};
+        owner[*it] = *it;
+        std::size_t first = *it;
+        std::vector<std::size_t> members;
+        while (!stack.empty())
+        {
+            const auto node = stack.back();
+            stack.pop_back();
+            members.push_back(node);
+            first = std::min(first, node);
+            for (auto next : incoming[node])
+                if (owner[next] == count)
+                {
+                    owner[next] = *it;
+                    stack.push_back(next);
+                }
+        }
+        for (auto member : members)
+            owner[member] = first;
+    }
+    std::vector<std::vector<std::size_t>> members(count), targets(count);
+    std::vector<std::size_t> waiting(count, 0);
+    for (std::size_t node = 0; node < count; ++node)
+        members[owner[node]].push_back(node);
+    for (auto [behind, front] : edges)
+        if (owner[behind] != owner[front])
+        {
+            targets[owner[behind]].push_back(owner[front]);
+            ++waiting[owner[front]];
+        }
+    std::priority_queue<std::size_t, std::vector<std::size_t>, std::greater<>> ready;
+    for (std::size_t node = 0; node < count; ++node)
+        if (owner[node] == node && waiting[node] == 0)
+            ready.push(node);
+    result.clear();
+    while (!ready.empty())
+    {
+        const auto group = ready.top();
+        ready.pop();
+        result.insert(result.end(), members[group].begin(), members[group].end());
+        for (auto front : targets[group])
+            if (--waiting[front] == 0)
+                ready.push(front);
+    }
     return result;
 }
 
@@ -73,10 +174,13 @@ struct Fusion
         Surface surface;
     };
     std::vector<Placement> placements;
+    // The placement each triangle is drawn in.
+    std::vector<std::size_t> owner;
 
     Fusion(const std::vector<TriangleCommand>& c, const Bounds& bounds, WorkBudget& b)
         : commands(c), budget(b), mobility(mobility_intervals(c, bounds, b)), groups(c.size()),
-          layer_groups(c.size()), group_low(mobility.low), group_high(mobility.high)
+          layer_groups(c.size()), group_low(mobility.low), group_high(mobility.high),
+          owner(c.size(), 0)
     {
         const double span =
             std::max({bounds.max_x - bounds.min_x, bounds.max_y - bounds.min_y, 1e-9});
@@ -180,7 +284,10 @@ struct Fusion
             if (!surface)
                 continue;
             for (auto member : members)
+            {
                 consumed[member] = true;
+                owner[member] = placements.size();
+            }
             budget.consume_commands(surface->layers.size());
             placements.push_back({placement(members, low, high), members[0], std::move(*surface)});
         }
@@ -218,6 +325,8 @@ struct Fusion
             if (fused)
             {
                 budget.consume_commands(fused->layers.size());
+                for (auto member : available)
+                    owner[member] = placements.size();
                 placements.push_back({placement(available, group_low[root], group_high[root]),
                                       available[0], std::move(*fused)});
             }
@@ -225,17 +334,32 @@ struct Fusion
                 for (auto member : available)
                 {
                     budget.consume_commands();
+                    owner[member] = placements.size();
                     placements.push_back({member, member, triangle_surface(commands[member])});
                 }
         }
-        std::stable_sort(
-            placements.begin(), placements.end(), [](const auto& a, const auto& b)
-            { return a.position != b.position ? a.position < b.position : a.order < b.order; });
+        // Today's order: by position, then order. Merged surfaces are placed by
+        // their members' mean, which can put one before a surface it must be
+        // drawn behind; the overlaps of different paint then decide.
+        std::vector<std::size_t> sorted(placements.size()), rank(placements.size());
+        std::iota(sorted.begin(), sorted.end(), 0);
+        std::stable_sort(sorted.begin(), sorted.end(),
+                         [&](std::size_t a, std::size_t b)
+                         {
+                             const auto& pa = placements[a];
+                             const auto& pb = placements[b];
+                             return pa.position != pb.position ? pa.position < pb.position
+                                                               : pa.order < pb.order;
+                         });
+        for (std::size_t index = 0; index < sorted.size(); ++index)
+            rank[sorted[index]] = index;
+        std::vector<Pair> edges;
+        for (auto [behind, front] : mobility.ordered)
+            if (owner[behind] != owner[front])
+                edges.emplace_back(rank[owner[behind]], rank[owner[front]]);
         std::vector<Surface> result;
-        for (auto& placement : placements)
-        {
-            result.push_back(std::move(placement.surface));
-        }
+        for (auto index : respect_overlaps(placements.size(), std::move(edges)))
+            result.push_back(std::move(placements[sorted[index]].surface));
         return result;
     }
 };

@@ -26,7 +26,7 @@ uvx --from wn-dev-std==2026.9.8 wn-dev-std check . --format json
 
 The native build runs CTest's `production` label by default. Set
 `GEOMETER_TEST_PROFILE=production` for client strata when a focused production
-run should omit retained analytic-solver and STEP topology research suites.
+run should omit STEP topology research suites.
 Production TypeScript validation has two explicit, disjoint scopes:
 `GEOMETER_TYPESCRIPT_SCOPE=host` runs source and native-process checks in the
 Linux native lane, while `GEOMETER_TYPESCRIPT_SCOPE=wasm` validates the package,
@@ -69,13 +69,10 @@ job. TypeScript's host scope runs there and its disjoint WASM scope runs against
 the freshly built WASM candidate. Separate jobs must not repeat either scope or
 rebuild the same wheel.
 
-## Experimental qualification
+## WASM validation
 
-The `Experimental qualification` workflow runs only by manual dispatch when its
-research surfaces need qualification. It owns the analytic solver, STEP topology
-research, seeded synthetic qualification, and executable/WASM analytic
-cross-transport parity. These tests do not run on a schedule and do not block
-ordinary pull requests or releases.
+The manual `WASM validation` workflow builds and checks browser and Node WASM
+outputs and the browser demos.
 
 Run all native research tests locally with:
 

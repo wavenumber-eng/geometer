@@ -296,13 +296,6 @@ int mesh_hlr_projection(const FastHlrIndexedMesh& mesh, const HlrProjectionOptio
         set_status(status, 3, "strip_root_placement is not applicable to indexed meshes.");
         return 3;
     }
-    if (options.output_outline &&
-        options.outline_algorithm == ProjectionOutlineAlgorithm::HlrClosedEdges)
-    {
-        set_status(status, 3, "Indexed-mesh outline requires mesh-shadow or fast-mesh-shadow.");
-        return 3;
-    }
-
     try
     {
         const auto prepare_start = std::chrono::high_resolution_clock::now();

@@ -53,11 +53,10 @@ export class GeometerIpcProtocolError extends Error {
 
 export function validateIpcRequestOperationPair(envelope: IpcRequestA0): void {
   const declaration = operationDeclaration(envelope.operation);
-  const projection = "requestProjection" in declaration ? declaration.requestProjection : undefined;
   const contract = validatePayloadProjection(
     envelope.request,
     declaration.runtimeDispatch,
-    projection,
+    declaration.requestProjection,
     declaration.runtimeDispatch === "logical_dto" ? declaration.requestContract : undefined,
   );
   if (contract !== declaration.requestContract) {
@@ -70,11 +69,10 @@ export function validateIpcRequestOperationPair(envelope: IpcRequestA0): void {
 export function validateIpcOutcomeOperationPair(outcome: OperationOutcomeA0): void {
   if (!outcome.ok) return;
   const declaration = operationDeclaration(outcome.operation);
-  const projection = "resultProjection" in declaration ? declaration.resultProjection : undefined;
   const contract = validatePayloadProjection(
     outcome.result,
     declaration.runtimeDispatch,
-    projection,
+    declaration.resultProjection,
   );
   if (contract !== declaration.resultContract) {
     throw new GeometerIpcProtocolError(
@@ -441,7 +439,18 @@ function checkedAdd(left: number, right: number, field: string): number {
   return value;
 }
 
-function operationDeclaration(operation: string) {
+type PackedProjection = {
+  readonly attachment_name: string;
+  readonly format: string;
+  readonly kind: "packed_attachment";
+};
+
+type OperationDeclaration = (typeof operationCatalog)[OperationIdentity] & {
+  readonly requestProjection?: PackedProjection;
+  readonly resultProjection?: PackedProjection;
+};
+
+function operationDeclaration(operation: string): OperationDeclaration {
   if (!Object.hasOwn(operationCatalog, operation)) {
     throw new GeometerIpcProtocolError(`Unknown IPC operation ${operation}.`);
   }
@@ -451,11 +460,7 @@ function operationDeclaration(operation: string) {
 function validatePayloadProjection(
   value: object,
   runtimeDispatch: "logical_dto" | "packed_attachment",
-  expectedProjection?: {
-    readonly attachment_name: string;
-    readonly format: string;
-    readonly kind: "packed_attachment";
-  },
+  expectedProjection?: PackedProjection,
   fallback?: string,
 ): string {
   const hasPacket = "packet" in value;

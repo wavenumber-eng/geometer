@@ -16,23 +16,11 @@ pub fn options(view: &MeshIllustrationView) -> HlrProjectionOptionsA0 {
     options.output_outline = Some(true);
     options.output_detail = Some(true);
     options.output_bbox = Some(false);
-    options.curve_mode = Some(HlrCurveMode::Polyline);
     options.strip_root_placement = Some(true);
     options.mesh_deflection_mode = Some(HlrMeshDeflectionMode::BboxRelative);
     options.mesh_deflection_coefficient = Some(0.004);
     options.mesh_angular_deflection = Some(0.5);
     options.round_digits = Some(6);
-    options.union_outline_polygons = Some(true);
-    options.edge_v_sharp = Some(true);
-    options.edge_v_outline = Some(true);
-    options.edge_v_smooth = Some(false);
-    options.edge_v_sewn = Some(false);
-    options.edge_v_iso = Some(false);
-    options.edge_h_sharp = Some(false);
-    options.edge_h_outline = Some(false);
-    options.edge_h_smooth = Some(false);
-    options.edge_h_sewn = Some(false);
-    options.edge_h_iso = Some(false);
     options.fast = Some(FastHlrOptionsA0 {
         include_boundaries: Some(true),
         include_creases: Some(true),
@@ -70,7 +58,7 @@ pub fn images(
             return Err("Polyline HLR unexpectedly returned arcs".into());
         }
         for segment in &layer.segments {
-            for point in segment.chunks_exact(2) {
+            for point in segment.as_chunks::<2>().0 {
                 bounds[0] = bounds[0].min(mirror * point[0]);
                 bounds[1] = bounds[1].min(point[1]);
                 bounds[2] = bounds[2].max(mirror * point[0]);
@@ -195,7 +183,6 @@ mod tests {
             Some(HlrOutlineAlgorithm::FastMeshShadow)
         );
         assert_eq!(options.strip_root_placement, Some(true));
-        assert_eq!(options.curve_mode, Some(HlrCurveMode::Polyline));
         assert!(encode_hlr_projection_options_a0_json(&options).is_ok());
     }
 }

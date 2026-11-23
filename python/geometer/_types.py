@@ -68,27 +68,13 @@ class HlrOptions:
     output_outline: bool = True
     output_detail: bool = True
     output_bbox: bool = True
-    curve_mode: str = "polyline"
-    samples_per_curve: int = 24
     round_digits: int = 3
-    union_outline_polygons: bool = True
     mesh_linear_deflection: float = 0.01
     mesh_angular_deflection: float = 0.5
     mesh_relative: bool = False
     mesh_deflection_mode: str = "bbox-relative"
     mesh_deflection_coefficient: float = 0.004
     outline_algorithm: str = "fast-mesh-shadow"
-    hlr_angle_tolerance: float = 0.0174533
-    edge_v_sharp: bool = True
-    edge_v_outline: bool = True
-    edge_v_smooth: bool = False
-    edge_v_sewn: bool = False
-    edge_v_iso: bool = False
-    edge_h_sharp: bool = False
-    edge_h_outline: bool = False
-    edge_h_smooth: bool = False
-    edge_h_sewn: bool = False
-    edge_h_iso: bool = False
 
     @classmethod
     def assembly_outline(cls) -> "HlrOptions":
@@ -100,29 +86,11 @@ class HlrOptions:
 
     @classmethod
     def visible_detail(cls) -> "HlrOptions":
-        return cls(edge_v_smooth=True, edge_v_sewn=True)
+        return cls()
 
     @classmethod
     def visible_and_hidden(cls) -> "HlrOptions":
-        return cls(edge_h_sharp=True, edge_h_outline=True)
-
-    @classmethod
-    def exact_arcs(cls) -> "HlrOptions":
-        return cls(projection_algorithm="exact", curve_mode="native_arcs")
-
-    @classmethod
-    def debug_all_edges(cls) -> "HlrOptions":
-        return cls(
-            projection_algorithm="exact",
-            edge_v_smooth=True,
-            edge_v_sewn=True,
-            edge_v_iso=True,
-            edge_h_sharp=True,
-            edge_h_outline=True,
-            edge_h_smooth=True,
-            edge_h_sewn=True,
-            edge_h_iso=True,
-        )
+        return cls(fast={"include_hidden": True})
 
     def to_json_value(self) -> dict[str, Any]:
         return asdict(self)

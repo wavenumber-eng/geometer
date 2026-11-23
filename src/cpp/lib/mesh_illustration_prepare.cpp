@@ -14,6 +14,8 @@ struct Preparation
     bool mirror;
     double tolerance;
     std::size_t suppressed = 0;
+    // Degenerate triangles skipped in the current mesh, reported once for it.
+    std::size_t degenerate = 0;
     std::unordered_map<std::string, std::size_t> edge_indices;
 
     void warn(std::string value)
@@ -79,7 +81,7 @@ struct Preparation
         auto normal = cross(subtract(world[1], world[0]), subtract(world[2], world[0]));
         if (length(normal) < 1e-12)
         {
-            warn("Skipped degenerate triangle " + std::to_string(index) + " in " + mesh.id + ".");
+            ++degenerate;
             return;
         }
         const double sign = determinant_sign(matrix);
@@ -161,8 +163,12 @@ Scene prepare_scene(const IllustrationInputView& input)
                 throw std::runtime_error("Illustration matrix must contain 16 values.");
             std::copy(mesh.matrix->begin(), mesh.matrix->end(), matrix.begin());
         }
+        p.degenerate = 0;
         for (std::size_t index = 0; index < elements / 3; ++index)
             p.triangle(mesh, matrix, index);
+        if (p.degenerate)
+            p.warn("Skipped " + std::to_string(p.degenerate) + " degenerate triangle" +
+                   (p.degenerate == 1 ? "" : "s") + " in " + mesh.id + ".");
     }
     if (!std::isfinite(p.scene.bounds.min_x))
         p.scene.bounds = {-1, -1, 1, 1};

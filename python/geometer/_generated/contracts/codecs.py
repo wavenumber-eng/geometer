@@ -435,10 +435,6 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
             },
         },
     },
-    "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrCurveMode": {
-        "kind": "enum",
-        "values": ["native_arcs", "polyline"],
-    },
     "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrMatrix4x4": {
         "kind": "array",
         "element": {
@@ -456,7 +452,7 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
     },
     "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrOutlineAlgorithm": {
         "kind": "enum",
-        "values": ["hlr-close", "mesh-shadow", "fast-mesh-shadow"],
+        "values": ["mesh-shadow", "fast-mesh-shadow"],
     },
     "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectedView": {
         "kind": "object",
@@ -504,7 +500,7 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
     },
     "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionAlgorithm": {
         "kind": "enum",
-        "values": ["poly", "exact", "fast"],
+        "values": ["fast"],
     },
     "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionModes": {
         "kind": "object",
@@ -600,27 +596,6 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
                 "constraints": {},
                 "field": "strip_root_placement",
             },
-            "curve_mode": {
-                "type": {
-                    "kind": "reference",
-                    "target": "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrCurveMode",
-                },
-                "optional": True,
-                "constraints": {},
-                "field": "curve_mode",
-            },
-            "samples_per_curve": {
-                "type": {
-                    "kind": "primitive",
-                    "name": "uint32",
-                },
-                "optional": True,
-                "constraints": {
-                    "min_value": 1,
-                    "max_value": 100000,
-                },
-                "field": "samples_per_curve",
-            },
             "round_digits": {
                 "type": {
                     "kind": "primitive",
@@ -632,105 +607,6 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
                     "max_value": 9,
                 },
                 "field": "round_digits",
-            },
-            "edge_v_sharp": {
-                "type": {
-                    "kind": "primitive",
-                    "name": "boolean",
-                },
-                "optional": True,
-                "constraints": {},
-                "field": "edge_v_sharp",
-            },
-            "edge_v_outline": {
-                "type": {
-                    "kind": "primitive",
-                    "name": "boolean",
-                },
-                "optional": True,
-                "constraints": {},
-                "field": "edge_v_outline",
-            },
-            "edge_v_smooth": {
-                "type": {
-                    "kind": "primitive",
-                    "name": "boolean",
-                },
-                "optional": True,
-                "constraints": {},
-                "field": "edge_v_smooth",
-            },
-            "edge_v_sewn": {
-                "type": {
-                    "kind": "primitive",
-                    "name": "boolean",
-                },
-                "optional": True,
-                "constraints": {},
-                "field": "edge_v_sewn",
-            },
-            "edge_v_iso": {
-                "type": {
-                    "kind": "primitive",
-                    "name": "boolean",
-                },
-                "optional": True,
-                "constraints": {},
-                "field": "edge_v_iso",
-            },
-            "edge_h_sharp": {
-                "type": {
-                    "kind": "primitive",
-                    "name": "boolean",
-                },
-                "optional": True,
-                "constraints": {},
-                "field": "edge_h_sharp",
-            },
-            "edge_h_outline": {
-                "type": {
-                    "kind": "primitive",
-                    "name": "boolean",
-                },
-                "optional": True,
-                "constraints": {},
-                "field": "edge_h_outline",
-            },
-            "edge_h_smooth": {
-                "type": {
-                    "kind": "primitive",
-                    "name": "boolean",
-                },
-                "optional": True,
-                "constraints": {},
-                "field": "edge_h_smooth",
-            },
-            "edge_h_sewn": {
-                "type": {
-                    "kind": "primitive",
-                    "name": "boolean",
-                },
-                "optional": True,
-                "constraints": {},
-                "field": "edge_h_sewn",
-            },
-            "edge_h_iso": {
-                "type": {
-                    "kind": "primitive",
-                    "name": "boolean",
-                },
-                "optional": True,
-                "constraints": {},
-                "field": "edge_h_iso",
-            },
-            "union_outline_polygons": {
-                "type": {
-                    "kind": "primitive",
-                    "name": "boolean",
-                },
-                "optional": True,
-                "constraints": {},
-                "field": "union_outline_polygons",
             },
             "projection_algorithm": {
                 "type": {
@@ -801,18 +677,6 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
                 "optional": True,
                 "constraints": {},
                 "field": "outline_algorithm",
-            },
-            "hlr_angle_tolerance": {
-                "type": {
-                    "kind": "primitive",
-                    "name": "float64",
-                },
-                "optional": True,
-                "constraints": {
-                    "min_value": 0,
-                    "max_value": 3.141592653589793,
-                },
-                "field": "hlr_angle_tolerance",
             },
             "fast": {
                 "type": {
@@ -6185,7 +6049,6 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
                 "optional": True,
                 "constraints": {
                     "min_value": 1,
-                    "max_value": 100000000,
                 },
                 "field": "max_visibility_candidate_pairs",
             },
@@ -6197,7 +6060,6 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
                 "optional": True,
                 "constraints": {
                     "min_value": 1,
-                    "max_value": 2000000,
                 },
                 "field": "max_drawing_commands",
             },
@@ -10746,6 +10608,10 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
             },
         },
     },
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.StepAp242MediaType": {
+        "kind": "enum",
+        "values": ["model/step", "application/step"],
+    },
     "Wavenumber.Geometer.Contracts.StepTopologyA0.StepAp242PersistenceArtifact": {
         "kind": "object",
         "properties": {
@@ -10771,9 +10637,8 @@ DECLARATIONS: dict[str, dict[str, Any]] = {
             },
             "media_type": {
                 "type": {
-                    "kind": "literal",
-                    "value_type": "string",
-                    "value": "application/step",
+                    "kind": "reference",
+                    "target": "Wavenumber.Geometer.Contracts.StepTopologyA0.StepAp242MediaType",
                 },
                 "optional": False,
                 "constraints": {},

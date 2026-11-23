@@ -56,12 +56,8 @@ async fn projection(
     let mut options = decode_hlr_projection_options_a0_json(
         br#"{
         "projection_algorithm":"fast", "outline_algorithm":"fast-mesh-shadow",
-        "curve_mode":"polyline", "strip_root_placement":true,
+        "strip_root_placement":true,
         "output_outline":true, "output_detail":true, "output_bbox":false,
-        "edge_v_sharp":true, "edge_v_outline":true,
-        "edge_v_smooth":false, "edge_v_sewn":false, "edge_v_iso":false,
-        "edge_h_sharp":false, "edge_h_outline":false, "edge_h_smooth":false,
-        "edge_h_sewn":false, "edge_h_iso":false,
         "fast":{"include_hidden":false,"crease_angle_rad":0.4363323129985824}
     }"#,
     )

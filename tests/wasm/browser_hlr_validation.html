@@ -44,12 +44,7 @@
       const stepBytes = new Uint8Array(await response.arrayBuffer());
       const options = JSON.stringify({
         views: [{ id: "top", direction: [0, 0, 1], up: [0, 1, 0] }],
-        curve_mode: "polyline",
-        samples_per_curve: 24,
         round_digits: 3,
-        include_visible: true,
-        include_outline: true,
-        union_outline_polygons: true,
       });
 
       const stepPtr = module._malloc(stepBytes.length);

@@ -316,3 +316,6 @@ and request id are governed fields.
 
 Logs include request ids and operation identities where available, but never
 raw model bytes, complete request JSON, secrets, or protocol frames.
+## STEP attachment media values
+
+STEP input slots parse the complete bounded MIME value and ignore syntactically valid unknown parameters. `model/step` is canonical; `application/step` remains compatible. CR/LF and NUL are forbidden in the framed media field; email-header line folding is not supported. Catalog input ordering, frame layout, payload bounds and exact output validation remain unchanged. See the [STEP media policy](../geometer/adr/geometer-adr-020-standard-step-media-types.md).

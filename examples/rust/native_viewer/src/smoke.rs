@@ -73,7 +73,7 @@ impl Smoke {
             for (source, target) in image
                 .pixels
                 .iter()
-                .zip(pixels.data_mut().chunks_exact_mut(4))
+                .zip(pixels.data_mut().as_chunks_mut::<4>().0)
             {
                 target.copy_from_slice(&source.to_array());
             }

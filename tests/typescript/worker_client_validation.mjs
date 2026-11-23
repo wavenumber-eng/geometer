@@ -5,7 +5,10 @@ import {
   GeometerOperationError,
   GeometerWasmTransportError,
 } from "../../dist/wasm/npm/geometer/wasm.js";
-import { createGeometerWorkerClient, GeometerWorkerError } from "../../dist/wasm/npm/geometer/worker.js";
+import {
+  createGeometerWorkerClient,
+  GeometerWorkerError,
+} from "../../dist/wasm/npm/geometer/worker.js";
 
 class BrowserWorkerAdapter {
   constructor(worker) {
@@ -60,7 +63,7 @@ if (!client.capabilities.operations.includes("geometry.model_bounds.a0")) {
 }
 
 const results = await Promise.all([
-  client.modelBounds({ model }),
+  client.modelBounds({ model, mediaType: '(source) APPLICATION/STEP; name="worker;fixture.step"' }),
   client.modelBounds({ model }),
   client.modelBounds({ model }),
 ]);
@@ -75,34 +78,6 @@ if (
   )
 ) {
   throw new Error("Correlated Worker model_bounds results are invalid.");
-}
-
-const analytic = await client.analyticPlanarBooleanBatch({
-  jobs: [
-    {
-      job_id: 1n,
-      stages: [
-        {
-          stage_id: 1n,
-          operation: "union",
-          operands: [
-            {
-              operand_id: 1n,
-              kind: "disk",
-              feature_id: 1n,
-              center: { x: 0n, y: 0n },
-              radius_nm: 1_000_000n,
-            },
-          ],
-        },
-      ],
-    },
-  ],
-  relationship_queries: [],
-});
-const [analyticJob] = analytic.job_results;
-if (analyticJob?.status !== "success" || analyticJob.result_regions.length !== 1) {
-  throw new Error("Worker analytic packed round trip did not return one disk region.");
 }
 
 let emptyRejected = false;

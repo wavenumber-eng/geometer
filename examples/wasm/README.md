@@ -7,14 +7,12 @@ demos. It derives the Wavenumber light palette, flat 0 px geometry, and
 watermark treatment from `docs/design/styles.css`, and uses the locally
 vendored OFL-1.1 JetBrains Mono 2.304 webfonts. Demo-specific layout selectors
 belong in this single stylesheet under a demo root; HTML must not contain
-visual values or inline style declarations. The analytic polygon-pour and
-model-bounds pages are migrated consumers; HLR and planar-ring still require
+visual values or inline style declarations. The model-bounds page is a migrated consumer; HLR and planar-ring still require
 selector/markup migration before this styling requirement is complete.
 
 All portable demos use the same standalone packaging entry point:
 
 ```powershell
-python scripts\build_standalone_demos.py analytic-polygon-pour
 python scripts\build_standalone_demos.py all
 ```
 
@@ -28,81 +26,7 @@ and cache behavior differ from direct `file://` artifacts.
 `demo-tooling/` contains runtime-dependency-free strict TypeScript building
 blocks for future interactive examples: camera/grid math, normalized input and
 intent resolution, pointer-capturing tools, scoped commands, named animation,
-and transactional undo/redo. It is intentionally generic and is not yet wired
-into the analytic demo. Its README records the clean-room provenance boundary.
-
-## Live Analytic Polygon Pour
-
-**Status: experimental demonstration.** It demonstrates the retained analytic
-API and is not evidence of production readiness. The solver may fail closed on
-valid inputs and should not be used as the dependable whole-board or
-whole-layer copper-union path.
-
-`analytic_polygon_pour_demo.html` is the first high-level TypeScript client for
-the experimental filtered solver behind the frozen A0 candidate. It
-continuously solves a board-like copper region with circular clearances and a
-draggable full-height keepout through a dedicated Worker. The canvas renders
-the solver's canonical line and circular-arc fragments; JavaScript performs no
-Boolean geometry.
-
-The interaction uses one active solve plus one replaceable pending request, so
-fast slider movement cannot accumulate stale work. The inspector reports the
-Worker round-trip, result closure counts, surviving subtraction boundaries,
-and the governed standalone-result digest.
-
-`http://127.0.0.1:8123/examples/wasm/analytic_polygon_pour_demo.html`
-
-Build the deterministic deploy-unchanged site after refreshing WASM and the
-TypeScript examples:
-
-```powershell
-python scripts\build_analytic_polygon_pour_site.py
-```
-
-Serve `dist/wasm/demos/analytic-polygon-pour/` as a static directory or deploy
-it unchanged to Cloudflare Pages. The directory contains its Worker, WASM,
-generated client package, redistribution-safe JetBrains Mono fonts, `_headers` policy,
-and a SHA-256 closure manifest; it has no service backend or network runtime
-dependency.
-
-Build the literal one-file version and open it directly from disk:
-
-```powershell
-python scripts\build_standalone_demos.py analytic-polygon-pour
-```
-
-`dist/wasm/demos/analytic_polygon_pour_demo.html` contains its stylesheet,
-JetBrains Mono fonts, Wavenumber watermark, TypeScript client, Worker host,
-Emscripten glue, and WASM bytes. It performs no runtime file or network loads.
-
-## Interactive PCB Polygon Pour
-
-`pcb_polygon_pour_demo.html` is an application-shaped example layered on the
-generic analytic operation. It uses the generated TypeScript Worker client and
-the clean-room `demo-tooling/` camera, input, command, tool-controller, and
-history modules. Board semantics remain outside Geometer core.
-
-The board-minus-pad job is composed with independent exact 0.55 mm capsule
-clearance jobs for 0.15 mm traces under a 0.20 mm clearance rule, same-net via
-clearance jobs, and exact via/spoke copper overlay jobs. The browser applies
-the layers in deterministic subtract-then-add order and reports a SHA-256 over
-the ordered job-ID/digest pairs; it does not claim one fused result topology.
-Via placement/movement, deterministic
-45-degree routing, polygon-vertex movement, pan/zoom, undo, and redo are
-interactive. Chamfer, fillet, and shove routing are explicitly deferred.
-
-Build the hosted offline directory and directly openable single HTML after
-refreshing the TypeScript and browser-WASM artifacts:
-
-```powershell
-python scripts\build_pcb_polygon_pour_site.py
-python scripts\build_standalone_demos.py pcb-polygon-pour
-```
-
-Outputs:
-
-- `dist/wasm/demos/pcb-polygon-pour/index.html`
-- `dist/wasm/demos/pcb_polygon_pour_demo.html`
+and transactional undo/redo. Its README records the clean-room provenance boundary.
 
 ## Generated Model Bounds Client
 
@@ -292,19 +216,10 @@ TrackballControls: left-drag rotates freely, the wheel zooms, and right-drag pan
 Its lens defaults to orthographic so it matches Geometer's orthographic HLR;
 the `3D lens` selector can switch to perspective for depth inspection.
 
-The projection UI follows the terminology in ADR 008. `Detail` is raw linework
-from the selected OCCT polygonal/exact engine or the Fast triangle HLR engine.
-The `Fast detail HLR` checkbox provides the direct comparison switch. Its
-candidate-category, degree-based crease-angle, weld, projection, and depth
-controls live in a separate Fast-only panel; the OCCT engine, edge angle,
-presets, and edge categories live in an OCCT-only panel.
-`Outline` is Geometer's independent assembly silhouette, and `Both` displays
-those layers without changing or merging either layer's color, width, or line
-style. Mesh shadow and the Fast silhouette source are available for direct
-comparison. Raw OCCT
-categories use `Detail edge set` rather than the overloaded term `Profile`.
-The independently selectable outline source does not change when the Fast
-detail checkbox changes.
+The `Detail` layer shows Fast HLR linework. The geometry settings control
+candidates, crease angles, and tolerances. The `Outline` layer uses Fast Mesh
+Shadow by default and also supports Mesh Shadow. `Both` displays the two layers
+using their respective colors, widths, and line styles.
 Tessellation is either model-relative (controlled by `Quality coef`)
 or absolute (controlled by `Linear tol (mm)`), so the page no longer presents
 inactive linear/relative controls at the same time.
@@ -313,9 +228,8 @@ layer's width so thick patterned lines remain legible in the page and SVG export
 Secondary display and geometry controls live in the resizable `Settings` dock,
 which uses the dependency-free TypeScript panel system in `demo-tooling`. The
 dock can be collapsed or hidden from its activity-rail tab. `Reset geometry
-defaults` restores Fast detail, Fast Mesh Shadow, model-relative
-tessellation coefficient, linear/angular tolerances, edge-angle tolerance, and
-the Sharp + silhouettes Detail edge set before recomputing the current view.
+defaults` restores Fast Mesh Shadow, model-relative tessellation, and the
+default Fast HLR settings before recomputing the current view.
 
 `Top axis` and `Front axis` explicitly define the preset frame in model
 coordinates; they must be perpendicular. Right/Left and the ISO presets are

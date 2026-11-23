@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
+  <meta name="wn-catalog-sha256" content="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032">
   <title>STEP Topology Contract Slice C — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/step-topology-contract-slice-c.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="step-topology-contract-slice-c">STEP Topology Contract Slice C</h1></header>
 <p>Status: unpromoted experimental candidate; native exact-journal restore subset available</p>
@@ -53,7 +53,7 @@ a mismatched source before replay.</p>
 Restore accepts both declared STEP media types, binds exact attachment
 descriptors to bytes, and validates the reported source and replayed transaction
 count against the request preconditions.</p>
-<p>Every variant fixes the attachment name, media type, format string, byte limit,
+<p>Every variant fixes the attachment name, admitted media spelling, format string, byte limit,
 and SHA-256 descriptor. A capability record reports save, restore, authored
 payload, and topology-link posture independently as supported, experimental,
 or unsupported. This prevents successful file creation from being interpreted
@@ -122,6 +122,8 @@ replay preconditions before store admission, issues a new session identity, and
 reports any admission evictions. The real Node flow then mutates the restored
 authored group to prove replayed state without reusing old topology handles.</p>
 <p>No Appz files are changed by this slice.</p>
+<h2 id="step-mime-compatibility">STEP MIME compatibility</h2>
+<p>The STEP source input follows the <a href="../geometer/adr/geometer-adr-020-standard-step-media-types.html">STEP media policy</a>; journal descriptor/digest matching remains exact. Structural AP242 artifact readers accept bare <code>application/step</code> and <code>model/step</code>, while new producers emit <code>model/step</code>. Parameterized/case-varied output descriptors are not admitted. Save remains structural-only; this correction adds no executable capability.</p>
 
 </main>
 </body>

@@ -398,23 +398,13 @@ def test_governed_transport_evidence_preserves_reviewed_bytes() -> None:
             assert hashlib.sha256(payload).hexdigest() == report["sha256"]
 
 
-def test_experimental_qualification_is_outside_normal_ci_and_release() -> None:
-    command = "uv run pytest tests/wasm/test_analytic_cross_transport_parity.py -q"
-    ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
-    experimental = (ROOT / ".github/workflows/wasm.yml").read_text(encoding="utf-8")
+def test_wasm_validation_is_manual() -> None:
+    wasm = (ROOT / ".github/workflows/wasm.yml").read_text(encoding="utf-8")
     candidate = (ROOT / ".github/workflows/release-candidate.yml").read_text(encoding="utf-8")
-    release = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
 
-    assert command not in ci
-    assert command not in release
-    assert experimental.count(command) == 1
-    assert "pull_request:" not in experimental
-    assert "workflow_dispatch:" in experimental
-    assert "schedule:" not in experimental
-    assert "--include-experimental-tests" in experimental
-    assert "--include-experimental-tests" not in ci
-    assert "--include-experimental-tests" not in release
-    assert "  cross-transport:" not in release
+    assert "workflow_dispatch:" in wasm
+    assert "pull_request:" not in wasm
+    assert "schedule:" not in wasm
     assert candidate.count("needs: [verify, build, wasm]") == 1
 
 

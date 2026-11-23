@@ -1,5 +1,5 @@
-import { decodeAnalyticPlanarBooleanBatchResultA0Packet, encodeAnalyticPlanarBooleanBatchRequestA0Packet, } from "./analytic-packet-a0.js";
 import { decodeOperationOutcomeA0Json, decodeOperationOutcomeB0Json, encodeHlrProjectionOptionsA0Json, encodeMeshCollectionA0Json, encodeMeshHlrProjectionRequestB0Json, encodeModelBoundsOptionsA0Json, operationCatalog, } from "./generated/index.js";
+import { STEP_MEDIA_TYPE, StepMediaTypeError, stepInputMediaType } from "./step-media-type.js";
 import { GeometerOperationError, GeometerWasmTransportError } from "./wasm.js";
 export const GEOMETER_WASM_WORKER_PROTOCOL = "wn.geometer.wasm_worker.a0";
 export class GeometerWorkerError extends Error {
@@ -34,46 +34,11 @@ export class GeometerWorkerClient {
             throw error;
         }
     }
-    async analyticPlanarBooleanBatch(request) {
-        const declaration = operationCatalog["geometry.analytic_planar_boolean_batch.a0"];
-        const requestProjection = declaration.requestProjection;
-        const resultProjection = declaration.resultProjection;
-        const input = declaration.inputAttachments.find((item) => item.name === requestProjection.attachment_name);
-        const output = declaration.outputAttachments.find((item) => item.name === resultProjection.attachment_name);
-        if (input === undefined || output === undefined) {
-            throw new GeometerWorkerError("Generated analytic attachment declarations are incomplete.");
-        }
-        const inputMediaType = input.media_types[0];
-        if (inputMediaType === undefined) {
-            throw new GeometerWorkerError("Generated analytic request media type is missing.");
-        }
-        const response = await this.execute(declaration.identity, JSON.stringify({
-            schema: declaration.requestContract,
-            packet: {
-                attachment: requestProjection.attachment_name,
-                format: requestProjection.format,
-            },
-        }), [
-            {
-                name: input.name,
-                mediaType: inputMediaType,
-                data: encodeAnalyticPlanarBooleanBatchRequestA0Packet(request),
-            },
-        ]);
-        if (!response.outcome.ok) {
-            throw new GeometerOperationError(response.outcome.operation, response.outcome.diagnostics);
-        }
-        const attachment = response.attachments.find((item) => item.name === output.name);
-        if (attachment === undefined) {
-            throw new GeometerWorkerError("Packed analytic result attachment is missing.");
-        }
-        return decodeAnalyticPlanarBooleanBatchResultA0Packet(attachment.data);
-    }
     async modelBounds(request) {
         const response = await this.execute("geometry.model_bounds.a0", encodeModelBoundsOptionsA0Json(request.options ?? {}), [
             {
                 name: "model",
-                mediaType: request.mediaType ?? "application/step",
+                mediaType: request.mediaType ?? STEP_MEDIA_TYPE,
                 data: request.model,
             },
         ]);
@@ -92,7 +57,7 @@ export class GeometerWorkerClient {
         return response.outcome.result;
     }
     async modelHlrProjection(request) {
-        return this.hlrProjection("geometry.model_hlr_projection.a0", request.options ?? {}, "model", request.mediaType ?? "application/step", request.model);
+        return this.hlrProjection("geometry.model_hlr_projection.a0", request.options ?? {}, "model", request.mediaType ?? STEP_MEDIA_TYPE, request.model);
     }
     async meshHlrProjection(request) {
         const response = await this.execute("geometry.mesh_hlr_projection.b0", encodeMeshHlrProjectionRequestB0Json({
@@ -140,7 +105,21 @@ export class GeometerWorkerClient {
         return response.outcome.result;
     }
     async execute(operation, requestJson, attachments) {
-        const transferred = attachments.map((attachment) => ({
+        const declaration = Object.values(operationCatalog).find((item) => item.identity === operation);
+        let normalized;
+        try {
+            normalized = attachments.map((attachment) => ({
+                ...attachment,
+                mediaType: stepInputMediaType(attachment.mediaType, declaration?.inputAttachments.find((item) => item.name === attachment.name)
+                    ?.media_types ?? []),
+            }));
+        }
+        catch (error) {
+            if (!(error instanceof StepMediaTypeError))
+                throw error;
+            throw new GeometerWasmTransportError(1001, "Invalid STEP input media type.");
+        }
+        const transferred = normalized.map((attachment) => ({
             data: copyToArrayBuffer(attachment.data),
             mediaType: attachment.mediaType,
             name: attachment.name,

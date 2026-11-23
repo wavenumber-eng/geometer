@@ -1,15 +1,9 @@
 ---
 # yamllint disable rule:line-length
-name: Experimental qualification
+name: WASM validation
 
 "on":
   workflow_dispatch:
-    inputs:
-      extended_synthetic:
-        description: Run the extended exact synthetic-correctness profile
-        required: false
-        default: false
-        type: boolean
 
 permissions:
   contents: read
@@ -84,13 +78,9 @@ jobs:
         run: |
           google-chrome --version
           npm run check:typescript
-          uv run python scripts/build_analytic_polygon_pour_site.py
-          uv run python scripts/build_pcb_polygon_pour_site.py
           uv run python scripts/build_hlr_site.py
           uv run python scripts/build_illustration_site.py
           uv run python scripts/build_standalone_demos.py all
-          uv run pytest tests/wasm/test_analytic_standalone_demo.py -q
-          uv run pytest tests/wasm/test_pcb_standalone_demo.py -q
           uv run pytest tests/wasm/test_hlr_static_site.py -q
           uv run pytest tests/wasm/test_illustration_static_site.py -q
           uv run pytest tests/python/test_contract_promotion_manifest.py -q
@@ -105,122 +95,9 @@ jobs:
           node tests/wasm/planar_batch_solve_bytes_validation.js
           node tests/wasm/step_to_glb_bytes_validation.js
 
-      - name: Upload extended synthetic-correctness harness
-        if: github.event_name == 'schedule' || inputs.extended_synthetic
-        run: cmake --build build-wasm --config Release --target geometer_exact_boolean_seeded_property_test --parallel 2
-
-      - name: Upload extended synthetic-correctness harness artifact
-        if: github.event_name == 'schedule' || inputs.extended_synthetic
-        uses: actions/upload-artifact@v7
-        with:
-          name: analytic-synthetic-wasm
-          path: build-wasm/tests/cpp/geometer_exact_boolean_seeded_property_test.*
-          if-no-files-found: error
-
       - name: Upload WASM artifacts
         uses: actions/upload-artifact@v7
         with:
           name: wasm-dist
           path: dist/wasm/**
           if-no-files-found: error
-
-  extended-synthetic:
-    name: Extended exact synthetic correctness
-    if: github.event_name == 'schedule' || inputs.extended_synthetic
-    needs: wasm
-    runs-on: ubuntu-22.04
-    timeout-minutes: 120
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v6
-
-      - uses: astral-sh/setup-uv@v8.2.0
-        with:
-          version: "0.13.4"
-      - name: Refresh Linux CA certificates
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ca-certificates
-
-      - name: Set up Python
-        run: uv python install 3.12
-
-      - name: Set up Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: "24.22.1"
-
-      - name: Read dependency versions
-        id: dependency_versions
-        run: uv run --no-project python scripts/dependency_versions.py --github-output
-
-      - name: Install native build tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential ninja-build libgl1-mesa-dev libdbus-1-dev libudev-dev libx11-dev libxcursor-dev libxext-dev libxi-dev libxinerama-dev libxkbcommon-dev libxrandr-dev libwayland-dev wayland-protocols
-
-      - name: Download Emscripten harness
-        uses: actions/download-artifact@v8
-        with:
-          name: analytic-synthetic-wasm
-          path: out/analytic-synthetic-wasm
-
-      - name: Build and test native code
-        run: uv run --group dev python scripts/validate_native.py --skip-examples --skip-python --skip-ldd --include-experimental-tests
-
-      - name: Run extended native/WASM seeded properties
-        run: uv run python scripts/validate_exact_boolean_seeded_property_parity.py --profile nightly --wasm out/analytic-synthetic-wasm/geometer_exact_boolean_seeded_property_test.cjs
-
-      - name: Run non-authoritative Clipper2 differential warnings
-        run: build-native-linux-x64/tests/cpp/geometer_exact_rectangle_enumeration_test --differential-only
-
-  cross-transport:
-    name: Analytic executable IPC/browser WASM parity
-    needs: wasm
-    runs-on: ubuntu-22.04
-    timeout-minutes: 120
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v6
-
-      - uses: astral-sh/setup-uv@v8.2.0
-        with:
-          version: "0.13.4"
-      - name: Refresh Linux CA certificates
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ca-certificates
-
-      - name: Set up Python
-        run: uv python install 3.12
-
-      - name: Set up Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: "24.22.1"
-
-      - name: Read dependency versions
-        id: dependency_versions
-        run: uv run --no-project python scripts/dependency_versions.py --github-output
-
-      - name: Install native build tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential ninja-build libgl1-mesa-dev libdbus-1-dev libudev-dev libx11-dev libxcursor-dev libxext-dev libxi-dev libxinerama-dev libxkbcommon-dev libxrandr-dev libwayland-dev wayland-protocols
-
-      - name: Download current browser WASM artifacts
-        uses: actions/download-artifact@v8
-        with:
-          name: wasm-dist
-          path: out/wasm-dist
-
-      - name: Build and test current native executable
-        run: uv run --group dev python scripts/validate_native.py --skip-examples --skip-python --skip-ldd
-
-      - name: Require canonical executable IPC/browser WASM parity
-        env:
-          GEOMETER_EXE: dist/native/linux-x64/geometer
-          GEOMETER_WASM_BROWSER_DIST: out/wasm-dist/browser
-        run: uv run pytest tests/wasm/test_analytic_cross_transport_parity.py -q

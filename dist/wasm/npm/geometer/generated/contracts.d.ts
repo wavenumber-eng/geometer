@@ -1,234 +1,3 @@
-export type JobId = bigint;
-export type StageId = bigint;
-export type StageOperation = "union" | "difference";
-export type OperandId = bigint;
-export type RegionId = bigint;
-export type RingId = bigint;
-export type VertexId = bigint;
-export interface PointNm {
-    readonly x: bigint;
-    readonly y: bigint;
-}
-export interface AuthoredVertex {
-    readonly vertex_id: VertexId;
-    readonly point: PointNm;
-}
-export type SegmentId = bigint;
-export type CurveId = bigint;
-export interface AuthoredLineSegment {
-    readonly segment_id: SegmentId;
-    readonly curve_id: CurveId;
-    readonly kind: "line";
-}
-export type ArcDirection = "ccw" | "cw";
-export interface AuthoredCircularArcSegment {
-    readonly segment_id: SegmentId;
-    readonly curve_id: CurveId;
-    readonly kind: "circular_arc";
-    readonly center: PointNm;
-    readonly direction: ArcDirection;
-    readonly major_arc: boolean;
-}
-/** A circular arc selected exactly by its topology-owned endpoints, radius, direction, and branch. */
-export interface AuthoredCircularArcByRadiusSegment {
-    readonly segment_id: SegmentId;
-    readonly curve_id: CurveId;
-    readonly kind: "circular_arc_by_radius";
-    readonly radius_nm: bigint;
-    readonly direction: ArcDirection;
-    readonly major_arc: boolean;
-}
-export type AuthoredSegment = AuthoredLineSegment | AuthoredCircularArcSegment | AuthoredCircularArcByRadiusSegment;
-export interface PlanarRing {
-    readonly ring_id: RingId;
-    readonly vertices: readonly AuthoredVertex[];
-    readonly segments: readonly AuthoredSegment[];
-}
-export interface PlanarRegionOperand {
-    readonly operand_id: OperandId;
-    readonly kind: "planar_region";
-    readonly region_id: RegionId;
-    readonly outer: PlanarRing;
-    readonly holes: readonly PlanarRing[];
-}
-export type FeatureId = bigint;
-export interface DiskOperand {
-    readonly operand_id: OperandId;
-    readonly kind: "disk";
-    readonly feature_id: FeatureId;
-    readonly center: PointNm;
-    readonly radius_nm: bigint;
-}
-export interface AnnulusOperand {
-    readonly operand_id: OperandId;
-    readonly kind: "annulus";
-    readonly feature_id: FeatureId;
-    readonly center: PointNm;
-    readonly inner_radius_nm: bigint;
-    readonly outer_radius_nm: bigint;
-}
-export interface CapsuleOperand {
-    readonly operand_id: OperandId;
-    readonly kind: "capsule";
-    readonly feature_id: FeatureId;
-    readonly start: PointNm;
-    readonly end: PointNm;
-    readonly width_nm: bigint;
-}
-export type PathId = bigint;
-/** Segment forms supported by constant-width swept centerlines. */
-export type AuthoredPathSegment = AuthoredLineSegment | AuthoredCircularArcSegment;
-export interface PlanarPath {
-    readonly path_id: PathId;
-    readonly vertices: readonly AuthoredVertex[];
-    readonly segments: readonly AuthoredPathSegment[];
-}
-export interface SweptPathOperand {
-    readonly operand_id: OperandId;
-    readonly kind: "swept_path";
-    readonly feature_id: FeatureId;
-    readonly centerline: PlanarPath;
-    readonly width_nm: bigint;
-    readonly cap: "round";
-    readonly join: "round";
-}
-export type AnalyticPlanarOperand = PlanarRegionOperand | DiskOperand | AnnulusOperand | CapsuleOperand | SweptPathOperand;
-export interface AnalyticPlanarBooleanStage {
-    readonly stage_id: StageId;
-    readonly operation: StageOperation;
-    readonly operands: readonly AnalyticPlanarOperand[];
-}
-export interface AnalyticPlanarBooleanJob {
-    readonly job_id: JobId;
-    readonly stages: readonly AnalyticPlanarBooleanStage[];
-}
-export type QueryId = bigint;
-export interface PlanarRelationshipQuery {
-    readonly query_id: QueryId;
-    readonly left_job_id: JobId;
-    readonly right_job_id: JobId;
-}
-/** Logical request projected to the governed packed request attachment. */
-export interface AnalyticPlanarBooleanBatchRequestA0 {
-    readonly jobs: readonly AnalyticPlanarBooleanJob[];
-    readonly relationship_queries: readonly PlanarRelationshipQuery[];
-}
-export type JobDiagnosticCode = "geometer.operation.analytic_planar_boolean.invalid_topology" | "geometer.operation.analytic_planar_boolean.invalid_arc" | "geometer.operation.analytic_planar_boolean.unsupported_geometry" | "geometer.operation.analytic_planar_boolean.normalization_error_exceeded" | "geometer.operation.analytic_planar_boolean.normalization_topology_collapse" | "geometer.operation.analytic_planar_boolean.nonanalytic_result" | "geometer.operation.analytic_planar_boolean.solver_failed" | "geometer.operation.analytic_planar_boolean.resource_limit_exceeded" | "geometer.operation.analytic_planar_boolean.resolution_coalesced";
-export type DiagnosticSeverity = "error" | "warning";
-/** Standalone logical identities projected one-to-one from nonzero packed path tokens. */
-export type JobDiagnosticPath = "request_jobs" | "job_id" | "job_stages" | "stage_id" | "stage_operation" | "stage_operands" | "operand_id" | "operand_geometry" | "region_outer" | "region_holes" | "ring_vertices" | "ring_segments" | "path_vertices" | "path_segments" | "segment_curve" | "disk_radius" | "annulus_inner_radius" | "annulus_outer_radius" | "capsule_start" | "capsule_end" | "capsule_width" | "swept_path_centerline" | "swept_path_width" | "relationship_queries" | "relationship_left_job_id" | "relationship_right_job_id";
-export interface JobDiagnostic {
-    readonly code: JobDiagnosticCode;
-    readonly severity: DiagnosticSeverity;
-    readonly job_id: JobId;
-    readonly stage_id?: StageId;
-    readonly operand_id?: OperandId;
-    readonly geometry_id?: bigint;
-    /** Governed standalone location identity; token zero projects to absence. */
-    readonly path_identity?: JobDiagnosticPath;
-}
-export type ResultVertexId = bigint;
-export type SourceKind = "authored_segment_curve" | "compact_feature_role" | "subtractive_operand_effect";
-export type SourceRole = "none" | "authored_line" | "authored_circular_arc" | "primitive_outer_circle" | "primitive_inner_circle" | "capsule_left_line" | "capsule_end_cap" | "capsule_right_line" | "capsule_start_cap" | "swept_left_offset_line" | "swept_left_offset_arc" | "swept_right_offset_line" | "swept_right_offset_arc" | "swept_round_join" | "swept_start_cap" | "swept_end_cap";
-export interface SourceReference {
-    readonly kind: SourceKind;
-    readonly role: SourceRole;
-    readonly operand_id: OperandId;
-    readonly primary_id: bigint;
-    readonly secondary_id: bigint;
-}
-export interface SourceSet {
-    readonly sources: readonly SourceReference[];
-}
-export interface ResultVertex {
-    readonly vertex_id: ResultVertexId;
-    readonly point: PointNm;
-    readonly intersection_sources: SourceSet;
-}
-export type ResultFragmentId = bigint;
-export interface ResultLineFragment {
-    readonly fragment_id: ResultFragmentId;
-    readonly kind: "line";
-    readonly start_vertex_id: ResultVertexId;
-    readonly end_vertex_id: ResultVertexId;
-    readonly coincident_positive_sources: SourceSet;
-    readonly surviving_subtraction_sources: SourceSet;
-}
-export interface ResultCircularArcFragment {
-    readonly fragment_id: ResultFragmentId;
-    readonly kind: "circular_arc";
-    readonly start_vertex_id: ResultVertexId;
-    readonly end_vertex_id: ResultVertexId;
-    readonly radius_nm: bigint;
-    readonly direction: ArcDirection;
-    readonly major_arc: boolean;
-    readonly coincident_positive_sources: SourceSet;
-    readonly surviving_subtraction_sources: SourceSet;
-}
-export type DirectedFragment = ResultLineFragment | ResultCircularArcFragment;
-export type ResultRingId = bigint;
-export interface ResultRing {
-    readonly ring_id: ResultRingId;
-    readonly fragment_ids: readonly ResultFragmentId[];
-    readonly parent_ring_id?: ResultRingId;
-    readonly depth: number;
-    readonly hole: boolean;
-}
-export type ResultRegionId = bigint;
-export interface ResultRegion {
-    readonly result_region_id: ResultRegionId;
-    readonly outer_ring_id: ResultRingId;
-    readonly positive_contributors: SourceSet;
-}
-export type OperandOutcomeKind = "contributes_final_material" | "redundant_or_absorbed_coverage" | "partially_removed_later" | "completely_removed_later" | "subtraction_effect_survives" | "subtraction_effect_overwritten_later" | "no_effect";
-export interface OperandOutcomeEvent {
-    readonly operand_id: OperandId;
-    readonly kind: OperandOutcomeKind;
-    readonly result_ring_ids: readonly ResultRingId[];
-    readonly result_region_ids: readonly ResultRegionId[];
-    readonly sources: SourceSet;
-}
-export interface SuccessfulJobResult {
-    readonly job_id: JobId;
-    readonly status: "success";
-    readonly diagnostics: readonly JobDiagnostic[];
-    readonly vertices: readonly ResultVertex[];
-    readonly directed_fragments: readonly DirectedFragment[];
-    readonly rings: readonly ResultRing[];
-    readonly result_regions: readonly ResultRegion[];
-    readonly operand_outcomes: readonly OperandOutcomeEvent[];
-    /** Derived from the canonical standalone job-result packet; not an encoded record field. */
-    readonly digest_sha256: string;
-}
-export interface FailedJobResult {
-    readonly job_id: JobId;
-    readonly status: "failure";
-    readonly diagnostics: readonly JobDiagnostic[];
-    /** Derived from the canonical standalone job-result packet; not an encoded record field. */
-    readonly digest_sha256: string;
-}
-export type AnalyticPlanarBooleanJobResult = SuccessfulJobResult | FailedJobResult;
-export type RelationshipStatus = "success" | "skipped_dependency_failed";
-export type IntersectionDimension = "disjoint" | "point" | "curve" | "area";
-export interface RelationshipRegionPair {
-    readonly left_result_region_id: ResultRegionId;
-    readonly right_result_region_id: ResultRegionId;
-    readonly dimension: IntersectionDimension;
-    readonly equality: boolean;
-    readonly left_contains_right: boolean;
-    readonly right_contains_left: boolean;
-}
-export interface PlanarRelationshipResult {
-    readonly query_id: QueryId;
-    readonly status: RelationshipStatus;
-    readonly aggregate_dimension: IntersectionDimension;
-    readonly pairs: readonly RelationshipRegionPair[];
-}
-/** Logical result projected from the governed packed result attachment. */
-export interface AnalyticPlanarBooleanBatchResultA0 {
-    readonly job_results: readonly AnalyticPlanarBooleanJobResult[];
-    readonly relationship_results: readonly PlanarRelationshipResult[];
-}
 /** Stable diagnostic category with distinct transport, contract, and operation domains. */
 export type DiagnosticCategory = "transport" | "contract" | "operation";
 /** A strict cross-transport diagnostic; message text is informative rather than identity. */
@@ -282,7 +51,6 @@ export interface FastHlrOptionsA0 {
     readonly coplanar_seam_lateral_tolerance?: number;
     readonly limits?: FastHlrLimitsA0;
 }
-export type HlrCurveMode = "native_arcs" | "polyline";
 export type HlrMatrix4x4 = readonly [
     number,
     number,
@@ -302,7 +70,7 @@ export type HlrMatrix4x4 = readonly [
     number
 ];
 export type HlrMeshDeflectionMode = "absolute" | "bbox-relative";
-export type HlrOutlineAlgorithm = "hlr-close" | "mesh-shadow" | "fast-mesh-shadow";
+export type HlrOutlineAlgorithm = "mesh-shadow" | "fast-mesh-shadow";
 export type HlrVector3 = readonly [number, number, number];
 export type ProjectedSegment = readonly [number, number, number, number];
 export type HlrVector2 = readonly [number, number];
@@ -350,7 +118,7 @@ export interface HlrProjectedView {
     readonly up: HlrVector3;
     readonly modes: HlrProjectionModes;
 }
-export type HlrProjectionAlgorithm = "poly" | "exact" | "fast";
+export type HlrProjectionAlgorithm = "fast";
 /** An orthographic view whose output coordinates lie in its own view plane.
 Geometer sets Z = normalize(direction), removes the Z component from up and
 normalizes the remainder as Y, then sets X = Y cross Z. Direction points
@@ -376,30 +144,16 @@ export interface HlrProjectionOptionsA0 {
   source-bounds recentering occurs. */
     readonly model_transform?: HlrMatrix4x4;
     readonly strip_root_placement?: boolean;
-    readonly curve_mode?: HlrCurveMode;
-    readonly samples_per_curve?: number;
     readonly round_digits?: number;
-    readonly edge_v_sharp?: boolean;
-    readonly edge_v_outline?: boolean;
-    readonly edge_v_smooth?: boolean;
-    readonly edge_v_sewn?: boolean;
-    readonly edge_v_iso?: boolean;
-    readonly edge_h_sharp?: boolean;
-    readonly edge_h_outline?: boolean;
-    readonly edge_h_smooth?: boolean;
-    readonly edge_h_sewn?: boolean;
-    readonly edge_h_iso?: boolean;
-    readonly union_outline_polygons?: boolean;
-    /** Omission selects Fast triangle detail. Older OCCT algorithms require explicit selection. */
+    /** Fast triangle detail. */
     readonly projection_algorithm?: HlrProjectionAlgorithm;
     readonly mesh_linear_deflection?: number;
     readonly mesh_angular_deflection?: number;
     readonly mesh_relative?: boolean;
     readonly mesh_deflection_mode?: HlrMeshDeflectionMode;
     readonly mesh_deflection_coefficient?: number;
-    /** Omission selects Fast Mesh Shadow. Older outline algorithms require explicit selection. */
+    /** Omission selects Fast Mesh Shadow. */
     readonly outline_algorithm?: HlrOutlineAlgorithm;
-    readonly hlr_angle_tolerance?: number;
     readonly fast?: FastHlrOptionsA0;
 }
 export type HlrSourceKind = "step" | "indexed_mesh";
@@ -749,9 +503,11 @@ export interface MeshIllustrationStyleA0 {
     readonly double_sided?: boolean;
     readonly rim_amount?: number;
 }
+/** Work limits a caller may set; omitted, the illustration's work is not limited. */
 export interface ModelIllustrationWorkLimitsA0 {
     /** Maximum candidate comparisons in each Fast linework and illustration visibility stage. */
     readonly max_visibility_candidate_pairs?: number;
+    /** Maximum drawing commands of the illustration and its Fast linework. */
     readonly max_drawing_commands?: number;
 }
 export interface ModelIllustrationGeometryRequestA0 {
@@ -1050,10 +806,13 @@ export interface XmlXcafPersistenceArtifact {
     readonly bytes: number;
     readonly sha256: string;
 }
+/** New AP242 producers use model_step. The legacy application_step token remains decodable in saved descriptors. */
+export type StepAp242MediaType = "model/step" | "application/step";
+/** New AP242 descriptors use model/step; legacy bare application/step remains readable. This candidate does not imply executable save support. */
 export interface StepAp242PersistenceArtifact {
     readonly carrier: "step_ap242";
     readonly name: "state_artifact";
-    readonly media_type: "application/step";
+    readonly media_type: StepAp242MediaType;
     readonly format: "ap242-managed-model-based-3d-engineering";
     readonly bytes: number;
     readonly sha256: string;
@@ -1448,6 +1207,7 @@ export interface AnalyticSourceSummaryA0 {
     readonly primitives: number;
     readonly triangles: number;
 }
+/** New producers emit model_step. The legacy application_step spelling remains decodable; output descriptors contain bare canonical tokens, never input parameters. */
 export type ModelAttachmentMediaTypeA0 = "application/step" | "model/step";
 export interface ModelAttachmentSourceSummaryA0 {
     readonly kind: "model";

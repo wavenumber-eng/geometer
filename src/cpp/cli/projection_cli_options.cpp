@@ -94,16 +94,6 @@ int parse_projection_options(int argc, char* argv[], int start,
         {
             *mode = argv[i + 1];
         }
-        else if (std::strcmp(argv[i], "--curve-mode") == 0)
-        {
-            options->curve_mode = std::strcmp(argv[i + 1], "polyline") == 0
-                                      ? geometer::ProjectionCurveMode::Polyline
-                                      : geometer::ProjectionCurveMode::NativeArcs;
-        }
-        else if (std::strcmp(argv[i], "--samples") == 0)
-        {
-            options->samples_per_curve = std::atoi(argv[i + 1]);
-        }
         else if (std::strcmp(argv[i], "--round-digits") == 0)
         {
             options->round_digits = std::atoi(argv[i + 1]);
@@ -141,15 +131,10 @@ int parse_projection_options(int argc, char* argv[], int start,
             {
                 options->outline_algorithm = geometer::ProjectionOutlineAlgorithm::MeshShadow;
             }
-            else if (std::strcmp(value, "hlr-close") == 0 || std::strcmp(value, "hlr_close") == 0 ||
-                     std::strcmp(value, "hlr") == 0)
-            {
-                options->outline_algorithm = geometer::ProjectionOutlineAlgorithm::HlrClosedEdges;
-            }
             else
             {
                 std::fprintf(stderr,
-                             "--outline-algorithm must be hlr-close, mesh-shadow, or "
+                             "--outline-algorithm must be mesh-shadow or "
                              "fast-mesh-shadow (got %s).\n",
                              value);
                 return 2;
@@ -162,19 +147,9 @@ int parse_projection_options(int argc, char* argv[], int start,
             {
                 options->projection_algorithm = geometer::ProjectionAlgorithm::Fast;
             }
-            else if (std::strcmp(value, "exact") == 0)
-            {
-                options->projection_algorithm = geometer::ProjectionAlgorithm::Exact;
-            }
-            else if (std::strcmp(value, "poly") == 0)
-            {
-                options->projection_algorithm = geometer::ProjectionAlgorithm::Poly;
-            }
             else
             {
-                std::fprintf(stderr,
-                             "--projection-algorithm must be poly, exact, or fast (got %s).\n",
-                             value);
+                std::fprintf(stderr, "--projection-algorithm must be fast (got %s).\n", value);
                 return 2;
             }
         }

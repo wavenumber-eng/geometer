@@ -18,27 +18,6 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 ALLOWED_TAGS = ("V8_0_0", "V8_0_1")
-PARITY_TARGETS = (
-    ("validate_analytic_closed_form_invariants_parity.py", "analytic_closed_form_invariants"),
-    ("validate_analytic_mutation_sentinels_parity.py", "analytic_result_packet_topology"),
-    ("validate_analytic_result_packet_layout_parity.py", "analytic_result_packet_layout"),
-    ("validate_analytic_result_packet_records_parity.py", "analytic_result_packet_records"),
-    ("validate_exact_arrangement_parity.py", "exact_arrangement"),
-    ("validate_exact_boolean_identities_parity.py", "exact_boolean_identities"),
-    ("validate_exact_boolean_lineage_matrix_parity.py", "exact_boolean_lineage_matrix"),
-    ("validate_exact_boolean_metamorphic_parity.py", "exact_boolean_metamorphic"),
-    ("validate_exact_boolean_outcomes_parity.py", "exact_boolean_outcomes"),
-    ("validate_exact_boolean_provenance_parity.py", "exact_boolean_provenance"),
-    ("validate_exact_boolean_regions_parity.py", "exact_boolean_regions"),
-    ("validate_exact_boolean_seeded_property_parity.py", "exact_boolean_seeded_property"),
-    ("validate_exact_boolean_stages_parity.py", "exact_boolean_stages"),
-    ("validate_exact_curve_domain_parity.py", "exact_curve_domain"),
-    ("validate_exact_degeneracy_sweep_parity.py", "exact_degeneracy_sweep"),
-    ("validate_exact_geometry_parity.py", "exact_geometry"),
-    ("validate_exact_rectangle_enumeration_parity.py", "exact_rectangle_enumeration"),
-    ("validate_exact_result_normalization_parity.py", "exact_result_normalization"),
-    ("validate_exact_source_sets_parity.py", "exact_source_sets"),
-)
 
 
 def build_parallel_jobs() -> str:
@@ -190,11 +169,6 @@ def cmake_config_dir(install_root: Path) -> Path:
     raise FileNotFoundError(f"OpenCASCADEConfig.cmake not found under {install_root}")
 
 
-def executable(build_root: Path, target: str, *, wasm: bool) -> Path:
-    suffix = ".cjs" if wasm else (".exe" if sys.platform == "win32" else "")
-    return build_root / "tests/cpp" / f"geometer_{target}_test{suffix}"
-
-
 def tree_size(root: Path) -> int:
     return sum(path.stat().st_size for path in root.rglob("*") if path.is_file())
 
@@ -300,15 +274,9 @@ def prepare_native(
         ["ctest", "--test-dir", build_root, "-C", "Release", "--output-on-failure", "--timeout", "120"],
         env=native_env,
     )
-    feasibility = run.run(
-        "feasibility-native",
-        [executable(build_root, "analytic_planar_boolean_feasibility", wasm=False)],
-        env=native_env,
-    )
     evidence.update(
         {
             "build_root": build_root.relative_to(ROOT).as_posix(),
-            "feasibility_sha256": hashlib.sha256(feasibility.encode("utf-8")).hexdigest(),
         }
     )
     if validate_consumers:
@@ -413,15 +381,9 @@ def prepare_wasm(
         ["ctest", "--test-dir", build_root, "-C", "Release", "--output-on-failure", "--timeout", "120"],
         env=wasm_env,
     )
-    feasibility = run.run(
-        "feasibility-wasm",
-        ["node", executable(build_root, "analytic_planar_boolean_feasibility", wasm=True)],
-        env=wasm_env,
-    )
     evidence.update(
         {
             "build_root": build_root.relative_to(ROOT).as_posix(),
-            "feasibility_sha256": hashlib.sha256(feasibility.encode("utf-8")).hexdigest(),
         }
     )
     if validate_consumers:
@@ -464,25 +426,6 @@ def prepare_wasm(
     return evidence
 
 
-def run_parity(
-    run: QualificationRun,
-    native_root: Path,
-    wasm_root: Path,
-) -> None:
-    for script, target in PARITY_TARGETS:
-        run.run(
-            f"parity-{target}",
-            [
-                sys.executable,
-                ROOT / "scripts" / script,
-                "--native",
-                executable(native_root, target, wasm=False),
-                "--wasm",
-                executable(wasm_root, target, wasm=True),
-            ],
-        )
-
-
 def git_output(*arguments: str, cwd: Path = ROOT) -> str:
     return subprocess.check_output(["git", "-C", str(cwd), *arguments], text=True).strip()
 
@@ -498,7 +441,6 @@ def main() -> int:
         help="Dependency mode (default: off, because qualification compares source-built exact tags).",
     )
     parser.add_argument("--prepare-only", action="store_true")
-    parser.add_argument("--skip-parity", action="store_true")
     parser.add_argument("--skip-consumers", action="store_true")
     parser.add_argument("--timeout-seconds", type=int, default=7200)
     args = parser.parse_args()
@@ -512,7 +454,6 @@ def main() -> int:
         "tag": args.tag,
         "geometer_revision": git_output("rev-parse", "HEAD"),
         "production_pin_unchanged": True,
-        "production_solver_allowed": False,
         "platform": platform_tag(),
         "lanes": {},
     }
@@ -541,18 +482,6 @@ def main() -> int:
         evidence["occt_revision"] = git_output("rev-parse", "HEAD", cwd=source_root)
         evidence["occt_tag_object"] = git_output("rev-parse", f"refs/tags/{args.tag}", cwd=source_root)
         evidence["occt_exact_tag"] = git_output("describe", "--tags", "--exact-match", "HEAD", cwd=source_root)
-        if args.lane == "all" and not args.prepare_only:
-            native = evidence["lanes"]["native"]
-            wasm = evidence["lanes"]["wasm"]
-            evidence["feasibility_native_wasm_equal"] = native["feasibility_sha256"] == wasm["feasibility_sha256"]
-            if not evidence["feasibility_native_wasm_equal"]:
-                raise RuntimeError("native and WASM OCCT feasibility output differ")
-            if not args.skip_parity:
-                run_parity(
-                    run,
-                    output_root / "build-native",
-                    output_root / "build-wasm",
-                )
         evidence["status"] = "passed"
     except Exception as exc:
         evidence["status"] = "failed"

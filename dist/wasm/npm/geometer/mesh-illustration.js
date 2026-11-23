@@ -155,6 +155,8 @@ export function prepareMeshIllustration(input, view, options = {}) {
     const edgeMaps = new Map();
     const warnings = [];
     let suppressedWarnings = 0;
+    // Degenerate triangles skipped in the current mesh, reported once for it.
+    let degenerate = 0;
     const addWarning = (warning) => {
         if (warnings.length < 255)
             warnings.push(warning);
@@ -173,6 +175,7 @@ export function prepareMeshIllustration(input, view, options = {}) {
             throw new Error(`Mesh illustration exceeds the configured ${maxTriangles.toLocaleString()} triangle limit.`);
         const matrix = mesh.matrix ?? IDENTITY_MATRIX;
         const orientation = matrixDeterminantSign(matrix);
+        degenerate = 0;
         for (let triangleIndex = 0; triangleIndex < triangleCount; triangleIndex += 1) {
             const indices = [
                 indexAt(mesh.indices, triangleIndex * 3),
@@ -188,7 +191,7 @@ export function prepareMeshIllustration(input, view, options = {}) {
             const crossNormal = cross(subtract(world[1], world[0]), subtract(world[2], world[0]));
             const magnitude = length(crossNormal);
             if (magnitude < 1e-12) {
-                addWarning(`Skipped degenerate triangle ${triangleIndex} in ${mesh.id}.`);
+                degenerate += 1;
                 continue;
             }
             const normal = normalize([crossNormal[0] * orientation, crossNormal[1] * orientation, crossNormal[2] * orientation], "Triangle normal");
@@ -247,6 +250,8 @@ export function prepareMeshIllustration(input, view, options = {}) {
                 }
             }
         }
+        if (degenerate > 0)
+            addWarning(`Skipped ${String(degenerate)} degenerate triangle${degenerate === 1 ? "" : "s"} in ${mesh.id}.`);
     }
     if (!Number.isFinite(minX)) {
         minX = -1;
@@ -876,10 +881,12 @@ function fusionMobilityIntervals(commands, bounds) {
     const low = new Int32Array(commands.length);
     const high = new Int32Array(commands.length);
     const sameStyleOverlaps = [];
+    // Each overlapping pair of different paint, as [behind, inFront].
+    const orderedPairs = [];
     for (let index = 0; index < commands.length; index += 1)
         high[index] = commands.length - 1;
     if (commands.length < 2)
-        return { low, high, sameStyleOverlaps };
+        return { low, high, sameStyleOverlaps, orderedPairs };
     const width = Math.max(bounds.maxX - bounds.minX, 1e-12);
     const height = Math.max(bounds.maxY - bounds.minY, 1e-12);
     const epsilon = Math.max(width, height) * 1e-10;
@@ -908,6 +915,7 @@ function fusionMobilityIntervals(commands, bounds) {
             sameStyleOverlaps.push([front, back]);
             return;
         }
+        orderedPairs.push([back, front]);
         low[front] = Math.max(low[front], back + 1);
         high[back] = Math.min(high[back], front - 1);
     };
@@ -952,7 +960,58 @@ function fusionMobilityIntervals(commands, bounds) {
             broadTriangles.push(index);
         previousTriangles.push(index);
     }
-    return { low, high, sameStyleOverlaps };
+    return { low, high, sameStyleOverlaps, orderedPairs };
+}
+// Draw order for `count` placements, today's order 0..count-1, in which each
+// [behind, inFront] edge's behind comes first. Placements that must each come
+// before the other (a cycle) keep today's order among themselves, at the place
+// of their first. Today's order is kept wherever it already respects the edges.
+// The native renderer's respect_overlaps is its twin.
+function respectOverlaps(count, pairs) {
+    const result = Array.from({ length: count }, (_value, index) => index);
+    if (pairs.every(([behind, front]) => behind < front))
+        return result;
+    const outgoing = Array.from({ length: count }, () => []);
+    const incoming = Array.from({ length: count }, () => []);
+    for (const [behind, front] of pairs) {
+        outgoing[behind].push(front);
+        incoming[front].push(behind);
+    }
+    const { components } = stronglyConnectedComponents(outgoing, incoming);
+    const owner = new Int32Array(count);
+    for (const members of components) {
+        const first = members.reduce((minimum, member) => Math.min(minimum, member), count);
+        for (const member of members)
+            owner[member] = first;
+    }
+    const groupMembers = Array.from({ length: count }, () => []);
+    for (let node = 0; node < count; node += 1)
+        groupMembers[owner[node]].push(node);
+    const targets = Array.from({ length: count }, () => []);
+    const waiting = new Int32Array(count);
+    for (const [behind, front] of pairs) {
+        const from = owner[behind];
+        const to = owner[front];
+        if (from === to)
+            continue;
+        targets[from].push(to);
+        waiting[to] = waiting[to] + 1;
+    }
+    const ready = [];
+    const ascending = (a, b) => a - b;
+    for (let node = 0; node < count; node += 1)
+        if (owner[node] === node && waiting[node] === 0)
+            heapPush(ready, node, ascending);
+    result.length = 0;
+    for (let group = heapPop(ready, ascending); group !== undefined; group = heapPop(ready, ascending)) {
+        result.push(...groupMembers[group]);
+        for (const front of targets[group]) {
+            waiting[front] = waiting[front] - 1;
+            if (waiting[front] === 0)
+                heapPush(ready, front, ascending);
+        }
+    }
+    return result;
 }
 function surfaceStyleKey(command) {
     return `${command.fill}\u0000${command.opacity.toFixed(12)}`;
@@ -1080,7 +1139,7 @@ function fuseTriangleCommands(commands, bounds, layerCoplanarMaterials) {
     const minimumDepth = depths.reduce((minimum, depth) => Math.min(minimum, depth), Infinity);
     const maximumDepth = depths.reduce((maximum, depth) => Math.max(maximum, depth), -Infinity);
     const depthTolerance = Math.max((maximumDepth - minimumDepth) * 1e-9, 1e-12);
-    const { low, high, sameStyleOverlaps } = fusionMobilityIntervals(commands, bounds);
+    const { low, high, sameStyleOverlaps, orderedPairs } = fusionMobilityIntervals(commands, bounds);
     const parent = commands.map((_command, index) => index);
     const groupLow = Int32Array.from(low);
     const groupHigh = Int32Array.from(high);
@@ -1200,6 +1259,8 @@ function fuseTriangleCommands(commands, bounds, layerCoplanarMaterials) {
         sameStyleAdjacency[b].push(a);
     }
     const placements = [];
+    // The placement each triangle is drawn in.
+    const owner = new Int32Array(commands.length);
     const consumedByLayers = new Set();
     const layerComponents = new Map();
     const layerTriangles = new Set();
@@ -1225,8 +1286,10 @@ function fuseTriangleCommands(commands, bounds, layerCoplanarMaterials) {
         const layered = layeredSurfaceCommand(commands, members, sameStyleAdjacency, coordinateTolerance, depthTolerance);
         if (!layered)
             continue;
-        for (const member of members)
+        for (const member of members) {
             consumedByLayers.add(member);
+            owner[member] = placements.length;
+        }
         const average = members.reduce((sum, member) => sum + member, 0) / members.length;
         const position = Math.max(commonLow, Math.min(commonHigh, Math.round(average)));
         placements.push({ position, order: members[0], commands: [layered] });
@@ -1236,30 +1299,194 @@ function fuseTriangleCommands(commands, bounds, layerCoplanarMaterials) {
         if (available.length === 0)
             continue;
         if (available.length === 1 || unsafeRoots.has(root)) {
-            for (const member of available)
+            for (const member of available) {
+                owner[member] = placements.length;
                 placements.push({
                     position: member,
                     order: member,
                     commands: [commands[member]],
                 });
+            }
             continue;
         }
         const fused = fusedComponent(commands, available, coordinateTolerance, depthTolerance);
         if (!fused) {
-            for (const member of available)
+            for (const member of available) {
+                owner[member] = placements.length;
                 placements.push({
                     position: member,
                     order: member,
                     commands: [commands[member]],
                 });
+            }
             continue;
         }
+        for (const member of available)
+            owner[member] = placements.length;
         const average = available.reduce((sum, member) => sum + member, 0) / available.length;
         const position = Math.max(groupLow[root], Math.min(groupHigh[root], Math.round(average)));
         placements.push({ position, order: available[0], commands: [fused] });
     }
-    placements.sort((a, b) => a.position - b.position || a.order - b.order);
-    return placements.flatMap((placement) => placement.commands);
+    // Today's order: by position, then order. Merged surfaces are placed by their
+    // members' mean, which can put one before a surface it must be drawn behind;
+    // the overlaps of different paint then decide.
+    const sorted = placements
+        .map((_placement, index) => index)
+        .sort((a, b) => placements[a].position -
+        placements[b].position ||
+        placements[a].order -
+            placements[b].order);
+    const rank = new Int32Array(placements.length);
+    sorted.forEach((placement, index) => {
+        rank[placement] = index;
+    });
+    const edges = [];
+    const seen = new Set();
+    for (const [behind, front] of orderedPairs) {
+        const from = rank[owner[behind]];
+        const to = rank[owner[front]];
+        const key = `${String(from)},${String(to)}`;
+        if (from === to || seen.has(key))
+            continue;
+        seen.add(key);
+        edges.push([from, to]);
+    }
+    return respectOverlaps(placements.length, edges).flatMap((index) => placements[sorted[index]].commands);
+}
+// Occlusion cells per view span. The cell grid is tied to the view span, the
+// base every illustration tolerance is derived from; it sets how much hidden
+// geometry the cull finds, never whether it may drop visible geometry. The
+// native renderer's cull_hidden_triangles is its twin.
+const OCCLUSION_CELLS_PER_SPAN = 512;
+// Each drawn surface is also stroked with a seam of 0.003 of the span (the SVG
+// and geometry renderers). Half of it falls outside the surface, and the SVG
+// grid rounds it by at most one unit of its coarsest grid (a ten-thousandth
+// of the span), so a triangle's paint reaches that far beyond it.
+const SEAM_REACH_PER_SPAN = 0.003 / 2 + 1 / 10000;
+function includeInSpan(span, x) {
+    span.low = span.found ? Math.min(span.low, x) : x;
+    span.high = span.found ? Math.max(span.high, x) : x;
+    span.found = true;
+}
+function triangleSpanAt(points, y) {
+    const span = { found: false, low: 0, high: 0 };
+    for (let index = 0; index < 3; index += 1) {
+        const a = points[index];
+        const b = points[(index + 1) % 3];
+        if (y < Math.min(a[1], b[1]) || y > Math.max(a[1], b[1]))
+            continue;
+        if (a[1] === b[1]) {
+            includeInSpan(span, a[0]);
+            includeInSpan(span, b[0]);
+        }
+        else
+            includeInSpan(span, a[0] + ((y - a[1]) * (b[0] - a[0])) / (b[1] - a[1]));
+    }
+    return span;
+}
+function triangleBandExtent(points, low, high) {
+    const extent = { found: false, low: 0, high: 0 };
+    for (const y of [low, high]) {
+        const span = triangleSpanAt(points, y);
+        if (span.found) {
+            includeInSpan(extent, span.low);
+            includeInSpan(extent, span.high);
+        }
+    }
+    for (const point of points)
+        if (point[1] >= low && point[1] <= high)
+            includeInSpan(extent, point[0]);
+    return extent;
+}
+function cullHiddenTriangleCommands(commands, bounds) {
+    // Drop only triangles the view proves hidden. An opaque triangle that
+    // covers a whole cell, each corner inside it by more than the coordinate
+    // tolerance, occludes that cell down to its farthest corner depth there.
+    // A triangle is hidden when every cell its paint (grown by the seam reach)
+    // touches is occluded nearer than its nearest vertex by more than the depth
+    // tolerance. A partly covered cell, a near tie or a translucent occluder
+    // keeps it, so painting the survivors draws the same picture.
+    if (commands.length < 2)
+        return [...commands];
+    const width = Math.max(bounds.maxX - bounds.minX, 1e-12);
+    const height = Math.max(bounds.maxY - bounds.minY, 1e-12);
+    const span = Math.max(width, height);
+    const coordinateTolerance = Math.max(span * 1e-9, 1e-12);
+    let minimum = Infinity;
+    let maximum = -Infinity;
+    for (const command of commands)
+        for (const depth of command.triangle.depths) {
+            minimum = Math.min(minimum, depth);
+            maximum = Math.max(maximum, depth);
+        }
+    const depthTolerance = Math.max((maximum - minimum) * 1e-9, 1e-12);
+    if (!Number.isFinite(depthTolerance))
+        throw new Error("Illustration depth range overflow.");
+    const cell = span / OCCLUSION_CELLS_PER_SPAN;
+    const reach = span * SEAM_REACH_PER_SPAN + coordinateTolerance;
+    const columns = Math.max(1, Math.ceil(width / cell));
+    const rows = Math.max(1, Math.ceil(height / cell));
+    const cellIndex = (value, origin, count) => Math.min(Math.max(Math.floor((value - origin) / cell), 0), count - 1);
+    const occluded = new Float64Array(columns * rows).fill(-Infinity);
+    let any = false;
+    for (const command of commands) {
+        if (command.opacity < 1 - 1e-12)
+            continue;
+        const triangle = command.triangle;
+        const box = projectedBounds(triangle);
+        const lastRow = cellIndex(box.maxY, bounds.minY, rows);
+        for (let row = cellIndex(box.minY, bounds.minY, rows); row <= lastRow; row += 1) {
+            const low = bounds.minY + row * cell;
+            const high = low + cell;
+            const lower = triangleSpanAt(triangle.points, low);
+            const upper = triangleSpanAt(triangle.points, high);
+            if (!lower.found || !upper.found)
+                continue;
+            const left = Math.max(lower.low, upper.low) + coordinateTolerance;
+            const right = Math.min(lower.high, upper.high) - coordinateTolerance;
+            if (right <= left)
+                continue;
+            const first = Math.max(Math.ceil((left - bounds.minX) / cell), 0);
+            const last = Math.min(Math.floor((right - bounds.minX) / cell) - 1, columns - 1);
+            for (let column = first; column <= last; column += 1) {
+                const x0 = bounds.minX + column * cell;
+                const x1 = x0 + cell;
+                const depth = Math.min(depthAt(triangle, [x0, low]), depthAt(triangle, [x1, low]), depthAt(triangle, [x0, high]), depthAt(triangle, [x1, high]));
+                const index = row * columns + column;
+                occluded[index] = Math.max(occluded[index], depth);
+                any = true;
+            }
+        }
+    }
+    if (!any)
+        return [...commands];
+    const result = [];
+    for (const command of commands) {
+        const triangle = command.triangle;
+        const nearest = Math.max(triangle.depths[0], triangle.depths[1], triangle.depths[2]);
+        const box = projectedBounds(triangle);
+        let tested = false;
+        let hidden = true;
+        const lastRow = cellIndex(box.maxY + reach, bounds.minY, rows);
+        for (let row = cellIndex(box.minY - reach, bounds.minY, rows); hidden && row <= lastRow; row += 1) {
+            const low = bounds.minY + row * cell;
+            const high = low + cell;
+            const extent = triangleBandExtent(triangle.points, Math.max(low - reach, box.minY), Math.min(high + reach, box.maxY));
+            if (!extent.found)
+                continue;
+            const lastColumn = cellIndex(extent.high + reach, bounds.minX, columns);
+            for (let column = cellIndex(extent.low - reach, bounds.minX, columns); column <= lastColumn; column += 1) {
+                tested = true;
+                if (!(occluded[row * columns + column] > nearest + depthTolerance)) {
+                    hidden = false;
+                    break;
+                }
+            }
+        }
+        if (!(tested && hidden))
+            result.push(command);
+    }
+    return result;
 }
 function renderCommands(scene, style) {
     const styleKey = JSON.stringify(style);
@@ -1343,14 +1570,16 @@ function renderCommands(scene, style) {
         VISIBILITY_ORDER_CACHE.set(scene, sceneCache);
     }
     const cachedTriangles = sceneCache.get(style.doubleSided);
-    const commandByTriangle = new Map(triangleCommands.map((command) => [command.triangle, command]));
+    // Only what the view may show reaches the pairwise ordering and fusion.
+    const visibleCommands = cullHiddenTriangleCommands(triangleCommands, scene.bounds);
+    const commandByTriangle = new Map(visibleCommands.map((command) => [command.triangle, command]));
     let orderedTriangles;
-    if (cachedTriangles?.length === triangleCommands.length &&
+    if (cachedTriangles?.length === visibleCommands.length &&
         cachedTriangles.every((triangle) => commandByTriangle.has(triangle))) {
         orderedTriangles = cachedTriangles.map((triangle) => commandByTriangle.get(triangle));
     }
     else {
-        orderedTriangles = orderTriangleCommands(triangleCommands, scene.bounds);
+        orderedTriangles = orderTriangleCommands(visibleCommands, scene.bounds);
         sceneCache.set(style.doubleSided, orderedTriangles.map((command) => command.triangle));
     }
     const surfaceCommands = style.fuseSurfaces

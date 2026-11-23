@@ -39,6 +39,13 @@ The illustration renderer validates mesh positions, indices, normals,
 materials, and transforms, then projects triangles into the requested view.
 Normals use inverse-transpose transformation and reflections reverse winding.
 Back-facing triangles are removed unless double-sided rendering is selected.
+Triangles the view proves hidden are removed next, before any pairwise work:
+the view is divided into cells tied to its span (512 across it); an opaque
+triangle that covers a whole cell occludes it down to its farthest depth
+there, and a triangle is removed only when every cell its paint (grown by half
+the seam stroke) touches is occluded nearer than its nearest vertex by more
+than the depth tolerance. A partly covered cell, a near tie or a translucent
+occluder keeps a triangle, so the drawing is unchanged.
 
 Projected bounding boxes drive a bounded broad phase. Significant overlaps
 produce depth-order constraints; stable strongly connected components resolve
@@ -56,9 +63,12 @@ the same style resolution.
 After shading and ordering, compatible adjacent triangles with the same final
 fill and opacity can be fused into polygon rings. Fusion uses projected planar
 topology and preserves holes, material layers, painter-order constraints, and
-visible boundaries. It reduces drawing commands and SVG size after source mesh
-preparation; it does not reduce model attachment size or create a portable mesh
-cache.
+visible boundaries. Each fused surface is placed by its members, and the
+overlaps of different paint then decide its order against every other surface:
+a surface is drawn after each surface it must cover. Surfaces that must each be
+drawn before the other keep their placed order. It reduces drawing commands and
+SVG size after source mesh preparation; it does not reduce model attachment
+size or create a portable mesh cache.
 
 Fusion is deterministic for identical validated input, view, and options.
 Numeric SVG formatting uses locale-independent integer-grid and compact decimal
@@ -68,9 +78,10 @@ custom renderer can reproduce the same drawing.
 ## Limits and diagnostics
 
 Every public input has structural count bounds. Runtime budgets additionally
-cap triangles, Fast visibility candidate pairs, illustration overlap/fusion
-comparisons, drawing commands, output attachment bytes, analytic sampling, and
-analytic topology candidate pairs.
+cap triangles, Fast visibility candidate pairs, output attachment bytes,
+analytic sampling, and analytic topology candidate pairs. Illustration
+visibility and fusion comparisons and drawing commands are limited only when a
+caller sets a limit (`work_limits`, `MeshIllustrationExecutionLimits`).
 Budget exhaustion returns a stable resource-limit failure; it does not silently
 switch algorithms or return a partial illustration. Partial STEP tessellation
 is separate: Geometer cleans and retries outdated OCCT triangulations once, then

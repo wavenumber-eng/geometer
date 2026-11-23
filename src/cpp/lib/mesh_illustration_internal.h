@@ -21,6 +21,8 @@ using Ring = std::vector<Vec2>;
 using Rings = std::vector<Ring>;
 using Matrix = std::array<double, 16>;
 inline constexpr Matrix identity{1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
+// Work limits apply only when a caller sets one.
+inline constexpr std::size_t unlimited_work = std::numeric_limits<std::size_t>::max();
 
 struct Bounds
 {
@@ -136,17 +138,17 @@ struct PreparedIllustration
 // callers use the DTO overloads below, which retain generated contract validation.
 PreparedIllustration prepare_illustration(const IllustrationInputView& input,
                                           const contracts::HlrProjectionResultA0* hlr,
-                                          std::size_t max_candidate_comparisons = 100000000,
-                                          std::size_t max_drawing_commands = 2000000);
+                                          std::size_t max_candidate_comparisons = unlimited_work,
+                                          std::size_t max_drawing_commands = unlimited_work);
 
 PreparedIllustration prepare_illustration(const contracts::MeshIllustrationInputA0& input,
                                           const contracts::HlrProjectionResultA0* hlr,
-                                          std::size_t max_candidate_comparisons = 100000000,
-                                          std::size_t max_drawing_commands = 2000000);
+                                          std::size_t max_candidate_comparisons = unlimited_work,
+                                          std::size_t max_drawing_commands = unlimited_work);
 PreparedIllustration prepare_illustration(const contracts::MeshIllustrationGeometryInputA0& input,
                                           const contracts::HlrProjectionResultA0* hlr,
-                                          std::size_t max_candidate_comparisons = 100000000,
-                                          std::size_t max_drawing_commands = 2000000);
+                                          std::size_t max_candidate_comparisons = unlimited_work,
+                                          std::size_t max_drawing_commands = unlimited_work);
 contracts::MeshIllustrationGeometryA0
 make_illustration_geometry(const PreparedIllustration& prepared,
                            const contracts::MeshIllustrationView& view);
@@ -164,7 +166,8 @@ struct ResourceLimit : std::runtime_error
 // Bound adversarial broad-phase work without silently switching renderers.
 struct WorkBudget
 {
-    explicit WorkBudget(std::size_t limit = 100000000, std::size_t command_limit = 2000000)
+    explicit WorkBudget(std::size_t limit = unlimited_work,
+                        std::size_t command_limit = unlimited_work)
         : remaining(limit), commands_remaining(command_limit)
     {
     }
@@ -223,6 +226,8 @@ void candidate_pairs(const std::vector<Bounds>& boxes, const Bounds& bounds, uns
 Scene prepare_scene(const IllustrationInputView& input);
 Style resolve_style(const contracts::MeshIllustrationStyleA0& patch);
 std::string triangle_fill(const Triangle& triangle, const Scene& scene, const Style& style);
+std::vector<TriangleCommand> cull_hidden_triangles(const std::vector<TriangleCommand>& commands,
+                                                   const Bounds& bounds);
 std::vector<TriangleCommand> order_triangles(const std::vector<TriangleCommand>& commands,
                                              const Bounds& bounds, WorkBudget& budget);
 Surface triangle_surface(const TriangleCommand& command);

@@ -172,24 +172,21 @@ std::vector<TriangleCommand> order_triangles(const std::vector<TriangleCommand>&
     for (const auto& command : commands)
         boxes.push_back(projected_bounds(*command.triangle));
     Graph outgoing(commands.size()), reverse(commands.size());
-    std::size_t constraints = 0;
     const Bounds grid_bounds{bounds.min_x, bounds.min_y, bounds.min_x + width,
                              bounds.min_y + height};
-    candidate_pairs(
-        boxes, grid_bounds, grid, std::max(64u, grid * 2), 1e-12 / grid, budget,
-        [&](std::size_t a, std::size_t b)
-        {
-            if (!bounds_overlap(boxes[a], boxes[b], epsilon))
-                return;
-            const int order = overlap_order(*commands[a].triangle, *commands[b].triangle, epsilon);
-            if (!order)
-                return;
-            if (++constraints > 4000000)
-                throw ResourceLimit("Mesh illustration exceeds the visibility constraint limit.");
-            const auto behind = order > 0 ? b : a, front = order > 0 ? a : b;
-            outgoing[behind].push_back(front);
-            reverse[front].push_back(behind);
-        });
+    candidate_pairs(boxes, grid_bounds, grid, std::max(64u, grid * 2), 1e-12 / grid, budget,
+                    [&](std::size_t a, std::size_t b)
+                    {
+                        if (!bounds_overlap(boxes[a], boxes[b], epsilon))
+                            return;
+                        const int order =
+                            overlap_order(*commands[a].triangle, *commands[b].triangle, epsilon);
+                        if (!order)
+                            return;
+                        const auto behind = order > 0 ? b : a, front = order > 0 ? a : b;
+                        outgoing[behind].push_back(front);
+                        reverse[front].push_back(behind);
+                    });
     return order_components(commands, outgoing, reverse);
 }
 } // namespace geometer::illustration_detail

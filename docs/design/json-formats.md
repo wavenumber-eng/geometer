@@ -71,8 +71,6 @@ Accepted option keys:
   placements before projection, matching STEP-to-GLB's definition-local frame;
   assembly-child placements remain intact. Defaults to `false` for backward
   compatibility.
-- `curve_mode` or `curveMode`: `native_arcs`, `native-arcs`, or `polyline`.
-- `samples_per_curve` or `samples`.
 - `round_digits` or `roundDigits`.
 - `output_outline` or `outputOutline`: emit the independently composable
   outline layer; defaults to `true`.
@@ -80,25 +78,14 @@ Accepted option keys:
   layer; defaults to `true`.
 - `output_bbox` or `outputBbox`: emit the projected bounding-box layer;
   defaults to `true`.
-- `projection_algorithm` or `projectionAlgorithm`: `poly`, `exact`, or the
-  additive versioned backend `fast`.
+- `projection_algorithm` or `projectionAlgorithm`: `fast`.
 - `mesh_linear_deflection` or `meshLinearDeflection`.
 - `mesh_angular_deflection` or `meshAngularDeflection`.
 - `mesh_relative` or `meshRelative`.
 - `mesh_deflection_mode` or `meshDeflectionMode`: `absolute` or
   `bbox-relative`.
 - `mesh_deflection_coefficient` or `meshDeflectionCoefficient`.
-- `outline_algorithm` or `outlineAlgorithm`: `hlr-close`, `mesh-shadow`, or
-  the additive versioned backend `fast-mesh-shadow`.
-- `hlr_angle_tolerance` or `hlrAngleTolerance`.
-- `edge_v_sharp`, `edge_v_outline`, `edge_v_smooth`, `edge_v_sewn`,
-  `edge_v_iso`, `edge_h_sharp`, `edge_h_outline`, `edge_h_smooth`,
-  `edge_h_sewn`, and `edge_h_iso` plus camelCase aliases.
-- legacy `include_visible` or `includeVisible`, which toggles visible sharp
-  and visible outline edges together.
-- legacy `include_outline` or `includeOutline`, which toggles visible outline
-  edges.
-- `union_outline_polygons`, `unionOutlinePolygons`, or `unionPolygons`.
+- `outline_algorithm` or `outlineAlgorithm`: `fast-mesh-shadow` (default) or `mesh-shadow`.
 - `fast`: A0 options used by `projection_algorithm=fast` and
   `outline_algorithm=fast-mesh-shadow`:
   `include_boundaries`, `include_creases`, `include_silhouettes`,
@@ -111,23 +98,15 @@ Accepted option keys:
   `max_output_segments`, also with camelCase aliases.
 
 The `fast` option block is governed by `geometry.hlr_projection.options.a0`.
-Future incompatible controls require a new contract generation; A0 cannot
-change the meaning of the OCCT-specific exact/poly flags.
-
 The browser test pages currently use the viz-compatible setting set:
 
 ```json
 {
-  "curve_mode": "polyline",
-  "samples_per_curve": 24,
   "round_digits": 3,
-  "projection_algorithm": "poly",
+  "projection_algorithm": "fast",
   "outline_algorithm": "mesh-shadow",
   "mesh_deflection_mode": "bbox-relative",
-  "mesh_deflection_coefficient": 0.004,
-  "edge_v_sharp": true,
-  "edge_v_outline": true,
-  "union_outline_polygons": true
+  "mesh_deflection_coefficient": 0.004
 }
 ```
 

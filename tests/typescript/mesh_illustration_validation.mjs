@@ -618,15 +618,28 @@ const sanitizedStyle = renderMeshIllustrationSvg(scene, {
 });
 assert.doesNotMatch(sanitizedStyle.svg, /<script>/u);
 
-const warningBoundInput = {
+// A mesh's degenerate triangles are one counted warning.
+const countedWarnings = illustrateMesh({
   schema: "geometry.mesh_illustration.input.a0",
   meshes: [
     {
-      id: "degenerate-warning-bound",
+      id: "degenerate-warning-count",
       positions: Array.from({ length: 300 * 9 }, () => 0),
       materials: [{ color: [0.5, 0.5, 0.5] }],
     },
   ],
+  view: { direction: [0, 0, 1], up: [0, 1, 0] },
+}).warnings;
+assert.deepEqual(countedWarnings, [
+  "Skipped 300 degenerate triangles in degenerate-warning-count.",
+]);
+const warningBoundInput = {
+  schema: "geometry.mesh_illustration.input.a0",
+  meshes: Array.from({ length: 300 }, (_value, index) => ({
+    id: `degenerate-warning-bound-${String(index)}`,
+    positions: Array.from({ length: 9 }, () => 0),
+    materials: [{ color: [0.5, 0.5, 0.5] }],
+  })),
   view: { direction: [0, 0, 1], up: [0, 1, 0] },
 };
 const boundedWarnings = illustrateMesh(warningBoundInput).warnings;

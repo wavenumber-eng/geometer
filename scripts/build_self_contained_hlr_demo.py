@@ -117,8 +117,7 @@ def embedded_manifest() -> list[dict[str, object]]:
 def self_contained_worker_source() -> str:
     worker = WORKER_SOURCE.read_text(encoding="utf-8")
     operation_worker = OPERATION_WORKER_SOURCE.read_text(encoding="utf-8")
-    edge_index = worker.index("const EDGE_FLAGS")
-    worker_tail = worker[edge_index:]
+    worker_tail = worker[worker.index("function buildOptionsJson"):]
     return "\n".join(
         [
             f'const GEOMETER_JS_B64 = "{b64(GEOMETER_JS.read_bytes())}";',

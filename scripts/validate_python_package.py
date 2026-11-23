@@ -86,50 +86,6 @@ generated_options = decode_model_bounds_options_a0_json(b'{"format":"step"}')
 if generated_options.format.value != "step":
     raise RuntimeError("generated contract internals were not installed correctly")
 
-empty_analytic_request = geometer.AnalyticPlanarBooleanBatchRequestA0(
-    jobs=(),
-    relationship_queries=(),
-)
-disk_analytic_request = geometer.AnalyticPlanarBooleanBatchRequestA0(
-    jobs=(
-        geometer.AnalyticPlanarBooleanJob(
-            job_id=1,
-            stages=(
-                geometer.AnalyticPlanarBooleanStage(
-                    stage_id=1,
-                    operation=geometer.StageOperation.UNION_STAGE,
-                    operands=(
-                        geometer.DiskOperand(
-                            operand_id=1,
-                            kind="disk",
-                            feature_id=1,
-                            center=geometer.AnalyticPointNm(x=0, y=0),
-                            radius_nm=1_000_000,
-                        ),
-                    ),
-                ),
-            ),
-        ),
-    ),
-    relationship_queries=(),
-)
-with geometer.GeometerClient(exe, client_name="python-wheel-validation") as analytic_client:
-    empty_analytic_result = analytic_client.analytic_planar_boolean_batch(
-        empty_analytic_request,
-        timeout=10,
-    )
-    disk_analytic_result = analytic_client.analytic_planar_boolean_batch(
-        disk_analytic_request,
-        timeout=10,
-    )
-if empty_analytic_result.job_results or empty_analytic_result.relationship_results:
-    raise RuntimeError("empty analytic batch did not return an empty result")
-if len(disk_analytic_result.job_results) != 1:
-    raise RuntimeError("nontrivial analytic batch did not return one job result")
-disk_job = disk_analytic_result.job_results[0]
-if disk_job.status != "success" or not disk_job.result_regions or len(disk_job.digest_sha256) != 64:
-    raise RuntimeError("nontrivial analytic batch did not return canonical disk geometry")
-
 clip_mesh = geometer.MeshIllustrationMesh(
     id="wheel-b0-clip-smoke",
     positions=(-1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0),
@@ -226,7 +182,6 @@ response = geometer.run_batch(
         }
     ],
     options={
-        "curve_mode": "polyline",
         "views": [geometer.ProjectionView.top().to_json_value()],
     },
     work_dir=out_dir,
@@ -244,8 +199,6 @@ print(json.dumps({
     "detail_edges": detail_count,
     "outline_edges": outline_count,
     "model_bounds_hash": bounds.source_hash,
-    "analytic_disk_regions": len(disk_job.result_regions),
-    "analytic_disk_digest": disk_job.digest_sha256,
     "b0_partial_fragment": partial_illustration.fragment.fragment_sha256,
     "b0_empty_fragment": empty_illustration.fragment.fragment_sha256,
     "glb_bytes": len(glb),

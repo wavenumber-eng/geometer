@@ -3,12 +3,12 @@
 Start with the [executable IPC consumer guide](executable-ipc.md) for persistent
 process integration. These documents specify callable behavior and wire/value
 contracts. Experimental specifications are retained without implying production
-readiness. Build and demo procedures live in [developer documentation](../developer/README.md);
-measurements and abandoned approaches live in [research](../research/README.md).
+readiness. Build and demo procedures live in [developer documentation](../developer/README.md).
 
 ## Supported Interface Boundaries
 
 - [Interface policy and versioning](interface-policy.md)
+- [Standard STEP media types](../geometer/adr/geometer-adr-020-standard-step-media-types.md)
 - [STEP geometry](step-geometry.md) and [planar geometry](planar-geometry.md)
 - [Colored model tessellation A0](model-tessellation-a0.md)
 - [Native mesh illustration and STEP-to-SVG examples](mesh-illustration-native.md)
@@ -28,12 +28,10 @@ measurements and abandoned approaches live in [research](../research/README.md).
 
 ## Experimental Interfaces
 
-The analytic solver is not production-ready. Topology is an unpromoted native
+Topology is an unpromoted native
 research API; some declarations are structural only. Consult the actual runtime
 catalog rather than inferring availability from a specification.
 
-- [Analytic logical contract and limitations](analytic-planar-boolean-a0.md)
-- [Analytic packed A0 contract](analytic-planar-boolean-packet-a0.md)
 - [Topology lifecycle/inspection/render Slice A](step-topology-contract-a0.md)
 - [Topology mutation/checkpoint Slice B](step-topology-contract-slice-b.md)
 - [Topology restore/persistence Slice C](step-topology-contract-slice-c.md)
@@ -46,6 +44,4 @@ catalog rather than inferring availability from a specification.
 
 - [TypeSpec and contract authority](../contracts/README.md)
 - [Generated contract and operation reference](../generated/contracts/index.html)
-- [Migration roadmap](../contracts/typespec-coverage-assessment.md)
-- [Research and historical evidence](../research/README.md)
-- [Documentation maintenance and disposition map](../developer/documentation.md)
+- [Documentation maintenance](../developer/documentation.md)

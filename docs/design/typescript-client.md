@@ -2,23 +2,16 @@
 
 ## Status and authority
 
-Model bounds, model/mesh HLR, and the analytic planar Boolean packed projection
-are implemented. Authored TypeSpec and the normalized catalog own logical wire
-structure; the separately governed analytic A0 packet owns its binary hot path.
+Model bounds and model/mesh HLR use the authored TypeSpec and normalized
+catalog as their logical wire authority.
 This package is a deterministic projection plus a transport adapter. It does
 not move geometry behavior out of C++ or replace the separately distributed
 Emscripten JavaScript and WASM artifacts.
 
 The package identity is `@wavenumber/geometer`, its module format is ESM, and
 the repository-built package artifact is `dist/wasm/npm/geometer/`. Package version
-`2026.9.7` is current and includes the Fast vector HLR, mesh-illustration, and
-resolution-bounded analytic planar Boolean surfaces. Publication remains a release action; a local
+`2026.9.7` is current and includes the Fast vector HLR and mesh illustration. Publication remains a release action; a local
 artifact is not evidence that an npm release has occurred.
-
-The analytic surface is experimental and not production-ready. It may fail
-closed on valid inputs and is not the dependable path for whole-board or
-whole-layer copper union. Prefer the Clipper2-backed planar APIs when
-polygonized output is suitable.
 
 ## Generated contracts and codecs
 
@@ -41,12 +34,6 @@ materialize TypeSpec default intent into option patches.
 The TypeScript codec vector test replays every governed pilot vector. This is
 in addition to JSON Schema, C++, and generic transport tests, not a replacement
 for their distinct assertion lanes.
-
-Packed analytic roots deliberately do not use the JSON codec runtime. Their
-generated DTO identities and integer-nanometer coordinates use `bigint`, and
-`analytic-packet-a0.ts` performs bounded binary encoding/decoding against the
-pre-release `GMABRQ01`/`GMABRS01` layout. JavaScript `number` is rejected for every
-64-bit analytic field.
 
 ## High-level browser client
 
@@ -78,13 +65,6 @@ indexed-mesh packet compatibility operation. The direct WASM, dedicated Worker,
 and persistent IPC clients expose the same generation policy; `*B0` is only a
 generation-explicit alias for the canonical method.
 
-`analyticPlanarBooleanBatch()` accepts the generated logical request, encodes
-its packed request attachment, executes the experimental C++ solver, strictly
-decodes the packed result, and returns generated logical jobs, line/arc
-fragments, rings, regions, lineage, operand outcomes, relationships, and
-standalone job digests. The same typed method is available on the Worker
-client.
-
 The client verifies each promoted runtime operation against its generated
 request/result identities and exact input/output attachment inventory,
 including ordering, requiredness, media types, and byte limits. A module with
@@ -101,7 +81,6 @@ The ESM package has explicit exports:
 | --- | --- |
 | `@wavenumber/geometer` | Generated contracts plus high-level client |
 | `@wavenumber/geometer/contracts` | Generated DTOs, codecs, and operation metadata |
-| `@wavenumber/geometer/analytic-packet-a0` | Strict analytic request/result packet projection |
 | `@wavenumber/geometer/ipc-a0` | Environment-neutral bounded executable-frame codec |
 | `@wavenumber/geometer/ipc-client-a0` | Persistent client over injected WHATWG byte streams |
 | `@wavenumber/geometer/illustrated-hlr` | Fast vector HLR plus mesh-illustration composition |
@@ -162,8 +141,7 @@ embed a second copy of the geometry kernel.
 
 `createGeometerWorkerClient()` exposes the same typed `modelBounds()`,
 `modelHlrProjection()`, canonical B0 `meshHlrProjection()`, explicit
-`meshHlrProjectionA0()`, and
-`analyticPlanarBooleanBatch()` operations
+`meshHlrProjectionA0()` operations
 without running synchronous OCCT work on the window event loop. The A0 Worker
 protocol is package-local and has the identity
 `wn.geometer.wasm_worker.a0`. Initialization transfers an owned copy of the
@@ -240,3 +218,6 @@ records the Geometer surfaces that consumer currently requires; it is a
 compatibility record, not a consumer migration plan. Application-specific
 adoption sequencing, rollout gates, worker-pool policy, and cache migration
 belong in the consuming repository.
+## STEP MIME inputs and defaults
+
+Executable, direct WASM and Worker requests share bounded STEP MIME parsing. Handwritten request `mediaType` accepts a string subject to runtime validation; accepted STEP values normalize to `model/step`. New defaults use that token; exact output and catalog checks remain intact. See the [STEP media policy](../geometer/adr/geometer-adr-020-standard-step-media-types.md).

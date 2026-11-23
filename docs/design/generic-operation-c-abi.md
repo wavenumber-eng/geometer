@@ -115,7 +115,7 @@ rejects callers using a different descriptor layout. It does not authorize a
 caller to append fields. `flags` and `reserved0` must be zero. Names and media
 types are length-delimited UTF-8 and need not be NUL terminated. Catalog
 operation identities and attachment names are nonempty ASCII tokens without
-embedded NUL; media types are nonempty catalog-declared ASCII values.
+embedded NUL; media types are nonempty ASCII values admitted by the catalog and its documented STEP input matching policy.
 Attachment bytes may contain any value.
 
 The call validates, before operation execution:
@@ -266,3 +266,6 @@ directly.
 
 The normalized operation catalog generates or mechanically verifies the header
 declarations and Emscripten export list. Build validation fails when they drift.
+## STEP input media values
+
+STEP input slots accept bounded RFC 2045 MIME values: case-insensitive base types, valid comments/parameters and the legacy `application/step` spelling. Unknown STEP parameters are ignored. New producers emit bare `model/step`; output and unrelated media checks remain exact. See the [STEP media policy](../geometer/adr/geometer-adr-020-standard-step-media-types.md). Descriptor layout and byte limits are unchanged.

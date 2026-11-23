@@ -1,41 +1,6 @@
 // Generated from wn_geometer_contract_catalog.a0.json. Do not edit.
-export const NORMALIZED_CONTRACT_CATALOG_SHA256 = "8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed";
+export const NORMALIZED_CONTRACT_CATALOG_SHA256 = "c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032";
 export const operationCatalog = {
-    "geometry.analytic_planar_boolean_batch.a0": {
-        identity: "geometry.analytic_planar_boolean_batch.a0",
-        requestContract: "geometry.analytic_planar_boolean_batch.request.a0",
-        resultContract: "geometry.analytic_planar_boolean_batch.result.a0",
-        runtimeAvailable: true,
-        nativeRuntimeAvailable: false,
-        runtimeDispatch: "packed_attachment",
-        inputAttachments: [
-            {
-                name: "analytic_planar_boolean_request",
-                required: true,
-                media_types: ["application/vnd.wavenumber.geometer.analytic-planar-boolean-request"],
-                max_bytes: 268435456,
-            },
-        ],
-        outputAttachments: [
-            {
-                name: "analytic_planar_boolean_result",
-                required: true,
-                media_types: ["application/vnd.wavenumber.geometer.analytic-planar-boolean-result"],
-                max_bytes: 268435456,
-            },
-        ],
-        requestProjection: {
-            kind: "packed_attachment",
-            attachment_name: "analytic_planar_boolean_request",
-            format: "geometry.analytic_planar_boolean.packet.a0",
-        },
-        resultProjection: {
-            kind: "packed_attachment",
-            attachment_name: "analytic_planar_boolean_result",
-            format: "geometry.analytic_planar_boolean.packet.a0",
-        },
-        documentation: "Execute independent ordered analytic planar Boolean jobs through packed attachments.",
-    },
     "geometry.mesh_hlr_projection.a0": {
         identity: "geometry.mesh_hlr_projection.a0",
         requestContract: "geometry.hlr_projection.options.a0",
@@ -198,7 +163,7 @@ export const operationCatalog = {
             },
         ],
         outputAttachments: [],
-        documentation: "Compute axis-aligned model bounds from the required raw model attachment.",
+        documentation: "Compute axis-aligned model bounds from the required raw model attachment. STEP input uses RFC 2045 MIME-value parsing; valid unknown parameters are ignored. New producers use model/step; application/step remains an input compatibility spelling.",
     },
     "geometry.model_hlr_projection.a0": {
         identity: "geometry.model_hlr_projection.a0",
@@ -216,7 +181,7 @@ export const operationCatalog = {
             },
         ],
         outputAttachments: [],
-        documentation: "Project STEP model bytes through the selected polygonal, exact, or Fast HLR backend.",
+        documentation: "Project STEP model bytes through Fast HLR. STEP input uses RFC 2045 MIME-value parsing, ignores valid unknown parameters, and retains application/step compatibility; new producers use model/step.",
     },
     "geometry.model_illustration_geometry.a0": {
         identity: "geometry.model_illustration_geometry.a0",
@@ -241,7 +206,7 @@ export const operationCatalog = {
                 max_bytes: 268435456,
             },
         ],
-        documentation: "Import or lower one source and return renderer-neutral illustration geometry.",
+        documentation: "Import or lower one source and return renderer-neutral illustration geometry. STEP input uses RFC 2045 MIME-value parsing and ignores valid unknown parameters. New source summaries use model/step; application/step remains readable for compatibility.",
     },
     "geometry.model_illustration_geometry.b0": {
         identity: "geometry.model_illustration_geometry.b0",
@@ -266,7 +231,7 @@ export const operationCatalog = {
                 max_bytes: 268435456,
             },
         ],
-        documentation: "",
+        documentation: "STEP input uses RFC 2045 MIME-value parsing and ignores valid unknown parameters. New source summaries use model/step; application/step remains readable for compatibility.",
     },
     "geometry.model_illustration.a0": {
         identity: "geometry.model_illustration.a0",
@@ -284,7 +249,7 @@ export const operationCatalog = {
             },
         ],
         outputAttachments: [],
-        documentation: "Import or lower one source and return a complete deterministic SVG illustration.",
+        documentation: "Import or lower one source and return a complete deterministic SVG illustration. STEP input uses RFC 2045 MIME-value parsing and ignores valid unknown parameters. New source summaries use model/step; application/step remains readable for compatibility.",
     },
     "geometry.model_illustration.b0": {
         identity: "geometry.model_illustration.b0",
@@ -302,7 +267,7 @@ export const operationCatalog = {
             },
         ],
         outputAttachments: [],
-        documentation: "",
+        documentation: "STEP input uses RFC 2045 MIME-value parsing and ignores valid unknown parameters. New source summaries use model/step; application/step remains readable for compatibility.",
     },
     "geometry.model_tessellation.a0": {
         identity: "geometry.model_tessellation.a0",
@@ -327,7 +292,7 @@ export const operationCatalog = {
                 max_bytes: 268435456,
             },
         ],
-        documentation: "Tessellate STEP bytes to bounded colored meshes for native GPU and illustration consumers.",
+        documentation: "Tessellate STEP bytes to bounded colored meshes for native GPU and illustration consumers. STEP input uses RFC 2045 MIME-value parsing, ignores valid unknown parameters, and retains application/step compatibility; new producers use model/step.",
     },
     "geometry.step_topology.analyze_recovery.a0": {
         identity: "geometry.step_topology.analyze_recovery.a0",
@@ -436,7 +401,7 @@ export const operationCatalog = {
             },
         ],
         outputAttachments: [],
-        documentation: "",
+        documentation: "STEP input uses RFC 2045 MIME-value parsing; valid unknown parameters are ignored and application/step remains an input compatibility spelling.",
     },
     "geometry.step_topology.render.a0": {
         identity: "geometry.step_topology.render.a0",
@@ -490,7 +455,7 @@ export const operationCatalog = {
             },
         ],
         outputAttachments: [],
-        documentation: "",
+        documentation: "The STEP source uses RFC 2045 MIME-value parsing and ignores valid unknown parameters; journal descriptor and digest matching remain exact.",
     },
     "geometry.step_topology.save.a0": {
         identity: "geometry.step_topology.save.a0",
@@ -509,6 +474,7 @@ export const operationCatalog = {
                     "application/vnd.opencascade.xbf",
                     "application/vnd.opencascade.xml-xcaf",
                     "application/vnd.wavenumber.geometer.step-topology-sidecar+json",
+                    "model/step",
                 ],
                 max_bytes: 536870912,
             },

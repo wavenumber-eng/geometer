@@ -4,13 +4,15 @@
 #include "geometer/status.h"
 
 #include <cstddef>
+#include <limits>
 
 namespace geometer
 {
+/// Work limits a caller may set; by default the work is not limited.
 struct MeshIllustrationExecutionLimits
 {
-    std::size_t max_candidate_comparisons = 100000000;
-    std::size_t max_drawing_commands = 2000000;
+    std::size_t max_candidate_comparisons = std::numeric_limits<std::size_t>::max();
+    std::size_t max_drawing_commands = std::numeric_limits<std::size_t>::max();
 };
 
 /// Return owning, ordered shaded geometry in millimeters without generating SVG.

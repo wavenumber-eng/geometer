@@ -1,36 +1,5 @@
-export declare const NORMALIZED_CONTRACT_CATALOG_SHA256: "8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed";
+export declare const NORMALIZED_CONTRACT_CATALOG_SHA256: "c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032";
 export declare const operationCatalog: {
-    readonly "geometry.analytic_planar_boolean_batch.a0": {
-        readonly identity: "geometry.analytic_planar_boolean_batch.a0";
-        readonly requestContract: "geometry.analytic_planar_boolean_batch.request.a0";
-        readonly resultContract: "geometry.analytic_planar_boolean_batch.result.a0";
-        readonly runtimeAvailable: true;
-        readonly nativeRuntimeAvailable: false;
-        readonly runtimeDispatch: "packed_attachment";
-        readonly inputAttachments: readonly [{
-            readonly name: "analytic_planar_boolean_request";
-            readonly required: true;
-            readonly media_types: readonly ["application/vnd.wavenumber.geometer.analytic-planar-boolean-request"];
-            readonly max_bytes: 268435456;
-        }];
-        readonly outputAttachments: readonly [{
-            readonly name: "analytic_planar_boolean_result";
-            readonly required: true;
-            readonly media_types: readonly ["application/vnd.wavenumber.geometer.analytic-planar-boolean-result"];
-            readonly max_bytes: 268435456;
-        }];
-        readonly requestProjection: {
-            readonly kind: "packed_attachment";
-            readonly attachment_name: "analytic_planar_boolean_request";
-            readonly format: "geometry.analytic_planar_boolean.packet.a0";
-        };
-        readonly resultProjection: {
-            readonly kind: "packed_attachment";
-            readonly attachment_name: "analytic_planar_boolean_result";
-            readonly format: "geometry.analytic_planar_boolean.packet.a0";
-        };
-        readonly documentation: "Execute independent ordered analytic planar Boolean jobs through packed attachments.";
-    };
     readonly "geometry.mesh_hlr_projection.a0": {
         readonly identity: "geometry.mesh_hlr_projection.a0";
         readonly requestContract: "geometry.hlr_projection.options.a0";
@@ -171,7 +140,7 @@ export declare const operationCatalog: {
             readonly max_bytes: 268435456;
         }];
         readonly outputAttachments: readonly [];
-        readonly documentation: "Compute axis-aligned model bounds from the required raw model attachment.";
+        readonly documentation: "Compute axis-aligned model bounds from the required raw model attachment. STEP input uses RFC 2045 MIME-value parsing; valid unknown parameters are ignored. New producers use model/step; application/step remains an input compatibility spelling.";
     };
     readonly "geometry.model_hlr_projection.a0": {
         readonly identity: "geometry.model_hlr_projection.a0";
@@ -187,7 +156,7 @@ export declare const operationCatalog: {
             readonly max_bytes: 268435456;
         }];
         readonly outputAttachments: readonly [];
-        readonly documentation: "Project STEP model bytes through the selected polygonal, exact, or Fast HLR backend.";
+        readonly documentation: "Project STEP model bytes through Fast HLR. STEP input uses RFC 2045 MIME-value parsing, ignores valid unknown parameters, and retains application/step compatibility; new producers use model/step.";
     };
     readonly "geometry.model_illustration_geometry.a0": {
         readonly identity: "geometry.model_illustration_geometry.a0";
@@ -208,7 +177,7 @@ export declare const operationCatalog: {
             readonly media_types: readonly ["application/vnd.wavenumber.geometer.illustration-geometry+json"];
             readonly max_bytes: 268435456;
         }];
-        readonly documentation: "Import or lower one source and return renderer-neutral illustration geometry.";
+        readonly documentation: "Import or lower one source and return renderer-neutral illustration geometry. STEP input uses RFC 2045 MIME-value parsing and ignores valid unknown parameters. New source summaries use model/step; application/step remains readable for compatibility.";
     };
     readonly "geometry.model_illustration_geometry.b0": {
         readonly identity: "geometry.model_illustration_geometry.b0";
@@ -229,7 +198,7 @@ export declare const operationCatalog: {
             readonly media_types: readonly ["application/vnd.wavenumber.geometer.illustration-geometry+json"];
             readonly max_bytes: 268435456;
         }];
-        readonly documentation: "";
+        readonly documentation: "STEP input uses RFC 2045 MIME-value parsing and ignores valid unknown parameters. New source summaries use model/step; application/step remains readable for compatibility.";
     };
     readonly "geometry.model_illustration.a0": {
         readonly identity: "geometry.model_illustration.a0";
@@ -245,7 +214,7 @@ export declare const operationCatalog: {
             readonly max_bytes: 268435456;
         }];
         readonly outputAttachments: readonly [];
-        readonly documentation: "Import or lower one source and return a complete deterministic SVG illustration.";
+        readonly documentation: "Import or lower one source and return a complete deterministic SVG illustration. STEP input uses RFC 2045 MIME-value parsing and ignores valid unknown parameters. New source summaries use model/step; application/step remains readable for compatibility.";
     };
     readonly "geometry.model_illustration.b0": {
         readonly identity: "geometry.model_illustration.b0";
@@ -261,7 +230,7 @@ export declare const operationCatalog: {
             readonly max_bytes: 268435456;
         }];
         readonly outputAttachments: readonly [];
-        readonly documentation: "";
+        readonly documentation: "STEP input uses RFC 2045 MIME-value parsing and ignores valid unknown parameters. New source summaries use model/step; application/step remains readable for compatibility.";
     };
     readonly "geometry.model_tessellation.a0": {
         readonly identity: "geometry.model_tessellation.a0";
@@ -282,7 +251,7 @@ export declare const operationCatalog: {
             readonly media_types: readonly ["application/vnd.wavenumber.geometer.mesh-collection+json"];
             readonly max_bytes: 268435456;
         }];
-        readonly documentation: "Tessellate STEP bytes to bounded colored meshes for native GPU and illustration consumers.";
+        readonly documentation: "Tessellate STEP bytes to bounded colored meshes for native GPU and illustration consumers. STEP input uses RFC 2045 MIME-value parsing, ignores valid unknown parameters, and retains application/step compatibility; new producers use model/step.";
     };
     readonly "geometry.step_topology.analyze_recovery.a0": {
         readonly identity: "geometry.step_topology.analyze_recovery.a0";
@@ -385,7 +354,7 @@ export declare const operationCatalog: {
             readonly max_bytes: 268435456;
         }];
         readonly outputAttachments: readonly [];
-        readonly documentation: "";
+        readonly documentation: "STEP input uses RFC 2045 MIME-value parsing; valid unknown parameters are ignored and application/step remains an input compatibility spelling.";
     };
     readonly "geometry.step_topology.render.a0": {
         readonly identity: "geometry.step_topology.render.a0";
@@ -438,7 +407,7 @@ export declare const operationCatalog: {
             readonly max_bytes: 67108864;
         }];
         readonly outputAttachments: readonly [];
-        readonly documentation: "";
+        readonly documentation: "The STEP source uses RFC 2045 MIME-value parsing and ignores valid unknown parameters; journal descriptor and digest matching remain exact.";
     };
     readonly "geometry.step_topology.save.a0": {
         readonly identity: "geometry.step_topology.save.a0";
@@ -451,7 +420,7 @@ export declare const operationCatalog: {
         readonly outputAttachments: readonly [{
             readonly name: "state_artifact";
             readonly required: true;
-            readonly media_types: readonly ["application/step", "application/vnd.opencascade.xbf", "application/vnd.opencascade.xml-xcaf", "application/vnd.wavenumber.geometer.step-topology-sidecar+json"];
+            readonly media_types: readonly ["application/step", "application/vnd.opencascade.xbf", "application/vnd.opencascade.xml-xcaf", "application/vnd.wavenumber.geometer.step-topology-sidecar+json", "model/step"];
             readonly max_bytes: 536870912;
         }];
         readonly documentation: "";

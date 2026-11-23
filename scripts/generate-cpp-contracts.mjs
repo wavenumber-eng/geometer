@@ -6,21 +6,16 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { applyProjectionDeferrals } from "./contract-projection-deferral.mjs";
-
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const catalogPath = join(root, "contracts/geometer/generated/wn_geometer_contract_catalog.a0.json");
 const catalogText = await readFile(catalogPath, "utf8");
 const contractCatalog = JSON.parse(catalogText);
-const projectionCatalog = await applyProjectionDeferrals(contractCatalog, "cpp", {
-  retainRuntimeDispatch: true,
-});
 const packedContracts = new Set(
-  projectionCatalog.operations
+  contractCatalog.operations
     .filter((operation) => operation.runtime_dispatch === "packed_attachment")
     .flatMap((operation) => [operation.request_contract, operation.result_contract]),
 );
-const jsonCodecRoots = projectionCatalog.roots.filter(
+const jsonCodecRoots = contractCatalog.roots.filter(
   (rootRecord) => !packedContracts.has(rootRecord.contract_identity),
 );
 const catalogSha256 = createHash("sha256").update(catalogText).digest("hex");
@@ -30,15 +25,15 @@ if (process.argv.some((value, index) => index > 1 && value !== "--check")) {
   throw new Error("Usage: node scripts/generate-cpp-contracts.mjs [--check]");
 }
 
-const declarations = new Map(projectionCatalog.declarations.map((item) => [item.name, item]));
+const declarations = new Map(contractCatalog.declarations.map((item) => [item.name, item]));
 const shortNames = new Map();
-for (const declaration of projectionCatalog.declarations) {
+for (const declaration of contractCatalog.declarations) {
   const name = shortName(declaration.name);
   if (shortNames.has(name)) throw new Error(`Duplicate C++ declaration name ${name}.`);
   shortNames.set(name, declaration.name);
 }
 
-const ordered = topologicalOrder(projectionCatalog.declarations);
+const ordered = topologicalOrder(contractCatalog.declarations);
 const codecOrdered = topologicalOrder(reachableDeclarationItems(jsonCodecRoots));
 const header = formatCpp(generateHeader(), "contracts.h");
 const source = formatCpp(generateSource(), "contracts_json.cpp");
@@ -371,10 +366,10 @@ function generateSource() {
 }
 
 function generateOperationCatalogSource() {
-  const runtimeOperations = projectionCatalog.operations.filter(
+  const runtimeOperations = contractCatalog.operations.filter(
     (operation) => operation.runtime_available,
   );
-  const nativeRuntimeOperations = projectionCatalog.operations.filter(
+  const nativeRuntimeOperations = contractCatalog.operations.filter(
     (operation) => operation.runtime_available || operation.native_runtime_available,
   );
   const runtimeCatalogFor = (operations) => ({
@@ -462,9 +457,9 @@ function generateOperationCatalogSource() {
   const structuralResultChecksA0 = [];
   const structuralResultChecksB0 = [];
   const rootsByContract = new Map(
-    projectionCatalog.roots.map((rootRecord) => [rootRecord.contract_identity, rootRecord]),
+    contractCatalog.roots.map((rootRecord) => [rootRecord.contract_identity, rootRecord]),
   );
-  for (const operation of projectionCatalog.operations) {
+  for (const operation of contractCatalog.operations) {
     const requestRoot = rootsByContract.get(operation.request_contract);
     const resultRoot = rootsByContract.get(operation.result_contract);
     if (requestRoot === undefined || resultRoot === undefined) {
@@ -1055,5 +1050,5 @@ function reachableDeclarationItems(roots) {
     for (const dependency of dependencies(declaration)) visit(dependency);
   }
   for (const rootRecord of roots) visit(rootRecord.name);
-  return projectionCatalog.declarations.filter((declaration) => reachable.has(declaration.name));
+  return contractCatalog.declarations.filter((declaration) => reachable.has(declaration.name));
 }

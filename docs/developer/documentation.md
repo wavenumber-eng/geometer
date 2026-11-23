@@ -1,16 +1,10 @@
 # Documentation Maintenance
 
 Keep interface semantics in `docs/design/`, contract ownership and generation
-in `docs/contracts/`, maintainer procedures here, and measured experiments,
-rejected approaches and historical reviews in `docs/research/`. Accepted
-decisions and requirements remain in `docs/geometer/`. Active plans/logs are
-temporary and must be removed after their durable content has been transferred.
-
-The [document disposition map](documentation-map.json) records every design
-Markdown file inspected during the 2026-09-05 cleanup, its destination and
-rationale. Retained experimental topology value/packet contracts are not
-production promises. Evidence moves must not strand their sole interface
-definitions. Asset paths under `docs/design/assets/` stay fixed.
+in `docs/contracts/`, and maintainer procedures in `docs/developer/`. Accepted
+decisions and requirements remain in `docs/geometer/`. Remove completed plans
+after transferring durable details to the relevant interface or decision doc.
+Release checks use the [operation transport benchmark baseline](../research/operation-transport-performance.md).
 
 ## Source Authority
 
@@ -41,12 +35,8 @@ and narrow layouts; static link checks alone cannot prove readable rendering.
 If it changes, inspect the public interfaces and then explicitly refresh its
 lock. Generation never silently approves an API/documentation mismatch.
 
-Example verification is recorded in the [demo audit](demo-status.md); artifact
-presence, test registration and a successful runtime test are different facts.
-Removing a demo needs explicit disposition approval and a complete audit of
-scripts, tests, manifests, packaging and committed outputs.
-
-The link check also requires audit source links for top-level browser HTML,
+The link check requires source links in the [examples index](../../examples/README.md)
+for top-level browser HTML,
 Python `.py`, C++ `.cpp`, and Node `.ts`/`.mjs` example entrypoints. Browser
 workers and support modules are not separate demos. If a new demo uses a
 different directory or entrypoint convention, extend this registration check.

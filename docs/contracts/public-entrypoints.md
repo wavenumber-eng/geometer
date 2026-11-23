@@ -1,11 +1,9 @@
 # Public Entry-Point Reconciliation
 
-Release target `v2026-09-19`. This maps semantic operations separately from
+Release target `v2026-11-22`. This maps semantic operations separately from
 aliases, byte projections and implementation helpers. The
 [generated inventory](../generated/contracts/coverage.html) supplies individual
-operation/root identities; the [source review lock](public-surface-review.json)
-records the reviewed public-source boundary. A changed or newly added source
-in that boundary requires documentation review, not automatic promotion.
+operation and contract identities.
 
 ## User-Facing Operation Families
 
@@ -18,7 +16,6 @@ in that boundary requires documentation review, not automatic promotion.
 | Planar STEP synthesis | `planar_step.h`; `planar-step` / batch `planar_step` | Python `planar_step` / `write_planar_step` | Wave 1 request/root and STEP attachment; preserve unit/shape/alias compatibility. |
 | Planar batch solve | `planar_solve.h`; packed/JSON C ABI variants; `planar-batch-solve` | Python `planar_batch_solve[_json]`; retained WASM byte functions | Wave 2 logical contracts and IPC adapter, wave 4 packed codec assessment. |
 | Triangulation, Clipper2 Boolean/open inflate | `planar_triangulate.h`, `clipper2_bytes.h`; matching C ABI and WASM functions | No invented public Python/Rust convenience method; use documented existing byte boundary | Wave 2, then wave 4; three distinct operation families. |
-| Analytic Boolean batch | `analytic_filtered_batch.h`, generic dispatch; packed request/result projections | Python/TS/Rust analytic convenience calls | Logical candidate generated; packed codec remains handwritten. Wave 0 inventory and wave 4 codec assessment, never a production-promotion claim. |
 | Topology sessions and mutations | `step_topology_session.h`; nine native IPC operations and three structural-only declarations | Generic generated clients plus native Node research reference | Wave 0 preserves each operation's availability. Save/analyze-recovery/apply-hierarchy are not executable capabilities. |
 | Colored model tessellation | `model_tessellation.h`; governed native IPC operation since 2026.9.6 | Typed Rust/Python executable methods and Python one-shot helper | Generated mesh collection/request/result/operation. |
 | Mesh illustration | Browser renderer; direct C++ `mesh_illustration.h`; B0 SVG/geometry operations with A0 compatibility adapters | Browser exports, typed Rust/Python executable methods, Worker/full WASM, and Python one-shot helper | B0 adds ordered post-transform half-spaces, explicit empty results, fragment identity, and matching composed-mesh Fast HLR. See [clipping B0](../design/illustration-clipping-b0.md). |
@@ -39,11 +36,6 @@ extend or reinterpret the existing SVG result. Planar-only WASM is unsupported.
   Its native value structures remain handwritten. If offered as an independent
   portable operation, include its structural request/result in wave 2 before
   exposing an adapter; do not silently count it as already TypeSpec-covered.
-- `analytic_*.h` lowering, arrangement, lineage, numeric filters and packet
-  components implement the analytic family. `exact_*.h` exposes non-primary
-  experimental algebra/oracle components, not an alternative production IPC
-  operation catalog. Preserve their code and evidence; generating solver
-  internals is outside structural-contract migration.
 - `step_topology_hierarchy.h` and `step_topology_recovery.h` expose native value
   models independently of their currently unavailable wire declarations.
 - Model/status/version/SHA utilities, allocation/free functions, frame codecs,
@@ -56,13 +48,13 @@ extend or reinterpret the existing SVG result. Planar-only WASM is unsupported.
 - Python `run_batch`, `GeometerBatchRunner` and batch dataclasses compose the
   legacy batch file protocol. CLI `init-request` is a request-file authoring
   utility. Their file schema/alias normalization belongs to wave 3.
-- TypeScript `.`, `./contracts`, `./analytic-packet-a0`, `./ipc-a0`,
+- TypeScript `.`, `./contracts`, `./ipc-a0`,
   `./ipc-client-a0`, `./illustrated-hlr`, `./mesh-illustration`,
   `./node-process-a0`, `./wasm`, `./worker`, and `./worker-host` export
   mappings are owned by the package manifest. Root wildcard re-exports do not
   create new semantic operations.
 - Rust exposes generated contracts, model-bounds/HLR/illustration request
-  conveniences, analytic and indexed-mesh codecs, IPC and its client. Its
+  conveniences, indexed-mesh codecs, IPC and its client. Its
   process-support surface includes both an easy Tokio launcher and
   caller-supervised async streams plus lifecycle-controller adoption; both
   retain one client-owned A0 connection and do not create another wire
@@ -71,24 +63,29 @@ extend or reinterpret the existing SVG result. Planar-only WASM is unsupported.
   packaged `geometer-sys` crate. Python's public
   `__all__` and TypeScript/Rust export sources remain review boundaries, not
   evidence that every client implementation is generated.
+- Rust `runtime` is a host support API, not an operation family. It supervises
+  a bounded pool of verified executable workers (`GeometerRuntime`,
+  `RuntimeConfig`, `Transport`, `ExecutableSource`, `RuntimePin`,
+  `FatalPolicy`, `WorkerLease`, `Worker`, `Failure`) and gives each leased
+  worker the transport-neutral `WorkerClient`, which carries the same typed
+  methods as `GeometerClient` over the same A0 connection. It also provides
+  observed identities (`ArtifactIdentity`, `ResultIdentity`) and opaque
+  result caches (`ResultCache`; `DiskResultCache`, `DiskCacheLayout` and
+  `DiskCacheLimits` behind the `disk-cache` feature). The `test-support`
+  feature adds `Transport::Fake` with `FakeWorker` and `FakeStarter` for host
+  tests only. Supervision, the blocking-thread rule and the on-disk layout
+  are specified in the [Rust client design](../design/rust-client.md).
 
-## Drift Gate And Migration Acceptance
+## Validation
 
-`node scripts/check-public-surface-docs.mjs` compares the reviewed source
-inventory and normalized source digests, detecting additions, removals and
-changes in public headers, client sources, export manifests and CLI/registry
-boundaries. Existing promotion tests additionally check C ABI/WASM exports
-and dispatch aliases. This intentionally conservative gate may also request
-review for an implementation-only change; a hash is not proof of semantic
-documentation completeness.
+`npm run check:docs` verifies the generated reference and documentation links.
+The contract tests also check C ABI and WASM exports and dispatch aliases.
 
-After inspecting the changed API against this map and its normative reference,
-explicitly refresh the lock with `--refresh` and commit the reviewed document
-and lock together. Normal HTML generation never updates the lock. Generated
-language internals remain covered by the contract freshness pipeline instead.
-
-The migration roadmap covers all inventoried user-facing families above.
-Each future migration must still compare fields, aliases, presence/default
+A structural migration must compare fields, aliases, presence/default
 semantics, error behavior and exact packet bytes. Structural-only declarations,
 opaque payloads and public native helper structures remain visible exceptions;
 do not claim that all public operations are already TypeSpec-generated.
+
+## STEP media compatibility
+
+Input MIME-value parsing and new producer `model/step` emission follow [ADR-020](../geometer/adr/geometer-adr-020-standard-step-media-types.md). Ordered input declarations retain the legacy spelling. AP242 descriptor readers admit both bare spellings; this does not promote structural-only save. Operation availability and dispatch remain unchanged.

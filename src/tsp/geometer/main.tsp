@@ -18,7 +18,5 @@ import "./operations/model-illustration-b0.tsp";
 import "./operations/mesh-hlr-projection-b0.tsp";
 import "./operation-outcome-b0.tsp";
 import "./ipc-b0.tsp";
-import "./operations/analytic-planar-boolean-a0.tsp";
-import "./operations/analytic-planar-boolean-operation-a0.tsp";
 import "./operations/step-topology-a0.tsp";
 import "./operations/step-topology-operation-a0.tsp";

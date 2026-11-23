@@ -61,10 +61,7 @@ for (const required of [
   'id="outlineStyleSelect"',
   'id="bboxWidthInput"',
   'id="bboxStyleSelect"',
-  'id="fastBackendInput"',
   'id="meshDeflectionModeSelect"',
-  'id="edgePresetSelect"',
-  'id="occtSettings"',
   'id="fastSettings"',
   'id="fastBoundariesInput"',
   'id="fastCreasesInput"',
@@ -106,7 +103,6 @@ if (!html.includes('data-view="camera" class="active"') || !html.includes('viewI
 if (
   !html.includes('data-mode="both" class="active"') ||
   !html.includes('mode: "both"') ||
-  !html.includes("fastBackend: true") ||
   !html.includes('outlineAlgorithm: "fast-mesh-shadow"')
 )
   throw new Error("HLR single HTML does not default to Fast detail plus Fast mesh shadow.");
@@ -118,6 +114,8 @@ if (html.includes("detail muted") || html.includes(".muted"))
   throw new Error("Both mode still overrides the configured Detail appearance.");
 if (html.includes('mesh_deflection_mode: "bbox-relative"'))
   throw new Error("HLR UI still hard-codes bbox-relative tessellation.");
+if (/id="(?:fastBackendInput|edgePresetSelect|occtSettings)"/u.test(html))
+  throw new Error("HLR UI retained retired backend controls.");
 if (html.includes('id="reprojectButton"'))
   throw new Error("HLR UI retained the manual Re-project button.");
 

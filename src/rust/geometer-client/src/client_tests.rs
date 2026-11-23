@@ -1,28 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use super::*;
-use crate::generated::contracts::{AnalyticPlanarBooleanBatchRequestA0, IpcShutdownAckA0};
-use crate::generated::operations::ANALYTIC_PLANAR_BOOLEAN_BATCH_A0_IDENTITY;
-
-#[tokio::test]
-async fn invalid_analytic_result_is_fatal_protocol_failure() {
-    let client = GeometerClient::spawn(native_executable(), "corrupt-result-test", "a0")
-        .await
-        .unwrap();
-    let error = client
-        .decode_analytic_result(b"not a packet")
-        .await
-        .unwrap_err();
-    assert!(matches!(error, GeometerClientError::Protocol(_)));
-    let request = AnalyticPlanarBooleanBatchRequestA0 {
-        jobs: Vec::new(),
-        relationship_queries: Vec::new(),
-    };
-    assert!(matches!(
-        client.analytic_planar_boolean_batch(&request).await,
-        Err(GeometerClientError::Closed)
-    ));
-}
+use crate::generated::contracts::IpcShutdownAckA0;
 
 #[tokio::test]
 async fn duplicate_cancel_preserves_the_first_waiter() {
@@ -60,39 +39,6 @@ async fn oversized_cancel_reason_leaves_no_stale_waiter() {
     ));
     assert!(client.inner.cancellation.lock().await.is_empty());
     client.close().await.unwrap();
-}
-
-#[tokio::test]
-async fn welcome_catalog_rejects_analytic_metadata_drift() {
-    let client = GeometerClient::spawn(native_executable(), "catalog-drift-test", "a0")
-        .await
-        .unwrap();
-    let welcome = client.welcome().clone();
-    client.close().await.unwrap();
-    for mutation in 0..3 {
-        let mut changed = welcome.clone();
-        let analytic = changed
-            .operation_catalog
-            .operations
-            .iter_mut()
-            .find(|value| value.identity == ANALYTIC_PLANAR_BOOLEAN_BATCH_A0_IDENTITY)
-            .unwrap();
-        match mutation {
-            0 => analytic.input_attachments[0].media_types[0].push_str("+drift"),
-            1 => analytic.input_attachments[0].max_bytes -= 1,
-            2 => analytic
-                .result_projection
-                .as_mut()
-                .unwrap()
-                .format
-                .push_str(".drift"),
-            _ => unreachable!(),
-        }
-        assert!(matches!(
-            validate_welcome(&changed),
-            Err(GeometerClientError::Protocol(_))
-        ));
-    }
 }
 
 #[tokio::test]

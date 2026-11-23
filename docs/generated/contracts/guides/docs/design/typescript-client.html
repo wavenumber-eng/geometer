@@ -4,29 +4,23 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
+  <meta name="wn-catalog-sha256" content="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032">
   <title>TypeScript Contracts And Browser WASM Client — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/typescript-client.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="typescript-contracts-and-browser-wasm-client">TypeScript Contracts And Browser WASM Client</h1></header>
 <h2 id="status-and-authority">Status and authority</h2>
-<p>Model bounds, model/mesh HLR, and the analytic planar Boolean packed projection
-are implemented. Authored TypeSpec and the normalized catalog own logical wire
-structure; the separately governed analytic A0 packet owns its binary hot path.
+<p>Model bounds and model/mesh HLR use the authored TypeSpec and normalized
+catalog as their logical wire authority.
 This package is a deterministic projection plus a transport adapter. It does
 not move geometry behavior out of C++ or replace the separately distributed
 Emscripten JavaScript and WASM artifacts.</p>
 <p>The package identity is <code>@wavenumber/geometer</code>, its module format is ESM, and
 the repository-built package artifact is <code>dist/wasm/npm/geometer/</code>. Package version
-<code>2026.9.7</code> is current and includes the Fast vector HLR, mesh-illustration, and
-resolution-bounded analytic planar Boolean surfaces. Publication remains a release action; a local
+<code>2026.9.7</code> is current and includes the Fast vector HLR and mesh illustration. Publication remains a release action; a local
 artifact is not evidence that an npm release has occurred.</p>
-<p>The analytic surface is experimental and not production-ready. It may fail
-closed on valid inputs and is not the dependable path for whole-board or
-whole-layer copper union. Prefer the Clipper2-backed planar APIs when
-polygonized output is suitable.</p>
 <h2 id="generated-contracts-and-codecs">Generated contracts and codecs</h2>
 <p><code>scripts/generate-typescript-contracts.mjs</code> consumes only the normalized
 catalog and emits:</p>
@@ -46,11 +40,6 @@ materialize TypeSpec default intent into option patches.</p>
 <p>The TypeScript codec vector test replays every governed pilot vector. This is
 in addition to JSON Schema, C++, and generic transport tests, not a replacement
 for their distinct assertion lanes.</p>
-<p>Packed analytic roots deliberately do not use the JSON codec runtime. Their
-generated DTO identities and integer-nanometer coordinates use <code>bigint</code>, and
-<code>analytic-packet-a0.ts</code> performs bounded binary encoding/decoding against the
-pre-release <code>GMABRQ01</code>/<code>GMABRS01</code> layout. JavaScript <code>number</code> is rejected for every
-64-bit analytic field.</p>
 <h2 id="high-level-browser-client">High-level browser client</h2>
 <p>Normal browser consumers import <code>createGeometerWasmClient</code> from
 <code>@wavenumber/geometer/wasm</code>. The adapter owns:</p>
@@ -78,12 +67,6 @@ illustration composition. <code>meshHlrProjectionA0()</code> explicitly retains 
 indexed-mesh packet compatibility operation. The direct WASM, dedicated Worker,
 and persistent IPC clients expose the same generation policy; <code>*B0</code> is only a
 generation-explicit alias for the canonical method.</p>
-<p><code>analyticPlanarBooleanBatch()</code> accepts the generated logical request, encodes
-its packed request attachment, executes the experimental C++ solver, strictly
-decodes the packed result, and returns generated logical jobs, line/arc
-fragments, rings, regions, lineage, operand outcomes, relationships, and
-standalone job digests. The same typed method is available on the Worker
-client.</p>
 <p>The client verifies each promoted runtime operation against its generated
 request/result identities and exact input/output attachment inventory,
 including ordering, requiredness, media types, and byte limits. A module with
@@ -108,10 +91,6 @@ cross the ABI as the required null-pointer/zero-size pair.</p>
 <tr>
 <td><code>@wavenumber/geometer/contracts</code></td>
 <td>Generated DTOs, codecs, and operation metadata</td>
-</tr>
-<tr>
-<td><code>@wavenumber/geometer/analytic-packet-a0</code></td>
-<td>Strict analytic request/result packet projection</td>
 </tr>
 <tr>
 <td><code>@wavenumber/geometer/ipc-a0</code></td>
@@ -192,8 +171,7 @@ embed a second copy of the geometry kernel.</p>
 <h2 id="dedicated-worker-client">Dedicated Worker client</h2>
 <p><code>createGeometerWorkerClient()</code> exposes the same typed <code>modelBounds()</code>,
 <code>modelHlrProjection()</code>, canonical B0 <code>meshHlrProjection()</code>, explicit
-<code>meshHlrProjectionA0()</code>, and
-<code>analyticPlanarBooleanBatch()</code> operations
+<code>meshHlrProjectionA0()</code> operations
 without running synchronous OCCT work on the window event loop. The A0 Worker
 protocol is package-local and has the identity
 <code>wn.geometer.wasm_worker.a0</code>. Initialization transfers an owned copy of the
@@ -263,6 +241,8 @@ records the Geometer surfaces that consumer currently requires; it is a
 compatibility record, not a consumer migration plan. Application-specific
 adoption sequencing, rollout gates, worker-pool policy, and cache migration
 belong in the consuming repository.</p>
+<h2 id="step-mime-inputs-and-defaults">STEP MIME inputs and defaults</h2>
+<p>Executable, direct WASM and Worker requests share bounded STEP MIME parsing. Handwritten request <code>mediaType</code> accepts a string subject to runtime validation; accepted STEP values normalize to <code>model/step</code>. New defaults use that token; exact output and catalog checks remain intact. See the <a href="../geometer/adr/geometer-adr-020-standard-step-media-types.html">STEP media policy</a>.</p>
 
 </main>
 </body>

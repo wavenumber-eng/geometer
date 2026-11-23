@@ -45,8 +45,8 @@ That includes the current public headers:
 Defined in `src/cpp/lib/geometer/version.h`.
 
 Geometer uses date-based release versions per ADR 006. The current package and
-runtime version is `2026.9.19`, corresponding to release tag `v2026-09-19`.
-The current C ABI generation is `20260919`. Consumers should check both the
+runtime version is `2026.11.22`, corresponding to release tag `v2026-11-22`.
+The current C ABI generation is `20261122`. Consumers should check both the
 project version and ABI generation at runtime.
 
 ```cpp
@@ -98,3 +98,6 @@ struct Status {
 
 Most library functions return `0` on success. When a `Status*` parameter is
 available and a failure occurs, `code` and `message` describe the error.
+## STEP media policy
+
+New STEP producers use the registered `model/step` MIME type. Input compatibility, bounded RFC 2045 value parsing and exact output validation follow the [STEP media policy](../geometer/adr/geometer-adr-020-standard-step-media-types.md). Source CAD categories are not geometry inputs.

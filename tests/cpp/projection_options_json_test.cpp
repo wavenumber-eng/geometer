@@ -27,16 +27,8 @@ void parse_defaults()
     const int code = geometer::parse_hlr_projection_options_json(nullptr, &options, &status);
     require(code == 0, "null options should parse as defaults");
     require(options.views.empty(), "default views should remain implicit");
-    require(options.curve_mode == geometer::ProjectionCurveMode::NativeArcs,
-            "default curve mode should be native arcs");
-    require(options.samples_per_curve == 24, "default sample count should remain 24");
     require(options.output_outline && options.output_detail && options.output_bbox,
             "historical output layers should remain enabled by default");
-    require(options.edge_v_sharp && options.edge_v_outline && !options.edge_v_smooth &&
-                !options.edge_v_sewn && !options.edge_v_iso && !options.edge_h_sharp &&
-                !options.edge_h_outline && !options.edge_h_smooth && !options.edge_h_sewn &&
-                !options.edge_h_iso,
-            "historical edge-category defaults should remain unchanged");
     require(options.projection_algorithm == geometer::ProjectionAlgorithm::Fast,
             "Fast detail should be the default projection algorithm");
     require(options.outline_algorithm == geometer::ProjectionOutlineAlgorithm::FastMeshShadow,
@@ -51,29 +43,14 @@ void parse_defaults()
 
 void parse_compatibility_matrix()
 {
-    const std::array<std::pair<const char*, geometer::ProjectionAlgorithm>, 2> algorithms = {{
-        {"poly", geometer::ProjectionAlgorithm::Poly},
-        {"exact", geometer::ProjectionAlgorithm::Exact},
-    }};
-    const std::array<std::pair<const char*, geometer::ProjectionOutlineAlgorithm>, 2> outlines = {{
-        {"hlr-close", geometer::ProjectionOutlineAlgorithm::HlrClosedEdges},
-        {"mesh-shadow", geometer::ProjectionOutlineAlgorithm::MeshShadow},
-    }};
-    for (const auto& algorithm : algorithms)
+    for (const char* json :
+         {R"({"projection_algorithm":"poly"})", R"({"projection_algorithm":"exact"})",
+          R"({"outline_algorithm":"hlr-close"})"})
     {
-        for (const auto& outline : outlines)
-        {
-            const std::string json = std::string("{\"projection_algorithm\":\"") + algorithm.first +
-                                     "\",\"outline_algorithm\":\"" + outline.first + "\"}";
-            geometer::HlrProjectionOptions options;
-            geometer::Status status;
-            require(geometer::parse_hlr_projection_options_json(json.c_str(), &options, &status) ==
-                        0,
-                    "every historical algorithm/outline combination should parse");
-            require(options.projection_algorithm == algorithm.second &&
-                        options.outline_algorithm == outline.second,
-                    "historical algorithm/outline selection should remain exact");
-        }
+        geometer::HlrProjectionOptions options;
+        geometer::Status status;
+        require(geometer::parse_hlr_projection_options_json(json, &options, &status) == 91,
+                "retired HLR selectors should be rejected");
     }
 
     for (unsigned mask = 0; mask < 8; ++mask)
@@ -93,22 +70,6 @@ void parse_compatibility_matrix()
                     options.output_bbox == bbox,
                 "output layers should remain independently selectable");
     }
-
-    const char* edge_json =
-        "{\"edge_v_sharp\":false,\"edge_v_outline\":false,\"edge_v_smooth\":true,"
-        "\"edge_v_sewn\":true,\"edge_v_iso\":true,\"edge_h_sharp\":true,"
-        "\"edge_h_outline\":true,\"edge_h_smooth\":true,\"edge_h_sewn\":true,"
-        "\"edge_h_iso\":true}";
-    geometer::HlrProjectionOptions edge_options;
-    geometer::Status edge_status;
-    require(geometer::parse_hlr_projection_options_json(edge_json, &edge_options, &edge_status) ==
-                0,
-            "all historical edge-category flags should parse");
-    require(!edge_options.edge_v_sharp && !edge_options.edge_v_outline &&
-                edge_options.edge_v_smooth && edge_options.edge_v_sewn && edge_options.edge_v_iso &&
-                edge_options.edge_h_sharp && edge_options.edge_h_outline &&
-                edge_options.edge_h_smooth && edge_options.edge_h_sewn && edge_options.edge_h_iso,
-            "all historical edge-category flags should retain their meaning");
 }
 
 void parse_explicit_options()
@@ -125,8 +86,6 @@ void parse_explicit_options()
                        "\"output_outline\":false,"
                        "\"outputDetail\":false,"
                        "\"output_bbox\":true,"
-                       "\"curve_mode\":\"polyline\","
-                       "\"samples_per_curve\":12,"
                        "\"round_digits\":4,"
                        "\"mesh_deflection_mode\":\"absolute\","
                        "\"mesh_deflection_coefficient\":0.002,"
@@ -147,10 +106,7 @@ void parse_explicit_options()
                        "\"coplanarSeamLateralTolerance\":0.000005,"
                        "\"limits\":{\"max_candidate_pairs\":1234,\"max_fragments\":2468,"
                        "\"maxGridReferences\":4321}"
-                       "},"
-                       "\"include_visible\":false,"
-                       "\"include_outline\":true,"
-                       "\"union_outline_polygons\":false"
+                       "}"
                        "}";
 
     geometer::HlrProjectionOptions options;
@@ -168,9 +124,6 @@ void parse_explicit_options()
     require(!options.output_outline, "output_outline should parse");
     require(!options.output_detail, "outputDetail alias should parse");
     require(options.output_bbox, "output_bbox should parse");
-    require(options.curve_mode == geometer::ProjectionCurveMode::Polyline,
-            "curve mode should parse");
-    require(options.samples_per_curve == 12, "samples should parse");
     require(options.round_digits == 4, "round digits should parse");
     require(options.mesh_deflection_mode == geometer::MeshDeflectionMode::Absolute,
             "mesh_deflection_mode should parse");
@@ -180,11 +133,6 @@ void parse_explicit_options()
             "fast projection_algorithm should parse");
     require(options.outline_algorithm == geometer::ProjectionOutlineAlgorithm::MeshShadow,
             "outline_algorithm should parse");
-    // Legacy include_visible:false zeroes both visible-sharp and visible-outline.
-    // Then include_outline:true re-enables visible-outline only.
-    require(!options.edge_v_sharp, "include_visible should clear edge_v_sharp");
-    require(options.edge_v_outline, "include_outline should set edge_v_outline");
-    require(!options.union_outline_polygons, "union_outline_polygons should parse");
     require(!options.fast.include_boundaries, "fast.include_boundaries should parse");
     require(options.fast.include_creases, "fast.includeCreases should parse");
     require(!options.fast.include_silhouettes, "fast.include_silhouettes should parse");
@@ -210,38 +158,26 @@ void parse_explicit_options()
 void parse_aliases()
 {
     const char* json = "{"
-                       "\"curveMode\":\"native-arcs\","
-                       "\"samples\":6,"
                        "\"roundDigits\":2,"
-                       "\"includeVisible\":true,"
-                       "\"includeOutline\":false,"
                        "\"meshDeflectionMode\":\"bbox_relative\","
                        "\"meshDeflectionCoefficient\":0.005,"
-                       "\"outlineAlgorithm\":\"hlr_close\","
-                       "\"unionPolygons\":true,"
+                       "\"outlineAlgorithm\":\"mesh_shadow\","
                        "\"modelTransform\":[1,0,0,4,0,1,0,5,0,0,1,6,0,0,0,1],"
                        "\"stripRootPlacement\":true"
                        "}";
 
     geometer::HlrProjectionOptions options;
-    options.edge_v_outline = true;
 
     geometer::Status status;
     const int code = geometer::parse_hlr_projection_options_json(json, &options, &status);
     require(code == 0, "alias options should parse");
-    require(options.curve_mode == geometer::ProjectionCurveMode::NativeArcs,
-            "curveMode alias should parse");
-    require(options.samples_per_curve == 6, "samples alias should parse");
     require(options.round_digits == 2, "roundDigits alias should parse");
-    require(options.edge_v_sharp, "includeVisible alias should set edge_v_sharp");
-    require(!options.edge_v_outline, "includeOutline alias should clear edge_v_outline");
     require(options.mesh_deflection_mode == geometer::MeshDeflectionMode::BboxRelative,
             "meshDeflectionMode alias should parse");
     require(options.mesh_deflection_coefficient == 0.005,
             "meshDeflectionCoefficient alias should parse");
-    require(options.outline_algorithm == geometer::ProjectionOutlineAlgorithm::HlrClosedEdges,
+    require(options.outline_algorithm == geometer::ProjectionOutlineAlgorithm::MeshShadow,
             "outlineAlgorithm alias should parse");
-    require(options.union_outline_polygons, "unionPolygons alias should parse");
     require(options.model_transform[3] == 4.0, "flat modelTransform alias should parse");
     require(options.model_transform[7] == 5.0, "flat modelTransform y translation should parse");
     require(options.model_transform[11] == 6.0, "flat modelTransform z translation should parse");
@@ -259,9 +195,9 @@ void reject_invalid_options()
                                                        &options, &status);
     require(code == 91, "invalid vector length should return parse error");
 
-    code = geometer::parse_hlr_projection_options_json("{\"curve_mode\":\"splines\"}", &options,
-                                                       &status);
-    require(code == 91, "invalid curve mode should return parse error");
+    code = geometer::parse_hlr_projection_options_json("{\"projection_algorithm\":\"exact\"}",
+                                                       &options, &status);
+    require(code == 91, "retired projection algorithm should return parse error");
 
     code = geometer::parse_hlr_projection_options_json("{\"outline_algorithm\":\"bad\"}", &options,
                                                        &status);
@@ -334,7 +270,7 @@ void c_api_uses_options_parser()
     GeometerBuffer empty = {nullptr, 0};
 
     GeometerStringResult invalid =
-        geometer_step_hlr_projection_json(empty, "{\"curve_mode\":\"splines\"}");
+        geometer_step_hlr_projection_json(empty, "{\"projection_algorithm\":\"exact\"}");
     require(invalid.code == 91, "C ABI should reject invalid options JSON");
     require(invalid.value == nullptr, "C ABI invalid options should not return a value");
     require(invalid.error != nullptr, "C ABI invalid options should return an error");
@@ -352,8 +288,8 @@ void c_api_flat_bytes_export_uses_options_parser()
 {
     char* value = nullptr;
     char* error = nullptr;
-    int code = geometer_step_hlr_projection_json_bytes(nullptr, 0, "{\"curveMode\":\"bad\"}",
-                                                       &value, &error);
+    int code = geometer_step_hlr_projection_json_bytes(
+        nullptr, 0, "{\"outline_algorithm\":\"hlr-close\"}", &value, &error);
     require(code == 91, "flat C ABI should reject invalid options JSON");
     require(value == nullptr, "flat C ABI invalid options should not return a value");
     require(error != nullptr, "flat C ABI invalid options should return an error");

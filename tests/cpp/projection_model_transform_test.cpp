@@ -85,8 +85,6 @@ geometer::HlrProjectionOptions projection_options()
 
     geometer::HlrProjectionOptions options;
     options.views = {top};
-    options.curve_mode = geometer::ProjectionCurveMode::Polyline;
-    options.projection_algorithm = geometer::ProjectionAlgorithm::Exact;
     options.round_digits = 3;
     return options;
 }

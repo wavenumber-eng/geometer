@@ -4,6 +4,7 @@ import os
 import platform
 import shutil
 import sys
+import zipfile
 from pathlib import Path
 
 
@@ -20,21 +21,51 @@ def _find_executable_path() -> Path | None:
     override = os.environ.get("GEOMETER_EXE")
     if override:
         path = Path(override)
-        if path.exists():
-            return path
-        raise FileNotFoundError(f"GEOMETER_EXE does not exist: {path}")
+        if not path.is_file():
+            raise FileNotFoundError(f"GEOMETER_EXE does not exist or is not a file: {path}")
+        if _is_console_wrapper(path):
+            raise FileNotFoundError(
+                f"GEOMETER_EXE points to the Python console launcher, not the native executable: {path}"
+            )
+        return path
 
     for directory in _candidate_directories():
         for name in _executable_names():
             path = directory / name
-            if path.exists():
+            if _is_usable_candidate(path):
                 return path
 
     for name in _executable_names():
         found = shutil.which(name)
-        if found:
+        if found and _is_usable_candidate(Path(found)):
             return Path(found)
     return None
+
+
+def _is_usable_candidate(path: Path) -> bool:
+    return path.is_file() and not _is_console_wrapper(path)
+
+
+def _is_console_wrapper(path: Path) -> bool:
+    script = _console_script(path)
+    return script is not None and b"from geometer._console import main" in script
+
+
+def _console_script(path: Path) -> bytes | None:
+    # uv/distlib Windows launchers embed a ZIP __main__.py; POSIX entry points
+    # use a shebang script. Inspect the payload without ever executing it.
+    with path.open("rb") as stream:
+        if stream.read(2) == b"#!":
+            stream.seek(0)
+            return stream.read(16_384)
+        try:
+            with zipfile.ZipFile(stream) as archive:
+                entry = archive.getinfo("__main__.py")
+                if entry.file_size > 16_384 or entry.flag_bits & 1:
+                    return None
+                return archive.read(entry)
+        except (zipfile.BadZipFile, KeyError):
+            return None
 
 
 def _candidate_directories() -> list[Path]:

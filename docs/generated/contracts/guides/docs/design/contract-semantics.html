@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
+  <meta name="wn-catalog-sha256" content="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032">
   <title>Contract Semantics — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/contract-semantics.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="contract-semantics">Contract Semantics</h1></header>
 <p>ADR-010 defines structural authority and promotion. This document defines the
@@ -118,6 +118,10 @@ Negative zero is normalized only when the vector says so.</p>
 <p>Every vector lists fields excluded from semantic comparison. Nondeterministic
 timings such as <code>model_read_ms</code>, <code>bounds_ms</code>, and <code>elapsed_ms</code> are excluded by
 that explicit projection, never by a global ignore rule.</p>
+<h2 id="step-attachment-mime-values">STEP attachment MIME values</h2>
+<p>The <a href="../geometer/adr/geometer-adr-020-standard-step-media-types.html">STEP media policy</a> applies RFC 2045 value syntax to input slots declared for STEP. A complete bounded parser accepts ASCII type/subtype tokens case-insensitively, spaces/tabs, comments and token/escaped-quoted parameters; valid unknown parameters are ignored. <code>model/step</code> is canonical and <code>application/step</code> is a compatibility spelling. The 128-byte framed-value bound remains; NUL, CR/LF, malformed or trailing syntax are rejected. These are attachment values, not folded mail headers.</p>
+<p>Maintained clients normalize accepted STEP requests before transport. Direct native admission independently accepts the same values. STEP parameters do not supply compression, units, placement or schema; actual byte parsing and existing operation checks remain authoritative. Other attachment identities remain exact. Existing input declaration lists/order are unchanged.</p>
+<p>New produced descriptors contain bare <code>model/step</code>. Legacy bare saved descriptor tokens remain decodable where explicitly admitted by the owning contract. Output validation does not apply input normalization: undeclared parameters, comments or capitalization are rejected. Client/runtime catalogs must remain matched after regeneration. Operation availability, dispatch and maturity remain unchanged apart from the reviewed MIME declarations and catalog digest.</p>
 
 </main>
 </body>

@@ -7,6 +7,7 @@ namespace Wavenumber.Geometer.Contracts.Operations;
 
 @experimentalOperation
 @nativeExperimentalOperation
+/** STEP input uses RFC 2045 MIME-value parsing; valid unknown parameters are ignored and application/step remains an input compatibility spelling. */
 @operationIdentity("geometry.step_topology.open.a0")
 @inputAttachment("step", true, "application/step,model/step", 268435456)
 op stepTopologyOpen(
@@ -92,7 +93,7 @@ op stepTopologyApplyHierarchy(
 @outputAttachment(
   "state_artifact",
   true,
-  "application/vnd.opencascade.xbf,application/vnd.opencascade.xml-xcaf,application/step,application/vnd.wavenumber.geometer.step-topology-sidecar+json",
+  "application/vnd.opencascade.xbf,application/vnd.opencascade.xml-xcaf,application/step,model/step,application/vnd.wavenumber.geometer.step-topology-sidecar+json",
   536870912
 )
 op stepTopologySave(
@@ -101,6 +102,7 @@ op stepTopologySave(
 
 @experimentalOperation
 @nativeExperimentalOperation
+/** The STEP source uses RFC 2045 MIME-value parsing and ignores valid unknown parameters; journal descriptor and digest matching remain exact. */
 @operationIdentity("geometry.step_topology.restore.a0")
 @inputAttachment("source", true, "application/step,model/step", 268435456)
 @inputAttachment(

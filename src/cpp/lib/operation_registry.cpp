@@ -1,6 +1,6 @@
 #include "geometer/operation_registry.h"
+#include "step_media_type.h"
 
-#include "analytic_filtered_operation.h"
 #include "geometer/fast_hlr.h"
 #include "geometer/indexed_mesh_packet.h"
 #include "geometer/model_bounds.h"
@@ -224,7 +224,7 @@ find_model_attachment(const std::string& operation,
                  "The required model attachment is missing.", operation, "/attachments/model"));
         return nullptr;
     }
-    if (model->media_type != "application/step" && model->media_type != "model/step")
+    if (!step_media_type_detail::accepts(model->media_type))
     {
         fail(execution, operation,
              diagnostic("geometer.contract.attachment_media_type_mismatch",
@@ -284,9 +284,9 @@ find_hlr_attachment(const std::string& operation,
                         "/attachments/" + expected_name));
         return nullptr;
     }
-    const bool supported_media = mesh_operation ? result->media_type == kIndexedMeshMediaType
-                                                : (result->media_type == "application/step" ||
-                                                   result->media_type == "model/step");
+    const bool supported_media = mesh_operation
+                                     ? result->media_type == kIndexedMeshMediaType
+                                     : step_media_type_detail::accepts(result->media_type);
     if (!supported_media)
     {
         fail(execution, operation,
@@ -461,7 +461,6 @@ HlrProjectionOptions hlr_options(const contracts::MeshHlrProjectionRequestB0& re
     result.round_digits = static_cast<int>(request.round_digits.value_or(3));
     result.projection_algorithm = ProjectionAlgorithm::Fast;
     result.outline_algorithm = ProjectionOutlineAlgorithm::FastMeshShadow;
-    result.curve_mode = ProjectionCurveMode::Polyline;
     result.fast = fast_hlr_options(request.fast);
     return result;
 }
@@ -725,11 +724,6 @@ void execute_operation(const std::string& operation_id, const unsigned char* req
     {
         execute_mesh_illustration(operation_id, request_json, request_json_size, attachments,
                                   execution);
-        return;
-    }
-    if (operation_id == analytic_operation_detail::kOperationId)
-    {
-        analytic_operation_detail::execute(request_json, request_json_size, attachments, execution);
         return;
     }
     if (operation_id == kMeshHlrOperationB0)

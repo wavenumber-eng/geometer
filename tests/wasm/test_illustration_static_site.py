@@ -1094,7 +1094,8 @@ def test_illustration_static_site_mesh_render_upload_and_export() -> None:
     assert result["restyle"]["canvasOutlines"] == result["initial"]["lineSegments"]
     assert result["restyle"]["canvasDetails"] == result["initial"]["details"]
     assert result["fusion"]["after"] > result["fusion"]["generation"]
-    assert result["fusion"]["unfused"] == result["fusion"]["triangles"]
+    # Hidden and back-facing triangles are culled even with fusion disabled.
+    assert 0 < result["fusion"]["unfused"] < result["fusion"]["triangles"]
     assert result["fusion"]["fused"] <= result["fusion"]["unfused"]
     assert result["fusion"]["restored"] == result["fusion"]["fused"]
     assert result["fusion"]["checked"] is True

@@ -165,22 +165,6 @@ pub fn hlr_controls(
         style.show_hlr_detail.get_or_insert(true),
         "HLR detail lines",
     );
-    let algorithm = options
-        .projection_algorithm
-        .get_or_insert(HlrProjectionAlgorithm::Fast);
-    egui::ComboBox::from_id_salt("detail algorithm")
-        .selected_text(format!("Detail: {algorithm:?}"))
-        .width(ui.available_width())
-        .show_ui(ui, |ui| {
-            for mode in [
-                HlrProjectionAlgorithm::Fast,
-                HlrProjectionAlgorithm::Poly,
-                HlrProjectionAlgorithm::Exact,
-            ] {
-                ui.selectable_value(algorithm, mode.clone(), format!("{mode:?}"));
-            }
-        });
-    let fast_selected = *algorithm == HlrProjectionAlgorithm::Fast;
     let outline = options
         .outline_algorithm
         .get_or_insert(HlrOutlineAlgorithm::FastMeshShadow);
@@ -191,40 +175,37 @@ pub fn hlr_controls(
             for mode in [
                 HlrOutlineAlgorithm::FastMeshShadow,
                 HlrOutlineAlgorithm::MeshShadow,
-                HlrOutlineAlgorithm::HlrClose,
             ] {
                 ui.selectable_value(outline, mode.clone(), format!("{mode:?}"));
             }
         });
-    ui.add_enabled_ui(fast_selected, |ui| {
-        let fast = options.fast.as_mut().expect("Lab fast options initialized");
-        angle(
-            ui,
-            "Fast crease °",
-            &mut fast.crease_angle_rad,
-            25.0,
-            1.0..=80.0,
-        );
-        ui.checkbox(
-            fast.suppress_coplanar_seams.get_or_insert(false),
-            "Hide coplanar joins (experimental)",
-        );
-        angle(
-            ui,
-            "Seam angle °",
-            &mut fast.coplanar_seam_angle_rad,
-            1.0,
-            0.0..=10.0,
-        );
-        ui.add(
-            egui::Slider::new(
-                fast.coplanar_seam_depth_tolerance.get_or_insert(0.001),
-                0.0..=0.01,
-            )
-            .step_by(0.0001)
-            .text("Seam depth mm"),
-        );
-    });
+    let fast = options.fast.as_mut().expect("Lab fast options initialized");
+    angle(
+        ui,
+        "Fast crease °",
+        &mut fast.crease_angle_rad,
+        25.0,
+        1.0..=80.0,
+    );
+    ui.checkbox(
+        fast.suppress_coplanar_seams.get_or_insert(false),
+        "Hide coplanar joins (experimental)",
+    );
+    angle(
+        ui,
+        "Seam angle °",
+        &mut fast.coplanar_seam_angle_rad,
+        1.0,
+        0.0..=10.0,
+    );
+    ui.add(
+        egui::Slider::new(
+            fast.coplanar_seam_depth_tolerance.get_or_insert(0.001),
+            0.0..=0.01,
+        )
+        .step_by(0.0001)
+        .text("Seam depth mm"),
+    );
     *options != before || *style != before_style
 }
 

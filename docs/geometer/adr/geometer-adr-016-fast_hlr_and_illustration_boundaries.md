@@ -13,6 +13,9 @@ created = "2026-09-03"
 
 Accepted.
 
+The compatibility exception for OCCT `poly`, `exact`, and `hlr-close` was
+retired. The current choices are defined in [HLR Projection A0](../../design/hlr-projection-a0.md).
+
 ## Context
 
 Geometer already exposes OCCT exact and polygonal hidden-line projection for

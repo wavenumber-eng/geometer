@@ -14,7 +14,7 @@ generation remain in the separate Geometer executable.
 
 ## Build and launch
 
-From the repository root, with Rust 1.95.0 and a native linker:
+From the repository root, with Rust 1.99.1 and a native linker:
 
 ```powershell
 cargo build --manifest-path examples/rust/native_viewer/Cargo.toml --locked
@@ -67,11 +67,10 @@ related options](../../../docs/design/mesh-illustration-native.md#fuse-surfaces-
   controls matching the browser Lab's supported defaults.
   Raw mesh outlines/creases are off by default and available only as diagnostic
   controls: they are not occlusion-filtered. The Fast HLR crease slider controls
-  different geometry. See the [visibility/settings comparison](../../../docs/developer/native-illustration-lab-parity.md).
+  different geometry. See [rendering semantics](../../../docs/design/mesh-illustration-native.md#rendering-semantics).
 - Independent linework: `geometry.model_hlr_projection.a0`, Fast detail and
-  fast mesh shadow, same view/root-placement convention. Controls also offer
-  the existing poly/exact and mesh-shadow/HLR-close selectors; the default
-  remains Fast detail plus fast mesh shadow. Separate shadow/detail tabs
+  Fast Mesh Shadow by default, with the same view and root-placement
+  convention. The shadow control can select Mesh Shadow. Separate shadow/detail tabs
   display the returned polylines. The native illustration operation also
   composes selected detail then outline over fills, matching the web Lab.
   The line toggles affect both the illustration preview and exported SVG.
@@ -132,7 +131,7 @@ or interaction certification. Rack entry RUST_002 is opt-in through
 
 This crate uses wgpu's native Metal path on macOS; no platform-specific renderer
 or JS assets need to be generated. On an actual Apple Silicon Mac, install Rust
-1.95.0 and Xcode command-line tools, build the matching native Geometer using
+1.99.1 and Xcode command-line tools, build the matching native Geometer using
 the [cached native build guide](../../../docs/developer/README.md), then:
 
 ```bash
@@ -149,6 +148,4 @@ screenshots. A Windows build does not qualify macOS: Mac build and interactive
 acceptance remain **not run**. The GUI's minimum macOS version is not yet
 qualified; do not infer it from the Geometer wheel's deployment floor.
 
-The [demo audit](../../../docs/developer/demo-status.md) records evidence and
-remaining human checks. Release packaging, signing, bundled kernel distribution
-and GitHub release inclusion are deferred; this crate is `publish = false`.
+This example is an optional Cargo application with `publish = false`.

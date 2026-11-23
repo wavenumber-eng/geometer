@@ -21,7 +21,7 @@ export interface GeometerIpcOperationResponseA0 {
     readonly attachments: readonly GeometerIpcAttachment[];
 }
 export interface GeometerIpcModelHlrProjectionRequestA0 {
-    readonly mediaType?: "application/step" | "model/step";
+    readonly mediaType?: string;
     readonly model: Uint8Array;
     readonly options?: HlrProjectionOptionsA0;
 }

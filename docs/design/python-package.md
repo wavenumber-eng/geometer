@@ -116,8 +116,7 @@ batch = runner.run(
 
 The Python package intentionally uses the executable backend only for now.
 Existing file-oriented helpers use the JSON batch CLI, while `GeometerClient`
-holds one `geometer serve --stdio` process for typed model/mesh HLR and
-analytic packed requests.
+holds one `geometer serve --stdio` process for typed model/mesh HLR and illustration.
 Both paths discover the Geometer executable in this order:
 
 - `GEOMETER_EXE`;
@@ -132,8 +131,7 @@ Both paths discover the Geometer executable in this order:
 The package contains generated dependency-free dataclasses, enums, and strict
 JSON codecs under `geometer._generated.contracts`. They are the structural
 authority. Most generated declarations remain an internal compatibility
-boundary; the selected analytic request/result construction types are
-re-exported from `geometer` for the typed packed client. The generator reads
+boundary. The generator reads
 the normalized TypeSpec catalog and is part of the ordinary freshness gate.
 
 `model_bounds` is the first operation integrated through this boundary. The
@@ -171,35 +169,9 @@ with geometer.GeometerClient() as client:
 The indexed-mesh compatibility signature remains available only as
 `client.mesh_hlr_projection_a0(mesh, options)`.
 
-The analytic planar Boolean candidate is integrated through the same
-executable-backed lane:
-
-> This method is experimental and not production-ready. It may fail closed on
-> valid inputs and is not the dependable path for whole-board or whole-layer
-> copper union. Prefer the Clipper2-backed planar APIs when polygonized output
-> is suitable.
-
-```python
-import geometer
-
-request = geometer.AnalyticPlanarBooleanBatchRequestA0(jobs=(), relationship_queries=())
-with geometer.GeometerClient() as client:
-    result = client.analytic_planar_boolean_batch(request, timeout=10)
-```
-
-Consumers that need a governed artifact rather than an immediate solve may
-call `encode_analytic_planar_boolean_batch_request_a0_packet(request)`. The
-matching `decode_analytic_planar_boolean_batch_result_a0_packet(packet)`
-strictly validates and projects a packed result. These are the same codec
-functions used by `GeometerClient`; they do not create a second JSON or binary
-authority.
-
 `GeometerClient` performs the A0 handshake, validates the generated operation
 catalog and negotiated limits, and sends raw named attachments over binary
-frames. `_analytic_packet_a0.py` is the strict little-endian codec for the
-logical analytic DTOs; no JSON geometry is placed on the hot path. It enforces
-the canonical packet graph and the batch-wide 1,048,576 logical
-source-reference expansion limit before materializing result DTOs. Protocol,
+frames. Protocol,
 process, timeout, and typed operation failures have distinct public exception
 classes. The client is synchronous and serialized, uses queue-only
 cancellation after a local timeout, drains terminal responses before reuse,
@@ -208,9 +180,7 @@ and treats malformed negotiated responses as connection-fatal.
 The runtime uses only the Python standard library. This adds no wheel runtime
 dependency and supports the package's existing Python 3.10 floor. Generated
 source is included by normal setuptools package discovery. Clean-wheel tests
-prove public analytic DTO/client imports, empty and nontrivial packed analytic
-IPC calls against the bundled executable, and a live public model-bounds round
-trip.
+exercise the bundled executable and a live public model-bounds round trip.
 
 Published wheels are platform wheels because they bundle the native executable.
 Linux wheels must be repaired/tagged with `auditwheel` before PyPI upload; the
@@ -250,7 +220,7 @@ geometer run request.json response.json
 ```
 
 and returns the requested JSON text or GLB bytes to the Python caller. The
-analytic client instead uses the persistent binary `serve --stdio` protocol;
+typed IPC client instead uses the persistent binary `serve --stdio` protocol;
 it does not write geometry packets to temporary files.
 
 `GEOMETER_BACKEND=exe` and `GEOMETER_BACKEND=cli` are accepted explicit names.
@@ -269,3 +239,6 @@ can project or convert multiple STEP files before exiting. An optional top-level
 object is parsed afterwards and overrides those defaults.
 `version` and `abi` fields in a request are metadata written by `init-request`;
 `run` only requires the `jobs` array.
+## STEP MIME inputs and defaults
+
+Executable-backed STEP methods default to `model/step`. Valid parameterized MIME values and the legacy `application/step` spelling normalize at input; response and unrelated attachment checks stay exact. See the [STEP media policy](../geometer/adr/geometer-adr-020-standard-step-media-types.md).

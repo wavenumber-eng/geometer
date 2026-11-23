@@ -71,7 +71,6 @@ def test_cli_run_batch_hlr_svg_and_glb(tmp_path: Path) -> None:
                         "output_path": str(projection),
                         "options": {
                             "views": [{"id": "top", "direction": [0, 0, 1], "up": [0, 1, 0]}],
-                            "curve_mode": "polyline",
                         },
                     },
                     {
@@ -83,7 +82,6 @@ def test_cli_run_batch_hlr_svg_and_glb(tmp_path: Path) -> None:
                         "view": "top",
                         "options": {
                             "views": [{"id": "top", "direction": [0, 0, 1], "up": [0, 1, 0]}],
-                            "curve_mode": "polyline",
                         },
                     },
                     {
@@ -310,7 +308,6 @@ def test_cli_run_batch_uses_request_options_with_job_overrides(tmp_path: Path) -
                 "schema": "geometer.batch.request.a0",
                 "options": {
                     "views": [{"id": "root-view", "direction": [0, 0, 1], "up": [0, 1, 0]}],
-                    "curve_mode": "polyline",
                     "mesh_linear_deflection": 0.2,
                 },
                 "jobs": [
@@ -365,7 +362,6 @@ def test_python_run_batch_wrapper(tmp_path: Path) -> None:
         ],
         options={
             "views": [{"id": "python-top", "direction": [0, 0, 1], "up": [0, 1, 0]}],
-            "curve_mode": "polyline",
         },
         work_dir=tmp_path,
     )
@@ -484,7 +480,6 @@ def test_python_batch_runner_chunks_jobs(tmp_path: Path) -> None:
         jobs,
         options={
             "views": [{"id": "chunked-top", "direction": [0, 0, 1], "up": [0, 1, 0]}],
-            "curve_mode": "polyline",
         },
     )
 

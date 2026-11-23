@@ -1,6 +1,5 @@
 # Colored model tessellation A0
 
-Introduced in 2026.9.6; see [release qualification](../developer/native-api-readiness.md).
 `geometry.model_tessellation.a0` is a stateless STEP-to-colored-mesh operation.
 Its TypeSpec definitions live in `src/tsp/geometer/operations/model-tessellation-a0.tsp`;
 the catalog generates C++, Rust, Python, TypeScript, JSON Schema and HTML.
@@ -90,3 +89,6 @@ This operation supplies the [Rust GPU preview](../../examples/rust/native_viewer
 and [native illustration](mesh-illustration-native.md). Tessellation itself does
 not render SVG: call mesh illustration next, optionally supplying the visible
 result of a separate Fast HLR request for native line composition.
+## STEP source media semantics
+
+The STEP attachment follows the [STEP media policy](../geometer/adr/geometer-adr-020-standard-step-media-types.md): `model/step` is canonical, the legacy spelling and valid auxiliary parameters are accepted on input, and actual payload parsing and limits remain authoritative. Mesh output media types remain exact.

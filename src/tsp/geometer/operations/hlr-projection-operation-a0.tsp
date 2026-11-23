@@ -5,7 +5,7 @@ using Wavenumber.Geometer.ContractMetadata;
 
 namespace Wavenumber.Geometer.Contracts.Operations;
 
-/** Project STEP model bytes through the selected polygonal, exact, or Fast HLR backend. */
+/** Project STEP model bytes through Fast HLR. STEP input uses RFC 2045 MIME-value parsing, ignores valid unknown parameters, and retains application/step compatibility; new producers use model/step. */
 @operationIdentity("geometry.model_hlr_projection.a0")
 @inputAttachment("model", true, "application/step,model/step", 268435456)
 op modelHlrProjection(

@@ -189,7 +189,6 @@ struct AppState
     bool has_projection = false;
     ProjectionMode mode = ProjectionMode::Detail;
     bool show_bbox = false;
-    geometer::ProjectionAlgorithm projection_algorithm = geometer::ProjectionAlgorithm::Fast;
     geometer::ProjectionOutlineAlgorithm outline_algorithm =
         geometer::ProjectionOutlineAlgorithm::FastMeshShadow;
     GLuint preview_texture = 0;
@@ -1204,13 +1203,11 @@ std::string outline_algorithm_name(geometer::ProjectionOutlineAlgorithm algorith
 {
     switch (algorithm)
     {
-    case geometer::ProjectionOutlineAlgorithm::FastMeshShadow:
-        return "fast-mesh-shadow";
     case geometer::ProjectionOutlineAlgorithm::MeshShadow:
         return "mesh-shadow";
-    case geometer::ProjectionOutlineAlgorithm::HlrClosedEdges:
+    case geometer::ProjectionOutlineAlgorithm::FastMeshShadow:
     default:
-        return "hlr-close";
+        return "fast-mesh-shadow";
     }
 }
 
@@ -1221,8 +1218,6 @@ void project_hlr(AppState* app)
         return;
     }
     geometer::HlrProjectionOptions options;
-    options.curve_mode = geometer::ProjectionCurveMode::Polyline;
-    options.projection_algorithm = app->projection_algorithm;
     options.outline_algorithm = app->outline_algorithm;
     options.views = {{"camera",
                       {app->camera.direction.x, app->camera.direction.y, app->camera.direction.z},
@@ -1387,36 +1382,15 @@ void draw_controls(AppState* app)
     ImGui::SameLine();
     ImGui::Checkbox("BBox", &app->show_bbox);
     ImGui::SameLine();
-    const char* detail_algorithms[] = {"fast", "poly", "exact"};
-    int detail_algorithm_index =
-        app->projection_algorithm == geometer::ProjectionAlgorithm::Fast
-            ? 0
-            : (app->projection_algorithm == geometer::ProjectionAlgorithm::Poly ? 1 : 2);
-    ImGui::SetNextItemWidth(85.0f);
-    if (ImGui::Combo("Detail alg", &detail_algorithm_index, detail_algorithms, 3))
-    {
-        app->projection_algorithm =
-            detail_algorithm_index == 0
-                ? geometer::ProjectionAlgorithm::Fast
-                : (detail_algorithm_index == 1 ? geometer::ProjectionAlgorithm::Poly
-                                               : geometer::ProjectionAlgorithm::Exact);
-        app->projection_dirty = true;
-        app->last_camera_change_ms = SDL_GetTicks();
-    }
-    ImGui::SameLine();
-    const char* outline_algorithms[] = {"fast-mesh-shadow", "mesh-shadow", "hlr-close"};
+    const char* outline_algorithms[] = {"fast-mesh-shadow", "mesh-shadow"};
     int outline_algorithm_index =
-        app->outline_algorithm == geometer::ProjectionOutlineAlgorithm::FastMeshShadow
-            ? 0
-            : (app->outline_algorithm == geometer::ProjectionOutlineAlgorithm::MeshShadow ? 1 : 2);
+        app->outline_algorithm == geometer::ProjectionOutlineAlgorithm::FastMeshShadow ? 0 : 1;
     ImGui::SetNextItemWidth(165.0f);
-    if (ImGui::Combo("Outline alg", &outline_algorithm_index, outline_algorithms, 3))
+    if (ImGui::Combo("Outline alg", &outline_algorithm_index, outline_algorithms, 2))
     {
         app->outline_algorithm = outline_algorithm_index == 0
                                      ? geometer::ProjectionOutlineAlgorithm::FastMeshShadow
-                                     : (outline_algorithm_index == 1
-                                            ? geometer::ProjectionOutlineAlgorithm::MeshShadow
-                                            : geometer::ProjectionOutlineAlgorithm::HlrClosedEdges);
+                                     : geometer::ProjectionOutlineAlgorithm::MeshShadow;
         app->projection_dirty = true;
         app->last_camera_change_ms = SDL_GetTicks();
     }

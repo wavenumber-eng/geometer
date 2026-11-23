@@ -26,6 +26,7 @@ import type {
   StepTopologySaveResultA0,
   TopologyMembership,
 } from "./generated/contracts.js";
+import { StepMediaTypeError, stepInputMediaType } from "./step-media-type.js";
 
 export interface StepTopologySessionExpectation {
   readonly sessionHandle: string;
@@ -551,7 +552,7 @@ export async function validateStepTopologyRestoreAttachments(
     [
       {
         name: "source",
-        mediaTypes: ["application/step", "model/step"],
+        mediaTypes: ["model/step"],
         bytes: request.source.bytes,
         sha256: request.source.sha256,
       },
@@ -562,8 +563,25 @@ export async function validateStepTopologyRestoreAttachments(
         sha256: request.state_artifact.sha256,
       },
     ],
-    attachments,
+    normalizedRestoreInputs(attachments),
   );
+}
+
+function normalizedRestoreInputs(
+  attachments: readonly StepTopologyNamedAttachment[],
+): readonly StepTopologyNamedAttachment[] {
+  try {
+    return attachments.map((attachment) => ({
+      ...attachment,
+      mediaType:
+        attachment.name === "source"
+          ? stepInputMediaType(attachment.mediaType, ["model/step", "application/step"])
+          : attachment.mediaType,
+    }));
+  } catch (error) {
+    if (!(error instanceof StepMediaTypeError)) throw error;
+    fail("geometer.step_topology.attachment_mismatch", "Invalid STEP source media type.");
+  }
 }
 
 export function validateStepTopologyRestoreResult(

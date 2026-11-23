@@ -907,12 +907,7 @@ static int init_request(int argc, char* argv[])
         view.AddMember("up", up, allocator);
         views.PushBack(view, allocator);
         options.AddMember("views", views, allocator);
-        add_string(options, "curve_mode", "polyline", allocator);
-        options.AddMember("samples_per_curve", 24, allocator);
         options.AddMember("round_digits", 3, allocator);
-        options.AddMember("include_visible", true, allocator);
-        options.AddMember("include_outline", true, allocator);
-        options.AddMember("union_outline_polygons", true, allocator);
     }
     job.AddMember("options", options, allocator);
     jobs.PushBack(job, allocator);

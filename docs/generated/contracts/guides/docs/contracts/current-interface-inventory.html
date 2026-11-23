@@ -4,20 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
+  <meta name="wn-catalog-sha256" content="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032">
   <title>Current Interface And Contract Authority — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/contracts/current-interface-inventory.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="current-interface-and-contract-authority">Current Interface And Contract Authority</h1></header>
-<p>Updated for release target <code>v2026-09-07</code>. This inventory
-describes interfaces, not a promotion decision. The
-<a href="../../../../../contracts/promotion-manifest.toml">promotion manifest</a> governs lifecycle evidence;
+<p>The <a href="../../../../../contracts/promotion-manifest.toml">promotion manifest</a> governs lifecycle evidence;
 the <a href="../../../coverage.html">generated coverage matrix</a> joins
-every inventoried operation and contract with the normalized TypeSpec catalog.
-The <a href="../../../../../research/history/interface-inventory-2026-08-12.md">2026-08-12 snapshot</a>
-is historical and must not be used for runtime discovery.</p>
+every inventoried operation and contract with the normalized TypeSpec catalog.</p>
 <h2 id="authority-layers">Authority Layers</h2>
 <table>
 <thead>
@@ -61,21 +57,11 @@ is historical and must not be used for runtime discovery.</p>
 </tr>
 </tbody>
 </table>
-<p>The catalog contains 19 generated operation declarations: seven with the portable
-runtime flag (model bounds, model HLR, mesh HLR, experimental analytic,
-tessellation, SVG illustration and drawing geometry), nine additional native-only experimental
-topology operations, and three structural-only
-topology operations. Effective native availability is portable OR additional
-native-only availability. Always discover the actual executable's operations
-through its welcome catalog; see the <a href="../design/executable-ipc.html">IPC guide</a>.
-The illustration drawing extension is qualified through native clients and a
-rebuilt full-WASM generic C ABI fixture replay; catalog flags alone do not
-establish browser build/test coverage. See the
-<a href="../../../../../research/illustration-performance.md">qualification record</a>.</p>
-<p>Model bounds is promoted. HLR structural contracts are pilots. Analytic and
-topology remain experimental/non-production regardless of callable transports
-or frozen bytes. Public package support and demo-application support are
-different decisions.</p>
+<p>The shipped catalog describes portable, native-only, and structural-only
+operations. Use the executable's welcome catalog to discover the operations it
+serves. See the <a href="../design/executable-ipc.html">IPC guide</a>.</p>
+<p>Model bounds is promoted. HLR structural contracts are pilots. Native topology
+interfaces remain experimental.</p>
 <h2 id="operations-awaiting-generated-contractsadapters">Operations Awaiting Generated Contracts/Adapters</h2>
 <table>
 <thead>
@@ -83,7 +69,6 @@ different decisions.</p>
 <th>Inventoried operation</th>
 <th>Handwritten source</th>
 <th>Existing boundary</th>
-<th>Migration</th>
 </tr>
 </thead>
 <tbody>
@@ -91,45 +76,37 @@ different decisions.</p>
 <td><code>geometry.model_to_glb.a0</code></td>
 <td><code>step_to_glb_options_json.cpp</code>, <code>step_to_glb.cpp</code></td>
 <td>C++, file CLI/Python, legacy STEP C ABI/WASM</td>
-<td>Wave 1</td>
 </tr>
 <tr>
 <td><code>geometry.planar_step.a0</code></td>
 <td><code>planar_step.cpp</code></td>
 <td>C++, file CLI/Python</td>
-<td>Wave 1</td>
 </tr>
 <tr>
 <td><code>geometry.planar_batch_solve.a0</code></td>
 <td><code>planar_solve.cpp</code></td>
 <td>C++, C ABI/WASM, file CLI/Python</td>
-<td>Wave 2</td>
 </tr>
 <tr>
 <td><code>geometry.planar_triangulate.a0</code></td>
 <td><code>planar_triangulate.cpp</code></td>
 <td>C++, packed C ABI/WASM</td>
-<td>Wave 2</td>
 </tr>
 <tr>
 <td><code>geometry.clipper2_boolean.a0</code></td>
 <td><code>clipper2_bytes.cpp</code></td>
 <td>C++, packed C ABI/WASM</td>
-<td>Wave 2</td>
 </tr>
 <tr>
 <td><code>geometry.clipper2_inflate_open.a0</code></td>
 <td><code>clipper2_bytes.cpp</code></td>
 <td>C++, packed C ABI/WASM</td>
-<td>Wave 2</td>
 </tr>
 </tbody>
 </table>
-<p>These are inventory identities, not names accepted by generic IPC today.
-The legacy <code>geometer.batch.request.a0</code> / response and
-<code>geometry.projection.b0</code> compatibility boundary are wave 3. The
-<a href="typespec-coverage-assessment.html">roadmap</a> requires field-level compatibility,
-cross-language vectors and runtime adapter evidence before authority switches.
+<p>These inventory entries describe handwritten interfaces. The legacy
+<code>geometer.batch.request.a0</code> / response and <code>geometry.projection.b0</code>
+compatibility boundaries also use handwritten adapters.
 The <a href="public-entrypoints.html">public entry-point reconciliation</a> maps direct
 helpers, client exports and aliases to these families or explicit support/
 research boundaries. This is an inventory, not completion of their migration.</p>
@@ -152,11 +129,6 @@ research boundaries. This is an inventory, not completion of their migration.</p
 <td>Indexed mesh</td>
 <td>GMIMSH01 / 1</td>
 <td><a href="../design/binary-formats.html#indexed-triangle-mesh-a0">Binary reference</a>; handwritten C++/TS/Rust/Python</td>
-</tr>
-<tr>
-<td>Analytic request/result</td>
-<td>GMABRQ01 / GMABRS01, A0</td>
-<td><a href="../design/analytic-planar-boolean-packet-a0.html">Analytic packet specification</a>; generated logical DTOs, handwritten packed codecs</td>
 </tr>
 <tr>
 <td>Planar batch</td>
@@ -193,10 +165,8 @@ attachment descriptors do not imply generated internals of these payloads.</p>
 compatibility requirements, not a claim about today's downstream installation.
 <a href="typespec-toolchain.html">TypeSpec authoring</a> documents the single catalog and
 <a href="generated-contract-reference.html">HTML generation</a> documents its presentation.</p>
-<p><code>analytic-candidate.tsp</code> imports <code>main.tsp</code>, which already includes analytic
-declarations. Retain that entry point for now: <code>check:analytic-candidate</code>
-uses it as a focused candidate/vector gate. Import overlap alone is not evidence
-that removing the validation boundary is safe.</p>
+<h2 id="step-media-compatibility">STEP media compatibility</h2>
+<p>Input MIME-value parsing and new producer <code>model/step</code> emission follow <a href="../geometer/adr/geometer-adr-020-standard-step-media-types.html">ADR-020</a>. Ordered input declarations retain the legacy spelling. AP242 descriptor readers admit both bare spellings; this does not promote structural-only save. Operation availability and dispatch remain unchanged.</p>
 
 </main>
 </body>

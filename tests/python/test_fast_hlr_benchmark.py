@@ -91,7 +91,7 @@ def test_runtime_comparisons_report_ratios_and_equivalence() -> None:
             "runtime": runtime,
             "model": "fixture.step",
             "algorithm": "fast",
-            "outline_algorithm": "hlr-close",
+            "outline_algorithm": "fast-mesh-shadow",
             "layer": "detail",
             "view": "top",
             "summary": summary,

@@ -127,6 +127,7 @@ macro_rules! impl_hlr_client {
 }
 
 impl_hlr_client!(GeometerClient);
+impl_hlr_client!(crate::runtime::WorkerClient<'_>);
 #[cfg(feature = "direct-static")]
 impl_hlr_client!(GeometerDirectClient);
 

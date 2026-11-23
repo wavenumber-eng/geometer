@@ -1,6 +1,6 @@
 {
   "name": "@wavenumber/geometer",
-  "version": "2026.9.19",
+  "version": "2026.11.22",
   "description": "Generated Geometer contracts and direct plus Worker browser WASM clients",
   "license": "MIT",
   "type": "module",
@@ -13,10 +13,6 @@
     "./contracts": {
       "types": "./generated/index.d.ts",
       "import": "./generated/index.js"
-    },
-    "./analytic-packet-a0": {
-      "types": "./analytic-packet-a0.d.ts",
-      "import": "./analytic-packet-a0.js"
     },
     "./ipc-a0": {
       "types": "./ipc-a0.d.ts",

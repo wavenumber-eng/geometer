@@ -4,6 +4,74 @@ All notable changes to geometer are documented here.
 
 ## [Unreleased]
 
+## [2026.11.22] - 2026-11-22
+
+### Removed
+
+- Removed OCCT `poly` and `exact` detail, the `hlr-close` outline, and the
+  static `TKHLR` link dependency. Fast HLR and both mesh-shadow choices are available.
+
+- Removed the experimental analytic planar Boolean operation, its packed
+  codecs, and its polygon-pour demos. Clipper2 planar operations and model
+  illustration remain available.
+
+### Added
+
+- Added `geometer_client::runtime`, a supervised worker runtime for long-running
+  and batch Rust hosts: a bounded, lazily started pool of verified executable
+  workers (write-denied executable hold, digest before and after startup,
+  optional exact release/ABI pin, identity agreement across workers), per-call
+  and startup deadlines, and a fatal-failure policy that either latches the
+  runtime or replaces only the failed worker. A broken worker never returns to
+  service, whether or not the host reports the failure. The runtime is
+  blocking; inside a Tokio runtime context its workers run their blocking
+  steps on helper threads instead of panicking, and async hosts call it from
+  `spawn_blocking`.
+- Added the transport-neutral `runtime::WorkerClient`, which carries the same
+  typed operation methods as `GeometerClient` (including the mesh
+  illustration geometry methods), so further worker transports can be added
+  without changing callers.
+- Added a job-local `runtime::ResultCache` and, behind the new `disk-cache`
+  feature, an advisory `runtime::DiskResultCache`; both key successful opaque
+  results by the caller's request digest and the producing artifact's
+  `runtime::ResultIdentity`. A `runtime::DiskCacheLayout` derives every
+  on-disk name, the marker magic and the record header from a host's format
+  string and namespace, so a host that keeps them keeps its existing cache.
+- Added the `test-support` feature: `runtime::Transport::Fake` runs the real
+  runtime over in-process `runtime::FakeWorker`s, so hosts can test their
+  supervision, batching and caching without a Geometer executable.
+
+### Changed
+
+- Mesh illustration no longer fails on parts whose triangles all overlap in
+  view (a model of about 116,000 triangles exceeded the candidate comparison
+  limit). Before the pairwise ordering and fusion stages, the native and
+  TypeScript renderers remove the triangles the view proves hidden: those
+  whose paint lies in cells wholly covered, nearer by more than the depth
+  tolerance, by an opaque triangle. A partly covered cell, a near tie or a
+  translucent occluder keeps a triangle, so the drawing is unchanged; SVG and
+  geometry outputs that held hidden triangles change bytes.
+- Fused surfaces are drawn in the order their overlaps of different paint
+  require. A fused surface placed by its members' mean position could be
+  drawn before a surface it must cover; surfaces that must each come before
+  the other keep their placed order.
+- Illustration work is no longer capped by default: the 100,000,000 candidate
+  comparison and 2,000,000 drawing command defaults, and the 4,000,000
+  visibility constraint and overlap limits, are gone. A caller may still set
+  `MeshIllustrationExecutionLimits` or a model illustration's `work_limits`,
+  whose fields no longer have a default or a maximum beyond their type.
+- Degenerate triangles are reported once per mesh with their count, not once
+  per triangle.
+- Fused ring simplification runs in one pass with the same result.
+- Rebuilt the macOS arm64 CLI and WASM artifacts for the updated operation
+  catalog. Windows and Linux source checkouts need a matching native build
+  until their bundled executables are refreshed.
+- Raised the client crate's minimum Rust version from 1.85 to 1.89 for every
+  consumer, whichever features are enabled. The runtime is always compiled and
+  uses let-chains (Rust 1.88); the `disk-cache` feature's writer lock also
+  uses `std::fs::File` locking (Rust 1.89). Cargo applies one `rust-version`
+  to the whole crate.
+
 ## [2026.9.19] - 2026-09-19
 
 ### Added

@@ -16,7 +16,7 @@ assert.equal(
 );
 assert.match(runtimeOf(undefined), /no generic IPC adapter/);
 assert.equal(
-  maturityOf({ id: "geometry.analytic_planar_boolean_batch.a0", status: "promoted" }),
+  maturityOf({ id: "geometry.step_topology.open.a0", status: "promoted" }),
   "experimental_not_production_ready",
 );
 assert.equal(
@@ -27,8 +27,6 @@ const reference = (path) =>
   readFileSync(new URL(`../../docs/generated/contracts/${path}`, import.meta.url), "utf8");
 const bounds = reference("operations/geometry-model-bounds-a0.html");
 assert.match(bounds, /Native executable runtime<\/th><td><code>true<\/code>/);
-const analytic = reference("operations/geometry-analytic-planar-boolean-batch-a0.html");
-assert.match(analytic, /experimental_not_production_ready/);
 const coverage = reference("coverage.html");
 assert.match(coverage, /geometry\.clipper2_boolean\.a0/);
 assert.match(coverage, /No generated operation \/ no generic IPC adapter/);
@@ -45,5 +43,5 @@ const adrGuide = reference(
   "guides/docs/geometer/adr/geometer-adr-001-cmake_fetchcontent_for_dependencies.html",
 );
 assert.doesNotMatch(adrGuide, /href="[^"]*\.md"/);
-assert.match(reference("guides.html"), /guides\/docs\/developer\/demo-status.html/);
+assert.match(reference("guides.html"), /guides\/examples\/README\.html/);
 console.log("Documentation availability, maturity and handwritten-gap regressions passed.");

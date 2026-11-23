@@ -129,14 +129,11 @@ async function validateGeneratedState(manifest, catalog) {
   const catalogContracts = catalog.roots.map((root) => root.contract_identity).sort();
   assertEqual(catalogContracts, expectedContracts, "pilot contract identities");
 
-  const expectedOperations = [
-    ...manifest.operations.filter((operation) =>
+  const expectedOperations = manifest.operations
+    .filter((operation) =>
       ["experimental_candidate", "pilot_candidate", "promoted"].includes(operation.status),
-    ),
-    ...manifest.candidateOperations.filter(
-      (operation) => operation.status === "pre_release_matz_candidate",
-    ),
-  ].sort((left, right) => left.id.localeCompare(right.id));
+    )
+    .sort((left, right) => left.id.localeCompare(right.id));
   assertEqual(
     catalog.operations.map((operation) => operation.identity).sort(),
     expectedOperations.map((operation) => operation.id).sort(),
@@ -266,7 +263,7 @@ async function listFiles(root) {
 }
 
 function parsePromotionManifest(text) {
-  const manifest = { toolchain: {}, contracts: [], operations: [], candidateOperations: [] };
+  const manifest = { toolchain: {}, contracts: [], operations: [] };
   let target = null;
   for (const rawLine of text.split(/\r?\n/u)) {
     const line = rawLine.trim();
@@ -285,11 +282,6 @@ function parsePromotionManifest(text) {
     if (line === "[[operations]]") {
       target = {};
       manifest.operations.push(target);
-      continue;
-    }
-    if (line === "[[candidate_operations]]") {
-      target = {};
-      manifest.candidateOperations.push(target);
       continue;
     }
     if (line.startsWith("[") && line.endsWith("]")) {

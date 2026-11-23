@@ -2,7 +2,6 @@ use std::future::Future;
 use std::pin::Pin;
 
 use crate::client::{GeometerClient, GeometerClientError, OperationResponse};
-use crate::contracts::IpcOperationCatalogA0;
 #[cfg(feature = "direct-static")]
 use crate::direct::GeometerDirectClient;
 use crate::ipc::Attachment;
@@ -10,8 +9,6 @@ use crate::ipc::Attachment;
 type BackendFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
 pub(crate) trait OperationBackend: Sync {
-    fn operation_catalog(&self) -> &IpcOperationCatalogA0;
-
     fn execute_operation<'a>(
         &'a self,
         operation: &'a str,
@@ -23,10 +20,6 @@ pub(crate) trait OperationBackend: Sync {
 }
 
 impl OperationBackend for GeometerClient {
-    fn operation_catalog(&self) -> &IpcOperationCatalogA0 {
-        &self.welcome().operation_catalog
-    }
-
     fn execute_operation<'a>(
         &'a self,
         operation: &'a str,
@@ -43,10 +36,6 @@ impl OperationBackend for GeometerClient {
 
 #[cfg(feature = "direct-static")]
 impl OperationBackend for GeometerDirectClient {
-    fn operation_catalog(&self) -> &IpcOperationCatalogA0 {
-        GeometerDirectClient::operation_catalog(self)
-    }
-
     fn execute_operation<'a>(
         &'a self,
         operation: &'a str,

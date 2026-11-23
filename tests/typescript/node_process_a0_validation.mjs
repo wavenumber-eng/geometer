@@ -42,7 +42,13 @@ assert.ok(processClient.processId > 0);
 const opened = await processClient.client.execute(
   "geometry.step_topology.open.a0",
   { schema: "geometry.step_topology.open.request.a0" },
-  [{ data: model, mediaType: "application/step", name: "step" }],
+  [
+    {
+      data: model,
+      mediaType: '(source) MODEL/STEP; name="fixture;1.step"; kicad-type=other',
+      name: "step",
+    },
+  ],
 );
 assert.equal(opened.outcome.ok, true);
 assert.equal(opened.outcome.result.schema, "geometry.step_topology.open.result.a0");
@@ -246,7 +252,7 @@ const restoreRequest = {
   },
 };
 const restoreAttachments = [
-  { data: model, mediaType: "application/step", name: "source" },
+  { data: model, mediaType: 'Application/Step; category="other" (restore source)', name: "source" },
   {
     data: checkpointed.attachments[0].data,
     mediaType: "application/vnd.wavenumber.geometer.step-topology-edit-journal",

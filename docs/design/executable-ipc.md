@@ -9,7 +9,7 @@ and [Python convenience API](python-package.md) are simpler.
 
 | Consumer | Maintained boundary |
 | --- | --- |
-| Python | Public `geometer.GeometerClient`: synchronous HLR, tessellation, illustration and experimental analytic calls. The package resolves its bundled executable; `executable=` selects an explicit compatible binary. |
+| Python | Public `geometer.GeometerClient`: synchronous HLR, tessellation and illustration. The package resolves its bundled executable; `executable=` selects an explicit compatible binary. |
 | Node/TypeScript | `GeometerNodeProcessA0` from `@wavenumber/geometer/node-process-a0`: process ownership plus typed generic IPC calls. |
 | Rust | `geometer-client`: generated contracts and async executable client, with easy Tokio spawn and caller-supervised process adoption; see [Rust client](rust-client.md). |
 | Implementing a new transport/client | [A0 framing and lifecycle specification](executable-ipc-a0.md), not a hand-built application protocol. |
@@ -112,11 +112,6 @@ welcome catalog distinguish portable operations, additional native-only
 experimental operations and structural-only declarations. Clipper2 packed
 entry points and legacy conversion commands are not automatically IPC
 operations. See [contract authority](../contracts/README.md).
-
-Analytic planar Boolean is experimental and not production-ready even though
-its packed interface is implemented. Prefer Clipper2-backed polygonized
-operations for production visualization where suitable. Protocol generation,
-release version, C ABI generation and packed-format versions are independent.
 
 Byte offsets, frame-kind values, limits, control messages and connection-fatal
 conditions belong to the [normative A0 reference](executable-ipc-a0.md).

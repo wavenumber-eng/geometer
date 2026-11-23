@@ -20,7 +20,7 @@ chrome_version=153.0.8010.52
 chrome_sha256=e66f66d4802a46d4a022667e668aa950e277cadbfbed4b3777915b47413a0ef9
 node_version=24.12.0
 node_sha256=bdebee276e58d0ef5448f3d5ac12c67daa963dd5e0a9bb621a53d1cefbc852fd
-rust_version=1.95.0
+rust_version=1.99.1
 rustup_sha256=dda7234360b7f578ca8b0ddcb80145646fa61a67c1720a5abc7051b35c9fcb71
 builder_user=geometer-builder
 

@@ -1,4 +1,10 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import {
+  canonicalStepMediaType,
+  stepInputMediaType,
+  stepInputMatchesDeclaration,
+} from "../../dist/wasm/npm/geometer/step-media-type.js";
 
 import {
   encodeIpcCancelledA0Json,
@@ -107,6 +113,7 @@ function welcome(catalogSha256 = NORMALIZED_CONTRACT_CATALOG_SHA256, limitOverri
 function fakeDuplex(catalogSha256, responseRequestIdOffset = 0n, limitOverrides = {}) {
   let controller;
   let terminated = false;
+  const requests = [];
   const decoder = new GeometerIpcFrameDecoder();
   const readable = new ReadableStream({
     start(value) {
@@ -122,6 +129,7 @@ function fakeDuplex(catalogSha256, responseRequestIdOffset = 0n, limitOverrides 
         if (frame.kind === 1) {
           send(2, 0n, encodeIpcWelcomeA0Json(welcome(catalogSha256, limitOverrides)));
         } else if (frame.kind === 3) {
+          requests.push(frame);
           const envelope = JSON.parse(frame.json);
           send(
             4,
@@ -167,6 +175,7 @@ function fakeDuplex(catalogSha256, responseRequestIdOffset = 0n, limitOverrides 
       writable,
     },
     wasTerminated: () => terminated,
+    requests,
   };
 }
 
@@ -188,6 +197,61 @@ const response = await client.execute("geometry.model_bounds.a0", {}, [
 ]);
 assert.equal(response.outcome.ok, false);
 assert.equal(response.outcome.operation, "geometry.model_bounds.a0");
+const mimeCases = JSON.parse(
+  await readFile(new URL("../fixtures/step_media_types.json", import.meta.url), "utf8"),
+).cases;
+for (const item of mimeCases) {
+  assert.equal(
+    canonicalStepMediaType(item.value),
+    item.accepted ? "model/step" : undefined,
+    item.value,
+  );
+  const data = new Uint8Array([0, 255, 1]);
+  const attachment = { name: "model", mediaType: item.value, data };
+  if (item.accepted) {
+    await client.execute("geometry.model_bounds.a0", {}, [attachment]);
+    const [sent] = fake.requests.at(-1).attachments;
+    assert.equal(sent.mediaType, "model/step");
+    assert.deepEqual(sent.data, data);
+    assert.equal(attachment.mediaType, item.value);
+  } else {
+    const prior = fake.requests.length;
+    assert.throws(
+      () => client.start("geometry.model_bounds.a0", {}, [attachment]),
+      /invalid media type/i,
+    );
+    assert.equal(fake.requests.length, prior, "invalid fields never reach transport");
+  }
+}
+const fullMime = 'model/step; x="' + "a".repeat(128 - 'model/step; x=""'.length) + '"';
+assert.equal(canonicalStepMediaType(fullMime), "model/step");
+assert.equal(canonicalStepMediaType(fullMime + " "), undefined);
+const vendorMime = "application/vnd.wavenumber.geometer.mesh-collection+json; category=other";
+assert.equal(
+  stepInputMediaType(vendorMime, ["application/vnd.wavenumber.geometer.mesh-collection+json"]),
+  vendorMime,
+  "STEP normalization cannot widen vendor-media admission",
+);
+const mixedTypes = ["application/step", "model/step", "application/vnd.opencascade.xbf"];
+const legacyOnly = ["application/step"];
+const normalizedLegacy = stepInputMediaType('MODEL/STEP; name="legacy;peer.step"', legacyOnly);
+assert.equal(normalizedLegacy, "model/step");
+assert.equal(stepInputMatchesDeclaration(normalizedLegacy, legacyOnly), true);
+assert.equal(stepInputMatchesDeclaration('MODEL/STEP; name="legacy;peer.step"', legacyOnly), true);
+assert.equal(stepInputMatchesDeclaration('model/step; name="unterminated', legacyOnly), false);
+assert.equal(stepInputMatchesDeclaration("application/vnd.opencascade.xbf", legacyOnly), false);
+assert.equal(
+  stepInputMediaType("application/vnd.opencascade.xbf", mixedTypes),
+  "application/vnd.opencascade.xbf",
+);
+assert.equal(stepInputMediaType("Application/Step; category=other", mixedTypes), "model/step");
+for (const altered of [
+  "APPLICATION/VND.OPENCASCADE.XBF",
+  "application/vnd.opencascade.xbf; category=other",
+  "application/octet-stream",
+]) {
+  assert.throws(() => stepInputMediaType(altered, mixedTypes), /Invalid STEP input/);
+}
 assert.equal((await client.close()).status, "complete");
 assert.equal(fake.wasTerminated(), false);
 

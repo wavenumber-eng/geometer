@@ -31,70 +31,16 @@
       "type": "boolean",
       "default": false
     },
-    "curve_mode": {
-      "$ref": "#/$defs/HlrCurveMode",
-      "default": "native_arcs"
-    },
-    "samples_per_curve": {
-      "type": "integer",
-      "minimum": 1,
-      "maximum": 100000,
-      "default": 24
-    },
     "round_digits": {
       "type": "integer",
       "minimum": 0,
       "maximum": 9,
       "default": 3
     },
-    "edge_v_sharp": {
-      "type": "boolean",
-      "default": true
-    },
-    "edge_v_outline": {
-      "type": "boolean",
-      "default": true
-    },
-    "edge_v_smooth": {
-      "type": "boolean",
-      "default": false
-    },
-    "edge_v_sewn": {
-      "type": "boolean",
-      "default": false
-    },
-    "edge_v_iso": {
-      "type": "boolean",
-      "default": false
-    },
-    "edge_h_sharp": {
-      "type": "boolean",
-      "default": false
-    },
-    "edge_h_outline": {
-      "type": "boolean",
-      "default": false
-    },
-    "edge_h_smooth": {
-      "type": "boolean",
-      "default": false
-    },
-    "edge_h_sewn": {
-      "type": "boolean",
-      "default": false
-    },
-    "edge_h_iso": {
-      "type": "boolean",
-      "default": false
-    },
-    "union_outline_polygons": {
-      "type": "boolean",
-      "default": true
-    },
     "projection_algorithm": {
       "$ref": "#/$defs/HlrProjectionAlgorithm",
       "default": "fast",
-      "description": "Omission selects Fast triangle detail. Older OCCT algorithms require explicit selection."
+      "description": "Fast triangle detail."
     },
     "mesh_linear_deflection": {
       "type": "number",
@@ -123,13 +69,7 @@
     "outline_algorithm": {
       "$ref": "#/$defs/HlrOutlineAlgorithm",
       "default": "fast-mesh-shadow",
-      "description": "Omission selects Fast Mesh Shadow. Older outline algorithms require explicit selection."
-    },
-    "hlr_angle_tolerance": {
-      "type": "number",
-      "default": 0.0174533,
-      "minimum": 0,
-      "maximum": 3.141592653589793
+      "description": "Omission selects Fast Mesh Shadow."
     },
     "fast": {
       "$ref": "#/$defs/FastHlrOptionsA0"
@@ -175,18 +115,9 @@
       "minItems": 16,
       "maxItems": 16
     },
-    "HlrCurveMode": {
-      "type": "string",
-      "enum": [
-        "native_arcs",
-        "polyline"
-      ]
-    },
     "HlrProjectionAlgorithm": {
       "type": "string",
       "enum": [
-        "poly",
-        "exact",
         "fast"
       ]
     },
@@ -200,7 +131,6 @@
     "HlrOutlineAlgorithm": {
       "type": "string",
       "enum": [
-        "hlr-close",
         "mesh-shadow",
         "fast-mesh-shadow"
       ]

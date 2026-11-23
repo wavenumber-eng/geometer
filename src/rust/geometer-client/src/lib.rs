@@ -1,12 +1,16 @@
 //! Generated Geometer contracts with executable and static native clients.
 
-mod analytic_client;
-pub mod analytic_packet_a0;
 mod backend;
 pub mod client;
 mod client_lifecycle;
 #[cfg(feature = "direct-static")]
 mod direct;
+// The generator emits one nested check per optional field; with the 1.89
+// minimum Rust version clippy would collapse them into let-chains.
+#[allow(
+    clippy::collapsible_if,
+    reason = "generated validators keep the generator's nested-check shape"
+)]
 pub mod generated;
 mod hlr;
 mod illustration;
@@ -17,14 +21,11 @@ mod model_bounds;
 mod model_illustration;
 mod operation_validation;
 mod process;
+pub mod runtime;
 mod session_validation;
+mod step_media_type;
 mod tessellation;
 
-pub use analytic_packet_a0::{
-    AnalyticPacketError, AnalyticPacketErrorKind,
-    decode_analytic_planar_boolean_batch_result_a0_packet,
-    encode_analytic_planar_boolean_batch_request_a0_packet,
-};
 pub use client::{
     GeometerClient, GeometerClientError, OperationCall, OperationOutcome, OperationResponse,
     Welcome,

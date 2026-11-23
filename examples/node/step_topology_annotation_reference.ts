@@ -218,7 +218,7 @@ async function main(): Promise<void> {
     const openedResponse = await authoringProcess.client.execute(
       "geometry.step_topology.open.a0",
       { schema: "geometry.step_topology.open.request.a0" },
-      [{ data: source, mediaType: "application/step", name: "step" }],
+      [{ data: source, mediaType: "model/step", name: "step" }],
     );
     const opened = expectedResult<StepTopologyOpenResultA0>(
       openedResponse,
@@ -377,7 +377,7 @@ async function main(): Promise<void> {
         },
       },
       [
-        { data: source, mediaType: "application/step", name: "source" },
+        { data: source, mediaType: "model/step", name: "source" },
         {
           data: journal,
           mediaType: "application/vnd.wavenumber.geometer.step-topology-edit-journal",

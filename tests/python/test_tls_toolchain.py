@@ -19,6 +19,14 @@ def test_installed_requests_bundle_excludes_affected_roots() -> None:
     assert check_tls_trust.affected_roots(context) == []
 
 
+def test_system_context_loads_ca_bundle_for_inspection(monkeypatch) -> None:
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    monkeypatch.setattr(check_tls_trust.ssl, "create_default_context", lambda: context)
+    monkeypatch.setattr(check_tls_trust, "LINUX_SYSTEM_CA_BUNDLE", Path(certifi.where()))
+
+    assert check_tls_trust.affected_roots(check_tls_trust.system_trust_context()) == []
+
+
 def test_old_uv_is_rejected_before_package_build_downloads(monkeypatch, tmp_path: Path) -> None:
     calls = []
     monkeypatch.setattr(check_tls_trust.shutil, "which", lambda name: "uv")

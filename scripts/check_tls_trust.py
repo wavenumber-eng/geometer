@@ -11,6 +11,7 @@ from pathlib import Path
 
 
 AFFECTED_ROOTS = {"emSign ECC Root CA - G3", "AAA Certificate Services"}
+LINUX_SYSTEM_CA_BUNDLE = Path("/etc/ssl/certs/ca-certificates.crt")
 
 
 def require_uv() -> str:
@@ -48,6 +49,14 @@ def affected_roots(context: ssl.SSLContext) -> list[str]:
     return sorted(AFFECTED_ROOTS & names)
 
 
+def system_trust_context() -> ssl.SSLContext:
+    context = ssl.create_default_context()
+    if LINUX_SYSTEM_CA_BUNDLE.is_file():
+        # OpenSSL may load CA directories lazily. Load the system bundle for inspection.
+        context.load_verify_locations(cafile=str(LINUX_SYSTEM_CA_BUNDLE))
+    return context
+
+
 def main() -> int:
     import certifi
 
@@ -57,7 +66,7 @@ def main() -> int:
     result = {
         "certifi": certifi.__version__,
         "certifi_affected_roots": affected_roots(bundle),
-        "system_affected_roots": affected_roots(ssl.create_default_context()),
+        "system_affected_roots": affected_roots(system_trust_context()),
     }
     if tuple(map(int, certifi.__version__.split("."))) < (2026, 10, 19):
         errors.append("certifi must be >=2026.10.19")

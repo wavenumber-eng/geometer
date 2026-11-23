@@ -676,10 +676,17 @@ model XmlXcafPersistenceArtifact {
   @minLength(64) @maxLength(64) sha256: string;
 }
 
+/** New AP242 producers use model_step. The legacy application_step token remains decodable in saved descriptors. */
+enum StepAp242MediaType {
+  model_step: "model/step",
+  application_step: "application/step",
+}
+
+/** New AP242 descriptors use model/step; legacy bare application/step remains readable. This candidate does not imply executable save support. */
 model StepAp242PersistenceArtifact {
   carrier: "step_ap242";
   name: "state_artifact";
-  media_type: "application/step";
+  media_type: StepAp242MediaType;
   format: "ap242-managed-model-based-3d-engineering";
   @minValue(1) @maxValue(536870912) bytes: uint32;
   @minLength(64) @maxLength(64) sha256: string;

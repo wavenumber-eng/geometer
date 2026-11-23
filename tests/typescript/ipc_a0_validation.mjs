@@ -127,8 +127,8 @@ const forgedPackedTopologyRequest = {
   operation: "geometry.step_topology.open.a0",
   request: {
     packet: {
-      attachment: "analytic_planar_boolean_request",
-      format: "geometry.analytic_planar_boolean.packet.a0",
+      attachment: "synthetic_packet",
+      format: "test.packet.a0",
     },
     schema: "geometry.step_topology.open.request.a0",
   },
@@ -146,15 +146,4 @@ assert.throws(
     }),
   /logical DTO operation cannot carry a packed attachment projection/,
 );
-validateIpcRequestOperationPair({
-  operation: "geometry.analytic_planar_boolean_batch.a0",
-  request: {
-    packet: {
-      attachment: "analytic_planar_boolean_request",
-      format: "geometry.analytic_planar_boolean.packet.a0",
-    },
-    schema: "geometry.analytic_planar_boolean_batch.request.a0",
-  },
-});
-
 process.stdout.write(JSON.stringify({ frameBytes: request.byteLength, fragmented: true }));

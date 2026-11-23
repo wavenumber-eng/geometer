@@ -30,7 +30,7 @@ pub fn prepare(collection: &MeshCollectionA0) -> Result<MeshData, String> {
         if mesh.matrix.is_some() {
             return Err("STEP tessellation unexpectedly returned an unbaked transform".into());
         }
-        for p in mesh.positions.chunks_exact(3) {
+        for p in mesh.positions.as_chunks::<3>().0 {
             for axis in 0..3 {
                 minimum[axis] = minimum[axis].min(p[axis]);
                 maximum[axis] = maximum[axis].max(p[axis]);
@@ -49,7 +49,7 @@ pub fn prepare(collection: &MeshCollectionA0) -> Result<MeshData, String> {
             .indices
             .as_ref()
             .ok_or("Expected indexed STEP tessellation")?;
-        for (triangle, indices) in indices.chunks_exact(3).enumerate() {
+        for (triangle, indices) in indices.as_chunks::<3>().0.iter().enumerate() {
             let points: [Vec3; 3] =
                 std::array::from_fn(|i| point(&mesh.positions, indices[i] as usize));
             let geometric = normalized(cross(sub(points[1], points[0]), sub(points[2], points[0])));

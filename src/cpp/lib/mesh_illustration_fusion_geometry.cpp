@@ -117,24 +117,26 @@ bool valid_rings(const Rings& rings, double epsilon, WorkBudget& budget)
 
 Ring simplify_ring(Ring points, double tolerance, WorkBudget& budget)
 {
-    bool changed = true;
-    while (changed && points.size() > 3)
+    // Remove the first removable point, as a rescan from the start would, in
+    // one pass: a removal changes only its neighbours, so the scan resumes at
+    // the point before it, or at the start when the removal moved the ring's
+    // wrap (the first or the last point).
+    std::size_t index = 0;
+    while (points.size() > 3 && index < points.size())
     {
-        changed = false;
-        for (std::size_t index = 0; index < points.size(); ++index)
+        budget.consume();
+        const auto previous = points[(index + points.size() - 1) % points.size()];
+        const auto current = points[index], next = points[(index + 1) % points.size()];
+        const double baseline = std::hypot(next[0] - previous[0], next[1] - previous[1]);
+        if (baseline <= tolerance ||
+            std::abs(cross2(previous, next, current)) / baseline <= tolerance)
         {
-            budget.consume();
-            const auto previous = points[(index + points.size() - 1) % points.size()];
-            const auto current = points[index], next = points[(index + 1) % points.size()];
-            const double baseline = std::hypot(next[0] - previous[0], next[1] - previous[1]);
-            if (baseline <= tolerance ||
-                std::abs(cross2(previous, next, current)) / baseline <= tolerance)
-            {
-                points.erase(points.begin() + index);
-                changed = true;
-                break;
-            }
+            const bool wrap = index == 0 || index + 1 == points.size();
+            points.erase(points.begin() + static_cast<std::ptrdiff_t>(index));
+            index = wrap ? 0 : index - 1;
         }
+        else
+            ++index;
     }
     return points;
 }

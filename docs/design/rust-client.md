@@ -6,7 +6,7 @@
 operation DTOs and strict Serde codecs are generated from the normalized
 TypeSpec catalog. The live client spawns one persistent native
 `geometer(.exe) serve --stdio` process and executes model bounds, model/mesh
-HLR, and analytic planar Boolean through their governed attachments.
+and HLR through their governed attachments.
 
 The separate `src/rust/geometer-sys` crate is the narrow unsafe boundary for
 the static C ABI SDK. Release SDK archives carry that crate beside their link
@@ -53,11 +53,6 @@ or handwritten subprocess protocol. These additions require a matching catalog
 and an exactly matching catalog/C ABI generation. Explicit `*_a0` methods are
 retained only for compatibility tests and controlled migration.
 
-The analytic operation is experimental and not production-ready. It may fail
-closed on valid inputs and is not the dependable path for whole-board or
-whole-layer copper union. Prefer the Clipper2-backed planar APIs when
-polygonized output is suitable.
-
 The executable implementation preserves every file-oriented CLI command. Its
 stdin and stdout are switched to binary mode on Windows; stdout is reserved for
 complete A0 frames and stderr is captured separately by the client.
@@ -92,11 +87,6 @@ part of `npm run generate:contracts` and freshness is part of
 The generated operation catalog is also the Rust client's negotiation
 authority. Packed request/result roots are deliberately excluded from generated
 JSON codecs: their logical DTOs remain generated, while
-`analytic_packet_a0` owns the strict little-endian wire codec. The public
-encoder accepts `AnalyticPlanarBooleanBatchRequestA0`; the public decoder
-returns `AnalyticPlanarBooleanBatchResultA0` and computes each job's SHA-256
-over its exact rebased standalone packet closure.
-
 Logical request decoding and request/result identity matching are generated in
 `generated/dispatch.rs` from the TypeSpec IPC unions and catalog roots. The
 generic client selects the exact negotiated request contract before decoding;
@@ -175,14 +165,6 @@ generated outcome operation matches the pending operation. Unknown,
 completed, malformed, or wrong-direction frames fail the connection and every
 pending call.
 
-`GeometerClient::analytic_planar_boolean_batch()` derives attachment names,
-media types, schema identities, and packet format from the negotiated generated
-catalog. Generic request and response validation rejects missing, duplicate,
-undeclared, oversized, or media-incompatible attachments and projection
-metadata drift. Fatal response ID/kind/JSON/attachment violations poison the
-connection and resolve every pending call. Negotiated response frame limits are
-checked before payload allocation.
-
 `GeometerClient::model_hlr_projection()` accepts STEP bytes and canonical HLR
 options. Canonical `mesh_hlr_projection()` accepts a `MeshCollectionA0` and the
 complete generated `MeshHlrProjectionRequestB0`, then returns correlated B0
@@ -198,6 +180,77 @@ removed queued work; it never claims an active OCCT operation stopped. The
 client continues draining any active terminal response. `close()` performs the
 30-second graceful protocol shutdown, while `terminate()` is the explicit
 forced-child escalation. Captured stderr is available through `stderr_text()`.
+
+## Supervised runtime
+
+`geometer_client::runtime` is the generic host runtime for applications that
+run many operations over a job or a session. It knows no application data
+model.
+
+- `GeometerRuntime::new(RuntimeConfig)` validates settings and starts nothing.
+  `RuntimeConfig::new(transport)` supplies the defaults; hosts adjust its
+  public fields. It selects the transport (`Transport::Process` with an
+  `ExecutableSource`: an explicit path, `find_executable()` discovery, or a
+  host resolver such as a bundle extractor), the pool size (1 to 64), an
+  optional exact `RuntimePin` (release version and C ABI generation), the
+  per-call deadline (120 seconds by default), the startup deadline for
+  spawning a process worker and completing its handshake (10 seconds by
+  default, at most 5 minutes), the hello client name and version, and the
+  `FatalPolicy`.
+- `lease()` reuses an idle worker or starts one. A worker opens its
+  executable with writes denied, hashes it, spawns it, checks the pin and
+  hashes it again; every worker must report the same `ArtifactIdentity`
+  (release, C ABI generation and executable digest). Starts are serialized
+  under the pool lock and bounded by the startup deadline; a host resolver
+  runs before that bound. A lease is exclusive until dropped.
+- `Worker::run(name, |client| ...)` executes typed calls through
+  `WorkerClient`, which has the same typed methods as `GeometerClient`. An
+  operation error is local to the request. Any other client error, or the
+  deadline (`"{name} deadline exceeded"`), terminates the process and
+  retires the worker. Hosts retire a worker whose result they reject with
+  `mark_broken(reason)`. A retired worker refuses further calls.
+- A retired worker never returns to service, whether or not the host reports
+  the failure. When its lease ends it is closed; under `FatalPolicy::Latch`
+  the runtime latches with its reason and every later lease fails (batch
+  jobs), and under `FatalPolicy::Respawn` the next lease starts a verified
+  replacement (interactive hosts). A lease that unwinds from a panic is
+  treated the same way. `fail(message)` reports a host-side fatal failure
+  under the same policy.
+- `finish()` waits for active leases, closes every worker and reports the
+  latched failure together with any cleanup failure.
+- The runtime is blocking. Lease and call from ordinary threads; async hosts
+  call from `tokio::task::spawn_blocking`. A worker never panics inside a
+  Tokio runtime context: there it drives its private runtime, and closes and
+  drops it, on a short-lived helper thread. Its calls still block the
+  calling thread.
+- `ArtifactIdentity::result_identity(operation, schema)` gives the
+  `ResultIdentity` for cached results. `ResultCache` is a bounded in-memory
+  LRU of successful opaque results keyed by the caller's request digest and
+  that identity. With the `disk-cache` feature, `DiskResultCache` keeps the
+  same records in a host-chosen directory: records are written atomically
+  under an OS lock, bounded by `DiskCacheLimits`, evicted oldest first, and
+  named by a `DiskCacheLayout` so different applications never adopt each
+  other's files. Corrupt, foreign or oversized records are misses. Callers
+  insert only results their own completion accepted, and complete every hit
+  again.
+- A `DiskCacheLayout` is an on-disk compatibility shape. Its record format
+  string and namespace alone derive the writer lock
+  `.{namespace}-write-lock`, the generation marker
+  `.{namespace}-directory-generation` and its staging files, the marker's
+  10-byte magic (the first four namespace characters uppercased and padded
+  with `_`, then `CDIR01`), the record file names and the record header. A
+  host that keeps its two strings keeps reading its earlier releases'
+  directories, and should pin those derived names in its own tests.
+- With the `test-support` feature, `Transport::Fake` starts in-process
+  `FakeWorker`s instead of processes, so hosts can test their supervision,
+  batching and caching without a Geometer executable. Everything except the
+  process boundary is the real runtime. It is not for production builds.
+
+`Transport`, `ExecutableSource`, `RuntimeConfig`, `ArtifactIdentity` (built
+with `ArtifactIdentity::new`), `DiskCacheLimits` and `Failure` are
+non-exhaustive. An application serving as its own single-file worker and the
+in-process `direct-static` client are planned as further transports behind
+the same `WorkerClient` surface.
 
 ## Wire projection
 
@@ -227,9 +280,7 @@ round trips, fixed-header rejection before payload allocation, strict malformed
 request recovery, unknown and queued cancellation, local timeout behavior,
 duplicate-attachment correlation, wrong-direction fatal handling,
 close/request race resolution, repeated real STEP work through one child,
-repeated nonempty typed analytic work through one child, native-produced packet
-corpus parity, mutation rejection, normative standalone job digests, graceful
-shutdown, and empty plus nontrivial friendly analytic IPC calls from a clean
+graceful shutdown, and typed illustration IPC from a clean
 Cargo-listed source staging against the platform executable in
 `dist/native/<platform>/`. The staging carries `geometer-sys` beside
 `geometer-client`, matching the static SDK layout; crates.io publication is not
@@ -250,3 +301,6 @@ The deadline and unexpected-exit cases use non-distributed native test servers
 with deterministic timing/failure injection; the production server retains its
 governed 30-second deadline. Native and release CI run these live Rust tests on
 every supported native platform after building that platform's executable.
+## STEP MIME inputs and defaults
+
+The maintained client normalizes valid STEP input MIME values to `model/step` before sending attachments. This includes case variants, comments, unknown parameters and the legacy `application/step` spelling. New constructors and attachment producers use `model/step`; response validation remains exact. See the [STEP media policy](../geometer/adr/geometer-adr-020-standard-step-media-types.md).

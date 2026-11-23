@@ -154,7 +154,8 @@ The production implementation has these boundaries:
 - an optional conservative fusion pass contracts opaque, depth-connected
   triangles with identical rendered fill into even-odd polygon regions after
   visibility ordering; mobility intervals allow fusion across unrelated paint
-  commands without crossing an overlapping different-style surface, while
+  commands without crossing an overlapping different-style surface, and fused
+  surfaces are then ordered by their overlaps of different paint, while
   projected folds, overlaps, non-manifold edges, and invalid boundaries retain
   their original triangles;
 - when enabled with fusion, coplanar-material layering groups opaque,

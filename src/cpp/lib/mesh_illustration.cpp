@@ -88,7 +88,9 @@ Commands render_commands(const Scene& scene, const Style& style, WorkBudget& bud
         else
             ++result.stats.creases;
     }
-    const auto ordered = order_triangles(triangles, scene.bounds, budget);
+    // Only what the view may show reaches the pairwise ordering and fusion.
+    const auto ordered =
+        order_triangles(cull_hidden_triangles(triangles, scene.bounds), scene.bounds, budget);
     if (style.fuse_surfaces)
         result.surfaces =
             fuse_triangles(ordered, scene.bounds, style.layer_coplanar_materials, budget);

@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
+  <meta name="wn-catalog-sha256" content="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032">
   <title>Build Automation Strategy — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/developer/ci-strategy.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="build-automation-strategy">Build Automation Strategy</h1></header>
 <p>Geometer does not run GitHub Actions for pushes or pull requests. In particular,
@@ -32,7 +32,7 @@ uvx --from wn-dev-std==2026.9.8 wn-dev-std check . --format json
 </code></pre>
 <p>The native build runs CTest's <code>production</code> label by default. Set
 <code>GEOMETER_TEST_PROFILE=production</code> for client strata when a focused production
-run should omit retained analytic-solver and STEP topology research suites.
+run should omit STEP topology research suites.
 Production TypeScript validation has two explicit, disjoint scopes:
 <code>GEOMETER_TYPESCRIPT_SCOPE=host</code> runs source and native-process checks in the
 Linux native lane, while <code>GEOMETER_TYPESCRIPT_SCOPE=wasm</code> validates the package,
@@ -66,12 +66,9 @@ indefinitely. Python and Rust production strata run once in the Linux native
 job. TypeScript's host scope runs there and its disjoint WASM scope runs against
 the freshly built WASM candidate. Separate jobs must not repeat either scope or
 rebuild the same wheel.</p>
-<h2 id="experimental-qualification">Experimental qualification</h2>
-<p>The <code>Experimental qualification</code> workflow runs only by manual dispatch when its
-research surfaces need qualification. It owns the analytic solver, STEP topology
-research, seeded synthetic qualification, and executable/WASM analytic
-cross-transport parity. These tests do not run on a schedule and do not block
-ordinary pull requests or releases.</p>
+<h2 id="wasm-validation">WASM validation</h2>
+<p>The manual <code>WASM validation</code> workflow builds and checks browser and Node WASM
+outputs and the browser demos.</p>
 <p>Run all native research tests locally with:</p>
 <pre><code class="language-powershell">uv run python scripts/validate_native.py --include-experimental-tests
 </code></pre>

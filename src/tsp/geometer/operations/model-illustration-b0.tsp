@@ -72,12 +72,14 @@ model ModelIllustrationGeometryResultB0 {
 
 namespace Wavenumber.Geometer.Contracts.Operations {
 
+/** STEP input uses RFC 2045 MIME-value parsing and ignores valid unknown parameters. New source summaries use model/step; application/step remains readable for compatibility. */
 @operationIdentity("geometry.model_illustration.b0")
 @inputAttachment("model", false, "application/step,model/step", 268435456)
 op modelIllustrationB0(
   request: Wavenumber.Geometer.Contracts.ModelIllustrationB0.ModelIllustrationRequestB0
 ): Wavenumber.Geometer.Contracts.ModelIllustrationB0.ModelIllustrationResultB0;
 
+/** STEP input uses RFC 2045 MIME-value parsing and ignores valid unknown parameters. New source summaries use model/step; application/step remains readable for compatibility. */
 @operationIdentity("geometry.model_illustration_geometry.b0")
 @inputAttachment("model", false, "application/step,model/step", 268435456)
 @outputAttachment("illustration_geometry", true, "application/vnd.wavenumber.geometer.illustration-geometry+json", 268435456)

@@ -6,10 +6,8 @@ const themePath = resolve(root, "examples/wasm/geometer_demo.css");
 const theme = readFileSync(themePath, "utf8");
 const designTheme = readFileSync(resolve(root, "docs/design/styles.css"), "utf8");
 const pages = [
-  "analytic_polygon_pour_demo.html",
   "illustration_demo.html",
   "model_bounds_demo.html",
-  "pcb_polygon_pour_demo.html",
 ];
 
 if (!theme.includes('font-family: "JetBrains Mono"')) {
@@ -78,5 +76,5 @@ if (/0x[\da-f]{6}|#[\da-f]{3,8}/iu.test(modelBoundsSource)) {
 }
 
 process.stdout.write(
-  "Shared analytic, illustration, PCB, and model-bounds demo theme validated.\n",
+  "Shared illustration and model-bounds demo theme validated.\n",
 );

@@ -3,15 +3,13 @@
 This folder contains user-facing examples that exercise Geometer outside the
 test harness.
 
-See the [dated runtime audit and disposition table](../docs/developer/demo-status.md)
-for verified status and gaps across every demo. Start with
-[model-bounds IPC](node/ipc-model-bounds.mjs) for persistent executable calls.
-
-- `python/` - Python wrapper examples and demo tools.
-- `cpp/` - native C++ example applications.
-- `node/` - native-process TypeScript reference applications.
-- `wasm/` - browser/WASM examples, the HLR Lab, reusable TypeScript demo
-  tooling, and sources for self-contained hosted demos.
+| Environment | Examples |
+| --- | --- |
+| Browser | [Model bounds](wasm/model_bounds_demo.html), [HLR Lab](wasm/embedded_model_viewer.html), [Illustration Lab](wasm/illustration_demo.html), [Planar ring solver](wasm/planar_ring_solver_demo.html) |
+| Python | [STEP HLR and SVG](python/step_hlr_svg.py), [Drawing geometry to Canvas](python/illustration_geometry_canvas.py), [Analytic model illustration](python/model_illustration_analytic.py), [PyVista HLR viewer](python/pyvista_hlr_viewer.py) |
+| Native C++ | [HLR preview source](cpp/hlr_preview.cpp) and [build guide](cpp/README.md) |
+| Node | [Model-bounds IPC quick start](node/ipc-model-bounds.mjs), [Experimental STEP topology](node/step_topology_annotation_reference.ts) |
+| Rust | [Native API Lab source](rust/native_viewer/src/main.rs) and [build guide](rust/native_viewer/README.md) |
 
 Test-only browser validation and benchmark harnesses live under `tests/wasm/`.
 The maintained build, packaging, panel, and publication boundaries are in

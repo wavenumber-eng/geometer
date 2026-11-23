@@ -2,7 +2,9 @@
 #include "analytic_illustration_lowering.h"
 #include "illustration_clipping.h"
 #include "mesh_illustration_internal.h"
+#include "model_illustration_source_cache.h"
 #include "model_illustration_transform.h"
+#include "step_media_type.h"
 
 #include "geometer/fast_hlr.h"
 #include "geometer/mesh_illustration.h"
@@ -313,9 +315,8 @@ int prepare_model_illustration(const Request& request, const ModelIllustrationAt
     const auto& source = request.source;
     const bool model_input =
         std::holds_alternative<contracts::ModelAttachmentIllustrationSourceA0>(source);
-    if ((model_input &&
-         (!model || !model->data || model->size == 0 ||
-          (model->media_type != "application/step" && model->media_type != "model/step"))) ||
+    if ((model_input && (!model || !model->data || model->size == 0 ||
+                         !step_media_type_detail::accepts(model->media_type))) ||
         (!model_input && model))
         return set_status(status, invalid_attachment,
                           model_input ? "A model source requires one STEP attachment."
@@ -349,8 +350,9 @@ int prepare_model_illustration(const Request& request, const ModelIllustrationAt
             tessellation.max_triangles = model_source.tessellation->max_triangles;
             tessellation.allow_partial = model_source.tessellation->allow_partial;
         }
-        code = model_tessellation_from_bytes(model->data, model->size, tessellation,
-                                             &output->collection, &nested, &output->warnings);
+        code = model_illustration_detail::tessellate_illustration_source(
+            model->data, model->size, tessellation, &output->collection, &nested, &output->warnings,
+            &source_hash);
         if (code != 0)
             return set_status(status, code == 102 || code == 103 ? code : tessellation_failed,
                               nested.message);
@@ -371,10 +373,7 @@ int prepare_model_illustration(const Request& request, const ModelIllustrationAt
                 for (auto& material : mesh.materials)
                     material = *model_source.material_override;
         contracts::ModelAttachmentSourceSummaryA0 summary;
-        summary.media_type = model->media_type == "model/step"
-                                 ? contracts::ModelAttachmentMediaTypeA0::model_step
-                                 : contracts::ModelAttachmentMediaTypeA0::application_step;
-        source_hash = sha256_hex(model->data, model->size);
+        summary.media_type = contracts::ModelAttachmentMediaTypeA0::model_step;
         summary.source_sha256 = source_hash;
         summary.meshes = static_cast<std::uint32_t>(output->collection.meshes.size());
         for (const auto& mesh : output->collection.meshes)
@@ -496,7 +495,6 @@ int prepare_model_illustration(const Request& request, const ModelIllustrationAt
     options.output_outline = outline;
     options.output_detail = detail;
     options.output_bbox = false;
-    options.curve_mode = ProjectionCurveMode::Polyline;
     options.views = {
         {"illustration",
          {request.view.direction[0], request.view.direction[1], request.view.direction[2]},
@@ -758,8 +756,7 @@ void execute_model_illustration(const std::string& operation_id, const unsigned 
             std::holds_alternative<contracts::ModelAttachmentIllustrationSourceA0>(source);
         if ((model_input &&
              (attachments.size() != 1 || attachments[0].name != "model" ||
-              (attachments[0].media_type != "application/step" &&
-               attachments[0].media_type != "model/step") ||
+              !step_media_type_detail::accepts(attachments[0].media_type) ||
               attachments[0].size > operation_input_attachment_max_bytes(operation, "model"))) ||
             (!model_input && !attachments.empty()))
         {
@@ -861,8 +858,7 @@ void execute_model_illustration(const std::string& operation_id, const unsigned 
         std::holds_alternative<contracts::ModelAttachmentIllustrationSourceA0>(source);
     if ((model_input &&
          (attachments.size() != 1 || attachments[0].name != "model" ||
-          (attachments[0].media_type != "application/step" &&
-           attachments[0].media_type != "model/step") ||
+          !step_media_type_detail::accepts(attachments[0].media_type) ||
           attachments[0].size > operation_input_attachment_max_bytes(operation, "model"))) ||
         (!model_input && !attachments.empty()))
     {

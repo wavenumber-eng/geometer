@@ -7,8 +7,6 @@ import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { applyProjectionDeferrals } from "./contract-projection-deferral.mjs";
-
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const catalogText = await readFile(
   join(root, "contracts/geometer/generated/wn_geometer_contract_catalog.a0.json"),
@@ -16,16 +14,12 @@ const catalogText = await readFile(
 );
 const contractCatalog = JSON.parse(catalogText);
 const catalogSha256 = createHash("sha256").update(catalogText).digest("hex");
-const modelCatalog = await applyProjectionDeferrals(contractCatalog, "python", {
-  retainLogicalDtos: true,
-});
-const codecCatalog = await applyProjectionDeferrals(contractCatalog, "python");
 const packedContracts = new Set(
   contractCatalog.operations
     .filter((operation) => operation.runtime_dispatch === "packed_attachment")
     .flatMap((operation) => [operation.request_contract, operation.result_contract]),
 );
-const codecRoots = codecCatalog.roots.filter(
+const codecRoots = contractCatalog.roots.filter(
   (rootRecord) => !packedContracts.has(rootRecord.contract_identity),
 );
 const outputPath = join(root, contractCatalog.output_roots.python);
@@ -36,9 +30,9 @@ if (process.argv.slice(2).some((argument) => argument !== "--check")) {
   throw new Error("Usage: node scripts/generate-python-contracts.mjs [--check]");
 }
 
-const declarations = new Map(modelCatalog.declarations.map((item) => [item.name, item]));
+const declarations = new Map(contractCatalog.declarations.map((item) => [item.name, item]));
 const codecDeclarationNames = reachableNames(codecRoots);
-assertUniqueShortNames(modelCatalog.declarations);
+assertUniqueShortNames(contractCatalog.declarations);
 await rm(stagingPath, { recursive: true, force: true });
 await rm(backupPath, { recursive: true, force: true });
 await mkdir(stagingPath, { recursive: true });
@@ -76,7 +70,7 @@ function generateModels() {
     `NORMALIZED_CATALOG_SHA256 = ${pythonLiteral(catalogSha256)}`,
     "",
   ];
-  for (const item of topologicalOrder(modelCatalog.declarations)) {
+  for (const item of topologicalOrder(contractCatalog.declarations)) {
     if (item.doc) lines.push(docComment(item.doc));
     if (item.kind === "enum") {
       lines.push(`class ${shortName(item.name)}(str, Enum):`);
@@ -122,7 +116,7 @@ function generateModels() {
     lines.push("");
   }
   lines.push("MODEL_TYPES = {");
-  for (const item of modelCatalog.declarations.filter(
+  for (const item of contractCatalog.declarations.filter(
     (value) =>
       codecDeclarationNames.has(value.name) &&
       value.kind === "model" &&
@@ -131,7 +125,7 @@ function generateModels() {
     lines.push(`    ${pythonLiteral(item.name)}: ${shortName(item.name)},`);
   }
   lines.push("}", "", "ENUM_TYPES = {");
-  for (const item of modelCatalog.declarations.filter(
+  for (const item of contractCatalog.declarations.filter(
     (value) => codecDeclarationNames.has(value.name) && value.kind === "enum",
   )) {
     lines.push(`    ${pythonLiteral(item.name)}: ${shortName(item.name)},`);
@@ -144,7 +138,7 @@ function generateCodecs() {
   const roots = codecRoots.map((item) => ({ ...item, typeName: shortName(item.name) }));
   const rootTypes = [...new Set(roots.map((item) => item.typeName))];
   const descriptorMap = Object.fromEntries(
-    modelCatalog.declarations
+    contractCatalog.declarations
       .filter((item) => codecDeclarationNames.has(item.name))
       .map((item) => [item.name, descriptor(item)]),
   );

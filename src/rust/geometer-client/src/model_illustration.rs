@@ -89,6 +89,7 @@ macro_rules! impl_model_illustration_client {
 }
 
 impl_model_illustration_client!(GeometerClient);
+impl_model_illustration_client!(crate::runtime::WorkerClient<'_>);
 #[cfg(feature = "direct-static")]
 impl_model_illustration_client!(GeometerDirectClient);
 
@@ -133,7 +134,7 @@ fn source_attachments(
     match (source, model) {
         (ModelIllustrationSourceA0::ModelSource(_), Some(data)) => Ok(vec![Attachment {
             name: "model".to_owned(),
-            media_type: "application/step".to_owned(),
+            media_type: "model/step".to_owned(),
             data,
         }]),
         (ModelIllustrationSourceA0::AnalyticSource(_), None) => Ok(Vec::new()),

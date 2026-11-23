@@ -16,8 +16,6 @@ Current library surfaces include:
 - Planar contour extraction for simplified projected outlines.
 - Production Clipper2-backed planar batch boolean/offset solving for filled 2D
   geometry.
-- Experimental analytic line/arc planar Boolean solving; retained for research
-  and diagnostics, not production use.
 - Colored STEP tessellation and native mesh illustration with optional visible
   HLR composition, exposed through direct C++, IPC, Rust and Python.
 
@@ -29,10 +27,7 @@ For the current callable C++, C ABI, Python, WASM, CLI, JSON, and binary
 formats, start at [../design/README.md](../design/README.md).
 
 For authored/generated documentation ownership and focused freshness checks,
-see [documentation maintenance](documentation.md). The [demo audit](demo-status.md)
-records current runtime evidence and remaining verification gaps.
-The [native illustration API readiness handoff](native-api-readiness.md)
-separates implemented surfaces and package evidence from remaining release gates.
+see [documentation maintenance](documentation.md).
 The [CI strategy](ci-strategy.md) defines change routing, production and
 experimental boundaries, release coverage, and canonical OCCT cache keys.
 
@@ -127,21 +122,8 @@ For dependency cache setup, see
 Pinned dependency versions live in scripts:
 
 - OCCT and emsdk: `scripts/dependency_versions.py`
-- Boost.Multiprecision: `scripts/dependency_versions.py` and `scripts/build_boost.py`
 - RapidJSON: `third_party/rapidjson/`
 - Clipper2: `third_party/clipper2/`
-
-The non-primary exact real-algebraic oracle and bounded fallback use the pinned
-header-only Boost
-source tree under `.deps/boost_1_92_0/`. CMake restores it automatically after
-verifying the official archive SHA-256, or it can be prepared explicitly:
-
-```powershell
-python scripts\build_boost.py
-```
-
-The archive cache and extracted headers are generated `.deps/` state and must
-not be committed.
 
 ## TypeSpec Contract Toolchain
 
@@ -433,6 +415,11 @@ Common native CLI commands:
 
 The Python package uses the native CLI by default. From a source checkout,
 `GEOMETER_EXE` is optional if `dist/native/<platform>/geometer(.exe)` exists.
+Discovery skips known Python `geometer` console launchers, including Windows
+uv entry points, so an editable consumer without a native CLI fails promptly
+instead of recursively spawning wrappers. `GEOMETER_EXE` can select a genuine
+native executable; pointing it at the Python launcher is rejected before launch
+([Appz #692](https://github.com/wavenumber-eng/appz/issues/692)).
 The old Python wheel direction based on `geometer.dll` plus OCCT `TK*.dll`
 runtime files is retired; `dist/` should not persist those files.
 
@@ -449,9 +436,8 @@ uv run --frozen twine check out\wheelhouse\*.whl
 
 The package validation script builds the local wheel, installs it into a clean
 temporary environment, verifies that Python resolves the bundled executable from
-inside the installed package, imports the public analytic DTO/client surface,
-executes empty and nontrivial analytic IPC calls against that bundled
-executable, verifies the generated `geometer` console script, and runs the
+inside the installed package, verifies the generated `geometer` console
+script, and runs the
 headless package example. It also exercises installed public tessellation,
 illustration, Fast-HLR composition, deterministic SVG, default surface fusion,
 limit recovery and one-shot Python helpers outside the source checkout:
@@ -571,21 +557,21 @@ PyPI upload commands:
 
 ```powershell
 # Preflight metadata.
-python -m twine check out\wheelhouse\windows-x64\wn_geometer-2026.9.19-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.19-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\linux-arm64\wn_geometer-2026.9.19-py3-none-manylinux_2_35_aarch64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.19-py3-none-macosx_11_0_arm64.whl
+python -m twine check out\wheelhouse\windows-x64\wn_geometer-2026.11.22-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.11.22-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\linux-arm64\wn_geometer-2026.11.22-py3-none-manylinux_2_35_aarch64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.11.22-py3-none-macosx_11_0_arm64.whl
 
 # Optional dry-run project on TestPyPI.
-python -m twine upload --repository testpypi out\wheelhouse\windows-x64\wn_geometer-2026.9.19-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.19-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\linux-arm64\wn_geometer-2026.9.19-py3-none-manylinux_2_35_aarch64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.19-py3-none-macosx_11_0_arm64.whl
+python -m twine upload --repository testpypi out\wheelhouse\windows-x64\wn_geometer-2026.11.22-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.11.22-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\linux-arm64\wn_geometer-2026.11.22-py3-none-manylinux_2_35_aarch64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.11.22-py3-none-macosx_11_0_arm64.whl
 
 # Public PyPI release.
-python -m twine upload --repository pypi out\wheelhouse\windows-x64\wn_geometer-2026.9.19-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.9.19-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\linux-arm64\wn_geometer-2026.9.19-py3-none-manylinux_2_35_aarch64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.9.19-py3-none-macosx_11_0_arm64.whl
+python -m twine upload --repository pypi out\wheelhouse\windows-x64\wn_geometer-2026.11.22-py3-none-win_amd64.whl out\wheelhouse\linux-x64\wn_geometer-2026.11.22-py3-none-manylinux_2_35_x86_64.whl out\wheelhouse\linux-arm64\wn_geometer-2026.11.22-py3-none-manylinux_2_35_aarch64.whl out\wheelhouse\macos-arm64\wn_geometer-2026.11.22-py3-none-macosx_11_0_arm64.whl
 ```
 
 For token-based upload, set `TWINE_USERNAME=__token__` and put the PyPI or
 TestPyPI API token in `TWINE_PASSWORD`, or use an equivalent `.pypirc`/keyring
 setup. Do not write upload tokens into the repository.
 
-The current release target is `wn-geometer==2026.9.19`; callers install
-`wn-geometer==2026.9.19` and import `geometer`.
+The current release target is `wn-geometer==2026.11.22`; callers install
+`wn-geometer==2026.11.22` and import `geometer`.
 
 For local token setup, copy `.env.example` to `.env`, fill the token values,
 and keep `.env` out of version control.
@@ -641,95 +627,6 @@ The public Python package uses the executable backend only. Keep ctypes/native
 loading experiments out of the normal wheel and application path unless a future
 ADR explicitly reopens that backend.
 
-## Experimental Analytic Qualification
-
-This tooling characterizes the retained experimental analytic solver. Passing
-the governed fixtures or historical production-oriented gates does not make the
-operation production-ready. In particular, do not use it as the dependable
-whole-board or whole-layer copper-union path; use Clipper2-backed planar
-operations when polygonized output is suitable. See
-[ADR-017](../geometer/adr/geometer-adr-017-retain_analytic_planar_boolean_as_experimental.md).
-
-Use an existing Release executable to replay the governed analytic request
-through the same release IPC transport without rebuilding OCCT:
-
-```powershell
-uv run python scripts\qualify_analytic_planar_boolean.py --power-mode balanced
-```
-
-The default governed request is synthetic cross-transport evidence. Supply an
-external corpus with `--corpus`; its `external_real_board` cases require source
-and exporter identity, source digest, exporter revision, explicit qualification
-redistribution authorization, and license scope. Reports are written below
-`out/analytic-qualification/` by default. Process RSS remains a separately
-labelled external envelope.
-
-Corpus request paths are contained relative paths. Canonical lowercase `.hex`
-files and exact raw `.gmabrq01` files are supported; the suffix selects the
-decoder, and magic/accounting mismatches fail closed. Replay the governed RT
-local candidate without duplicating its raw bytes as hex:
-
-```powershell
-uv run python scripts\qualify_analytic_planar_boolean.py `
-  --corpus tests\contracts\vectors\analytic\real-board\rt_super_c1_pwr4\corpus.json `
-  --executable build\src\cpp\cli\geometer.exe `
-  --telemetry-helper build\tests\cpp\geometer_analytic_solver_telemetry_helper.exe `
-  --warmup-count 1 --repeat-count 2 --require-target --require-solver-telemetry
-```
-
-The checked-in report is a local Ryzen 9 5950X, dirty-build observation. It is
-not a clean-build promotion record. Its machine identity and the 1-second/
-512-MiB target remain comparative observations rather than release gates.
-
-Native builds also produce the test/qualification-only
-`geometer_analytic_solver_telemetry_helper` target. The harness discovers it
-only from `--telemetry-helper`, `GEOMETER_ANALYTIC_TELEMETRY_HELPER`, or the
-canonical current-workspace native build paths. Use the required gate explicitly:
-
-```powershell
-uv run python scripts\qualify_analytic_planar_boolean.py --require-solver-telemetry
-```
-
-Release runs must additionally pass
-`--require-promotion-attested`; the command then exits unsuccessfully unless
-the executable sidecar matches the current authoritative clean source and a
-verified resolved OCCT install profile, and any external real-board case passes
-the portable expected-result, repeat, byte-equality, zero-failure/fallback, and
-5-second/1-GiB hard-ceiling gates.
-
-An external real-board corpus enables this requirement automatically. Missing,
-unexecutable, or incompatible helpers fail closed. For every measured run the
-helper consumes the identical `GMABRQ01` bytes through
-`decode_analytic_request_packet` and `build_analytic_filtered_batch`; the
-harness rejects its counters unless its complete result packet is byte-for-byte
-equal to the production executable IPC result.
-
-Auto-discovered helpers must also be newer than their adjacent `geometer_lib`
-artifact, and that library must be newer than the current native solver source
-closure. A stale build is rejected with the exact helper target to rebuild.
-
-The report schema is
-`wn.geometer.analytic_planar_boolean_qualification.a2`; the internal counter
-schema is `wn.geometer.analytic_solver_telemetry.a0`. Report identity binds the
-request and expected-result digests, production executable/toolchain profile,
-helper executable SHA-256, telemetry schema, machine profile, run counts, power
-mode, and target policy. Runtime timing, RSS, and counter observations are not
-identity inputs. Per-job `emitted_bytes` is the logical encoded footprint of
-that isolated job before canonical batch merging and shared-table
-deduplication; batch `emitted_bytes` is the exact canonical result-packet size.
-The helper is neither distributed nor a public operation/API, and it does not
-change the A0 request/result wire. Internal telemetry alone cannot claim the
-real-board promotion gate: build-attested executable provenance is a separate
-required gate. Machine identity is recorded for comparison but does not affect
-portable production eligibility. Missing
-sidecars fall back to explicitly un-attested workspace hints; invalid or stale
-adjacent sidecars fail closed. Every external real-board
-case also needs a governed expected-result SHA-256; deterministic self-output
-without that authority remains comparative evidence only. Promotion also needs
-at least two production-result and byte-matched telemetry observations; a
-single run is permitted for smoke/diagnostic use but cannot establish the
-promotion determinism gate.
-
 ## WASM Build
 
 From the repository root:
@@ -777,8 +674,8 @@ date-based ABI generation, for example `20260907`.
 ## Versioning
 
 Geometer follows [ADR 006](../geometer/adr/geometer-adr-006-date_based_versioning_policy.md).
-The current release identity is `v2026-09-19`; the CMake/PyPI package version
-is `2026.9.19`; the C ABI generation is `20260919`.
+The current release identity is `v2026-11-22`; the CMake/PyPI package version
+is `2026.11.22`; the C ABI generation is `20261122`.
 
 The root `CMakeLists.txt` declares `GEOMETER_RELEASE_DATE`,
 `GEOMETER_RELEASE_VERSION`, and `GEOMETER_ABI_VERSION`. The root
@@ -867,7 +764,7 @@ uv run pytest tests\typescript -q
 ```
 
 Validate generated Rust codecs, formatting/lints, exact A0 framing, a clean
-packaged-crate consumer running friendly analytic IPC against the platform
+packaged-crate consumer running typed illustration IPC against the platform
 `dist` executable, and live persistent native-process model bounds:
 
 ```powershell
@@ -980,9 +877,7 @@ python scripts\run_xcaf_custom_driver_matrix.py
 The harness compiles one source file against both installs and exercises
 same-version, old-write/new-read, new-write/old-read, and missing-reader-driver
 behavior for XBF and XML. Its artifacts and provenance report remain generated
-under `.deps/xcaf-matrix/automated/`; do not commit them. The durable measured
-result and its narrow scope are recorded in
-`docs/research/step-topology/step-topology-xcaf-persistence.md`.
+under `.deps/xcaf-matrix/automated/`.
 
 Specification traceability is recorded as relative locators in the design
 docs. `GEOMETER_AP242_SPEC_ROOT` is only a manual reviewer convention; no test

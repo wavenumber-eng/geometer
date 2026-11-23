@@ -160,12 +160,14 @@ union ModelIllustrationSourceA0 {
   analytic_source: AnalyticIllustrationSourceA0,
 }
 
+/** Work limits a caller may set; omitted, the illustration's work is not limited. */
 model ModelIllustrationWorkLimitsA0 {
   /** Maximum candidate comparisons in each Fast linework and illustration visibility stage. */
-  @minValue(1) @maxValue(100000000)
-  max_visibility_candidate_pairs?: uint32 = 100000000;
-  @minValue(1) @maxValue(2000000)
-  max_drawing_commands?: uint32 = 2000000;
+  @minValue(1)
+  max_visibility_candidate_pairs?: uint32;
+  /** Maximum drawing commands of the illustration and its Fast linework. */
+  @minValue(1)
+  max_drawing_commands?: uint32;
 }
 
 model ModelIllustrationLineworkOptionsA0 {
@@ -205,6 +207,7 @@ model ModelIllustrationGeometryRequestA0 {
   work_limits?: ModelIllustrationWorkLimitsA0;
 }
 
+/** New producers emit model_step. The legacy application_step spelling remains decodable; output descriptors contain bare canonical tokens, never input parameters. */
 enum ModelAttachmentMediaTypeA0 {
   application_step: "application/step",
   model_step: "model/step",

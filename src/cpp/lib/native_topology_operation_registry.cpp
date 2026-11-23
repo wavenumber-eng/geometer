@@ -1,4 +1,5 @@
 #include "geometer/operation_registry.h"
+#include "step_media_type.h"
 
 #include "geometer/native_operation_execution_gate.h"
 #include "geometer/operation_transport.h"
@@ -105,7 +106,7 @@ step_attachment(const std::string& operation,
         return nullptr;
     }
     const auto& attachment = attachments.front();
-    if (attachment.media_type != "application/step" && attachment.media_type != "model/step")
+    if (!step_media_type_detail::accepts(attachment.media_type))
     {
         fail(execution, operation,
              diagnostic(operation, "geometer.contract.attachment_media_type_mismatch",
@@ -928,8 +929,7 @@ void execute_restore(const unsigned char* request_json, std::size_t request_json
                         "/replay_preconditions"));
         return;
     }
-    const bool source_media_valid =
-        source->media_type == "application/step" || source->media_type == "model/step";
+    const bool source_media_valid = step_media_type_detail::accepts(source->media_type);
     const std::string source_sha256 = sha256_hex(source->data, source->size);
     const std::string journal_sha256 = sha256_hex(state_artifact->data, state_artifact->size);
     if (!source_media_valid || state_artifact->media_type != journal_descriptor->media_type ||

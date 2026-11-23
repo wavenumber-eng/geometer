@@ -18,50 +18,6 @@ function allocateText(module, text) {
   return allocateBytes(module, Buffer.from(text, "utf8"));
 }
 
-function singleDiskAnalyticRequestPacket() {
-  const recordBytes = [24, 32, 24, 32, 4, 32, 24, 40, 32, 40, 48, 32, 24];
-  const counts = [1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0];
-  const headerBytes = 64 + 32 * recordBytes.length;
-  let cursor = headerBytes;
-  const offsets = [];
-  for (let index = 0; index < recordBytes.length; index += 1) {
-    offsets.push(cursor);
-    cursor += recordBytes[index] * counts[index];
-    if (index + 1 !== recordBytes.length) cursor = (cursor + 7) & ~7;
-  }
-  const packet = Buffer.alloc(cursor);
-  packet.write("GMABRQ01", 0, "ascii");
-  packet.writeUInt16LE(1, 8);
-  packet.writeUInt16LE(64, 10);
-  packet.writeBigUInt64LE(BigInt(packet.length), 16);
-  packet.writeBigUInt64LE(64n, 24);
-  packet.writeUInt32LE(recordBytes.length, 32);
-  packet.writeUInt32LE(1, 36);
-  packet.writeBigUInt64LE(112n, 48);
-  for (let index = 0; index < recordBytes.length; index += 1) {
-    const entry = 64 + index * 32;
-    packet.writeUInt16LE(index + 1, entry);
-    packet.writeUInt16LE(1, entry + 2);
-    packet.writeUInt32LE(recordBytes[index], entry + 4);
-    packet.writeBigUInt64LE(BigInt(offsets[index]), entry + 8);
-    packet.writeBigUInt64LE(BigInt(recordBytes[index] * counts[index]), entry + 16);
-    packet.writeBigUInt64LE(BigInt(counts[index]), entry + 24);
-  }
-  packet.writeBigUInt64LE(1n, offsets[0]);
-  packet.writeUInt32LE(0, offsets[0] + 8);
-  packet.writeUInt32LE(1, offsets[0] + 12);
-  packet.writeBigUInt64LE(1n, offsets[1]);
-  packet.writeUInt8(1, offsets[1] + 8);
-  packet.writeUInt32LE(0, offsets[1] + 16);
-  packet.writeUInt32LE(1, offsets[1] + 20);
-  packet.writeBigUInt64LE(1n, offsets[2]);
-  packet.writeUInt16LE(2, offsets[2] + 8);
-  packet.writeUInt32LE(0, offsets[2] + 12);
-  packet.writeBigUInt64LE(1n, offsets[8]);
-  packet.writeBigUInt64LE(1_000_000n, offsets[8] + 24);
-  return packet;
-}
-
 async function main() {
   const module = await createGeometerModule({
     wasmBinary: fs.readFileSync(path.join(browserDist, "geometer.wasm")),
@@ -93,27 +49,9 @@ async function main() {
   if (!catalog.operations.some((operation) => operation.identity === "geometry.model_bounds.a0")) {
     throw new Error("model_bounds is absent from the operation catalog.");
   }
-  const analyticDeclaration = catalog.operations.find(
-    (operation) => operation.identity === "geometry.analytic_planar_boolean_batch.a0",
-  );
-  if (
-    analyticDeclaration?.runtime_dispatch !== "packed_attachment" ||
-    analyticDeclaration.request_projection?.attachment_name !== "analytic_planar_boolean_request" ||
-    analyticDeclaration.result_projection?.attachment_name !== "analytic_planar_boolean_result"
-  ) {
-    throw new Error("Packed analytic dispatch is absent from the operation catalog.");
+  if (catalog.operations.some(({ identity }) => identity === "geometry.analytic_planar_boolean_batch.a0")) {
+    throw new Error("Retired analytic Boolean operation is still in the WASM catalog.");
   }
-  if (catalog.attachment_descriptor.wasm32.size !== 36) {
-    throw new Error("Unexpected wasm32 attachment descriptor size.");
-  }
-  if (
-    catalog.limits.response_json_bytes !== 32 * 1024 * 1024 ||
-    catalog.limits.attachment_count !== 16 ||
-    catalog.limits.aggregate_attachment_bytes_wasm !== 256 * 1024 * 1024
-  ) {
-    throw new Error("Unexpected generic ABI response limits in the generated catalog.");
-  }
-
   const operation = "geometry.model_bounds.a0";
   const request = "{}";
   const name = "model";
@@ -176,169 +114,11 @@ async function main() {
     module._free(pointer);
   }
 
-  const analyticOperation = "geometry.analytic_planar_boolean_batch.a0";
-  const analyticRequest = JSON.stringify({
-    schema: "geometry.analytic_planar_boolean_batch.request.a0",
-    packet: {
-      attachment: "analytic_planar_boolean_request",
-      format: "geometry.analytic_planar_boolean.packet.a0",
-    },
-  });
-  const analyticName = "analytic_planar_boolean_request";
-  const analyticMediaType =
-    "application/vnd.wavenumber.geometer.analytic-planar-boolean-request";
-  const analyticPacket = singleDiskAnalyticRequestPacket();
-  const analyticPointers = [
-    allocateText(module, analyticOperation),
-    allocateText(module, analyticRequest),
-    allocateText(module, analyticName),
-    allocateText(module, analyticMediaType),
-    allocateBytes(module, analyticPacket),
-    module._malloc(36),
-    module._malloc(4),
-    module._malloc(4),
-    module._malloc(4),
-  ];
-  const [
-    analyticOperationPointer,
-    analyticRequestPointer,
-    analyticNamePointer,
-    analyticMediaPointer,
-    analyticPacketPointer,
-    analyticDescriptorPointer,
-    analyticResultOut,
-    analyticErrorOut,
-    analyticSizeOut,
-  ] = analyticPointers;
-  module.HEAPU32.set(
-    [
-      36,
-      0,
-      analyticNamePointer,
-      analyticName.length,
-      analyticMediaPointer,
-      analyticMediaType.length,
-      analyticPacketPointer,
-      analyticPacket.length,
-      0,
-    ],
-    analyticDescriptorPointer >> 2,
-  );
-  module.HEAPU32[analyticResultOut >> 2] = 0;
-  module.HEAPU32[analyticErrorOut >> 2] = 0;
-  const analyticCode = module._geometer_operation_execute(
-    analyticOperationPointer,
-    analyticOperation.length,
-    analyticRequestPointer,
-    Buffer.byteLength(analyticRequest),
-    analyticDescriptorPointer,
-    1,
-    analyticResultOut,
-    analyticErrorOut,
-  );
-  const analyticResult = module.HEAPU32[analyticResultOut >> 2];
-  if (analyticCode !== 0 || !analyticResult || module.HEAPU32[analyticErrorOut >> 2]) {
-    throw new Error(`Packed analytic operation failed locally with ${analyticCode}.`);
-  }
-  const analyticJsonPointer = module._geometer_operation_result_json_data(analyticResult);
-  const analyticJsonSize = module._geometer_operation_result_json_size(analyticResult);
-  const analyticOutcome = JSON.parse(
-    Buffer.from(
-      module.HEAPU8.subarray(analyticJsonPointer, analyticJsonPointer + analyticJsonSize),
-    ).toString("utf8"),
-  );
-  if (
-    !analyticOutcome.ok ||
-    analyticOutcome.result.schema !== "geometry.analytic_planar_boolean_batch.result.a0" ||
-    module._geometer_operation_result_attachment_count(analyticResult) !== 1
-  ) {
-    throw new Error(`Unexpected packed analytic outcome: ${JSON.stringify(analyticOutcome)}`);
-  }
-  const resultNamePointer = module._geometer_operation_result_attachment_name(
-    analyticResult,
-    0,
-    analyticSizeOut,
-  );
-  const resultNameSize = module.HEAPU32[analyticSizeOut >> 2];
-  const resultName = Buffer.from(
-    module.HEAPU8.subarray(resultNamePointer, resultNamePointer + resultNameSize),
-  ).toString("utf8");
-  const resultMediaPointer = module._geometer_operation_result_attachment_media_type(
-    analyticResult,
-    0,
-    analyticSizeOut,
-  );
-  const resultMediaSize = module.HEAPU32[analyticSizeOut >> 2];
-  const resultMedia = Buffer.from(
-    module.HEAPU8.subarray(resultMediaPointer, resultMediaPointer + resultMediaSize),
-  ).toString("utf8");
-  const resultDataPointer = module._geometer_operation_result_attachment_data(
-    analyticResult,
-    0,
-    analyticSizeOut,
-  );
-  const resultDataSize = module.HEAPU32[analyticSizeOut >> 2];
-  const resultMagic = Buffer.from(
-    module.HEAPU8.subarray(resultDataPointer, resultDataPointer + 8),
-  ).toString("ascii");
-  const resultHeader = Buffer.from(
-    module.HEAPU8.subarray(resultDataPointer, resultDataPointer + 64),
-  );
-  if (
-    resultName !== "analytic_planar_boolean_result" ||
-    resultMedia !== "application/vnd.wavenumber.geometer.analytic-planar-boolean-result" ||
-    resultMagic !== "GMABRS01" ||
-    resultHeader.readUInt32LE(36) !== 1 ||
-    resultHeader.readBigUInt64LE(48) === 0n
-  ) {
-    throw new Error("Packed analytic result attachment metadata or magic drifted.");
-  }
-  module._geometer_operation_result_free(analyticResult);
-
-  module.HEAPU8[analyticPacketPointer] = "X".charCodeAt(0);
-  module.HEAPU32[analyticResultOut >> 2] = 0;
-  module.HEAPU32[analyticErrorOut >> 2] = 0;
-  const malformedCode = module._geometer_operation_execute(
-    analyticOperationPointer,
-    analyticOperation.length,
-    analyticRequestPointer,
-    Buffer.byteLength(analyticRequest),
-    analyticDescriptorPointer,
-    1,
-    analyticResultOut,
-    analyticErrorOut,
-  );
-  const malformedResult = module.HEAPU32[analyticResultOut >> 2];
-  if (malformedCode !== 0 || !malformedResult || module.HEAPU32[analyticErrorOut >> 2]) {
-    throw new Error(`Malformed packed analytic request failed locally with ${malformedCode}.`);
-  }
-  const malformedJsonPointer = module._geometer_operation_result_json_data(malformedResult);
-  const malformedJsonSize = module._geometer_operation_result_json_size(malformedResult);
-  const malformedOutcome = JSON.parse(
-    Buffer.from(
-      module.HEAPU8.subarray(
-        malformedJsonPointer,
-        malformedJsonPointer + malformedJsonSize,
-      ),
-    ).toString("utf8"),
-  );
-  if (
-    malformedOutcome.ok ||
-    malformedOutcome.diagnostics?.[0]?.code !==
-      "geometer.contract.analytic_planar_boolean_packet.invalid_packet" ||
-    module._geometer_operation_result_attachment_count(malformedResult) !== 0
-  ) {
-    throw new Error(`Unexpected malformed analytic outcome: ${JSON.stringify(malformedOutcome)}`);
-  }
-  module._geometer_operation_result_free(malformedResult);
-  for (const pointer of analyticPointers) module._free(pointer);
-
   console.log(
     JSON.stringify({
       operation: outcome.operation,
       ok: outcome.ok,
       schema: outcome.result.schema,
-      analyticBytes: resultDataSize,
     }),
   );
 }

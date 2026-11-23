@@ -28,7 +28,6 @@ def main() -> int:
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
     parser.add_argument("--view", choices=sorted(VIEW_FACTORIES), default="top")
     parser.add_argument("--mode", choices=["outline", "detail", "bbox"], default="outline")
-    parser.add_argument("--curve-mode", choices=["polyline", "native_arcs"], default="polyline")
     parser.add_argument("--skip-glb", action="store_true")
     args = parser.parse_args()
 
@@ -46,7 +45,6 @@ def main() -> int:
 
     view = VIEW_FACTORIES[args.view]()
     options = {
-        "curve_mode": args.curve_mode,
         "views": [view.to_json_value()],
     }
 

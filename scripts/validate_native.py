@@ -26,6 +26,7 @@ PRODUCTION_VALIDATION_TARGETS = (
     "geometer_planar_step_test",
     "geometer_model_bounds_test",
     "geometer_model_tessellation_test",
+    "geometer_model_source_cache_test",
     "geometer_model_illustration_native_test",
     "geometer_mesh_illustration_geometry_test",
     "geometer_mesh_illustration_test",
@@ -71,7 +72,7 @@ def main() -> int:
     parser.add_argument(
         "--include-experimental-tests",
         action="store_true",
-        help="Build and run retained analytic-solver and STEP-topology research tests.",
+        help="Build and run STEP-topology research tests.",
     )
     args = parser.parse_args()
 

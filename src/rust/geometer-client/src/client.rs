@@ -27,7 +27,7 @@ use crate::process::{
 use crate::session_validation::{
     discover_executable, encode_reason, validate_effective_request, validate_welcome,
 };
-use crate::{AnalyticPacketError, IPC_IDENTITY, IndexedMeshPacketError};
+use crate::{IPC_IDENTITY, IndexedMeshPacketError};
 
 #[cfg(test)]
 #[path = "client_tests.rs"]
@@ -48,8 +48,6 @@ pub enum GeometerClientError {
     Contract(#[from] contracts::ContractError),
     #[error(transparent)]
     Frame(#[from] ipc::FrameError),
-    #[error(transparent)]
-    AnalyticPacket(#[from] AnalyticPacketError),
     #[error(transparent)]
     IndexedMeshPacket(#[from] IndexedMeshPacketError),
     #[error("Geometer IPC protocol failed: {0}")]
@@ -443,7 +441,7 @@ impl GeometerClient {
         &self,
         operation: &str,
         request_json: &[u8],
-        attachments: Vec<Attachment>,
+        mut attachments: Vec<Attachment>,
     ) -> Result<OperationCall, GeometerClientError> {
         let declaration = self
             .welcome
@@ -456,7 +454,7 @@ impl GeometerClient {
                     "operation {operation} is absent from the negotiated catalog"
                 ))
             })?;
-        let request = decode_and_validate_request(declaration, request_json, &attachments)?;
+        let request = decode_and_validate_request(declaration, request_json, &mut attachments)?;
         let json = match request {
             crate::operation_validation::OperationRequest::A0(request) => {
                 contracts::encode_ipc_request_a0_json(&IpcRequestA0 {

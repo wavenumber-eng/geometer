@@ -1,4 +1,4 @@
-import type { AnalyticPlanarBooleanBatchRequestA0, AnalyticPlanarBooleanBatchResultA0, DiagnosticA0, HlrProjectionOptionsA0, HlrProjectionResultA0, HlrProjectionResultB0, MeshCollectionA0, MeshHlrProjectionRequestB0, MeshIllustrationGeometryB0, MeshIllustrationGeometryInputB0, MeshIllustrationInputB0, MeshIllustrationResultB0, ModelBoundsInputMediaType, ModelBoundsOptionsA0, ModelBoundsResultA0, OperationOutcomeA0, OperationOutcomeB0 } from "./generated/index.js";
+import type { DiagnosticA0, HlrProjectionOptionsA0, HlrProjectionResultA0, HlrProjectionResultB0, MeshCollectionA0, MeshHlrProjectionRequestB0, MeshIllustrationGeometryB0, MeshIllustrationGeometryInputB0, MeshIllustrationInputB0, MeshIllustrationResultB0, ModelBoundsOptionsA0, ModelBoundsResultA0, OperationOutcomeA0, OperationOutcomeB0 } from "./generated/index.js";
 import type { IndexedTriangleMeshA0 } from "./indexed-mesh-packet-a0.js";
 export interface EmscriptenGeometerModule {
     readonly HEAPU8: Uint8Array;
@@ -28,12 +28,12 @@ export interface GeometerOperationResponse {
     readonly outcome: OperationOutcomeA0 | OperationOutcomeB0;
 }
 export interface ModelBoundsRequest {
-    readonly mediaType?: ModelBoundsInputMediaType;
+    readonly mediaType?: string;
     readonly model: Uint8Array;
     readonly options?: ModelBoundsOptionsA0;
 }
 export interface ModelHlrProjectionRequest {
-    readonly mediaType?: "application/step" | "model/step";
+    readonly mediaType?: string;
     readonly model: Uint8Array;
     readonly options?: HlrProjectionOptionsA0;
 }
@@ -74,7 +74,6 @@ export declare class GeometerWasmClient {
     private readonly runtimeCatalog;
     private constructor();
     static fromModule(module: EmscriptenGeometerModule): GeometerWasmClient;
-    analyticPlanarBooleanBatch(request: AnalyticPlanarBooleanBatchRequestA0): Promise<AnalyticPlanarBooleanBatchResultA0>;
     modelBounds(request: ModelBoundsRequest): Promise<ModelBoundsResultA0>;
     modelHlrProjection(request: ModelHlrProjectionRequest): Promise<HlrProjectionResultA0>;
     meshHlrProjection(request: MeshHlrProjectionRequest): Promise<HlrProjectionResultB0>;

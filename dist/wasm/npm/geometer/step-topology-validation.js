@@ -1,3 +1,4 @@
+import { StepMediaTypeError, stepInputMediaType } from "./step-media-type.js";
 export class StepTopologySemanticError extends Error {
     code;
     constructor(code, message) {
@@ -345,7 +346,7 @@ export async function validateStepTopologyRestoreAttachments(request, attachment
     await validateExactAttachments([
         {
             name: "source",
-            mediaTypes: ["application/step", "model/step"],
+            mediaTypes: ["model/step"],
             bytes: request.source.bytes,
             sha256: request.source.sha256,
         },
@@ -355,7 +356,22 @@ export async function validateStepTopologyRestoreAttachments(request, attachment
             bytes: request.state_artifact.bytes,
             sha256: request.state_artifact.sha256,
         },
-    ], attachments);
+    ], normalizedRestoreInputs(attachments));
+}
+function normalizedRestoreInputs(attachments) {
+    try {
+        return attachments.map((attachment) => ({
+            ...attachment,
+            mediaType: attachment.name === "source"
+                ? stepInputMediaType(attachment.mediaType, ["model/step", "application/step"])
+                : attachment.mediaType,
+        }));
+    }
+    catch (error) {
+        if (!(error instanceof StepMediaTypeError))
+            throw error;
+        fail("geometer.step_topology.attachment_mismatch", "Invalid STEP source media type.");
+    }
 }
 export function validateStepTopologyRestoreResult(request, result) {
     if (result.source.format !== request.source.format ||

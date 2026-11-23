@@ -13,22 +13,10 @@ const char* operation_catalog_json()
         std::string("{\"catalog\":\"wn.geometer.operation_catalog.a0\",\"generic_abi\":\"a0\","
                     "\"release_version\":\"") +
         version_string() + "\",\"c_abi_generation\":" + std::to_string(abi_version()) +
-        ",\"operations\":[{\"identity\":\"geometry.analytic_planar_boolean_batch.a0\",\"request_"
-        "contract\":\"geometry.analytic_planar_boolean_batch.request.a0\",\"result_contract\":"
-        "\"geometry.analytic_planar_boolean_batch.result.a0\",\"input_attachments\":[{\"name\":"
-        "\"analytic_planar_boolean_request\",\"required\":true,\"media_types\":[\"application/"
-        "vnd.wavenumber.geometer.analytic-planar-boolean-request\"],\"max_bytes\":268435456}],"
-        "\"output_attachments\":[{\"name\":\"analytic_planar_boolean_result\",\"required\":true,"
-        "\"media_types\":[\"application/"
-        "vnd.wavenumber.geometer.analytic-planar-boolean-result\"],\"max_bytes\":268435456}],"
-        "\"runtime_dispatch\":\"packed_attachment\",\"request_projection\":{\"kind\":\"packed_"
-        "attachment\",\"attachment_name\":\"analytic_planar_boolean_request\",\"format\":"
-        "\"geometry.analytic_planar_boolean.packet.a0\"},\"result_projection\":{\"kind\":\"packed_"
-        "attachment\",\"attachment_name\":\"analytic_planar_boolean_result\",\"format\":\"geometry."
-        "analytic_planar_boolean.packet.a0\"}},{\"identity\":\"geometry.mesh_hlr_projection.a0\","
-        "\"request_contract\":\"geometry.hlr_projection.options.a0\",\"result_contract\":"
-        "\"geometry.hlr_projection.result.a0\",\"input_attachments\":[{\"name\":\"mesh\","
-        "\"required\":true,\"media_types\":[\"application/"
+        ",\"operations\":[{\"identity\":\"geometry.mesh_hlr_projection.a0\",\"request_contract\":"
+        "\"geometry.hlr_projection.options.a0\",\"result_contract\":\"geometry.hlr_projection."
+        "result.a0\",\"input_attachments\":[{\"name\":\"mesh\",\"required\":true,\"media_types\":["
+        "\"application/"
         "vnd.wavenumber.geometer.indexed-triangle-mesh\"],\"max_bytes\":268435456}],\"output_"
         "attachments\":[],\"runtime_dispatch\":\"logical_dto\"},{\"identity\":\"geometry.mesh_hlr_"
         "projection.b0\",\"request_contract\":\"geometry.mesh_hlr_projection.request.b0\",\"result_"
@@ -129,22 +117,10 @@ const char* native_operation_catalog_json()
         std::string("{\"catalog\":\"wn.geometer.operation_catalog.a0\",\"generic_abi\":\"a0\","
                     "\"release_version\":\"") +
         version_string() + "\",\"c_abi_generation\":" + std::to_string(abi_version()) +
-        ",\"operations\":[{\"identity\":\"geometry.analytic_planar_boolean_batch.a0\",\"request_"
-        "contract\":\"geometry.analytic_planar_boolean_batch.request.a0\",\"result_contract\":"
-        "\"geometry.analytic_planar_boolean_batch.result.a0\",\"input_attachments\":[{\"name\":"
-        "\"analytic_planar_boolean_request\",\"required\":true,\"media_types\":[\"application/"
-        "vnd.wavenumber.geometer.analytic-planar-boolean-request\"],\"max_bytes\":268435456}],"
-        "\"output_attachments\":[{\"name\":\"analytic_planar_boolean_result\",\"required\":true,"
-        "\"media_types\":[\"application/"
-        "vnd.wavenumber.geometer.analytic-planar-boolean-result\"],\"max_bytes\":268435456}],"
-        "\"runtime_dispatch\":\"packed_attachment\",\"request_projection\":{\"kind\":\"packed_"
-        "attachment\",\"attachment_name\":\"analytic_planar_boolean_request\",\"format\":"
-        "\"geometry.analytic_planar_boolean.packet.a0\"},\"result_projection\":{\"kind\":\"packed_"
-        "attachment\",\"attachment_name\":\"analytic_planar_boolean_result\",\"format\":\"geometry."
-        "analytic_planar_boolean.packet.a0\"}},{\"identity\":\"geometry.mesh_hlr_projection.a0\","
-        "\"request_contract\":\"geometry.hlr_projection.options.a0\",\"result_contract\":"
-        "\"geometry.hlr_projection.result.a0\",\"input_attachments\":[{\"name\":\"mesh\","
-        "\"required\":true,\"media_types\":[\"application/"
+        ",\"operations\":[{\"identity\":\"geometry.mesh_hlr_projection.a0\",\"request_contract\":"
+        "\"geometry.hlr_projection.options.a0\",\"result_contract\":\"geometry.hlr_projection."
+        "result.a0\",\"input_attachments\":[{\"name\":\"mesh\",\"required\":true,\"media_types\":["
+        "\"application/"
         "vnd.wavenumber.geometer.indexed-triangle-mesh\"],\"max_bytes\":268435456}],\"output_"
         "attachments\":[],\"runtime_dispatch\":\"logical_dto\"},{\"identity\":\"geometry.mesh_hlr_"
         "projection.b0\",\"request_contract\":\"geometry.mesh_hlr_projection.request.b0\",\"result_"
@@ -287,17 +263,13 @@ const char* native_operation_catalog_json()
 
 const char* normalized_contract_catalog_sha256()
 {
-    return "8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed";
+    return "c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032";
 }
 
 bool operation_output_attachment_declared(const std::string& operation_id,
                                           const std::string& attachment_name,
                                           const std::string& media_type)
 {
-    if (operation_id == "geometry.analytic_planar_boolean_batch.a0" &&
-        attachment_name == "analytic_planar_boolean_result" &&
-        media_type == "application/vnd.wavenumber.geometer.analytic-planar-boolean-result")
-        return true;
     if (operation_id == "geometry.mesh_illustration_geometry.a0" &&
         attachment_name == "illustration_geometry" &&
         media_type == "application/vnd.wavenumber.geometer.illustration-geometry+json")
@@ -342,10 +314,6 @@ bool operation_input_attachment_declared(const std::string& operation_id,
                                          const std::string& attachment_name,
                                          const std::string& media_type)
 {
-    if (operation_id == "geometry.analytic_planar_boolean_batch.a0" &&
-        attachment_name == "analytic_planar_boolean_request" &&
-        media_type == "application/vnd.wavenumber.geometer.analytic-planar-boolean-request")
-        return true;
     if (operation_id == "geometry.mesh_hlr_projection.a0" && attachment_name == "mesh" &&
         media_type == "application/vnd.wavenumber.geometer.indexed-triangle-mesh")
         return true;
@@ -447,9 +415,6 @@ bool operation_input_attachment_declared(const std::string& operation_id,
 std::size_t operation_input_attachment_max_bytes(const std::string& operation_id,
                                                  const std::string& attachment_name)
 {
-    if (operation_id == "geometry.analytic_planar_boolean_batch.a0" &&
-        attachment_name == "analytic_planar_boolean_request")
-        return 268435456U;
     if (operation_id == "geometry.mesh_hlr_projection.a0" && attachment_name == "mesh")
         return 268435456U;
     if (operation_id == "geometry.mesh_hlr_projection.b0" && attachment_name == "mesh_collection")
@@ -502,9 +467,6 @@ std::size_t operation_input_attachment_max_bytes(const std::string& operation_id
 const char* operation_input_attachment_primary_media_type(const std::string& operation_id,
                                                           const std::string& attachment_name)
 {
-    if (operation_id == "geometry.analytic_planar_boolean_batch.a0" &&
-        attachment_name == "analytic_planar_boolean_request")
-        return "application/vnd.wavenumber.geometer.analytic-planar-boolean-request";
     if (operation_id == "geometry.mesh_hlr_projection.a0" && attachment_name == "mesh")
         return "application/vnd.wavenumber.geometer.indexed-triangle-mesh";
     if (operation_id == "geometry.mesh_hlr_projection.b0" && attachment_name == "mesh_collection")
@@ -557,9 +519,6 @@ const char* operation_input_attachment_primary_media_type(const std::string& ope
 std::size_t operation_output_attachment_max_bytes(const std::string& operation_id,
                                                   const std::string& attachment_name)
 {
-    if (operation_id == "geometry.analytic_planar_boolean_batch.a0" &&
-        attachment_name == "analytic_planar_boolean_result")
-        return 268435456U;
     if (operation_id == "geometry.mesh_illustration_geometry.a0" &&
         attachment_name == "illustration_geometry")
         return 268435456U;
@@ -592,9 +551,6 @@ std::size_t operation_output_attachment_max_bytes(const std::string& operation_i
 const char* operation_output_attachment_primary_media_type(const std::string& operation_id,
                                                            const std::string& attachment_name)
 {
-    if (operation_id == "geometry.analytic_planar_boolean_batch.a0" &&
-        attachment_name == "analytic_planar_boolean_result")
-        return "application/vnd.wavenumber.geometer.analytic-planar-boolean-result";
     if (operation_id == "geometry.mesh_illustration_geometry.a0" &&
         attachment_name == "illustration_geometry")
         return "application/vnd.wavenumber.geometer.illustration-geometry+json";
@@ -626,8 +582,6 @@ const char* operation_output_attachment_primary_media_type(const std::string& op
 
 const char* operation_request_contract(const std::string& operation_id)
 {
-    if (operation_id == "geometry.analytic_planar_boolean_batch.a0")
-        return "geometry.analytic_planar_boolean_batch.request.a0";
     if (operation_id == "geometry.mesh_hlr_projection.a0")
         return "geometry.hlr_projection.options.a0";
     if (operation_id == "geometry.mesh_hlr_projection.b0")
@@ -680,12 +634,6 @@ bool operation_request_projection(const std::string& operation_id, const char** 
 {
     if (attachment_name == nullptr || format == nullptr)
         return false;
-    if (operation_id == "geometry.analytic_planar_boolean_batch.a0")
-    {
-        *attachment_name = "analytic_planar_boolean_request";
-        *format = "geometry.analytic_planar_boolean.packet.a0";
-        return true;
-    }
     *attachment_name = nullptr;
     *format = nullptr;
     return false;
@@ -693,8 +641,6 @@ bool operation_request_projection(const std::string& operation_id, const char** 
 
 const char* operation_result_contract(const std::string& operation_id)
 {
-    if (operation_id == "geometry.analytic_planar_boolean_batch.a0")
-        return "geometry.analytic_planar_boolean_batch.result.a0";
     if (operation_id == "geometry.mesh_hlr_projection.a0")
         return "geometry.hlr_projection.result.a0";
     if (operation_id == "geometry.mesh_hlr_projection.b0")
@@ -747,12 +693,6 @@ bool operation_result_projection(const std::string& operation_id, const char** a
 {
     if (attachment_name == nullptr || format == nullptr)
         return false;
-    if (operation_id == "geometry.analytic_planar_boolean_batch.a0")
-    {
-        *attachment_name = "analytic_planar_boolean_result";
-        *format = "geometry.analytic_planar_boolean.packet.a0";
-        return true;
-    }
     *attachment_name = nullptr;
     *format = nullptr;
     return false;
@@ -821,8 +761,6 @@ bool operation_logical_result_matches(const std::string& operation_id,
 bool operation_request_value_matches(const std::string& operation_id,
                                      const contracts::IpcRequestValueA0& request)
 {
-    if (operation_id == "geometry.analytic_planar_boolean_batch.a0")
-        return std::holds_alternative<contracts::PackedAttachmentProjectionA0>(request);
     if (operation_id == "geometry.mesh_hlr_projection.a0")
         return std::holds_alternative<contracts::HlrProjectionOptionsA0>(request);
     if (operation_id == "geometry.mesh_illustration_geometry.a0")
@@ -890,8 +828,6 @@ bool operation_request_value_matches(const std::string& operation_id,
 bool operation_result_value_matches(const std::string& operation_id,
                                     const contracts::OperationResultValueA0& result)
 {
-    if (operation_id == "geometry.analytic_planar_boolean_batch.a0")
-        return std::holds_alternative<contracts::PackedAttachmentProjectionA0>(result);
     if (operation_id == "geometry.mesh_hlr_projection.a0")
         return std::holds_alternative<contracts::HlrProjectionResultA0>(result);
     if (operation_id == "geometry.mesh_illustration_geometry.a0")
@@ -957,8 +893,6 @@ bool operation_result_value_matches(const std::string& operation_id,
 
 std::size_t operation_required_output_attachment_count(const std::string& operation_id)
 {
-    if (operation_id == "geometry.analytic_planar_boolean_batch.a0")
-        return 1U;
     if (operation_id == "geometry.mesh_hlr_projection.a0")
         return 0U;
     if (operation_id == "geometry.mesh_hlr_projection.b0")
@@ -1009,8 +943,6 @@ std::size_t operation_required_output_attachment_count(const std::string& operat
 const char* operation_required_output_attachment_name(const std::string& operation_id,
                                                       std::size_t index)
 {
-    if (operation_id == "geometry.analytic_planar_boolean_batch.a0" && index == 0U)
-        return "analytic_planar_boolean_result";
     if (operation_id == "geometry.mesh_illustration_geometry.a0" && index == 0U)
         return "illustration_geometry";
     if (operation_id == "geometry.mesh_illustration_geometry.b0" && index == 0U)

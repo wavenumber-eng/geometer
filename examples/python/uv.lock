@@ -1227,7 +1227,7 @@ wheels = [
 
 [[package]]
 name = "wn-geometer"
-version = "2026.9.19"
+version = "2026.11.22"
 source = { editable = "../../" }
 
 [package.metadata]

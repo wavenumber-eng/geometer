@@ -7,8 +7,6 @@ import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { applyProjectionDeferrals } from "./contract-projection-deferral.mjs";
-
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const catalogPath = join(
   root,
@@ -29,17 +27,13 @@ if (process.argv.slice(2).some((argument) => argument !== "--check")) {
 const catalogText = await readFile(catalogPath, "utf8");
 const contractCatalog = JSON.parse(catalogText);
 const catalogSha256 = createHash("sha256").update(catalogText).digest("hex");
-const codecCatalog = await applyProjectionDeferrals(contractCatalog, "typescript");
-const operationCatalogProjection = await applyProjectionDeferrals(contractCatalog, "typescript", {
-  retainRuntimeDispatch: true,
-});
 const declarations = new Map(contractCatalog.declarations.map((item) => [item.name, item]));
 const packedContracts = new Set(
   contractCatalog.operations
     .filter((operation) => operation.runtime_dispatch === "packed_attachment")
     .flatMap((operation) => [operation.request_contract, operation.result_contract]),
 );
-const jsonCodecRoots = codecCatalog.roots.filter(
+const jsonCodecRoots = contractCatalog.roots.filter(
   (rootItem) => !packedContracts.has(rootItem.contract_identity),
 );
 const jsonCodecDeclarations = reachableDeclarationItems(jsonCodecRoots);
@@ -154,7 +148,7 @@ function generateOperations() {
     "",
     "export const operationCatalog = {",
   ];
-  for (const operation of operationCatalogProjection.operations) {
+  for (const operation of contractCatalog.operations) {
     lines.push(`  ${JSON.stringify(operation.identity)}: {`);
     lines.push(`    identity: ${JSON.stringify(operation.identity)},`);
     lines.push(`    requestContract: ${JSON.stringify(operation.request_contract)},`);

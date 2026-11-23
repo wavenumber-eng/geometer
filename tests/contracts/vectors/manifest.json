@@ -455,50 +455,6 @@
       "tolerance": null
     },
     {
-      "id": "schema.hlr-options-old-poly-hlr-close.accept",
-      "contract_identity": "geometry.hlr_projection.options.a0",
-      "file": "cases/hlr-options-old-poly-hlr-close.json",
-      "lane": "schema",
-      "oracle": "generated_schema",
-      "expected": "accept",
-      "comparison": "exact",
-      "excluded_fields": [],
-      "tolerance": null
-    },
-    {
-      "id": "schema.hlr-options-old-poly-mesh-shadow.accept",
-      "contract_identity": "geometry.hlr_projection.options.a0",
-      "file": "cases/hlr-options-old-poly-mesh-shadow.json",
-      "lane": "schema",
-      "oracle": "generated_schema",
-      "expected": "accept",
-      "comparison": "exact",
-      "excluded_fields": [],
-      "tolerance": null
-    },
-    {
-      "id": "schema.hlr-options-old-exact-hlr-close.accept",
-      "contract_identity": "geometry.hlr_projection.options.a0",
-      "file": "cases/hlr-options-old-exact-hlr-close.json",
-      "lane": "schema",
-      "oracle": "generated_schema",
-      "expected": "accept",
-      "comparison": "exact",
-      "excluded_fields": [],
-      "tolerance": null
-    },
-    {
-      "id": "schema.hlr-options-old-exact-mesh-shadow.accept",
-      "contract_identity": "geometry.hlr_projection.options.a0",
-      "file": "cases/hlr-options-old-exact-mesh-shadow.json",
-      "lane": "schema",
-      "oracle": "generated_schema",
-      "expected": "accept",
-      "comparison": "exact",
-      "excluded_fields": [],
-      "tolerance": null
-    },
-    {
       "id": "schema.hlr-options-fast-default.accept",
       "contract_identity": "geometry.hlr_projection.options.a0",
       "file": "cases/hlr-options-fast-default.json",
@@ -1756,6 +1712,50 @@
       "id": "schema.model-tessellation-invalid.reject",
       "contract_identity": "geometry.model_tessellation.request.a0",
       "file": "cases/model-tessellation-invalid.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "schema.step-topology-save-ap242-canonical.accept",
+      "contract_identity": "geometry.step_topology.save.result.a0",
+      "file": "cases/step-topology-save-ap242-canonical.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "accept",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "schema.step-topology-save-ap242-legacy.accept",
+      "contract_identity": "geometry.step_topology.save.result.a0",
+      "file": "cases/step-topology-save-ap242-legacy.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "accept",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "schema.step-topology-save-ap242-parameterized.reject",
+      "contract_identity": "geometry.step_topology.save.result.a0",
+      "file": "cases/step-topology-save-ap242-parameterized.json",
+      "lane": "schema",
+      "oracle": "generated_schema",
+      "expected": "reject",
+      "comparison": "exact",
+      "excluded_fields": [],
+      "tolerance": null
+    },
+    {
+      "id": "schema.step-topology-save-ap242-uppercase.reject",
+      "contract_identity": "geometry.step_topology.save.result.a0",
+      "file": "cases/step-topology-save-ap242-uppercase.json",
       "lane": "schema",
       "oracle": "generated_schema",
       "expected": "reject",

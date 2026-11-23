@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import json
 import struct
+import zipfile
 from pathlib import Path
+from unittest.mock import Mock
 
 import geometer
 import pytest
+from geometer import _console, _paths
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -40,8 +43,60 @@ def _fnv1a64(data: bytes) -> str:
     return f"fnv1a64:{value:016x}"
 
 
-def test_executable_path_finds_dist_cli() -> None:
-    assert geometer.executable_path().name in {"geometer", "geometer.exe"}
+def test_executable_path_finds_dist_cli(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    native = tmp_path / "dist" / "geometer.exe"
+    native.parent.mkdir()
+    native.write_bytes(b"MZ native executable fixture")
+    launcher = tmp_path / "Scripts" / "geometer.exe"
+    launcher.parent.mkdir()
+    launcher.write_bytes(b"MZ console launcher fixture")
+    with zipfile.ZipFile(launcher, "a") as archive:
+        archive.writestr("__main__.py", "from geometer._console import main\n")
+
+    monkeypatch.delenv("GEOMETER_EXE", raising=False)
+    monkeypatch.setattr(_paths, "_candidate_directories", lambda: [native.parent])
+    monkeypatch.setattr(_paths, "_executable_names", lambda: ["geometer.exe"])
+    monkeypatch.setattr(_paths.shutil, "which", lambda name: str(launcher))
+    run = Mock(side_effect=AssertionError("Discovery failure must not launch a child process"))
+    monkeypatch.setattr(_console.subprocess, "run", run)
+    assert geometer.executable_path() == native
+
+    monkeypatch.setattr(_paths, "_candidate_directories", lambda: [launcher.parent])
+    with pytest.raises(FileNotFoundError, match="Could not find"):
+        geometer.executable_path()
+    assert _console.main() == 127
+    assert "Could not find" in capsys.readouterr().err
+    run.assert_not_called()
+
+    monkeypatch.setenv("GEOMETER_EXE", str(launcher))
+    with pytest.raises(FileNotFoundError, match="Python console launcher"):
+        geometer.executable_path()
+    assert _console.main() == 127
+    assert "Python console launcher" in capsys.readouterr().err
+    run.assert_not_called()
+
+    # Also protect the entry point if discovery is supplied by another caller.
+    with monkeypatch.context() as console_patch:
+        console_patch.setattr(_console, "executable_path", lambda: launcher)
+        console_patch.setattr(_console.sys, "platform", "win32")
+        console_patch.setattr(_console.sys, "argv", [str(launcher.with_suffix(""))])
+        assert _console.main() == 127
+        assert "Could not find the native" in capsys.readouterr().err
+        run.assert_not_called()
+
+    launcher.write_text("#!/usr/bin/python\nfrom geometer._console import main\n", encoding="utf-8")
+    with pytest.raises(FileNotFoundError, match="Python console launcher"):
+        geometer.executable_path()
+
+    monkeypatch.setenv("GEOMETER_EXE", str(native))
+    assert geometer.executable_path() == native
+    run.side_effect = None
+    run.return_value = _console.subprocess.CompletedProcess([str(native), "--version"], 0)
+    monkeypatch.setattr(_console.sys, "argv", [str(launcher), "--version"])
+    assert _console.main() == 0
+    run.assert_called_once_with([str(native), "--version"])
 
 
 def test_version_reports_geometer_abi() -> None:
@@ -92,7 +147,7 @@ def test_hlr_projection_json_returns_json_text() -> None:
     text = geometer.hlr_projection_json(
         SOT23_STEP.read_bytes(),
         views=[geometer.ProjectionView.top()],
-        options={"curve_mode": "polyline", "projection_algorithm": "poly"},
+        options={"projection_algorithm": "fast"},
     )
 
     assert '"schema":"geometry.projection.b0"' in text

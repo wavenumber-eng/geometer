@@ -250,8 +250,7 @@
           "const": "state_artifact"
         },
         "media_type": {
-          "type": "string",
-          "const": "application/step"
+          "$ref": "#/$defs/StepAp242MediaType"
         },
         "format": {
           "type": "string",
@@ -278,7 +277,8 @@
       ],
       "unevaluatedProperties": {
         "not": {}
-      }
+      },
+      "description": "New AP242 descriptors use model/step; legacy bare application/step remains readable. This candidate does not imply executable save support."
     },
     "JsonSidecarPersistenceArtifact": {
       "type": "object",
@@ -355,6 +355,14 @@
       "unevaluatedProperties": {
         "not": {}
       }
+    },
+    "StepAp242MediaType": {
+      "type": "string",
+      "enum": [
+        "model/step",
+        "application/step"
+      ],
+      "description": "New AP242 producers use model_step. The legacy application_step token remains decodable in saved descriptors."
     }
   }
 }

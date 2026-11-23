@@ -26,38 +26,31 @@ function check(path) {
 }
 check(resolve(root, "README.md"));
 visit(resolve(root, "docs"));
-visit(resolve(root, "examples"));
-const inventory = JSON.parse(
-  readFileSync(resolve(root, "docs/developer/documentation-map.json"), "utf8"),
-);
-for (const document of inventory.documents) {
-  if (!existsSync(resolve(root, document.destination)))
-    failures.push(`Missing disposition target: ${document.destination}`);
-}
-// Govern entrypoint conventions, not every browser worker or support module.
-const demoAudit = readFileSync(resolve(root, "docs/developer/demo-status.md"), "utf8");
+const examplesRoot = resolve(root, "examples");
+visit(examplesRoot);
+const examplesIndex = readFileSync(resolve(examplesRoot, "README.md"), "utf8");
 let demos = 0;
 for (const [directory, suffixes] of [
-  ["examples/wasm", [".html"]],
-  ["examples/python", [".py"]],
-  ["examples/cpp", [".cpp"]],
-  ["examples/node", [".ts", ".mjs"]],
+  ["wasm", [".html"]],
+  ["python", [".py"]],
+  ["cpp", [".cpp"]],
+  ["node", [".ts", ".mjs"]],
 ]) {
-  for (const entry of readdirSync(resolve(root, directory), { withFileTypes: true })) {
+  for (const entry of readdirSync(resolve(examplesRoot, directory), { withFileTypes: true })) {
     if (!entry.isFile() || !suffixes.includes(extname(entry.name))) continue;
     const path = `${directory}/${entry.name}`;
     demos += 1;
-    if (!demoAudit.includes(`](../../${path})`)) failures.push(`Demo lacks audit entry: ${path}`);
+    if (!examplesIndex.includes(`](${path})`))
+      failures.push(`Demo lacks examples index entry: ${path}`);
   }
 }
-for (const entry of readdirSync(resolve(root, "examples/rust"), { withFileTypes: true })) {
+for (const entry of readdirSync(resolve(examplesRoot, "rust"), { withFileTypes: true })) {
   if (!entry.isDirectory()) continue;
-  const path = `examples/rust/${entry.name}/src/main.rs`;
-  if (!existsSync(resolve(root, path))) continue;
+  const path = `rust/${entry.name}/src/main.rs`;
+  if (!existsSync(resolve(examplesRoot, path))) continue;
   demos += 1;
-  if (!demoAudit.includes(`](../../${path})`)) failures.push(`Demo lacks audit entry: ${path}`);
+  if (!examplesIndex.includes(`](${path})`))
+    failures.push(`Demo lacks examples index entry: ${path}`);
 }
 if (failures.length) throw new Error(`Broken documentation file links:\n${failures.join("\n")}`);
-console.log(
-  `Documentation current: ${checked} file links; disposition targets present; ${demos} demo entrypoints registered.`,
-);
+console.log(`Documentation current: ${checked} file links; ${demos} demo entrypoints registered.`);

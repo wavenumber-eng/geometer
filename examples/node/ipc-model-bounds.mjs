@@ -17,7 +17,7 @@ try {
     throw new Error(`Executable does not advertise ${operation}`);
   }
   const response = await processClient.client.execute(operation, {}, [
-    { data: model, mediaType: "application/step", name: "model" },
+    { data: model, mediaType: "model/step", name: "model" },
   ]);
   if (!response.outcome.ok) {
     throw new Error(JSON.stringify(response.outcome.diagnostics));

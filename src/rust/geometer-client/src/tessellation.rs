@@ -58,6 +58,7 @@ macro_rules! impl_tessellation_client {
 }
 
 impl_tessellation_client!(GeometerClient);
+impl_tessellation_client!(crate::runtime::WorkerClient<'_>);
 #[cfg(feature = "direct-static")]
 impl_tessellation_client!(GeometerDirectClient);
 
@@ -74,7 +75,7 @@ async fn run_model_tessellation<B: crate::backend::OperationBackend>(
             &options,
             vec![Attachment {
                 name: "model".to_owned(),
-                media_type: "application/step".to_owned(),
+                media_type: "model/step".to_owned(),
                 data: request.model,
             }],
         )
@@ -156,8 +157,8 @@ fn validate_mesh(mesh: &contracts::MeshIllustrationMesh) -> Result<usize, Geomet
     let Some(indices) = &mesh.indices else {
         return Err(invalid("tessellation mesh is not indexed"));
     };
-    if mesh.positions.len() % 3 != 0
-        || indices.len() % 3 != 0
+    if !mesh.positions.len().is_multiple_of(3)
+        || !indices.len().is_multiple_of(3)
         || indices
             .iter()
             .any(|index| *index as usize >= mesh.positions.len() / 3)

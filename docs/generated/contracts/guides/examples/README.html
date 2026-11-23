@@ -4,25 +4,45 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
+  <meta name="wn-catalog-sha256" content="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032">
   <title>Geometer Examples — Geometer</title>
   <link rel="stylesheet" href="../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>examples/README.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="geometer-examples">Geometer Examples</h1></header>
 <p>This folder contains user-facing examples that exercise Geometer outside the
 test harness.</p>
-<p>See the <a href="../docs/developer/demo-status.html">dated runtime audit and disposition table</a>
-for verified status and gaps across every demo. Start with
-<a href="../../../../../examples/node/ipc-model-bounds.mjs">model-bounds IPC</a> for persistent executable calls.</p>
-<ul>
-<li><code>python/</code> - Python wrapper examples and demo tools.</li>
-<li><code>cpp/</code> - native C++ example applications.</li>
-<li><code>node/</code> - native-process TypeScript reference applications.</li>
-<li><code>wasm/</code> - browser/WASM examples, the HLR Lab, reusable TypeScript demo
-tooling, and sources for self-contained hosted demos.</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>Environment</th>
+<th>Examples</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Browser</td>
+<td><a href="../../../../../examples/wasm/model_bounds_demo.html">Model bounds</a>, <a href="../../../../../examples/wasm/embedded_model_viewer.html">HLR Lab</a>, <a href="../../../../../examples/wasm/illustration_demo.html">Illustration Lab</a>, <a href="../../../../../examples/wasm/planar_ring_solver_demo.html">Planar ring solver</a></td>
+</tr>
+<tr>
+<td>Python</td>
+<td><a href="../../../../../examples/python/step_hlr_svg.py">STEP HLR and SVG</a>, <a href="../../../../../examples/python/illustration_geometry_canvas.py">Drawing geometry to Canvas</a>, <a href="../../../../../examples/python/model_illustration_analytic.py">Analytic model illustration</a>, <a href="../../../../../examples/python/pyvista_hlr_viewer.py">PyVista HLR viewer</a></td>
+</tr>
+<tr>
+<td>Native C++</td>
+<td><a href="../../../../../examples/cpp/hlr_preview.cpp">HLR preview source</a> and <a href="../../../../../examples/cpp/README.md">build guide</a></td>
+</tr>
+<tr>
+<td>Node</td>
+<td><a href="../../../../../examples/node/ipc-model-bounds.mjs">Model-bounds IPC quick start</a>, <a href="../../../../../examples/node/step_topology_annotation_reference.ts">Experimental STEP topology</a></td>
+</tr>
+<tr>
+<td>Rust</td>
+<td><a href="../../../../../examples/rust/native_viewer/src/main.rs">Native API Lab source</a> and <a href="../../../../../examples/rust/native_viewer/README.md">build guide</a></td>
+</tr>
+</tbody>
+</table>
 <p>Test-only browser validation and benchmark harnesses live under <code>tests/wasm/</code>.
 The maintained build, packaging, panel, and publication boundaries are in
 <a href="../docs/developer/browser-demos.html"><code>docs/developer/browser-demos.md</code></a>.</p>

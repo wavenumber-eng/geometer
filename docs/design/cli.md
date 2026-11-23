@@ -45,11 +45,9 @@ Projection CLI options:
 - `--format <step>`
 - `--view <id>`
 - `--mode <outline|detail|bbox>`
-- `--curve-mode <native-arcs|polyline>`
-- `--samples <count>`
 - `--round-digits <count>`
-- `--projection-algorithm <poly|exact|fast>`
-- `--outline-algorithm <hlr-close|mesh-shadow|fast-mesh-shadow>`
+- `--projection-algorithm fast`
+- `--outline-algorithm <mesh-shadow|fast-mesh-shadow>`
 - `--deflection-mode <absolute|bbox-relative>`
 - `--deflection-coefficient <value>`
 

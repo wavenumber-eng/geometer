@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
+  <meta name="wn-catalog-sha256" content="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032">
   <title>HLR Projection A0 — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/hlr-projection-a0.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="hlr-projection-a0">HLR Projection A0</h1></header>
 <h2 id="boundary">Boundary</h2>
@@ -16,8 +16,7 @@
 <code>geometry.hlr_projection.result.a0</code> are the canonical additive contracts shared
 by the model and indexed-mesh projection operations. Both operations default to
 Fast detail and Fast Mesh Shadow when their algorithm selectors are omitted.
-The older OCCT <code>poly</code>, <code>exact</code>, and <code>hlr-close</code> paths remain available for
-model/STEP projection when explicitly selected.</p>
+The retired OCCT selectors <code>poly</code>, <code>exact</code>, and <code>hlr-close</code> are rejected.</p>
 <p>The existing <code>geometry.projection.options.b0</code> and <code>geometry.projection.b0</code>
 identities, focused C ABI functions, CLI commands, and Python helpers remain
 compatibility surfaces. Their accepted aliases are mapped into the canonical
@@ -134,20 +133,6 @@ an occurrence transform from that label.</p>
 </thead>
 <tbody>
 <tr>
-<td><code>poly</code></td>
-<td>STEP through OCCT</td>
-<td>OCCT polygonal HLR</td>
-<td>Segments</td>
-<td>Explicit compatibility path</td>
-</tr>
-<tr>
-<td><code>exact</code></td>
-<td>STEP through OCCT</td>
-<td>OCCT exact HLR</td>
-<td>Native circular arcs or sampled segments</td>
-<td>Highest-fidelity, higher-cost path</td>
-</tr>
-<tr>
 <td><code>fast</code> (default)</td>
 <td>STEP tessellation or an indexed mesh</td>
 <td>Triangle incidence plus spatial visibility classification</td>
@@ -166,10 +151,6 @@ an occurrence transform from that label.</p>
 </thead>
 <tbody>
 <tr>
-<td><code>hlr-close</code></td>
-<td>Forms outline polygons from explicitly selected OCCT HLR edges and closes small gaps.</td>
-</tr>
-<tr>
 <td><code>mesh-shadow</code></td>
 <td>Unions projected tessellated triangles through the established Clipper2 path.</td>
 </tr>
@@ -186,8 +167,7 @@ references before sorting candidate IDs, preserving visibility order and
 candidate-pair limit accounting. Mesh-shadow sweep ranks are reused without
 changing inclusive endpoint overlap. Prepared values remain validated on each
 public projection call. These implementation optimizations do not change
-projection tolerances or linework contracts; measurements and memory tradeoffs
-are recorded in <a href="../../../../../research/illustration-performance.md">illustration performance</a>.</p>
+projection tolerances or linework contracts.</p>
 <p><code>geometer/fast_hlr.h</code> is the stable semantic boundary. The simplest call uses
 the indexed-mesh overload:</p>
 <pre><code class="language-cpp">FastHlrIndexedMesh mesh = make_mesh();
@@ -214,11 +194,8 @@ provide <code>modelHlrProjection</code> and <code>meshHlrProjection</code>; Pyth
 the matching methods on <code>GeometerClient</code>. The mesh methods accept the governed
 indexed-mesh packet, and the Python and TypeScript facades also accept their
 language-native <code>IndexedTriangleMeshA0</code> value.</p>
-<p>Both operations use Fast detail and Fast Mesh Shadow when those selectors are
-absent. Because an indexed mesh has no OCCT topology to run through the old
-backends, the mesh operation rejects explicit <code>poly</code>, <code>exact</code>, or <code>hlr-close</code>
-selections rather than silently changing them. The model operation accepts
-those older modes only when explicitly requested. Typed IPC clients materialize the existing
+<p>Both operations default to Fast detail and Fast Mesh Shadow.
+Typed IPC clients materialize the existing
 <code>output_detail=true</code> default on the wire to distinguish HLR's presence-only
 options from the older model-bounds options; this does not change projection
 semantics.</p>
@@ -273,7 +250,7 @@ let options = contracts::decode_hlr_projection_options_a0_json(
 let result = client
     .model_hlr_projection(ModelHlrProjectionRequest {
         model: std::fs::read(&quot;part.step&quot;)?,
-        media_type: &quot;application/step&quot;.to_owned(),
+        media_type: &quot;model/step&quot;.to_owned(),
         options,
     })
     .await?;
@@ -330,64 +307,22 @@ and source/model units for direct indexed-mesh preparation.</p>
 <td>STEP only. Removes free-shape root placements while preserving child placements.</td>
 </tr>
 <tr>
-<td><code>curve_mode</code></td>
-<td style="text-align:right"><code>native_arcs</code></td>
-<td>—</td>
-<td>Exact/poly extraction. Fast emits segments and ignores native-arc selection.</td>
-</tr>
-<tr>
-<td><code>samples_per_curve</code></td>
-<td style="text-align:right"><code>24</code></td>
-<td>samples</td>
-<td>Exact/poly curve sampling. Fast detail does not sample curves.</td>
-</tr>
-<tr>
 <td><code>round_digits</code></td>
 <td style="text-align:right"><code>3</code></td>
 <td>decimal digits</td>
 <td>Common result quantization, accepted range 0–9.</td>
 </tr>
 <tr>
-<td><code>edge_v_sharp</code>, <code>edge_v_outline</code></td>
-<td style="text-align:right"><code>true</code>, <code>true</code></td>
-<td>—</td>
-<td>Exact and poly detail categories. Fast uses its nested candidate flags.</td>
-</tr>
-<tr>
-<td><code>edge_v_smooth</code>, <code>edge_v_sewn</code>, <code>edge_v_iso</code></td>
-<td style="text-align:right"><code>false</code></td>
-<td>—</td>
-<td>Exact only. Poly and Fast do not provide these OCCT categories.</td>
-</tr>
-<tr>
-<td><code>edge_h_sharp</code>, <code>edge_h_outline</code></td>
-<td style="text-align:right"><code>false</code></td>
-<td>—</td>
-<td>Exact and poly hidden categories. Fast uses <code>fast.include_hidden</code> with Fast candidate categories.</td>
-</tr>
-<tr>
-<td><code>edge_h_smooth</code>, <code>edge_h_sewn</code>, <code>edge_h_iso</code></td>
-<td style="text-align:right"><code>false</code></td>
-<td>—</td>
-<td>Exact only. Poly and Fast do not provide these OCCT categories.</td>
-</tr>
-<tr>
-<td><code>union_outline_polygons</code></td>
-<td style="text-align:right"><code>true</code></td>
-<td>—</td>
-<td><code>hlr-close</code> outline only; ignored by mesh-shadow algorithms.</td>
-</tr>
-<tr>
 <td><code>projection_algorithm</code></td>
 <td style="text-align:right"><code>fast</code></td>
 <td>—</td>
-<td>Common selector: <code>poly</code>, <code>exact</code>, or <code>fast</code>. Omission selects Fast detail for both HLR operations.</td>
+<td>Selects Fast detail for both HLR operations.</td>
 </tr>
 <tr>
 <td><code>mesh_linear_deflection</code></td>
 <td style="text-align:right"><code>0.01</code></td>
 <td>mm/model units</td>
-<td>STEP tessellation when absolute mode is active; affects poly, Fast, and mesh-shadow inputs. Not used by exact detail.</td>
+<td>STEP tessellation when absolute mode is active; affects Fast detail and mesh shadows.</td>
 </tr>
 <tr>
 <td><code>mesh_angular_deflection</code></td>
@@ -420,16 +355,10 @@ and source/model units for direct indexed-mesh preparation.</p>
 <td>Common outline selector, independent of detail algorithm. Omission selects Fast Mesh Shadow for both HLR operations.</td>
 </tr>
 <tr>
-<td><code>hlr_angle_tolerance</code></td>
-<td style="text-align:right"><code>0.0174533</code></td>
-<td>radians</td>
-<td>Exact HLR angular tolerance and delegated HLR outline behavior.</td>
-</tr>
-<tr>
 <td><code>fast</code></td>
 <td style="text-align:right">focused Fast defaults</td>
 <td>—</td>
-<td>Fast detail and <code>fast-mesh-shadow</code> only. Never changes exact/poly OCCT edge semantics.</td>
+<td>Fast detail and <code>fast-mesh-shadow</code> controls.</td>
 </tr>
 </tbody>
 </table>
@@ -531,20 +460,11 @@ not consume this budget.</p>
 the existing JSON, CLI, Python, and C ABI lanes continue to accept:</p>
 <ul>
 <li>camelCase forms of all established top-level and nested Fast fields;</li>
-<li><code>samples</code> for <code>samples_per_curve</code>;</li>
-<li><code>native-arcs</code> for <code>curve_mode=native_arcs</code>;</li>
 <li><code>bbox_relative</code> for <code>mesh_deflection_mode=bbox-relative</code>;</li>
-<li><code>hlr_close</code> or <code>hlr</code> for <code>outline_algorithm=hlr-close</code>;</li>
 <li><code>mesh_shadow</code> or <code>shadow</code> for <code>outline_algorithm=mesh-shadow</code>;</li>
-<li><code>fast_mesh_shadow</code> for <code>outline_algorithm=fast-mesh-shadow</code>;</li>
-<li><code>unionPolygons</code> for <code>union_outline_polygons</code>;</li>
-<li><code>include_visible</code>/<code>includeVisible</code>, which sets visible sharp and outline
-categories before any explicit granular edge flags; and</li>
-<li><code>include_outline</code>/<code>includeOutline</code>, which sets the visible outline category
-before any explicit <code>edge_v_outline</code> value.</li>
+<li><code>fast_mesh_shadow</code> for <code>outline_algorithm=fast-mesh-shadow</code>.</li>
 </ul>
-<p>The granular field wins when a historical include toggle and that field are
-both present. Unknown fields are rejected by strict generated A0 codecs;
+<p>Unknown fields are rejected by strict generated A0 codecs;
 compatibility-reader behavior remains governed by its existing lane.</p>
 <h2 id="migration-guide">Migration guide</h2>
 <p>No existing caller must migrate to keep its current behavior. The focused
@@ -582,9 +502,7 @@ more diagnostics arise, the final entry reports how many were suppressed.</p>
 <p>The 2026-09-03 Windows x64 qualification used one warmup and three measured
 runs through the native executable and the Node-hosted WASM CLI. Fast geometry
 was byte-equivalent between runtimes on every fixture in the five-model package
-corpus. Exact HLR differed on TSOT-23-5 by one detail primitive (1,655 native
-versus 1,654 WASM); that difference is isolated to the existing OCCT exact
-backend rather than Fast.</p>
+corpus.</p>
 <p>ABM8 top-view detail produced equivalent counts and geometry in both runtimes:</p>
 <table>
 <thead>
@@ -597,20 +515,6 @@ backend rather than Fast.</p>
 </tr>
 </thead>
 <tbody>
-<tr>
-<td><code>poly</code></td>
-<td style="text-align:right">157.58 ms</td>
-<td style="text-align:right">915.04 ms</td>
-<td style="text-align:right">3.13 ms</td>
-<td style="text-align:right">11.13 ms</td>
-</tr>
-<tr>
-<td><code>exact</code></td>
-<td style="text-align:right">161.92 ms</td>
-<td style="text-align:right">940.41 ms</td>
-<td style="text-align:right">36.44 ms</td>
-<td style="text-align:right">117.63 ms</td>
-</tr>
 <tr>
 <td><code>fast</code></td>
 <td style="text-align:right">157.20 ms</td>
@@ -634,8 +538,7 @@ comparison with:</p>
 <pre><code class="language-powershell">uv run python scripts/benchmark_fast_hlr.py `
   --model ABM8-272-T3.STEP `
   --runtime native --runtime wasm `
-  --algorithm poly --algorithm exact --algorithm fast `
-  --outline hlr-close --layer detail `
+  --layer detail `
   --warmup 1 --repeat 3 `
   --output .bench-tmp/fast-hlr-native-wasm-abm8-detail.json
 </code></pre>
@@ -659,6 +562,8 @@ new callers from confusing this compatibility composition with correlated B0
 mesh HLR and clipping. Input positions and transforms are millimeters in this
 composition. The facade does not merge the contracts: callers can still inspect
 or store HLR linework independently of colorized output.</p>
+<h2 id="step-source-media-semantics">STEP source media semantics</h2>
+<p>STEP projection inputs follow the <a href="../geometer/adr/geometer-adr-020-standard-step-media-types.html">STEP media policy</a>. New requests use <code>model/step</code>; valid auxiliary parameters and <code>application/step</code> remain accepted. MIME normalization does not change model bytes, transforms, projection options or geometry.</p>
 
 </main>
 </body>

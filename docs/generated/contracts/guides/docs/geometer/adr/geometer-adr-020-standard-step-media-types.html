@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en" data-generator="wn.geometer.contract_docs" data-generator-generation="a0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="wn.geometer.contract_docs:a0">
+  <meta name="wn-catalog-sha256" content="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032">
+  <title>ADR-020: Standard STEP Media Types — Geometer</title>
+  <link rel="stylesheet" href="../../../../../../design/styles.css">
+</head>
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032" data-page-kind="guide" data-authority="authored-markdown">
+<main>
+<nav class="nav"><a href="../../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/geometer/adr/geometer-adr-020-standard-step-media-types.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="adr-020-standard-step-media-types">ADR-020: Standard STEP Media Types</h1></header>
+<h2 id="context">Context</h2>
+<p>Geometer accepts raw STEP attachments through native C ABI, executable IPC,
+Rust, Python, TypeScript, browser WASM and Worker clients. Exact MIME-string
+checks have rejected valid STEP inputs carrying auxiliary Source parameters.
+Existing clients also default to the local <code>application/step</code> spelling.</p>
+<p>The <a href="https://www.iana.org/assignments/media-types/model/step">IANA registration</a>
+defines <code>model/step</code> for STEP product models, with no required or optional
+parameters. <a href="https://www.rfc-editor.org/rfc/rfc2045#section-5.1">RFC 2045 section 5.1</a>
+defines case-insensitive media type/subtype names and parameter syntax; unknown
+parameters are ignored. <a href="https://www.rfc-editor.org/rfc/rfc2077">RFC 2077</a> adds
+the <code>model</code> top-level type. Source editing categories do not describe STEP
+payload encoding, units, geometry or schema.</p>
+<h2 id="decision">Decision</h2>
+<p>New Geometer STEP request defaults and produced STEP descriptors use the bare
+registered token <code>model/step</code>. <code>application/step</code> remains an input compatibility
+spelling and remains readable in existing saved descriptors. It is not claimed
+to be the registered STEP MIME type.</p>
+<p>Each maintained language boundary uses a focused, bounded MIME-value parser
+with a common fixture corpus. Input type/subtype tokens are case-insensitive;
+spaces/tabs, comments and token or escaped quoted parameter values are parsed.
+The whole value must be consumed. Valid unknown STEP parameters are ignored.
+Substring matching and acceptance of malformed parameter tails are forbidden.
+The framed field remains limited to 128 ASCII bytes. NUL, CR/LF and other
+control characters are rejected; this is a MIME value in a binary attachment,
+not an email header with line folding. Nested comments are bounded by that
+field limit.</p>
+<p>This equivalence applies only to input slots whose catalog declaration admits
+STEP. Other vendor/packed media types retain their exact identity checks. The
+existing dual STEP input declarations and ordering are preserved. Clients may
+normalize accepted STEP input to <code>model/step</code> before sending it, including to
+older native binaries that already admit that token. Direct native admission
+still accepts valid parameterized values independently of client normalization.</p>
+<p>Actual STEP bytes are parsed by the geometry implementation. Attachment size,
+byte digest, ownership, placement and other operation checks remain unchanged.
+Parameters never select compression, units, STEP schema or source transforms.</p>
+<p>Output validation remains exact. New illustration source summaries use
+<code>model/step</code>; their existing legacy enum member stays decodable. The structural
+AP242 persistence descriptor is widened to decode both bare spellings, while
+new owning producers must emit <code>model/step</code>. This metadata correction does not
+implement or promote topology save or alter operation availability or maturity.</p>
+<h2 id="compatibility-and-ownership">Compatibility And Ownership</h2>
+<p>TypeSpec is the authored structural source. Catalog, schema and language
+projections are regenerated together under ADR-010. Changed catalog digests
+must be paired with matching generated clients and runtimes; catalog checks
+are not weakened to admit arbitrary mixed builds.</p>
+<p>No generic C ABI structure, executable frame, packed geometry packet or PCB
+carrier layout changes. A C ABI generation bump is not implied by this MIME
+correction. Actual release identities follow ADR-006. Existing public package
+distribution is outside this internal development change.</p>
+<p>CAD importers retain source-only editing evidence under their owning policies.
+Geometer neither understands nor interprets that evidence. Moving Source
+category evidence out of a saved MIME string is a separate carrier decision.</p>
+<h2 id="verification">Verification</h2>
+<p>Shared positive and negative fixtures cover both spellings, mixed case,
+comments, quoted semicolons/escapes, malformed values and unrelated types.
+Native direct admission and maintained client/IPC/WASM boundaries are tested.
+Output tests assert bare <code>model/step</code>, legacy descriptor decoding and exact
+rejection of undeclared output spellings. Geometry bytes/digests/options and
+unrelated attachment rules remain equivalent. Real host consumers verify the
+same model resources render without changing their saved Source evidence.</p>
+
+</main>
+</body>
+</html>

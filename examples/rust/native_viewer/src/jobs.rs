@@ -215,7 +215,7 @@ impl Jobs {
                         client
                             .model_hlr_projection(ModelHlrProjectionRequest {
                                 model: model.step.clone(),
-                                media_type: "application/step".into(),
+                                media_type: "model/step".into(),
                                 options,
                             })
                             .await

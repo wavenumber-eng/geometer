@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
+  <meta name="wn-catalog-sha256" content="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032">
   <title>STEP Geometry Interfaces — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/step-geometry.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="step-geometry-interfaces">STEP Geometry Interfaces</h1></header>
 <p>STEP is currently the only supported source model format for Geometer's generic
@@ -82,20 +82,12 @@ depend on local files.</p>
 available. The C++ STEP names remain the current compiled API for this release.</p>
 <h2 id="hlr-projection">HLR Projection</h2>
 <p>Defined in <code>src/cpp/lib/geometer/projection.h</code>.</p>
-<pre><code class="language-cpp">enum class ProjectionCurveMode {
-    NativeArcs,
-    Polyline
-};
-
-enum class ProjectionAlgorithm {
-    Poly,
-    Exact,
-    Fast
+<pre><code class="language-cpp">enum class ProjectionAlgorithm {
+    Fast = 2
 };
 
 enum class ProjectionOutlineAlgorithm {
-    HlrClosedEdges,
-    MeshShadow,
+    MeshShadow = 1,
     FastMeshShadow
 };
 
@@ -144,20 +136,7 @@ struct HlrProjectionOptions {
         0.0, 0.0, 0.0, 1.0,
     };
     bool strip_root_placement = false;
-    ProjectionCurveMode curve_mode = ProjectionCurveMode::NativeArcs;
-    int samples_per_curve = 24;
     int round_digits = 3;
-    bool edge_v_sharp = true;
-    bool edge_v_outline = true;
-    bool edge_v_smooth = false;
-    bool edge_v_sewn = false;
-    bool edge_v_iso = false;
-    bool edge_h_sharp = false;
-    bool edge_h_outline = false;
-    bool edge_h_smooth = false;
-    bool edge_h_sewn = false;
-    bool edge_h_iso = false;
-    bool union_outline_polygons = true;
     ProjectionAlgorithm projection_algorithm = ProjectionAlgorithm::Fast;
     double mesh_linear_deflection = 0.01;
     double mesh_angular_deflection = 0.5;
@@ -165,7 +144,6 @@ struct HlrProjectionOptions {
     MeshDeflectionMode mesh_deflection_mode = MeshDeflectionMode::BboxRelative;
     double mesh_deflection_coefficient = 0.004;
     ProjectionOutlineAlgorithm outline_algorithm = ProjectionOutlineAlgorithm::FastMeshShadow;
-    double hlr_angle_tolerance = 0.0174533;
 };
 </code></pre>
 <p>The three output modes are independently selectable. Their result members stay
@@ -174,11 +152,11 @@ outline-only mesh-shadow request does not run detail HLR, and a detail-only
 request does not construct an outline. A combined request never merges outline
 and detail geometry, allowing downstream renderers to composite them with
 different presentation choices.</p>
-<p><code>Fast</code> is an additive versioned backend. It tessellates through OCCT, builds a
+<p>Fast HLR tessellates through OCCT, builds a
 central C++ triangle/edge incidence graph, activates boundary, crease, and
 view-dependent silhouette candidates, and classifies visibility against a
 projected-triangle spatial index. Its controls are isolated in the
-<code>fast</code> member rather than reinterpreting exact/poly edge flags. It currently
+<code>fast</code> member. It
 emits straight segments and joins only exact-collinear, unbranched fragments
 that share topology, visibility, edge category, and source-face provenance.
 Occlusion-created endpoints are never eligible joins. The existing
@@ -226,22 +204,6 @@ intervals retain their linework.</p>
 <tr>
 <td><code>outline_algorithm=fast-mesh-shadow</code></td>
 <td>Reconstructs projected CAD-face loops when possible, falls back to per-face triangle unions, then unions the reduced contours</td>
-</tr>
-<tr>
-<td><code>outline_algorithm=hlr-close</code></td>
-<td>Delegated to the existing poly HLR-close outline path</td>
-</tr>
-<tr>
-<td>exact/poly <code>edge_*</code> flags</td>
-<td>Not interpreted by fast detail; nested <code>fast</code> candidate flags apply instead</td>
-</tr>
-<tr>
-<td><code>curve_mode</code>, <code>samples_per_curve</code>, native-arc behavior</td>
-<td>Fast detail emits segments only and does not fit arcs</td>
-</tr>
-<tr>
-<td><code>union_outline_polygons</code>, <code>hlr_angle_tolerance</code></td>
-<td>Apply only in the delegated outline path where applicable</td>
 </tr>
 </tbody>
 </table>

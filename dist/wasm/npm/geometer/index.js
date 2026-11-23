@@ -1,4 +1,3 @@
-export * from "./analytic-packet-a0.js";
 export * from "./generated/index.js";
 export * from "./illustrated-hlr.js";
 export * from "./indexed-mesh-packet-a0.js";

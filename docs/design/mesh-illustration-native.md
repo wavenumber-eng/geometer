@@ -12,8 +12,7 @@ The Python facade validates the complete input once and serializes its validated
 mesh subtree as the governed collection attachment. Both illustration facades
 share this adaptation; root validation, error order and attachment bytes are
 unchanged. Shared Python codecs specialize direct numeric arrays while retaining
-their scalar type/range rules. The [performance record](../research/illustration-performance.md)
-separates these client savings from native preparation, fusion and linework costs.
+their scalar type/range rules.
 
 ## Availability and authority
 
@@ -26,7 +25,6 @@ Rust/Python methods. B0 adds post-transform half-space clipping, explicit empty
 results, and fragment identity. `geometry.mesh_illustration.a0` remains an
 explicit compatibility operation. Use matching clients and executable because
 catalog and C ABI generations are negotiated exactly.
-See [release qualification](../developer/native-api-readiness.md) for validation evidence.
 
 The reusable mesh, view, preparation, and style values come from the existing TypeSpec
 [`mesh-illustration-a0.tsp`](../../src/tsp/geometer/operations/mesh-illustration-a0.tsp).
@@ -159,13 +157,14 @@ The native implementation follows the production TypeScript renderer:
   column-major mesh transforms; reflected winding and inverse-transpose normals.
 - sRGB source materials, opacity, and presence-preserving A0 style defaults;
   unlit, flat, Lambert, banded and toon shading.
-- Overlap-based visibility constraints, stable strongly connected component
-  ordering, safe adjacent-surface fusion and coplanar material layers.
+- Removal of triangles the view proves hidden, overlap-based visibility
+  constraints, stable strongly connected component ordering, safe
+  adjacent-surface fusion placed by its overlaps, and coplanar material layers.
 - Raw closed-mesh silhouettes and shared creases. These diagnostic strokes
   are drawn after surfaces and are **not occlusion-filtered**; rear edges can
   appear over foreground faces. Open triangle-soup edges do not automatically
   become outlines. The browser Lab disables these strokes and instead supplies
-  filtered HLR linework; see the [Lab/native comparison](../developer/native-illustration-lab-parity.md).
+  filtered HLR linework.
 - Integer-grid SVG coordinates, six-percent padding, stable CSS classes,
   background/title options and chained line paths.
 
@@ -192,7 +191,7 @@ commands and visible internal tessellation seams. Savings depend on the model,
 view and shading; it does not guarantee a single path per source material.
 
 This is an **illustration rendering option**, not CAD solid union, source-mesh
-decimation, color-palette reduction, or the experimental analytic planar solver.
+decimation, or color-palette reduction.
 It does not modify the source STEP/mesh or independently computed HLR geometry.
 Rust/Python clients pass the generated style option to the native renderer;
 they do not perform a separate fusion pass.
@@ -219,13 +218,16 @@ halfway rounding rather than C++ formatting's ties-to-even behavior.
 The function returns zero on success; nonzero status clears the result,
 including SVG. Invalid generated DTOs, invalid view bases, numeric overflow and
 invalid XML text fail explicitly. Out-of-range or degenerate triangles retain
-the browser warning-and-skip policy; warnings are capped at 256 entries.
+the browser warning-and-skip policy: one warning per out-of-range triangle and
+one counted warning per mesh for its degenerate triangles; warnings are capped
+at 256 entries.
 
 The generated prepare option defaults to 750,000 source triangles and allows
-at most 2,000,000. Native processing additionally rejects more than 100,000,000
-candidate/simplification work items, 4,000,000 visibility constraints or stored
-same-style overlaps, and complete SVG documents larger than 256 MiB. These
-limits return status 102; there is no approximate-renderer fallback.
+at most 2,000,000. Native processing rejects complete SVG documents larger than
+256 MiB. Candidate/simplification work items and drawing commands are limited
+only when a caller sets `MeshIllustrationExecutionLimits` (or a model
+illustration's `work_limits`). These limits return status 102; there is no
+approximate-renderer fallback.
 
 These are accepted-work/output limits, not a hard peak-memory or CPU sandbox.
 Generated value validation serializes input; scene/graph/SVG assembly allocates
@@ -248,13 +250,9 @@ calls for determinism, and parses every SVG with an XML parser.
 Shared fixtures cover shading modes, views, colors, transforms, reflection,
 normals, opacity, fusion, material inlays/holes, overlapping triangle soup,
 warnings, Unicode CSS, title/viewport options and the colored SOT-23 STEP model.
-Windows has local conformance evidence, including typed Rust and Python
-STEP-to-SVG calls and exact Rust IPC output versus the TypeScript oracle.
-Malformed attachments, triangle limits and oversized inline SVG recover without
-poisoning the process. Windows installed-wheel and clean packaged-Rust consumer
-checks now pass, and the user accepted the Rust demo as proof of the workflow.
-macOS/Linux runtime qualification and clean public-release gates remain open;
-see the [API readiness handoff](../developer/native-api-readiness.md).
+Conformance tests cover typed Rust and Python STEP-to-SVG calls and compare
+Rust IPC output against the TypeScript oracle. The process recovers after
+malformed attachments, triangle limits and oversized inline SVG.
 Native composition additionally has
 24 exact TypeScript/IPC comparisons (three views, reflection and four line
 toggle combinations), deterministic repeats, Python typed composition and

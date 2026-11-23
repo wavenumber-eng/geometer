@@ -103,30 +103,6 @@ segments. New composed-mesh code should call canonical B0 `meshHlrProjection`
 and pass its correlated result to `meshIllustration` or
 `meshIllustrationGeometry`.
 
-The packed analytic Boolean operation uses `bigint` for every 64-bit identity
-and integer-nanometer value. The client owns packet encoding and strict result
-decoding:
-
-```ts
-const result = await client.analyticPlanarBooleanBatch({
-  jobs: [{
-    job_id: 1n,
-    stages: [{
-      stage_id: 1n,
-      operation: "union",
-      operands: [{
-        operand_id: 1n,
-        kind: "disk",
-        feature_id: 1n,
-        center: { x: 0n, y: 0n },
-        radius_nm: 1_000_000n,
-      }],
-    }],
-  }],
-  relationship_queries: [],
-});
-```
-
 Window applications can keep synchronous geometry off the UI thread with the
 correlated Worker client:
 

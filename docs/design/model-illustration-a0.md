@@ -51,6 +51,37 @@ Geometer retries once after cleaning the model; any faces still marked outdated
 are omitted under the same partial-result policy. A model with no usable
 prepared geometry fails the operation.
 
+### Native source reuse
+
+Native model illustration privately retains successful STEP tessellations in a
+process-local LRU, up to 64 entries and 256 MiB of accounted retained storage.
+The lookup requires identical raw STEP bytes and identical generated tessellation
+options: linear and angular deflection, root placement, triangle limit, and
+partial-result policy. Authored option presence is retained in the key, so an
+absent option and its explicit default may occupy separate entries; the original
+tessellator still resolves their effective values. Lookup compares source size,
+options and every raw byte. Successful preparation retains the actual raw-byte
+SHA alongside those bytes; an exact hit reuses it in the current Source summary
+without another cryptographic scan. Public hashes and result identity are unchanged.
+
+Each hit returns a deep copy of the mesh collection and its complete warnings
+before applying the current source transform, material override, view, or B0
+clipping. No OCCT document or mutable mesh is shared between requests. Failed
+preparation is never retained, and oversized entries or retention allocation
+failure leave successful geometry usable. The storage limit counts source bytes,
+container capacities, and conservative allocation overhead; it is not a process
+RSS or transient-work limit. Concurrent misses can perform duplicate preparation.
+
+This memo changes neither result/cache identity nor the public colored
+tessellation operation. Direct `model_tessellation_from_bytes` and WASM model
+illustration remain stateless. It does not cache analytic lowering or completed
+view-dependent illustrations.
+
+Local Windows qualification compared three one-worker, result-cache-disabled
+Loz runs per executable: median elapsed time was 85.325 s before and 37.368 s
+with this memo, with byte-identical SVG output. Six additional paired controls
+also preserved SVG bytes.
+
 ## Analytic 2.5D source
 
 Each reached definition is validated and lowered once per request. Every
@@ -88,6 +119,15 @@ is rejected. `show_hlr_outline` and `show_hlr_detail` select the visible Fast
 layers; fill styling and same-color fusion reuse the mesh illustration A0
 contract. One normalized view governs fills and linework.
 
+Coplanar material layering measures triangle and ring areas relative to a
+vertex of that geometry, then uses compensated sums for each material's area.
+This avoids cancellation from products of large absolute XY coordinates that
+can otherwise change the selected base material after translation. The largest
+area still selects the base; exact ties retain the existing first-member
+priority. There is no epsilon rank, area bucket, or change to overlap priority,
+lighting, normals, clipping, or drawing formats. This is a numerical stability
+correction, not a guarantee of byte-identical output for arbitrary translations.
+
 Successful results include the prepared source bounds in millimeters. The raw
 drawing geometry also carries physical line widths in projected millimeters;
 SVG and custom renderers therefore receive the same lineweight intent without
@@ -101,6 +141,10 @@ triangle totals and reserves each contiguous array once; cost therefore remains
 linear for STEP files split into many face meshes. Phase timings therefore
 report source preparation, linework, illustration, and raw-attachment encoding
 without implying that OCCT import and tessellation are separately observable.
+On a native source-memo hit, `source_preparation_ms` measures the current lookup,
+mesh/warning copy, placement, source hashing, and fragment preparation rather than
+replaying the original import duration. Later phase timings likewise measure the
+current operation; source reuse adds no wire timing or cache-statistics fields.
 
 See [technical illustration algorithms](technical-illustration-algorithms.md)
 for the pipeline and determinism rules and [illustration drawing geometry](mesh-illustration-geometry.md)
@@ -150,3 +194,6 @@ request plus optional model attachment.
 - [`mesh_illustration.rs`](../../src/rust/geometer-client/examples/mesh_illustration.rs)
 - [`direct_static_illustration.rs`](../../src/rust/geometer-client/examples/direct_static_illustration.rs)
   sends STEP once and writes the returned SVG.
+## STEP source media semantics
+
+A0 compatibility and B0 illustration inputs share the [STEP media policy](../geometer/adr/geometer-adr-020-standard-step-media-types.md). Valid auxiliary input parameters have no effect on model bytes or geometry. New source summaries emit bare `model/step`; the legacy `application/step` summary remains decodable.

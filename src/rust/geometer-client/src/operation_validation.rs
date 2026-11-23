@@ -81,8 +81,9 @@ pub(crate) fn validate_operation_request(
 pub(crate) fn decode_and_validate_request(
     declaration: &IpcOperationDeclarationA0,
     request_json: &[u8],
-    attachments: &[Attachment],
+    attachments: &mut [Attachment],
 ) -> Result<OperationRequest, GeometerClientError> {
+    normalize_step_request_attachments(declaration, attachments)?;
     if request_uses_b0(declaration) {
         let request = crate::generated::dispatch::decode_logical_request_b0(
             &declaration.request_contract,
@@ -116,6 +117,38 @@ pub(crate) fn decode_and_validate_request(
     };
     validate_operation_request(declaration, &request, attachments)?;
     Ok(OperationRequest::A0(request))
+}
+
+fn step_input(declaration: &contracts::IpcAttachmentDeclarationA0) -> bool {
+    declaration
+        .media_types
+        .iter()
+        .any(|media| matches!(media.as_str(), "model/step" | "application/step"))
+}
+
+fn normalize_step_request_attachments(
+    declaration: &IpcOperationDeclarationA0,
+    attachments: &mut [Attachment],
+) -> Result<(), GeometerClientError> {
+    for attachment in attachments {
+        let Some(descriptor) = declaration
+            .input_attachments
+            .iter()
+            .find(|input| input.name == attachment.name)
+            .filter(|input| step_input(input))
+        else {
+            continue;
+        };
+        if let Some(canonical) = crate::step_media_type::canonical(&attachment.media_type) {
+            attachment.media_type = canonical.to_owned();
+        } else if !descriptor.media_types.contains(&attachment.media_type) {
+            return Err(GeometerClientError::Protocol(format!(
+                "{} request attachment {} has invalid STEP media type",
+                declaration.identity, attachment.name,
+            )));
+        }
+    }
+    Ok(())
 }
 
 pub(crate) enum OperationRequest {
@@ -266,7 +299,7 @@ fn validate_declared_attachments(
                     attachment.name
                 ))
             })?;
-        let compatible = declaration.media_types.contains(&attachment.media_type)
+        let compatible = attachment_media_matches(direction, declaration, attachment)
             && attachment.data.len() <= declaration.max_bytes as usize;
         if !compatible {
             return Err(GeometerClientError::Protocol(format!(
@@ -284,4 +317,16 @@ fn validate_declared_attachments(
         )));
     }
     Ok(())
+}
+
+fn attachment_media_matches(
+    direction: &str,
+    declaration: &contracts::IpcAttachmentDeclarationA0,
+    attachment: &Attachment,
+) -> bool {
+    if direction == "request" && step_input(declaration) {
+        return crate::step_media_type::canonical(&attachment.media_type).is_some()
+            || declaration.media_types.contains(&attachment.media_type);
+    }
+    declaration.media_types.contains(&attachment.media_type)
 }

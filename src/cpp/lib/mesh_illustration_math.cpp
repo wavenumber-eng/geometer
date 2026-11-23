@@ -292,25 +292,21 @@ double cross2(Vec2 a, Vec2 b, Vec2 p)
 }
 double signed_area(const Ring& points)
 {
+    if (points.empty())
+        return 0;
+    const auto origin = points.front();
     double area = 0;
-    for (std::size_t i = 0; i < points.size(); ++i)
+    for (std::size_t i = 1; i + 1 < points.size(); ++i)
     {
-        const auto& a = points[i];
-        const auto& b = points[(i + 1) % points.size()];
-        area += a[0] * b[1] - b[0] * a[1];
+        // Remove the shared coordinate origin before forming products. The
+        // absolute shoelace sum loses small areas after a large translation.
+        area += cross2(origin, points[i], points[i + 1]);
     }
     return finite_result(area * .5);
 }
 double signed_area(const std::array<Vec2, 3>& points)
 {
-    double area = 0;
-    for (std::size_t i = 0; i < points.size(); ++i)
-    {
-        const auto& a = points[i];
-        const auto& b = points[(i + 1) % points.size()];
-        area += a[0] * b[1] - b[0] * a[1];
-    }
-    return finite_result(area * .5);
+    return finite_result(cross2(points[0], points[1], points[2]) * .5);
 }
 Bounds projected_bounds(const Triangle& triangle)
 {

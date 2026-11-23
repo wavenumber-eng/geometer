@@ -63,12 +63,7 @@ async function generateSite(catalog, manifest, catalogDigest) {
     await writeGenerated(guide.path, htmlDocument({ ...guide, digest: catalogDigest }));
   }
   const contractById = new Map(manifest.contracts.map((contract) => [contract.id, contract]));
-  const operationById = new Map(
-    [...manifest.operations, ...manifest.candidateOperations].map((operation) => [
-      operation.id,
-      operation,
-    ]),
-  );
+  const operationById = new Map(manifest.operations.map((operation) => [operation.id, operation]));
   const declarationByName = new Map(
     catalog.declarations.map((declaration) => [declaration.name, declaration]),
   );
@@ -167,8 +162,8 @@ function renderIndex(catalog, contracts, operations, contractPages, operationPag
 </header>
 <nav class="nav" aria-label="Reference navigation">
   <a href="guides.html">Documentation in HTML</a>
-  <a href="coverage.html">All operations and migration gaps</a>
-  <a href="../../developer/demo-status.md">Demo verification</a>
+  <a href="coverage.html">Operation coverage</a>
+  <a href="guides/examples/README.html">Examples</a>
   <a href="../../contracts/typespec-toolchain.md">TypeSpec toolchain</a>
   <a href="../../design/contract-semantics.md">Contract semantics</a>
   <a href="../../design/generic-operation-c-abi.md">Generic C ABI</a>
@@ -197,9 +192,6 @@ function renderContractPage(root, lifecycle, declarations, digest) {
   const patchNote = root.option_patch
     ? '<aside class="callout"><strong>Presence-preserving patch.</strong> Absent fields do not materialize defaults and do not replace inherited values.</aside>'
     : "";
-  const compatibilityLink = root.contract_identity.startsWith("geometry.model_bounds")
-    ? '<a href="../../../research/history/model-bounds-contract-compatibility.md">Compatibility analysis</a>'
-    : '<a href="../../../design/contract-semantics.md">Compatibility policy</a>';
   return htmlDocument({
     title: `${root.contract_identity} — Geometer`,
     depth: 1,
@@ -210,7 +202,7 @@ function renderContractPage(root, lifecycle, declarations, digest) {
   <h1><code>${escapeHtml(root.contract_identity)}</code></h1>
   <p class="lede">${escapeHtml(declarations[0]?.doc ?? "")}</p>
 </header>
-<nav class="nav" aria-label="Contract navigation"><a href="../index.html">All contracts</a><a href="../../../../contracts/geometer/generated/schema/${escapeAttribute(schemaName)}">JSON Schema</a><a href="../../../../src/tsp/geometer/main.tsp">TypeSpec entry point</a>${compatibilityLink}</nav>
+<nav class="nav" aria-label="Contract navigation"><a href="../index.html">All contracts</a><a href="../../../../contracts/geometer/generated/schema/${escapeAttribute(schemaName)}">JSON Schema</a><a href="../../../../src/tsp/geometer/main.tsp">TypeSpec entry point</a><a href="../../../design/contract-semantics.md">Compatibility policy</a></nav>
 <aside class="callout"><strong>Generated, not authored.</strong> Edit TypeSpec and regenerate. Lifecycle evidence remains in the promotion manifest.</aside>
 ${patchNote}
 <section><h2>Identity</h2><table><tbody>
@@ -512,7 +504,6 @@ function parsePromotionManifest(text) {
   const manifest = {
     contracts: [],
     operations: [],
-    candidateOperations: [],
     documentationAssets: [],
     binaryFormats: [],
   };
@@ -528,11 +519,6 @@ function parsePromotionManifest(text) {
     if (line === "[[operations]]") {
       target = {};
       manifest.operations.push(target);
-      continue;
-    }
-    if (line === "[[candidate_operations]]") {
-      target = {};
-      manifest.candidateOperations.push(target);
       continue;
     }
     if (line === "[[documentation.assets]]") {

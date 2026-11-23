@@ -123,15 +123,13 @@ availability are reported independently.
 Markdown under design, contracts, developer, decisions and requirements, plus
 the root and example indexes. The pinned development-only Markdown parser
 renders each authored source once, rewrites links between generated guides,
-and retains a link to editable Markdown. It does not infer engineering intent
-from code. The demo audit therefore has a generated HTML presentation without
-a second handwritten demo list.
+and retains a link to editable Markdown.
 
 Generation is local and deterministic. Resource dependencies remain local;
 authored guide hyperlinks to external references are allowed but not fetched.
 The checker validates generated file inventory, local links and generated
 heading anchors. `npm run check:docs` additionally checks authored Markdown
-file links and documented disposition targets.
+file links and registration in the examples index.
 
 The 2026-09-05 style refresh adopts ALX teal from the unchanged upstream asset
 at appz revision `27a6c567d69c3a61f367774aed5dcab6fc09164a`, retains OFL

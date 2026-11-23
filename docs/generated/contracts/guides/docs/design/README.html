@@ -4,21 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
+  <meta name="wn-catalog-sha256" content="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032">
   <title>Geometer Interfaces — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/README.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="geometer-interfaces">Geometer Interfaces</h1></header>
 <p>Start with the <a href="executable-ipc.html">executable IPC consumer guide</a> for persistent
 process integration. These documents specify callable behavior and wire/value
 contracts. Experimental specifications are retained without implying production
-readiness. Build and demo procedures live in <a href="../developer/README.html">developer documentation</a>;
-measurements and abandoned approaches live in <a href="../../../../../research/README.md">research</a>.</p>
+readiness. Build and demo procedures live in <a href="../developer/README.html">developer documentation</a>.</p>
 <h2 id="supported-interface-boundaries">Supported Interface Boundaries</h2>
 <ul>
 <li><a href="interface-policy.html">Interface policy and versioning</a></li>
+<li><a href="../geometer/adr/geometer-adr-020-standard-step-media-types.html">Standard STEP media types</a></li>
 <li><a href="step-geometry.html">STEP geometry</a> and <a href="planar-geometry.html">planar geometry</a></li>
 <li><a href="model-tessellation-a0.html">Colored model tessellation A0</a></li>
 <li><a href="mesh-illustration-native.html">Native mesh illustration and STEP-to-SVG examples</a></li>
@@ -37,12 +37,10 @@ measurements and abandoned approaches live in <a href="../../../../../research/R
 <li><a href="json-formats.html">JSON formats</a>, <a href="binary-formats.html">binary packets</a>, and <a href="distribution.html">distribution</a></li>
 </ul>
 <h2 id="experimental-interfaces">Experimental Interfaces</h2>
-<p>The analytic solver is not production-ready. Topology is an unpromoted native
+<p>Topology is an unpromoted native
 research API; some declarations are structural only. Consult the actual runtime
 catalog rather than inferring availability from a specification.</p>
 <ul>
-<li><a href="analytic-planar-boolean-a0.html">Analytic logical contract and limitations</a></li>
-<li><a href="analytic-planar-boolean-packet-a0.html">Analytic packed A0 contract</a></li>
 <li><a href="step-topology-contract-a0.html">Topology lifecycle/inspection/render Slice A</a></li>
 <li><a href="step-topology-contract-slice-b.html">Topology mutation/checkpoint Slice B</a></li>
 <li><a href="step-topology-contract-slice-c.html">Topology restore/persistence Slice C</a></li>
@@ -55,9 +53,7 @@ catalog rather than inferring availability from a specification.</p>
 <ul>
 <li><a href="../contracts/README.html">TypeSpec and contract authority</a></li>
 <li><a href="../../../index.html">Generated contract and operation reference</a></li>
-<li><a href="../contracts/typespec-coverage-assessment.html">Migration roadmap</a></li>
-<li><a href="../../../../../research/README.md">Research and historical evidence</a></li>
-<li><a href="../developer/documentation.html">Documentation maintenance and disposition map</a></li>
+<li><a href="../developer/documentation.html">Documentation maintenance</a></li>
 </ul>
 
 </main>

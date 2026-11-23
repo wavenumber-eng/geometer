@@ -33,7 +33,7 @@ function parseArgs(argv) {
   const opts = {
     view: "top",
     limit: 0,
-    out: path.join(ROOT, "docs", "plans", "004_poly_hlr_current_results.md"),
+    out: path.join(ROOT, "out", "benchmarks", "hlr-results.md"),
   };
   for (let i = 2; i < argv.length; i += 1) {
     const a = argv[i];

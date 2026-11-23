@@ -39,10 +39,6 @@ bool decode_FastHlrOptionsA0(const rapidjson::Value&, FastHlrOptionsA0*, const s
                              ContractError*);
 bool write_FastHlrOptionsA0(rapidjson::Writer<rapidjson::StringBuffer>&, const FastHlrOptionsA0&,
                             ContractError*);
-bool decode_HlrCurveMode(const rapidjson::Value&, HlrCurveMode*, const std::string&,
-                         ContractError*);
-bool write_HlrCurveMode(rapidjson::Writer<rapidjson::StringBuffer>&, const HlrCurveMode&,
-                        ContractError*);
 bool decode_HlrMatrix4x4(const rapidjson::Value&, HlrMatrix4x4*, const std::string&,
                          ContractError*);
 bool write_HlrMatrix4x4(rapidjson::Writer<rapidjson::StringBuffer>&, const HlrMatrix4x4&,
@@ -552,6 +548,10 @@ bool decode_XmlXcafPersistenceArtifact(const rapidjson::Value&, XmlXcafPersisten
                                        const std::string&, ContractError*);
 bool write_XmlXcafPersistenceArtifact(rapidjson::Writer<rapidjson::StringBuffer>&,
                                       const XmlXcafPersistenceArtifact&, ContractError*);
+bool decode_StepAp242MediaType(const rapidjson::Value&, StepAp242MediaType*, const std::string&,
+                               ContractError*);
+bool write_StepAp242MediaType(rapidjson::Writer<rapidjson::StringBuffer>&,
+                              const StepAp242MediaType&, ContractError*);
 bool decode_StepAp242PersistenceArtifact(const rapidjson::Value&, StepAp242PersistenceArtifact*,
                                          const std::string&, ContractError*);
 bool write_StepAp242PersistenceArtifact(rapidjson::Writer<rapidjson::StringBuffer>&,
@@ -2121,40 +2121,6 @@ bool write_FastHlrOptionsA0(rapidjson::Writer<rapidjson::StringBuffer>& writer,
     return true;
 }
 
-bool decode_HlrCurveMode(const rapidjson::Value& value, HlrCurveMode* out, const std::string& path,
-                         ContractError* error)
-{
-    if (!value.IsString())
-        return fail(error, "geometer.contract.type_mismatch", path, "Expected a string enum.");
-    const std::string text(value.GetString(), value.GetStringLength());
-    if (text == "native_arcs")
-    {
-        *out = HlrCurveMode::native_arcs;
-        return true;
-    }
-    if (text == "polyline")
-    {
-        *out = HlrCurveMode::polyline;
-        return true;
-    }
-    return fail(error, "geometer.contract.enum_mismatch", path, "Unknown enum value.");
-}
-
-bool write_HlrCurveMode(rapidjson::Writer<rapidjson::StringBuffer>& writer,
-                        const HlrCurveMode& value, ContractError* error)
-{
-    switch (value)
-    {
-    case HlrCurveMode::native_arcs:
-        writer.String("native_arcs");
-        return true;
-    case HlrCurveMode::polyline:
-        writer.String("polyline");
-        return true;
-    }
-    return fail(error, "geometer.contract.enum_mismatch", "", "Unknown enum value.");
-}
-
 bool decode_HlrMatrix4x4(const rapidjson::Value& value, HlrMatrix4x4* out, const std::string& path,
                          ContractError* error)
 {
@@ -2230,11 +2196,6 @@ bool decode_HlrOutlineAlgorithm(const rapidjson::Value& value, HlrOutlineAlgorit
     if (!value.IsString())
         return fail(error, "geometer.contract.type_mismatch", path, "Expected a string enum.");
     const std::string text(value.GetString(), value.GetStringLength());
-    if (text == "hlr-close")
-    {
-        *out = HlrOutlineAlgorithm::hlr_close;
-        return true;
-    }
     if (text == "mesh-shadow")
     {
         *out = HlrOutlineAlgorithm::mesh_shadow;
@@ -2253,9 +2214,6 @@ bool write_HlrOutlineAlgorithm(rapidjson::Writer<rapidjson::StringBuffer>& write
 {
     switch (value)
     {
-    case HlrOutlineAlgorithm::hlr_close:
-        writer.String("hlr-close");
-        return true;
     case HlrOutlineAlgorithm::mesh_shadow:
         writer.String("mesh-shadow");
         return true;
@@ -2750,16 +2708,6 @@ bool decode_HlrProjectionAlgorithm(const rapidjson::Value& value, HlrProjectionA
     if (!value.IsString())
         return fail(error, "geometer.contract.type_mismatch", path, "Expected a string enum.");
     const std::string text(value.GetString(), value.GetStringLength());
-    if (text == "poly")
-    {
-        *out = HlrProjectionAlgorithm::poly;
-        return true;
-    }
-    if (text == "exact")
-    {
-        *out = HlrProjectionAlgorithm::exact;
-        return true;
-    }
     if (text == "fast")
     {
         *out = HlrProjectionAlgorithm::fast;
@@ -2773,12 +2721,6 @@ bool write_HlrProjectionAlgorithm(rapidjson::Writer<rapidjson::StringBuffer>& wr
 {
     switch (value)
     {
-    case HlrProjectionAlgorithm::poly:
-        writer.String("poly");
-        return true;
-    case HlrProjectionAlgorithm::exact:
-        writer.String("exact");
-        return true;
     case HlrProjectionAlgorithm::fast:
         writer.String("fast");
         return true;
@@ -2846,20 +2788,7 @@ bool decode_HlrProjectionOptionsA0(const rapidjson::Value& value, HlrProjectionO
                                         "output_bbox",
                                         "model_transform",
                                         "strip_root_placement",
-                                        "curve_mode",
-                                        "samples_per_curve",
                                         "round_digits",
-                                        "edge_v_sharp",
-                                        "edge_v_outline",
-                                        "edge_v_smooth",
-                                        "edge_v_sewn",
-                                        "edge_v_iso",
-                                        "edge_h_sharp",
-                                        "edge_h_outline",
-                                        "edge_h_smooth",
-                                        "edge_h_sewn",
-                                        "edge_h_iso",
-                                        "union_outline_polygons",
                                         "projection_algorithm",
                                         "mesh_linear_deflection",
                                         "mesh_angular_deflection",
@@ -2867,9 +2796,8 @@ bool decode_HlrProjectionOptionsA0(const rapidjson::Value& value, HlrProjectionO
                                         "mesh_deflection_mode",
                                         "mesh_deflection_coefficient",
                                         "outline_algorithm",
-                                        "hlr_angle_tolerance",
                                         "fast"};
-    if (!validate_object(value, names, 29U, path, error))
+    if (!validate_object(value, names, 15U, path, error))
         return false;
     {
         const auto member = value.FindMember("views");
@@ -2947,32 +2875,6 @@ bool decode_HlrProjectionOptionsA0(const rapidjson::Value& value, HlrProjectionO
             out->strip_root_placement.reset();
     }
     {
-        const auto member = value.FindMember("curve_mode");
-        if (member != value.MemberEnd())
-        {
-            HlrCurveMode decoded{};
-            if (!decode_HlrCurveMode(member->value, &decoded, child_path(path, "curve_mode"),
-                                     error))
-                return false;
-            out->curve_mode = std::move(decoded);
-        }
-        else
-            out->curve_mode.reset();
-    }
-    {
-        const auto member = value.FindMember("samples_per_curve");
-        if (member != value.MemberEnd())
-        {
-            std::uint32_t decoded{};
-            if (!decode_uint32(member->value, &decoded, child_path(path, "samples_per_curve"),
-                               error, 1ULL, 100000ULL))
-                return false;
-            out->samples_per_curve = std::move(decoded);
-        }
-        else
-            out->samples_per_curve.reset();
-    }
-    {
         const auto member = value.FindMember("round_digits");
         if (member != value.MemberEnd())
         {
@@ -2984,139 +2886,6 @@ bool decode_HlrProjectionOptionsA0(const rapidjson::Value& value, HlrProjectionO
         }
         else
             out->round_digits.reset();
-    }
-    {
-        const auto member = value.FindMember("edge_v_sharp");
-        if (member != value.MemberEnd())
-        {
-            bool decoded{};
-            if (!decode_boolean(member->value, &decoded, child_path(path, "edge_v_sharp"), error))
-                return false;
-            out->edge_v_sharp = std::move(decoded);
-        }
-        else
-            out->edge_v_sharp.reset();
-    }
-    {
-        const auto member = value.FindMember("edge_v_outline");
-        if (member != value.MemberEnd())
-        {
-            bool decoded{};
-            if (!decode_boolean(member->value, &decoded, child_path(path, "edge_v_outline"), error))
-                return false;
-            out->edge_v_outline = std::move(decoded);
-        }
-        else
-            out->edge_v_outline.reset();
-    }
-    {
-        const auto member = value.FindMember("edge_v_smooth");
-        if (member != value.MemberEnd())
-        {
-            bool decoded{};
-            if (!decode_boolean(member->value, &decoded, child_path(path, "edge_v_smooth"), error))
-                return false;
-            out->edge_v_smooth = std::move(decoded);
-        }
-        else
-            out->edge_v_smooth.reset();
-    }
-    {
-        const auto member = value.FindMember("edge_v_sewn");
-        if (member != value.MemberEnd())
-        {
-            bool decoded{};
-            if (!decode_boolean(member->value, &decoded, child_path(path, "edge_v_sewn"), error))
-                return false;
-            out->edge_v_sewn = std::move(decoded);
-        }
-        else
-            out->edge_v_sewn.reset();
-    }
-    {
-        const auto member = value.FindMember("edge_v_iso");
-        if (member != value.MemberEnd())
-        {
-            bool decoded{};
-            if (!decode_boolean(member->value, &decoded, child_path(path, "edge_v_iso"), error))
-                return false;
-            out->edge_v_iso = std::move(decoded);
-        }
-        else
-            out->edge_v_iso.reset();
-    }
-    {
-        const auto member = value.FindMember("edge_h_sharp");
-        if (member != value.MemberEnd())
-        {
-            bool decoded{};
-            if (!decode_boolean(member->value, &decoded, child_path(path, "edge_h_sharp"), error))
-                return false;
-            out->edge_h_sharp = std::move(decoded);
-        }
-        else
-            out->edge_h_sharp.reset();
-    }
-    {
-        const auto member = value.FindMember("edge_h_outline");
-        if (member != value.MemberEnd())
-        {
-            bool decoded{};
-            if (!decode_boolean(member->value, &decoded, child_path(path, "edge_h_outline"), error))
-                return false;
-            out->edge_h_outline = std::move(decoded);
-        }
-        else
-            out->edge_h_outline.reset();
-    }
-    {
-        const auto member = value.FindMember("edge_h_smooth");
-        if (member != value.MemberEnd())
-        {
-            bool decoded{};
-            if (!decode_boolean(member->value, &decoded, child_path(path, "edge_h_smooth"), error))
-                return false;
-            out->edge_h_smooth = std::move(decoded);
-        }
-        else
-            out->edge_h_smooth.reset();
-    }
-    {
-        const auto member = value.FindMember("edge_h_sewn");
-        if (member != value.MemberEnd())
-        {
-            bool decoded{};
-            if (!decode_boolean(member->value, &decoded, child_path(path, "edge_h_sewn"), error))
-                return false;
-            out->edge_h_sewn = std::move(decoded);
-        }
-        else
-            out->edge_h_sewn.reset();
-    }
-    {
-        const auto member = value.FindMember("edge_h_iso");
-        if (member != value.MemberEnd())
-        {
-            bool decoded{};
-            if (!decode_boolean(member->value, &decoded, child_path(path, "edge_h_iso"), error))
-                return false;
-            out->edge_h_iso = std::move(decoded);
-        }
-        else
-            out->edge_h_iso.reset();
-    }
-    {
-        const auto member = value.FindMember("union_outline_polygons");
-        if (member != value.MemberEnd())
-        {
-            bool decoded{};
-            if (!decode_boolean(member->value, &decoded, child_path(path, "union_outline_polygons"),
-                                error))
-                return false;
-            out->union_outline_polygons = std::move(decoded);
-        }
-        else
-            out->union_outline_polygons.reset();
     }
     {
         const auto member = value.FindMember("projection_algorithm");
@@ -3210,19 +2979,6 @@ bool decode_HlrProjectionOptionsA0(const rapidjson::Value& value, HlrProjectionO
             out->outline_algorithm.reset();
     }
     {
-        const auto member = value.FindMember("hlr_angle_tolerance");
-        if (member != value.MemberEnd())
-        {
-            double decoded{};
-            if (!decode_double(member->value, &decoded, child_path(path, "hlr_angle_tolerance"),
-                               error, 0, 3.141592653589793, false, false))
-                return false;
-            out->hlr_angle_tolerance = std::move(decoded);
-        }
-        else
-            out->hlr_angle_tolerance.reset();
-    }
-    {
         const auto member = value.FindMember("fast");
         if (member != value.MemberEnd())
         {
@@ -3277,88 +3033,10 @@ bool write_HlrProjectionOptionsA0(rapidjson::Writer<rapidjson::StringBuffer>& wr
         if (!(writer.Bool(*value.strip_root_placement), true))
             return false;
     }
-    if (value.curve_mode.has_value())
-    {
-        writer.Key("curve_mode");
-        if (!write_HlrCurveMode(writer, *value.curve_mode, error))
-            return false;
-    }
-    if (value.samples_per_curve.has_value())
-    {
-        writer.Key("samples_per_curve");
-        if (!write_uint32(writer, *value.samples_per_curve, error, 1ULL, 100000ULL))
-            return false;
-    }
     if (value.round_digits.has_value())
     {
         writer.Key("round_digits");
         if (!write_uint32(writer, *value.round_digits, error, 0ULL, 9ULL))
-            return false;
-    }
-    if (value.edge_v_sharp.has_value())
-    {
-        writer.Key("edge_v_sharp");
-        if (!(writer.Bool(*value.edge_v_sharp), true))
-            return false;
-    }
-    if (value.edge_v_outline.has_value())
-    {
-        writer.Key("edge_v_outline");
-        if (!(writer.Bool(*value.edge_v_outline), true))
-            return false;
-    }
-    if (value.edge_v_smooth.has_value())
-    {
-        writer.Key("edge_v_smooth");
-        if (!(writer.Bool(*value.edge_v_smooth), true))
-            return false;
-    }
-    if (value.edge_v_sewn.has_value())
-    {
-        writer.Key("edge_v_sewn");
-        if (!(writer.Bool(*value.edge_v_sewn), true))
-            return false;
-    }
-    if (value.edge_v_iso.has_value())
-    {
-        writer.Key("edge_v_iso");
-        if (!(writer.Bool(*value.edge_v_iso), true))
-            return false;
-    }
-    if (value.edge_h_sharp.has_value())
-    {
-        writer.Key("edge_h_sharp");
-        if (!(writer.Bool(*value.edge_h_sharp), true))
-            return false;
-    }
-    if (value.edge_h_outline.has_value())
-    {
-        writer.Key("edge_h_outline");
-        if (!(writer.Bool(*value.edge_h_outline), true))
-            return false;
-    }
-    if (value.edge_h_smooth.has_value())
-    {
-        writer.Key("edge_h_smooth");
-        if (!(writer.Bool(*value.edge_h_smooth), true))
-            return false;
-    }
-    if (value.edge_h_sewn.has_value())
-    {
-        writer.Key("edge_h_sewn");
-        if (!(writer.Bool(*value.edge_h_sewn), true))
-            return false;
-    }
-    if (value.edge_h_iso.has_value())
-    {
-        writer.Key("edge_h_iso");
-        if (!(writer.Bool(*value.edge_h_iso), true))
-            return false;
-    }
-    if (value.union_outline_polygons.has_value())
-    {
-        writer.Key("union_outline_polygons");
-        if (!(writer.Bool(*value.union_outline_polygons), true))
             return false;
     }
     if (value.projection_algorithm.has_value())
@@ -3404,13 +3082,6 @@ bool write_HlrProjectionOptionsA0(rapidjson::Writer<rapidjson::StringBuffer>& wr
     {
         writer.Key("outline_algorithm");
         if (!write_HlrOutlineAlgorithm(writer, *value.outline_algorithm, error))
-            return false;
-    }
-    if (value.hlr_angle_tolerance.has_value())
-    {
-        writer.Key("hlr_angle_tolerance");
-        if (!write_double(writer, *value.hlr_angle_tolerance, error, 0, 3.141592653589793, false,
-                          false))
             return false;
     }
     if (value.fast.has_value())
@@ -7619,7 +7290,7 @@ bool decode_ModelIllustrationWorkLimitsA0(const rapidjson::Value& value,
             std::uint32_t decoded{};
             if (!decode_uint32(member->value, &decoded,
                                child_path(path, "max_visibility_candidate_pairs"), error, 1ULL,
-                               100000000ULL))
+                               std::numeric_limits<std::uint32_t>::max()))
                 return false;
             out->max_visibility_candidate_pairs = std::move(decoded);
         }
@@ -7632,7 +7303,7 @@ bool decode_ModelIllustrationWorkLimitsA0(const rapidjson::Value& value,
         {
             std::uint32_t decoded{};
             if (!decode_uint32(member->value, &decoded, child_path(path, "max_drawing_commands"),
-                               error, 1ULL, 2000000ULL))
+                               error, 1ULL, std::numeric_limits<std::uint32_t>::max()))
                 return false;
             out->max_drawing_commands = std::move(decoded);
         }
@@ -7650,13 +7321,15 @@ bool write_ModelIllustrationWorkLimitsA0(rapidjson::Writer<rapidjson::StringBuff
     if (value.max_visibility_candidate_pairs.has_value())
     {
         writer.Key("max_visibility_candidate_pairs");
-        if (!write_uint32(writer, *value.max_visibility_candidate_pairs, error, 1ULL, 100000000ULL))
+        if (!write_uint32(writer, *value.max_visibility_candidate_pairs, error, 1ULL,
+                          std::numeric_limits<std::uint32_t>::max()))
             return false;
     }
     if (value.max_drawing_commands.has_value())
     {
         writer.Key("max_drawing_commands");
-        if (!write_uint32(writer, *value.max_drawing_commands, error, 1ULL, 2000000ULL))
+        if (!write_uint32(writer, *value.max_drawing_commands, error, 1ULL,
+                          std::numeric_limits<std::uint32_t>::max()))
             return false;
     }
     writer.EndObject();
@@ -11123,6 +10796,40 @@ bool write_XmlXcafPersistenceArtifact(rapidjson::Writer<rapidjson::StringBuffer>
     return true;
 }
 
+bool decode_StepAp242MediaType(const rapidjson::Value& value, StepAp242MediaType* out,
+                               const std::string& path, ContractError* error)
+{
+    if (!value.IsString())
+        return fail(error, "geometer.contract.type_mismatch", path, "Expected a string enum.");
+    const std::string text(value.GetString(), value.GetStringLength());
+    if (text == "model/step")
+    {
+        *out = StepAp242MediaType::model_step;
+        return true;
+    }
+    if (text == "application/step")
+    {
+        *out = StepAp242MediaType::application_step;
+        return true;
+    }
+    return fail(error, "geometer.contract.enum_mismatch", path, "Unknown enum value.");
+}
+
+bool write_StepAp242MediaType(rapidjson::Writer<rapidjson::StringBuffer>& writer,
+                              const StepAp242MediaType& value, ContractError* error)
+{
+    switch (value)
+    {
+    case StepAp242MediaType::model_step:
+        writer.String("model/step");
+        return true;
+    case StepAp242MediaType::application_step:
+        writer.String("application/step");
+        return true;
+    }
+    return fail(error, "geometer.contract.enum_mismatch", "", "Unknown enum value.");
+}
+
 bool decode_StepAp242PersistenceArtifact(const rapidjson::Value& value,
                                          StepAp242PersistenceArtifact* out, const std::string& path,
                                          ContractError* error)
@@ -11154,8 +10861,8 @@ bool decode_StepAp242PersistenceArtifact(const rapidjson::Value& value,
         if (member == value.MemberEnd())
             return fail(error, "geometer.contract.missing_field", child_path(path, "media_type"),
                         "Required field is missing.");
-        if (!decode_literal_string(member->value, &out->media_type, child_path(path, "media_type"),
-                                   error, "application/step"))
+        if (!decode_StepAp242MediaType(member->value, &out->media_type,
+                                       child_path(path, "media_type"), error))
             return false;
     }
     {
@@ -11200,7 +10907,7 @@ bool write_StepAp242PersistenceArtifact(rapidjson::Writer<rapidjson::StringBuffe
     if (!write_literal_string(writer, value.name, error, "state_artifact"))
         return false;
     writer.Key("media_type");
-    if (!write_literal_string(writer, value.media_type, error, "application/step"))
+    if (!write_StepAp242MediaType(writer, value.media_type, error))
         return false;
     writer.Key("format");
     if (!write_literal_string(writer, value.format, error,

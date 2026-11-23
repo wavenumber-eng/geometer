@@ -68,7 +68,7 @@ export async function generateGuides(root, output) {
     title: "Geometer Documentation",
     depth: 0,
     bodyAttributes: 'data-page-kind="guide-index"',
-    content: `<header><p class="page-type">Generated documentation navigation</p><h1>Geometer Documentation</h1></header><nav class="nav"><a href="index.html">Generated contracts</a><a href="coverage.html">Operation coverage</a></nav><p>Authored interface, contract, developer, decision and requirement pages share one local stylesheet. Historical research remains in its source directory.</p><ul>${pages.map((page) => `<li><a href="${escapeMarkup(page.path)}">${escapeMarkup(page.title)}</a></li>`).join("\n")}</ul>`,
+    content: `<header><p class="page-type">Generated documentation navigation</p><h1>Geometer Documentation</h1></header><nav class="nav"><a href="index.html">Generated contracts</a><a href="coverage.html">Operation coverage</a></nav><p>Authored interface, contract, developer, decision and requirement pages share one local stylesheet.</p><ul>${pages.map((page) => `<li><a href="${escapeMarkup(page.path)}">${escapeMarkup(page.title)}</a></li>`).join("\n")}</ul>`,
   });
   return pages;
 }

@@ -1,7 +1,7 @@
 // Presentation only: identities and authority come from the catalog/manifest.
 export function maturityOf(record) {
   if (record.maturity) return record.maturity;
-  if (/analytic|step_topology/.test(record.id ?? "")) return "experimental_not_production_ready";
+  if (/step_topology/.test(record.id ?? "")) return "experimental_not_production_ready";
   return "See interface support policy; promotion is not maturity";
 }
 
@@ -15,7 +15,7 @@ export function runtimeOf(operation) {
 export function renderCoverage(catalog, manifest, escapeHtml) {
   const e = (value) => escapeHtml(String(value ?? ""));
   const generated = new Map(catalog.operations.map((item) => [item.identity, item]));
-  const entries = [...manifest.operations, ...manifest.candidateOperations];
+  const entries = manifest.operations;
   const ids = new Set(entries.map((item) => item.id));
   if (ids.size !== entries.length) throw new Error("Duplicate governed operation identity.");
   for (const operation of catalog.operations) {
@@ -48,10 +48,10 @@ export function renderCoverage(catalog, manifest, escapeHtml) {
     )
     .join("\n");
   return `<header><p class="page-type">Generated coverage audit</p><h1>Operation And Contract Coverage</h1></header>
-<nav class="nav"><a href="index.html">Contract reference</a><a href="../../contracts/current-interface-inventory.md">Interface and packet authority</a><a href="../../contracts/typespec-coverage-assessment.md">Migration waves</a><a href="../../design/executable-ipc.md">IPC quick start</a></nav>
+<nav class="nav"><a href="index.html">Contract reference</a><a href="../../contracts/current-interface-inventory.md">Interface and packet authority</a><a href="../../design/executable-ipc.md">IPC quick start</a></nav>
 <aside class="callout">Generated from the complete promotion inventory, including handwritten gaps. This is not a list of universally callable operations. Solver maturity, structural promotion and runtime exposure are independent.</aside>
 <section><h2>Operations (${entries.length}; ${catalog.operations.length} TypeSpec declarations)</h2><table><thead><tr><th>Identity</th><th>Lifecycle</th><th>Maturity</th><th>Generic runtime</th><th>Logical request / result</th><th>CLI batch aliases</th></tr></thead><tbody>${rows}</tbody></table></section>
 <section><h2>Structural authority</h2><table><thead><tr><th>Identity</th><th>Lifecycle</th><th>Authority</th><th>Generated projections</th><th>Source</th></tr></thead><tbody>${contracts}</tbody></table></section>
 <section><h2>Governed packet inventory</h2><table><thead><tr><th>Identity</th><th>Lifecycle / codec</th><th>Request / result magic</th><th>Version</th><th>Source</th><th>Governed limits</th></tr></thead><tbody>${packets}</tbody></table></section>
-<section><h2>Coverage boundaries</h2><p>Illustration has a TypeScript SVG/Canvas renderer and native SVG/drawing-geometry operations with generated roots. Consult each runtime catalog for callable operations. Generated HLR/analytic envelopes do not make indexed-mesh or analytic packed codecs generated. Framing GMIPCA01 and planar/Clipper2 packets remain separately governed. Direct C++ helpers, version/free functions and CLI aliases are not automatically new semantic operations.</p><p>Binary offsets are not generated here because no complete machine-readable layout authority exists yet. Use the <a href="../../design/binary-formats.md">authored packet reference</a> and <a href="../../design/analytic-planar-boolean-packet-a0.md">experimental analytic packet specification</a>.</p></section>`;
+<section><h2>Coverage boundaries</h2><p>Illustration has a TypeScript SVG/Canvas renderer and native SVG/drawing-geometry operations with generated roots. Consult each runtime catalog for callable operations. The generated HLR envelope uses the separately governed indexed-mesh codec. Framing GMIPCA01 and planar/Clipper2 packets remain separately governed. Direct C++ helpers, version/free functions and CLI aliases are not automatically new semantic operations.</p><p>Binary offsets are not generated here because no complete machine-readable layout authority exists yet. Use the <a href="../../design/binary-formats.md">authored packet reference</a>.</p></section>`;
 }

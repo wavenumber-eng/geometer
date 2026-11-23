@@ -11,8 +11,8 @@ string and C ABI generation at the top of the window. The app requests a
 high-pixel-density SDL window and scales Dear ImGui's font/style from
 `SDL_GetWindowDisplayScale()` at startup.
 
-`Detail alg` selects `fast` (default), `poly`, or `exact`. `Outline alg` selects
-`fast-mesh-shadow` (default), `mesh-shadow`, or `hlr-close`. Both recompute HLR;
+Detail uses Fast HLR. Changing `Outline alg` recomputes the drawing with
+`fast-mesh-shadow` (default) or `mesh-shadow`.
 `Mode` independently selects which result layers are displayed.
 
 The left preview treats STEP solids as opaque and uses a small orthographic

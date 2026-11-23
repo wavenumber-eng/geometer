@@ -8,11 +8,11 @@ command = "cargo check --locked"
 
 [[subtests]]
 id = "rust-clippy"
-command = "cargo clippy --locked -- -D warnings"
+command = "cargo clippy --locked --features disk-cache -- -D warnings"
 
 [[subtests]]
 id = "rust-test"
-command = "cargo test --locked"
+command = "cargo test --locked --features disk-cache"
 
 [[subtests]]
 id = "rust-doc-test"

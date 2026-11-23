@@ -35,7 +35,11 @@ def _is_self(path: Path) -> bool:
     if not sys.argv:
         return False
     try:
-        return path.resolve() == Path(sys.argv[0]).resolve()
+        invocation = Path(sys.argv[0])
+        if path.resolve() == invocation.resolve():
+            return True
+        # uv's Windows entry-point script removes .exe from argv[0].
+        return sys.platform == "win32" and path.resolve() == Path(f"{invocation}.exe").resolve()
     except OSError:
         return False
 

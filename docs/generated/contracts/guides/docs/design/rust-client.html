@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
+  <meta name="wn-catalog-sha256" content="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032">
   <title>Rust Contracts And Native Clients — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/rust-client.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="rust-contracts-and-native-clients">Rust Contracts And Native Clients</h1></header>
 <h2 id="current-status">Current status</h2>
@@ -16,7 +16,7 @@
 operation DTOs and strict Serde codecs are generated from the normalized
 TypeSpec catalog. The live client spawns one persistent native
 <code>geometer(.exe) serve --stdio</code> process and executes model bounds, model/mesh
-HLR, and analytic planar Boolean through their governed attachments.</p>
+and HLR through their governed attachments.</p>
 <p>The separate <code>src/rust/geometer-sys</code> crate is the narrow unsafe boundary for
 the static C ABI SDK. Release SDK archives carry that crate beside their link
 manifest. Its build script requires an explicit extracted SDK path, validates
@@ -57,10 +57,6 @@ visibility-filtered outline/detail; consumers do not arrange SVG layers. The com
 or handwritten subprocess protocol. These additions require a matching catalog
 and an exactly matching catalog/C ABI generation. Explicit <code>*_a0</code> methods are
 retained only for compatibility tests and controlled migration.</p>
-<p>The analytic operation is experimental and not production-ready. It may fail
-closed on valid inputs and is not the dependable path for whole-board or
-whole-layer copper union. Prefer the Clipper2-backed planar APIs when
-polygonized output is suitable.</p>
 <p>The executable implementation preserves every file-oriented CLI command. Its
 stdin and stdout are switched to binary mode on Windows; stdout is reserved for
 complete A0 frames and stderr is captured separately by the client.</p>
@@ -89,11 +85,7 @@ part of <code>npm run generate:contracts</code> and freshness is part of
 <p>The generated operation catalog is also the Rust client's negotiation
 authority. Packed request/result roots are deliberately excluded from generated
 JSON codecs: their logical DTOs remain generated, while
-<code>analytic_packet_a0</code> owns the strict little-endian wire codec. The public
-encoder accepts <code>AnalyticPlanarBooleanBatchRequestA0</code>; the public decoder
-returns <code>AnalyticPlanarBooleanBatchResultA0</code> and computes each job's SHA-256
-over its exact rebased standalone packet closure.</p>
-<p>Logical request decoding and request/result identity matching are generated in
+Logical request decoding and request/result identity matching are generated in
 <code>generated/dispatch.rs</code> from the TypeSpec IPC unions and catalog roots. The
 generic client selects the exact negotiated request contract before decoding;
 it does not guess from union order (bounds and HLR can both accept <code>{}</code>). This
@@ -161,13 +153,6 @@ reader task routes responses exclusively by identifier and verifies that the
 generated outcome operation matches the pending operation. Unknown,
 completed, malformed, or wrong-direction frames fail the connection and every
 pending call.</p>
-<p><code>GeometerClient::analytic_planar_boolean_batch()</code> derives attachment names,
-media types, schema identities, and packet format from the negotiated generated
-catalog. Generic request and response validation rejects missing, duplicate,
-undeclared, oversized, or media-incompatible attachments and projection
-metadata drift. Fatal response ID/kind/JSON/attachment violations poison the
-connection and resolve every pending call. Negotiated response frame limits are
-checked before payload allocation.</p>
 <p><code>GeometerClient::model_hlr_projection()</code> accepts STEP bytes and canonical HLR
 options. Canonical <code>mesh_hlr_projection()</code> accepts a <code>MeshCollectionA0</code> and the
 complete generated <code>MeshHlrProjectionRequestB0</code>, then returns correlated B0
@@ -182,6 +167,75 @@ removed queued work; it never claims an active OCCT operation stopped. The
 client continues draining any active terminal response. <code>close()</code> performs the
 30-second graceful protocol shutdown, while <code>terminate()</code> is the explicit
 forced-child escalation. Captured stderr is available through <code>stderr_text()</code>.</p>
+<h2 id="supervised-runtime">Supervised runtime</h2>
+<p><code>geometer_client::runtime</code> is the generic host runtime for applications that
+run many operations over a job or a session. It knows no application data
+model.</p>
+<ul>
+<li><code>GeometerRuntime::new(RuntimeConfig)</code> validates settings and starts nothing.
+<code>RuntimeConfig::new(transport)</code> supplies the defaults; hosts adjust its
+public fields. It selects the transport (<code>Transport::Process</code> with an
+<code>ExecutableSource</code>: an explicit path, <code>find_executable()</code> discovery, or a
+host resolver such as a bundle extractor), the pool size (1 to 64), an
+optional exact <code>RuntimePin</code> (release version and C ABI generation), the
+per-call deadline (120 seconds by default), the startup deadline for
+spawning a process worker and completing its handshake (10 seconds by
+default, at most 5 minutes), the hello client name and version, and the
+<code>FatalPolicy</code>.</li>
+<li><code>lease()</code> reuses an idle worker or starts one. A worker opens its
+executable with writes denied, hashes it, spawns it, checks the pin and
+hashes it again; every worker must report the same <code>ArtifactIdentity</code>
+(release, C ABI generation and executable digest). Starts are serialized
+under the pool lock and bounded by the startup deadline; a host resolver
+runs before that bound. A lease is exclusive until dropped.</li>
+<li><code>Worker::run(name, |client| ...)</code> executes typed calls through
+<code>WorkerClient</code>, which has the same typed methods as <code>GeometerClient</code>. An
+operation error is local to the request. Any other client error, or the
+deadline (<code>&quot;{name} deadline exceeded&quot;</code>), terminates the process and
+retires the worker. Hosts retire a worker whose result they reject with
+<code>mark_broken(reason)</code>. A retired worker refuses further calls.</li>
+<li>A retired worker never returns to service, whether or not the host reports
+the failure. When its lease ends it is closed; under <code>FatalPolicy::Latch</code>
+the runtime latches with its reason and every later lease fails (batch
+jobs), and under <code>FatalPolicy::Respawn</code> the next lease starts a verified
+replacement (interactive hosts). A lease that unwinds from a panic is
+treated the same way. <code>fail(message)</code> reports a host-side fatal failure
+under the same policy.</li>
+<li><code>finish()</code> waits for active leases, closes every worker and reports the
+latched failure together with any cleanup failure.</li>
+<li>The runtime is blocking. Lease and call from ordinary threads; async hosts
+call from <code>tokio::task::spawn_blocking</code>. A worker never panics inside a
+Tokio runtime context: there it drives its private runtime, and closes and
+drops it, on a short-lived helper thread. Its calls still block the
+calling thread.</li>
+<li><code>ArtifactIdentity::result_identity(operation, schema)</code> gives the
+<code>ResultIdentity</code> for cached results. <code>ResultCache</code> is a bounded in-memory
+LRU of successful opaque results keyed by the caller's request digest and
+that identity. With the <code>disk-cache</code> feature, <code>DiskResultCache</code> keeps the
+same records in a host-chosen directory: records are written atomically
+under an OS lock, bounded by <code>DiskCacheLimits</code>, evicted oldest first, and
+named by a <code>DiskCacheLayout</code> so different applications never adopt each
+other's files. Corrupt, foreign or oversized records are misses. Callers
+insert only results their own completion accepted, and complete every hit
+again.</li>
+<li>A <code>DiskCacheLayout</code> is an on-disk compatibility shape. Its record format
+string and namespace alone derive the writer lock
+<code>.{namespace}-write-lock</code>, the generation marker
+<code>.{namespace}-directory-generation</code> and its staging files, the marker's
+10-byte magic (the first four namespace characters uppercased and padded
+with <code>_</code>, then <code>CDIR01</code>), the record file names and the record header. A
+host that keeps its two strings keeps reading its earlier releases'
+directories, and should pin those derived names in its own tests.</li>
+<li>With the <code>test-support</code> feature, <code>Transport::Fake</code> starts in-process
+<code>FakeWorker</code>s instead of processes, so hosts can test their supervision,
+batching and caching without a Geometer executable. Everything except the
+process boundary is the real runtime. It is not for production builds.</li>
+</ul>
+<p><code>Transport</code>, <code>ExecutableSource</code>, <code>RuntimeConfig</code>, <code>ArtifactIdentity</code> (built
+with <code>ArtifactIdentity::new</code>), <code>DiskCacheLimits</code> and <code>Failure</code> are
+non-exhaustive. An application serving as its own single-file worker and the
+in-process <code>direct-static</code> client are planned as further transports behind
+the same <code>WorkerClient</code> surface.</p>
 <h2 id="wire-projection">Wire projection</h2>
 <p>The frame layout and limits are exactly those in
 <a href="executable-ipc-a0.html">Executable IPC A0</a>. The client uses these strict JSON
@@ -237,9 +291,7 @@ round trips, fixed-header rejection before payload allocation, strict malformed
 request recovery, unknown and queued cancellation, local timeout behavior,
 duplicate-attachment correlation, wrong-direction fatal handling,
 close/request race resolution, repeated real STEP work through one child,
-repeated nonempty typed analytic work through one child, native-produced packet
-corpus parity, mutation rejection, normative standalone job digests, graceful
-shutdown, and empty plus nontrivial friendly analytic IPC calls from a clean
+graceful shutdown, and typed illustration IPC from a clean
 Cargo-listed source staging against the platform executable in
 <code>dist/native/&lt;platform&gt;/</code>. The staging carries <code>geometer-sys</code> beside
 <code>geometer-client</code>, matching the static SDK layout; crates.io publication is not
@@ -260,6 +312,8 @@ The deadline and unexpected-exit cases use non-distributed native test servers
 with deterministic timing/failure injection; the production server retains its
 governed 30-second deadline. Native and release CI run these live Rust tests on
 every supported native platform after building that platform's executable.</p>
+<h2 id="step-mime-inputs-and-defaults">STEP MIME inputs and defaults</h2>
+<p>The maintained client normalizes valid STEP input MIME values to <code>model/step</code> before sending attachments. This includes case variants, comments, unknown parameters and the legacy <code>application/step</code> spelling. New constructors and attachment producers use <code>model/step</code>; response validation remains exact. See the <a href="../geometer/adr/geometer-adr-020-standard-step-media-types.html">STEP media policy</a>.</p>
 
 </main>
 </body>

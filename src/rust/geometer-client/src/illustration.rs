@@ -129,6 +129,7 @@ async fn run_illustration_request_a0<B: crate::backend::OperationBackend>(
 }
 
 impl_illustration_client!(GeometerClient);
+impl_illustration_client!(crate::runtime::WorkerClient<'_>);
 #[cfg(feature = "direct-static")]
 impl_illustration_client!(GeometerDirectClient);
 

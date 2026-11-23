@@ -1,4 +1,4 @@
-"""Benchmark exact, poly, fast-detail, and mesh-shadow projection backends.
+"""Benchmark Fast HLR and mesh-shadow projection.
 
 The report can compare the native executable with the Node-hosted WASM CLI.
 Wall time deliberately measures the existing one-shot projection surface and
@@ -227,7 +227,6 @@ def run_projection(
                                 "up": [0.0, 1.0, 0.0],
                             }
                         ],
-                        "curve_mode": "polyline",
                         "projection_algorithm": algorithm,
                         "outline_algorithm": outline,
                         "output_outline": layer in {"outline", "both"},
@@ -360,11 +359,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--model", action="append", default=[], help="fixture name; repeatable")
-    parser.add_argument("--algorithm", action="append", choices=("poly", "exact", "fast"), default=[])
+    parser.add_argument("--algorithm", action="append", choices=("fast",), default=[])
     parser.add_argument(
         "--outline",
         action="append",
-        choices=("hlr-close", "mesh-shadow", "fast-mesh-shadow"),
+        choices=("mesh-shadow", "fast-mesh-shadow"),
         default=[],
     )
     parser.add_argument("--layer", action="append", choices=("outline", "detail", "both"), default=[])
@@ -393,8 +392,8 @@ def main() -> int:
     runtime_names = args.runtime or ["native"]
     targets = [runtime_target(name, args.executable, args.wasm_cli, args.node) for name in runtime_names]
     workloads = load_workloads(args.manifest.resolve(), args.model)
-    algorithms = args.algorithm or ["poly", "exact"]
-    outlines = args.outline or ["hlr-close", "mesh-shadow"]
+    algorithms = args.algorithm or ["fast"]
+    outlines = args.outline or ["fast-mesh-shadow", "mesh-shadow"]
     layers = args.layer or ["both"]
 
     cases: list[dict[str, Any]] = []

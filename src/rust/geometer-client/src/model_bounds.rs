@@ -19,7 +19,7 @@ impl ModelBoundsRequest {
     pub fn step(model: Vec<u8>) -> Self {
         Self {
             model,
-            media_type: "application/step".to_owned(),
+            media_type: "model/step".to_owned(),
             options: ModelBoundsOptionsA0 {
                 format: None,
                 model_transform: None,
@@ -42,6 +42,7 @@ macro_rules! impl_model_bounds_client {
 }
 
 impl_model_bounds_client!(GeometerClient);
+impl_model_bounds_client!(crate::runtime::WorkerClient<'_>);
 #[cfg(feature = "direct-static")]
 impl_model_bounds_client!(GeometerDirectClient);
 

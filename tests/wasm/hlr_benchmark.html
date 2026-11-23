@@ -145,13 +145,6 @@
         <button type="button" id="exportButton" title="Download CSV of current results">CSV</button>
       </div>
       <label class="control">
-        <span>Algorithm</span>
-        <select id="algoSelect">
-          <option value="poly">Poly</option>
-          <option value="exact">Exact</option>
-        </select>
-      </label>
-      <label class="control">
         <span>View</span>
         <select id="viewSelect">
           <option value="top">Top</option>
@@ -183,10 +176,6 @@
       <label class="control" title="Angular mesh deflection (radians).">
         <span>Ang defl</span>
         <input id="angDeflInput" type="number" min="0.001" step="0.05" value="0.5">
-      </label>
-      <label class="control" title="HLR edge classification angle tolerance (radians).">
-        <span>HLR tol</span>
-        <input id="hlrTolInput" type="number" min="0.0001" step="0.001" value="0.0174533">
       </label>
       <label class="control" title="Relative mesh deflection scales linear deflection by bbox.">
         <span>Mesh rel</span>
@@ -257,13 +246,11 @@
       runButton: document.getElementById("runButton"),
       stopButton: document.getElementById("stopButton"),
       exportButton: document.getElementById("exportButton"),
-      algoSelect: document.getElementById("algoSelect"),
       viewSelect: document.getElementById("viewSelect"),
       limitInput: document.getElementById("limitInput"),
       sortSelect: document.getElementById("sortSelect"),
       linDeflInput: document.getElementById("linDeflInput"),
       angDeflInput: document.getElementById("angDeflInput"),
-      hlrTolInput: document.getElementById("hlrTolInput"),
       meshRelativeSelect: document.getElementById("meshRelativeSelect"),
       status: document.getElementById("status"),
       rows: document.getElementById("rows"),
@@ -303,10 +290,9 @@
 
     function currentOptions() {
       return {
-        projection_algorithm: els.algoSelect.value,
+        projection_algorithm: "fast",
         mesh_linear_deflection: Number.parseFloat(els.linDeflInput.value) || 0.01,
         mesh_angular_deflection: Number.parseFloat(els.angDeflInput.value) || 0.5,
-        hlr_angle_tolerance: Number.parseFloat(els.hlrTolInput.value) || 0.0174533,
         mesh_relative: els.meshRelativeSelect.value === "true",
       };
     }
@@ -520,7 +506,7 @@
         "mesh_ms", "hlr_ms", "extract_ms", "json_ms",
         "detail", "outline", "error",
       ];
-      const algo = els.algoSelect.value;
+      const algo = "fast";
       const rows = state.rows.map((r) => [
         r.model.name, r.state, algo,
         r.model.stepBytes,
@@ -545,11 +531,9 @@
 
       const paramSetters = {
         view: (v) => projectionViews[v] && (els.viewSelect.value = v),
-        algo: (v) => (els.algoSelect.value = v),
         limit: (v) => (els.limitInput.value = v),
         lin: (v) => (els.linDeflInput.value = v),
         ang: (v) => (els.angDeflInput.value = v),
-        hlrtol: (v) => (els.hlrTolInput.value = v),
       };
       for (const [k, set] of Object.entries(paramSetters)) {
         const v = params.get(k);

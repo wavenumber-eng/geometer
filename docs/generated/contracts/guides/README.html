@@ -4,18 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
+  <meta name="wn-catalog-sha256" content="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032">
   <title>Geometer — Geometer</title>
   <link rel="stylesheet" href="../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>README.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="geometer">Geometer</h1></header>
-<p>This is Geometer's public distribution repository. Active development is
-maintained in <a href="https://github.com/wavenumber-eng/appz">Appz</a> under
-<code>cad/geometer/</code>. Existing public PyPI wheels, releases and package interfaces
-remain available and unchanged. Development fixes belong in the Appz copy;
-public distribution and release updates are handled separately.</p>
+<p>This is Geometer's public distribution repository. Active development lives in
+<a href="https://github.com/wavenumber-eng/appz">Appz</a> under <code>cad/geometer/</code>.</p>
 <p>Geometer is a generic C++ geometry library with an executable, Python package,
 and browser WASM interfaces. It provides STEP conversion, hidden-line projection
 (HLR), planar geometry, and mesh illustration. Board/domain policy and
@@ -42,18 +39,12 @@ application rendering decisions belong to callers, not the geometry kernel.</p>
 <td>Browser APIs plus direct C++, native IPC, Rust and Python illustration since 2026.9.6; see the <a href="docs/design/mesh-illustration-native.html">STEP-to-SVG guide</a>. Demo applications are evaluation tools, not production renderers.</td>
 </tr>
 <tr>
-<td>Analytic line/arc planar Boolean</td>
-<td>Experimental, not production-ready. May fail closed on valid inputs. Not the dependable whole-board/layer copper-union path; prefer Clipper2 when polygonized output is suitable.</td>
-</tr>
-<tr>
 <td>Persistent STEP-topology sessions</td>
 <td>Experimental native-only subset. Structural declarations do not imply runtime availability.</td>
 </tr>
 </tbody>
 </table>
-<p>Contract promotion and solver production readiness are separate. See
-<a href="docs/contracts/README.html">contract authority</a> and
-<a href="docs/geometer/adr/geometer-adr-017-retain_analytic_planar_boolean_as_experimental.html">the analytic decision</a>.</p>
+<p>See <a href="docs/contracts/README.html">contract authority</a> for API maturity.</p>
 <h2 id="choose-an-interface">Choose An Interface</h2>
 <table>
 <thead>
@@ -114,15 +105,13 @@ or use the authored Markdown sources below.</p>
 <ul>
 <li><a href="docs/design/README.html">Interface specifications</a></li>
 <li><a href="docs/contracts/README.html">TypeSpec, contract authority and generated reference</a></li>
-<li><a href="examples/README.html">Examples and demo status</a></li>
-<li><a href="../../../research/README.md">Research and historical evidence</a></li>
+<li><a href="examples/README.html">Examples</a></li>
 <li><a href="docs/geometer/requirements/README.html">Requirements</a> and <a href="docs/geometer/adr/README.html">decisions</a></li>
 <li><a href="docs/developer/README.html">Developer setup, builds, tests and releases</a></li>
 <li><a href="../../../releases/README.md">Release notes</a></li>
 </ul>
-<p>Start with the headless Python example or HLR Lab. Analytic and topology demos
-remain experimental; retention does not imply production support. See the
-<a href="docs/developer/demo-status.html">demo audit</a> for verification limits.</p>
+<p>Start with the headless Python example or HLR Lab. The topology example uses
+the experimental native topology API.</p>
 <h2 id="contributing-and-license">Contributing And License</h2>
 <p>See the developer guide for native/WASM builds and required release checks.
 OCCT is generated dependency state under <code>.deps/</code>; documentation work does

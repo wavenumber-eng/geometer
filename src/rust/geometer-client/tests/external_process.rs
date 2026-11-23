@@ -92,7 +92,7 @@ async fn externally_launched_process_runs_composed_illustration_and_closes() {
     let mut options = contracts::decode_hlr_projection_options_a0_json(
         br#"{
           "projection_algorithm":"fast", "outline_algorithm":"fast-mesh-shadow",
-          "curve_mode":"polyline", "strip_root_placement":true,
+          "strip_root_placement":true,
           "output_outline":true, "output_detail":true, "output_bbox":false,
           "fast":{"include_hidden":false,"crease_angle_rad":0.4363323129985824}
         }"#,

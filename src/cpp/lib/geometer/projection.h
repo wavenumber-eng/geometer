@@ -12,17 +12,9 @@ namespace geometer
 
 struct FastHlrIndexedMesh;
 
-enum class ProjectionCurveMode
-{
-    NativeArcs,
-    Polyline
-};
-
 enum class ProjectionAlgorithm
 {
-    Poly,
-    Exact,
-    Fast
+    Fast = 2
 };
 
 struct FastHlrLimits
@@ -66,12 +58,9 @@ enum class MeshDeflectionMode
 
 enum class ProjectionOutlineAlgorithm
 {
-    // Build outline from the complete visible+hidden HLR edge contour source,
-    // then close small HLR gaps with Clipper2 morphology.
-    HlrClosedEdges,
     // Build outline from the orthographic shadow of tessellated faces. This is
     // better for pure assembly silhouettes and can preserve projected holes.
-    MeshShadow,
+    MeshShadow = 1,
     // Reconstruct projected CAD-face triangle-patch loops before unioning,
     // with a hierarchical per-face union fallback for complex patches.
     FastMeshShadow
@@ -103,29 +92,7 @@ struct HlrProjectionOptions
     // Match STEP-to-GLB's definition-local frame by removing only free-shape
     // root placements while preserving assembly-child placements.
     bool strip_root_placement = false;
-    ProjectionCurveMode curve_mode = ProjectionCurveMode::NativeArcs;
-    int samples_per_curve = 24;
     int round_digits = 3;
-    // OCCT HLR edge categories merged into the "detail" extraction.
-    // Each maps to a corresponding `HLRBRep_HLRToShape::<X>Compound()` shape.
-    // Defaults reproduce the historical behavior (visible sharp + visible
-    // outline). The poly extractor (HLRBRep_PolyHLRToShape) only supports
-    // V/H Compound + OutLine; the smooth/sewn/iso flags are no-ops in poly.
-    bool edge_v_sharp = true;    // VCompound          (visible, sharp edges)
-    bool edge_v_outline = true;  // OutLineVCompound   (visible, silhouette)
-    bool edge_v_smooth = false;  // Rg1LineVCompound   (visible, smooth/tangential)
-    bool edge_v_sewn = false;    // RgNLineVCompound   (visible, sewn/manifold)
-    bool edge_v_iso = false;     // IsoLineVCompound   (visible, parametric isolines)
-    bool edge_h_sharp = false;   // HCompound          (hidden, sharp edges)
-    bool edge_h_outline = false; // OutLineHCompound   (hidden, silhouette)
-    bool edge_h_smooth = false;  // Rg1LineHCompound   (hidden, smooth/tangential)
-    bool edge_h_sewn = false;    // RgNLineHCompound   (hidden, sewn/manifold)
-    bool edge_h_iso = false;     // IsoLineHCompound   (hidden, parametric isolines)
-
-    bool union_outline_polygons = true;
-
-    // Fast triangle detail and Fast Mesh Shadow are the public defaults. The
-    // older OCCT poly/exact paths remain available through explicit selection.
     ProjectionAlgorithm projection_algorithm = ProjectionAlgorithm::Fast;
     double mesh_linear_deflection = 0.01; // mm (used when mode == Absolute)
     double mesh_angular_deflection = 0.5; // rad (~28.6 deg)
@@ -136,7 +103,6 @@ struct HlrProjectionOptions
     MeshDeflectionMode mesh_deflection_mode = MeshDeflectionMode::BboxRelative;
     double mesh_deflection_coefficient = 0.004;
     ProjectionOutlineAlgorithm outline_algorithm = ProjectionOutlineAlgorithm::FastMeshShadow;
-    double hlr_angle_tolerance = 0.0174533; // ~1 deg
 };
 
 struct ProjectedSegment

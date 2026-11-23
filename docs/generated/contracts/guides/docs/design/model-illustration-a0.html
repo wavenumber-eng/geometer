@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
+  <meta name="wn-catalog-sha256" content="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032">
   <title>Model illustration operations — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/model-illustration-a0.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="model-illustration-operations">Model illustration operations</h1></header>
 <p>Model illustration completes import or analytic lowering, Fast vector linework,
@@ -54,6 +54,32 @@ warnings and usable faces continue. When OCCT reports an outdated triangulation,
 Geometer retries once after cleaning the model; any faces still marked outdated
 are omitted under the same partial-result policy. A model with no usable
 prepared geometry fails the operation.</p>
+<h3 id="native-source-reuse">Native source reuse</h3>
+<p>Native model illustration privately retains successful STEP tessellations in a
+process-local LRU, up to 64 entries and 256 MiB of accounted retained storage.
+The lookup requires identical raw STEP bytes and identical generated tessellation
+options: linear and angular deflection, root placement, triangle limit, and
+partial-result policy. Authored option presence is retained in the key, so an
+absent option and its explicit default may occupy separate entries; the original
+tessellator still resolves their effective values. Lookup compares source size,
+options and every raw byte. Successful preparation retains the actual raw-byte
+SHA alongside those bytes; an exact hit reuses it in the current Source summary
+without another cryptographic scan. Public hashes and result identity are unchanged.</p>
+<p>Each hit returns a deep copy of the mesh collection and its complete warnings
+before applying the current source transform, material override, view, or B0
+clipping. No OCCT document or mutable mesh is shared between requests. Failed
+preparation is never retained, and oversized entries or retention allocation
+failure leave successful geometry usable. The storage limit counts source bytes,
+container capacities, and conservative allocation overhead; it is not a process
+RSS or transient-work limit. Concurrent misses can perform duplicate preparation.</p>
+<p>This memo changes neither result/cache identity nor the public colored
+tessellation operation. Direct <code>model_tessellation_from_bytes</code> and WASM model
+illustration remain stateless. It does not cache analytic lowering or completed
+view-dependent illustrations.</p>
+<p>Local Windows qualification compared three one-worker, result-cache-disabled
+Loz runs per executable: median elapsed time was 85.325 s before and 37.368 s
+with this memo, with byte-identical SVG output. Six additional paired controls
+also preserved SVG bytes.</p>
 <h2 id="analytic-25d-source">Analytic 2.5D source</h2>
 <p>Each reached definition is validated and lowered once per request. Every
 definition must be referenced, definition and occurrence IDs must be unique,
@@ -84,6 +110,14 @@ Hidden lines are not part of a finished illustration and <code>include_hidden: t
 is rejected. <code>show_hlr_outline</code> and <code>show_hlr_detail</code> select the visible Fast
 layers; fill styling and same-color fusion reuse the mesh illustration A0
 contract. One normalized view governs fills and linework.</p>
+<p>Coplanar material layering measures triangle and ring areas relative to a
+vertex of that geometry, then uses compensated sums for each material's area.
+This avoids cancellation from products of large absolute XY coordinates that
+can otherwise change the selected base material after translation. The largest
+area still selects the base; exact ties retain the existing first-member
+priority. There is no epsilon rank, area bucket, or change to overlap priority,
+lighting, normals, clipping, or drawing formats. This is a numerical stability
+correction, not a guarantee of byte-identical output for arbitrary translations.</p>
 <p>Successful results include the prepared source bounds in millimeters. The raw
 drawing geometry also carries physical line widths in projected millimeters;
 SVG and custom renderers therefore receive the same lineweight intent without
@@ -95,7 +129,11 @@ faces for Fast linework, the implementation counts the complete vertex and
 triangle totals and reserves each contiguous array once; cost therefore remains
 linear for STEP files split into many face meshes. Phase timings therefore
 report source preparation, linework, illustration, and raw-attachment encoding
-without implying that OCCT import and tessellation are separately observable.</p>
+without implying that OCCT import and tessellation are separately observable.
+On a native source-memo hit, <code>source_preparation_ms</code> measures the current lookup,
+mesh/warning copy, placement, source hashing, and fragment preparation rather than
+replaying the original import duration. Later phase timings likewise measure the
+current operation; source reuse adds no wire timing or cache-statistics fields.</p>
 <p>See <a href="technical-illustration-algorithms.html">technical illustration algorithms</a>
 for the pipeline and determinism rules and <a href="mesh-illustration-geometry.html">illustration drawing geometry</a>
 for custom-renderer semantics.</p>
@@ -139,6 +177,8 @@ sends STEP once and draws returned raw geometry on Canvas.</li>
 <li><a href="../../../../../../src/rust/geometer-client/examples/direct_static_illustration.rs"><code>direct_static_illustration.rs</code></a>
 sends STEP once and writes the returned SVG.</li>
 </ul>
+<h2 id="step-source-media-semantics">STEP source media semantics</h2>
+<p>A0 compatibility and B0 illustration inputs share the <a href="../geometer/adr/geometer-adr-020-standard-step-media-types.html">STEP media policy</a>. Valid auxiliary input parameters have no effect on model bytes or geometry. New source summaries emit bare <code>model/step</code>; the legacy <code>application/step</code> summary remains decodable.</p>
 
 </main>
 </body>

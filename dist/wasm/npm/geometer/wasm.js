@@ -1,6 +1,6 @@
-import { decodeAnalyticPlanarBooleanBatchResultA0Packet, encodeAnalyticPlanarBooleanBatchRequestA0Packet, } from "./analytic-packet-a0.js";
 import { decodeMeshIllustrationGeometryB0Json, decodeOperationOutcomeA0Json, decodeOperationOutcomeB0Json, encodeHlrProjectionOptionsA0Json, encodeHlrProjectionResultB0Json, encodeMeshCollectionA0Json, encodeMeshHlrProjectionRequestB0Json, encodeMeshIllustrationGeometryRequestB0Json, encodeMeshIllustrationRequestB0Json, encodeModelBoundsOptionsA0Json, operationCatalog, } from "./generated/index.js";
 import { encodeIndexedTriangleMeshA0Packet, INDEXED_TRIANGLE_MESH_MEDIA_TYPE, } from "./indexed-mesh-packet-a0.js";
+import { STEP_MEDIA_TYPE, StepMediaTypeError, stepInputMatchesDeclaration, stepInputMediaType, } from "./step-media-type.js";
 export class GeometerWasmTransportError extends Error {
     code;
     constructor(code, message) {
@@ -39,35 +39,11 @@ export class GeometerWasmClient {
         validateRuntimeCatalog(runtimeCatalog);
         return new GeometerWasmClient(module, runtimeCatalog);
     }
-    async analyticPlanarBooleanBatch(request) {
-        const declaration = operationCatalog["geometry.analytic_planar_boolean_batch.a0"];
-        const requestProjection = declaration.requestProjection;
-        const resultProjection = declaration.resultProjection;
-        const input = requiredAttachment(declaration.inputAttachments, requestProjection.attachment_name);
-        const output = requiredAttachment(declaration.outputAttachments, resultProjection.attachment_name);
-        const inputMediaType = requiredMediaType(input.media_types, input.name);
-        const packet = encodeAnalyticPlanarBooleanBatchRequestA0Packet(request);
-        const response = this.execute(declaration.identity, JSON.stringify({
-            schema: declaration.requestContract,
-            packet: {
-                attachment: requestProjection.attachment_name,
-                format: requestProjection.format,
-            },
-        }), [{ name: input.name, mediaType: inputMediaType, data: packet }]);
-        if (!response.outcome.ok) {
-            throw new GeometerOperationError(response.outcome.operation, response.outcome.diagnostics);
-        }
-        const attachment = response.attachments.find((item) => item.name === output.name);
-        if (attachment === undefined) {
-            throw new GeometerWasmTransportError(0, "Packed analytic result attachment is missing.");
-        }
-        return decodeAnalyticPlanarBooleanBatchResultA0Packet(attachment.data);
-    }
     async modelBounds(request) {
         const response = this.execute("geometry.model_bounds.a0", encodeModelBoundsOptionsA0Json(request.options ?? {}), [
             {
                 name: "model",
-                mediaType: request.mediaType ?? "application/step",
+                mediaType: request.mediaType ?? STEP_MEDIA_TYPE,
                 data: request.model,
             },
         ]);
@@ -86,7 +62,7 @@ export class GeometerWasmClient {
         return response.outcome.result;
     }
     async modelHlrProjection(request) {
-        return this.hlrProjection("geometry.model_hlr_projection.a0", request.options ?? {}, "model", request.mediaType ?? "application/step", request.model);
+        return this.hlrProjection("geometry.model_hlr_projection.a0", request.options ?? {}, "model", request.mediaType ?? STEP_MEDIA_TYPE, request.model);
     }
     async meshHlrProjection(request) {
         const response = this.execute("geometry.mesh_hlr_projection.b0", encodeMeshHlrProjectionRequestB0Json({
@@ -173,6 +149,18 @@ export class GeometerWasmClient {
         const declaration = this.runtimeCatalog.operations.find((item) => item.identity === operation);
         if (!declaration) {
             throw new GeometerWasmTransportError(0, `WASM module does not support ${operation}.`);
+        }
+        try {
+            attachments = attachments.map((attachment) => ({
+                ...attachment,
+                mediaType: stepInputMediaType(attachment.mediaType, declaration.input_attachments.find((item) => item.name === attachment.name)
+                    ?.media_types ?? []),
+            }));
+        }
+        catch (error) {
+            if (!(error instanceof StepMediaTypeError))
+                throw error;
+            throw new GeometerWasmTransportError(1001, "Invalid STEP input media type.");
         }
         validateInputAttachments(declaration, attachments);
         return executeOperation(this.module, this.runtimeCatalog, operation, requestJson, attachments);
@@ -368,17 +356,20 @@ function validateRuntimeCatalog(value) {
     if (!value.operations.every(isRuntimeOperation)) {
         throw new GeometerWasmTransportError(0, "WASM module operation declarations are malformed.");
     }
-    for (const [identity, expected] of Object.entries(operationCatalog)) {
-        if (!expected.runtimeAvailable)
-            continue;
+    const expectedOperations = Object.entries(operationCatalog).filter(([, operation]) => operation.runtimeAvailable);
+    if (value.operations.length !== expectedOperations.length) {
+        throw new GeometerWasmTransportError(0, "WASM module operation inventory is incompatible.");
+    }
+    for (const [identity, operation] of expectedOperations) {
+        const expected = operation;
         const actual = value.operations.find((operation) => operation.identity === identity);
         if (!actual)
             throw new GeometerWasmTransportError(0, `WASM module is missing ${identity}.`);
         if (actual.request_contract !== expected.requestContract ||
             actual.result_contract !== expected.resultContract ||
             actual.runtime_dispatch !== expected.runtimeDispatch ||
-            !samePackedProjection(actual.request_projection, "requestProjection" in expected ? expected.requestProjection : undefined) ||
-            !samePackedProjection(actual.result_projection, "resultProjection" in expected ? expected.resultProjection : undefined)) {
+            !samePackedProjection(actual.request_projection, expected.requestProjection) ||
+            !samePackedProjection(actual.result_projection, expected.resultProjection)) {
             throw new GeometerWasmTransportError(0, `WASM module contract declaration for ${identity} is incompatible.`);
         }
         if (!sameAttachmentDeclarations(actual.input_attachments, expected.inputAttachments) ||
@@ -441,20 +432,6 @@ function sameAttachmentDeclarations(actual, expected) {
 function isRecord(value) {
     return typeof value === "object" && value !== null && !Array.isArray(value);
 }
-function requiredAttachment(attachments, name) {
-    const attachment = attachments.find((item) => item.name === name);
-    if (attachment === undefined) {
-        throw new GeometerWasmTransportError(0, `Generated attachment ${name} is missing.`);
-    }
-    return attachment;
-}
-function requiredMediaType(mediaTypes, attachment) {
-    const mediaType = mediaTypes[0];
-    if (mediaType === undefined) {
-        throw new GeometerWasmTransportError(0, `Generated attachment ${attachment} has no media type.`);
-    }
-    return mediaType;
-}
 function validateInputAttachments(operation, attachments) {
     const names = new Set();
     for (const attachment of attachments) {
@@ -466,7 +443,7 @@ function validateInputAttachments(operation, attachments) {
         if (!declaration) {
             throw new GeometerWasmTransportError(1001, `Attachment ${attachment.name} is not declared.`);
         }
-        if (!declaration.media_types.includes(attachment.mediaType)) {
+        if (!stepInputMatchesDeclaration(attachment.mediaType, declaration.media_types)) {
             throw new GeometerWasmTransportError(1001, `Attachment ${attachment.name} does not accept ${attachment.mediaType}.`);
         }
         if (attachment.data.byteLength > declaration.max_bytes) {

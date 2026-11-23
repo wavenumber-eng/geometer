@@ -14,6 +14,7 @@ objectives = [
     "Execute repeated typed analytic batches through the friendly persistent-client method.",
     "Adopt an externally launched process and prove typed tessellation, Fast HLR, composed illustration, cancellation-safe construction and close, bounded non-EOF stream cleanup, cleanup-error retry, final-handle cleanup, and process reaping.",
     "Exercise nonfatal unknown cancellation, local timeout cancellation, and graceful shutdown.",
+    "Supervise lazy verified worker pools: release pin, identity agreement, deadlines, latch and respawn policies, and bounded memory and disk result caches.",
     "Run the Cargo-listed client source package with its SDK-carried geometer-sys sibling from a clean external Rust consumer against the platform dist executable.",
     "Enforce the wn-dev-std 2026.9.8 Rust toolchain, lint, command-surface, and Tree-sitter source-shape policy.",
 ]

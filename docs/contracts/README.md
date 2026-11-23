@@ -3,8 +3,7 @@
 Start with the [current interface inventory](current-interface-inventory.md),
 [public entry-point reconciliation](public-entrypoints.md),
 [generated coverage](../generated/contracts/coverage.html),
-[TypeSpec toolchain](typespec-toolchain.md), and
-[all-operation migration roadmap](typespec-coverage-assessment.md).
+and the [TypeSpec toolchain](typespec-toolchain.md).
 The [HTML generator guide](generated-contract-reference.md) explains local
 generation, source authority, asset licensing and deterministic checks.
 
@@ -33,8 +32,3 @@ becomes TypeSpec-authoritative only after its status and required evidence are
 promoted under ADR-010. Generated JSON Schemas and contract references live
 under this tree. `geometry.model_bounds.a0` is the first promoted operation;
 its manifest entry links the accepted cross-language and hosted evidence.
-
-Contract authority and runtime maturity are separate. The frozen candidate
-contracts for `geometry.analytic_planar_boolean_batch.a0` remain available, but
-the solver is experimental and not production-ready under
-[ADR-017](../geometer/adr/geometer-adr-017-retain_analytic_planar_boolean_as_experimental.md).

@@ -140,20 +140,20 @@
         "max_visibility_candidate_pairs": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 100000000,
-          "default": 100000000,
+          "maximum": 4294967295,
           "description": "Maximum candidate comparisons in each Fast linework and illustration visibility stage."
         },
         "max_drawing_commands": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 2000000,
-          "default": 2000000
+          "maximum": 4294967295,
+          "description": "Maximum drawing commands of the illustration and its Fast linework."
         }
       },
       "unevaluatedProperties": {
         "not": {}
-      }
+      },
+      "description": "Work limits a caller may set; omitted, the illustration's work is not limited."
     },
     "IllustrationClipping": {
       "type": "object",

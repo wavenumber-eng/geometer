@@ -2,44 +2,27 @@
 
 #include "fast_hlr_occt.h"
 #include "fast_mesh_shadow_outline.h"
-#include "geometer/planar_contours.h"
-#include "geometer/planar_solve.h"
 #include "mesh_shadow_outline.h"
 #include "step_xcaf_root_frame.h"
 
-#include <clipper2/clipper.h>
-
-#include <BRepAdaptor_Curve.hxx>
 #include <BRepBndLib.hxx>
 #include <BRepBuilderAPI_GTransform.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
 #include <BRepMesh_IncrementalMesh.hxx>
 #include <Bnd_Box.hxx>
-#include <GeomAbs_CurveType.hxx>
-#include <HLRAlgo_Projector.hxx>
-#include <HLRBRep_Algo.hxx>
-#include <HLRBRep_HLRToShape.hxx>
-#include <HLRBRep_PolyAlgo.hxx>
-#include <HLRBRep_PolyHLRToShape.hxx>
 #include <IFSelect_ReturnStatus.hxx>
 #include <STEPCAFControl_Reader.hxx>
 #include <STEPControl_Reader.hxx>
 #include <Standard_Failure.hxx>
 #include <TCollection_ExtendedString.hxx>
 #include <TDocStd_Document.hxx>
-#include <TopAbs_ShapeEnum.hxx>
-#include <TopExp_Explorer.hxx>
-#include <TopoDS.hxx>
-#include <TopoDS_Edge.hxx>
 #include <TopoDS_Shape.hxx>
 #include <gp_Ax2.hxx>
-#include <gp_Circ.hxx>
 #include <gp_Dir.hxx>
 #include <gp_GTrsf.hxx>
 #include <gp_Mat.hxx>
 #include <gp_Pnt.hxx>
 #include <gp_Trsf.hxx>
-#include <gp_Vec.hxx>
 #include <gp_XYZ.hxx>
 
 #include <algorithm>
@@ -59,8 +42,6 @@ namespace geometer
 {
 namespace
 {
-
-constexpr double kPi = 3.14159265358979323846264338327950288;
 
 struct SegmentKey
 {
@@ -84,61 +65,6 @@ struct SegmentKey
             return x2 < other.x2;
         }
         return y2 < other.y2;
-    }
-};
-
-struct ArcKey
-{
-    bool full_circle = false;
-    std::int64_t sx = 0;
-    std::int64_t sy = 0;
-    std::int64_t ex = 0;
-    std::int64_t ey = 0;
-    std::int64_t cx = 0;
-    std::int64_t cy = 0;
-    std::int64_t radius = 0;
-    std::int64_t extent = 0;
-    bool ccw = true;
-
-    bool operator<(const ArcKey& other) const
-    {
-        if (full_circle != other.full_circle)
-        {
-            return full_circle < other.full_circle;
-        }
-        if (sx != other.sx)
-        {
-            return sx < other.sx;
-        }
-        if (sy != other.sy)
-        {
-            return sy < other.sy;
-        }
-        if (ex != other.ex)
-        {
-            return ex < other.ex;
-        }
-        if (ey != other.ey)
-        {
-            return ey < other.ey;
-        }
-        if (cx != other.cx)
-        {
-            return cx < other.cx;
-        }
-        if (cy != other.cy)
-        {
-            return cy < other.cy;
-        }
-        if (radius != other.radius)
-        {
-            return radius < other.radius;
-        }
-        if (extent != other.extent)
-        {
-            return extent < other.extent;
-        }
-        return ccw < other.ccw;
     }
 };
 
@@ -408,226 +334,8 @@ void add_segment(std::set<SegmentKey>* keys, const ProjectedSegment& segment, st
     keys->insert(key);
 }
 
-ArcKey make_arc_key(const ProjectedArc& arc, std::int64_t scale, std::int64_t extent_scale)
-{
-    ArcKey key;
-    key.full_circle = arc.full_circle;
-    key.sx = snap(arc.start[0], scale);
-    key.sy = snap(arc.start[1], scale);
-    key.ex = snap(arc.end[0], scale);
-    key.ey = snap(arc.end[1], scale);
-    key.cx = snap(arc.center[0], scale);
-    key.cy = snap(arc.center[1], scale);
-    key.radius = snap(arc.radius, scale);
-    key.extent = snap(arc.extent_rad, extent_scale);
-    key.ccw = arc.ccw;
-    if (key.full_circle)
-    {
-        key.sx = 0;
-        key.sy = 0;
-        key.ex = 0;
-        key.ey = 0;
-        key.extent = snap(2.0 * kPi, extent_scale);
-        key.ccw = true;
-    }
-    return key;
-}
-
-ProjectedArc arc_from_key(const ArcKey& key, std::int64_t scale, std::int64_t extent_scale)
-{
-    ProjectedArc arc;
-    arc.start = {unsnap(key.sx, scale), unsnap(key.sy, scale)};
-    arc.end = {unsnap(key.ex, scale), unsnap(key.ey, scale)};
-    arc.center = {unsnap(key.cx, scale), unsnap(key.cy, scale)};
-    arc.radius = unsnap(key.radius, scale);
-    arc.extent_rad = unsnap(key.extent, extent_scale);
-    arc.ccw = key.ccw;
-    arc.full_circle = key.full_circle;
-    return arc;
-}
-
-void add_arc(std::set<ArcKey>* keys, const ProjectedArc& arc, std::int64_t scale,
-             std::int64_t extent_scale)
-{
-    if (!std::isfinite(arc.radius) || arc.radius <= 0.0)
-    {
-        return;
-    }
-    keys->insert(make_arc_key(arc, scale, extent_scale));
-}
-
-ProjectedArc circle_arc_from_adaptor(const BRepAdaptor_Curve& adaptor, double first, double last)
-{
-    const gp_Circ circle = adaptor.Circle();
-    const gp_Pnt center = circle.Location();
-    const gp_Pnt start_point = adaptor.Value(first);
-    const gp_Pnt end_point = adaptor.Value(last);
-
-    ProjectedArc arc;
-    arc.start = {start_point.X(), start_point.Y()};
-    arc.end = {end_point.X(), end_point.Y()};
-    arc.center = {center.X(), center.Y()};
-    arc.radius = circle.Radius();
-
-    const double raw_extent = last - first;
-    gp_Pnt tangent_point;
-    gp_Vec tangent;
-    adaptor.D1(first, tangent_point, tangent);
-    const double traversal = raw_extent >= 0.0 ? 1.0 : -1.0;
-    const double view_cross = ((start_point.X() - center.X()) * tangent.Y() -
-                               (start_point.Y() - center.Y()) * tangent.X()) *
-                              traversal;
-    arc.ccw = view_cross >= 0.0;
-
-    double extent = std::fmod(std::fabs(raw_extent), 2.0 * kPi);
-    if (extent < 1.0e-9 && std::fabs(raw_extent) > 1.0e-6)
-    {
-        extent = 2.0 * kPi;
-    }
-
-    const bool points_close = std::fabs(arc.start[0] - arc.end[0]) <= 1.0e-7 &&
-                              std::fabs(arc.start[1] - arc.end[1]) <= 1.0e-7;
-    arc.full_circle =
-        extent >= ((2.0 * kPi) - 1.0e-5) || (points_close && std::fabs(raw_extent) > 1.0e-6);
-    arc.extent_rad = arc.full_circle ? (2.0 * kPi) : extent;
-    return arc;
-}
-
-std::vector<ProjectedSegment> arc_to_segments(const ProjectedArc& arc, int samples_per_curve)
-{
-    const int sample_count = std::max(samples_per_curve, 2);
-    double signed_extent = arc.extent_rad;
-    if (!arc.ccw)
-    {
-        signed_extent = -signed_extent;
-    }
-
-    const double start_angle =
-        std::atan2(arc.start[1] - arc.center[1], arc.start[0] - arc.center[0]);
-    const double angle_step = signed_extent / static_cast<double>(sample_count - 1);
-
-    std::vector<std::array<double, 2>> points;
-    points.reserve(static_cast<std::size_t>(sample_count));
-    for (int i = 0; i < sample_count; ++i)
-    {
-        if (!arc.full_circle && i == 0)
-        {
-            points.push_back(arc.start);
-            continue;
-        }
-        if (!arc.full_circle && i == sample_count - 1)
-        {
-            points.push_back(arc.end);
-            continue;
-        }
-
-        const double angle = start_angle + (angle_step * static_cast<double>(i));
-        points.push_back({
-            arc.center[0] + (arc.radius * std::cos(angle)),
-            arc.center[1] + (arc.radius * std::sin(angle)),
-        });
-    }
-
-    std::vector<ProjectedSegment> result;
-    if (points.size() < 2)
-    {
-        return result;
-    }
-    result.reserve(points.size() - 1);
-    for (std::size_t i = 1; i < points.size(); ++i)
-    {
-        result.push_back({points[i - 1][0], points[i - 1][1], points[i][0], points[i][1]});
-    }
-    return result;
-}
-
-void add_edge_geometry(const TopoDS_Shape& shape, const HlrProjectionOptions& options,
-                       std::set<SegmentKey>* segment_keys, std::set<ArcKey>* arc_keys,
-                       std::vector<ProjectedSegment>* contour_source_segments, std::int64_t scale,
-                       std::int64_t extent_scale)
-{
-    if (shape.IsNull())
-    {
-        return;
-    }
-
-    const int samples_per_curve = std::max(options.samples_per_curve, 2);
-    for (TopExp_Explorer explorer(shape, TopAbs_EDGE); explorer.More(); explorer.Next())
-    {
-        const TopoDS_Edge& edge = TopoDS::Edge(explorer.Current());
-        BRepAdaptor_Curve adaptor(edge);
-        const double first = adaptor.FirstParameter();
-        const double last = adaptor.LastParameter();
-        if (!std::isfinite(first) || !std::isfinite(last))
-        {
-            continue;
-        }
-
-        const GeomAbs_CurveType curve_type = adaptor.GetType();
-        if (curve_type == GeomAbs_Line)
-        {
-            const gp_Pnt start = adaptor.Value(first);
-            const gp_Pnt end = adaptor.Value(last);
-            const ProjectedSegment segment{start.X(), start.Y(), end.X(), end.Y()};
-            if (segment_keys != nullptr)
-            {
-                add_segment(segment_keys, segment, scale);
-            }
-            if (contour_source_segments != nullptr)
-            {
-                contour_source_segments->push_back(
-                    segment_from_key(make_segment_key(segment, scale), scale));
-            }
-            continue;
-        }
-
-        if (curve_type == GeomAbs_Circle && options.curve_mode == ProjectionCurveMode::NativeArcs)
-        {
-            const ProjectedArc arc = circle_arc_from_adaptor(adaptor, first, last);
-            if (arc_keys != nullptr)
-            {
-                add_arc(arc_keys, arc, scale, extent_scale);
-            }
-            if (contour_source_segments != nullptr)
-            {
-                for (const ProjectedSegment& segment : arc_to_segments(arc, samples_per_curve))
-                {
-                    contour_source_segments->push_back(
-                        segment_from_key(make_segment_key(segment, scale), scale));
-                }
-            }
-            continue;
-        }
-
-        ProjectedSegment previous;
-        bool have_previous = false;
-        const double step = (last - first) / static_cast<double>(samples_per_curve - 1);
-        for (int sample = 0; sample < samples_per_curve; ++sample)
-        {
-            const double parameter = first + (step * static_cast<double>(sample));
-            const gp_Pnt point = adaptor.Value(parameter);
-            if (have_previous)
-            {
-                ProjectedSegment segment{previous.x2, previous.y2, point.X(), point.Y()};
-                if (segment_keys != nullptr)
-                {
-                    add_segment(segment_keys, segment, scale);
-                }
-                if (contour_source_segments != nullptr)
-                {
-                    contour_source_segments->push_back(
-                        segment_from_key(make_segment_key(segment, scale), scale));
-                }
-            }
-            previous = {point.X(), point.Y(), point.X(), point.Y()};
-            have_previous = true;
-        }
-    }
-}
-
 ProjectedModeGeometry geometry_from_keys(const std::set<SegmentKey>& segment_keys,
-                                         const std::set<ArcKey>& arc_keys, std::int64_t scale,
-                                         std::int64_t extent_scale)
+                                         std::int64_t scale)
 {
     ProjectedModeGeometry geometry;
     geometry.segments.reserve(segment_keys.size());
@@ -636,193 +344,7 @@ ProjectedModeGeometry geometry_from_keys(const std::set<SegmentKey>& segment_key
         geometry.segments.push_back(segment_from_key(key, scale));
     }
 
-    geometry.arcs.reserve(arc_keys.size());
-    for (const ArcKey& key : arc_keys)
-    {
-        geometry.arcs.push_back(arc_from_key(key, scale, extent_scale));
-    }
     return geometry;
-}
-
-void add_ring_segments(std::set<SegmentKey>* keys, const PlanarSolveRing& ring, std::int64_t scale)
-{
-    const std::size_t count = ring.size();
-    if (count < 3)
-    {
-        return;
-    }
-    for (std::size_t i = 0; i < count; ++i)
-    {
-        const PlanarSolvePoint& start = ring[i];
-        const PlanarSolvePoint& end = ring[(i + 1) % count];
-        add_segment(keys, {start.x, start.y, end.x, end.y}, scale);
-    }
-}
-
-// Walk a Clipper2 union PolyTree and collect only the OUTER contours of the
-// dilated edge wireframe, dropping every hole. Each outer is therefore filled
-// solid, so an enclosed region (the body interior) becomes solid. Recursion
-// still descends through holes to pick up genuinely disconnected outer islands.
-//
-// NOTE: this fills ALL enclosed regions, so a part with a genuine through-hole
-// would have that hole filled too. The parts in scope (TSOT/SOT23/SOT223) have
-// no through-holes; preserving real through-holes needs a semantic signal the
-// outline alone does not carry and is left as a follow-up.
-void collect_silhouette_paths(const Clipper2Lib::PolyPathD& node, Clipper2Lib::PathsD* solids)
-{
-    using Clipper2Lib::PolyPathD;
-
-    for (std::size_t i = 0; i < node.Count(); ++i)
-    {
-        const PolyPathD* child = node.Child(i);
-        if (!child->IsHole())
-        {
-            solids->push_back(child->Polygon());
-        }
-        collect_silhouette_paths(*child, solids);
-    }
-}
-
-// Build the outline from the projected segment soup, mirroring Draftsman's
-// "union of polygons -> outer silhouette" with no interior detail.
-//
-// The HLR tessellation leaves micron-scale gaps between adjacent projected
-// edges (corner splits, lead/body junctions), so an exact topological face
-// trace cannot reliably close the outer loop. Instead we run a morphological
-// close on the edge soup with Clipper2: dilate every edge into a thin band
-// (square caps bridge the gaps), union and fill to recover the solid body, then
-// erode by the same radius to restore the true size. Miter joins keep corners
-// sharp. The close radius is sized off the bounding box because the gaps scale
-// with the (bbox-relative) mesh deflection; it stays comfortably below real
-// feature spacing, so only sub-gap detail is dissolved.
-ProjectedModeGeometry
-outline_geometry_from_segments(const std::vector<ProjectedSegment>& contour_source_segments,
-                               const HlrProjectionOptions& options, std::int64_t scale)
-{
-    using Clipper2Lib::ClipperD;
-    using Clipper2Lib::ClipType;
-    using Clipper2Lib::EndType;
-    using Clipper2Lib::FillRule;
-    using Clipper2Lib::InflatePaths;
-    using Clipper2Lib::JoinType;
-    using Clipper2Lib::PathD;
-    using Clipper2Lib::PathsD;
-    using Clipper2Lib::PointD;
-    using Clipper2Lib::PolyTreeD;
-    using Clipper2Lib::SimplifyPaths;
-
-    const auto empty_geometry = [&]()
-    { return geometry_from_keys(std::set<SegmentKey>(), std::set<ArcKey>(), scale, pow10_int(6)); };
-
-    PathsD edges;
-    edges.reserve(contour_source_segments.size());
-    bool have_bounds = false;
-    double min_x = 0.0;
-    double min_y = 0.0;
-    double max_x = 0.0;
-    double max_y = 0.0;
-    for (const ProjectedSegment& segment : contour_source_segments)
-    {
-        if (segment.x1 == segment.x2 && segment.y1 == segment.y2)
-        {
-            continue;
-        }
-        edges.push_back(PathD{PointD(segment.x1, segment.y1), PointD(segment.x2, segment.y2)});
-        const double xs[2] = {segment.x1, segment.x2};
-        const double ys[2] = {segment.y1, segment.y2};
-        for (int i = 0; i < 2; ++i)
-        {
-            if (!have_bounds)
-            {
-                min_x = max_x = xs[i];
-                min_y = max_y = ys[i];
-                have_bounds = true;
-                continue;
-            }
-            min_x = std::min(min_x, xs[i]);
-            max_x = std::max(max_x, xs[i]);
-            min_y = std::min(min_y, ys[i]);
-            max_y = std::max(max_y, ys[i]);
-        }
-    }
-
-    if (edges.empty() || !have_bounds)
-    {
-        return empty_geometry();
-    }
-
-    if (!options.union_outline_polygons)
-    {
-        std::set<SegmentKey> raw_keys;
-        for (const ProjectedSegment& segment : contour_source_segments)
-        {
-            add_segment(&raw_keys, segment, scale);
-        }
-        return geometry_from_keys(raw_keys, std::set<ArcKey>(), scale, pow10_int(6));
-    }
-
-    const double max_dim = std::max(max_x - min_x, max_y - min_y);
-    if (max_dim <= 0.0)
-    {
-        return empty_geometry();
-    }
-
-    // Close radius: ~2x the gap scale (gaps ~= deflection ~= 0.004 * max_dim),
-    // so 2*radius bridges the gaps but stays below real feature spacing
-    // (real features are several deflections wide).
-    const double radius = max_dim * 0.006;
-    const int precision = 6; // sub-micron offset/clip grid
-    const double miter_limit = 4.0;
-
-    // 1) Dilate each open edge into a radius-fat band; square caps extend the
-    //    band past each endpoint so adjacent edges overlap across the gaps.
-    const PathsD fattened =
-        InflatePaths(edges, radius, JoinType::Miter, EndType::Square, miter_limit, precision);
-    if (fattened.empty())
-    {
-        return empty_geometry();
-    }
-
-    // 2) Union the bands into a solid region and walk the hierarchy: keep every
-    //    outer contour (filled solid), drop all holes so the body interior fills.
-    ClipperD clipper(precision);
-    clipper.AddSubject(fattened);
-    PolyTreeD tree;
-    clipper.Execute(ClipType::Union, FillRule::NonZero, tree);
-    PathsD solids;
-    collect_silhouette_paths(tree, &solids);
-    if (solids.empty())
-    {
-        return empty_geometry();
-    }
-
-    // 3) Erode by the same radius to restore the true silhouette size, then drop
-    //    sub-micron offset noise.
-    PathsD silhouette =
-        InflatePaths(solids, -radius, JoinType::Miter, EndType::Polygon, miter_limit, precision);
-    if (silhouette.empty())
-    {
-        return empty_geometry();
-    }
-    silhouette = SimplifyPaths(silhouette, max_dim * 1.0e-4, true);
-
-    std::set<SegmentKey> outline_keys;
-    for (const PathD& path : silhouette)
-    {
-        if (path.size() < 3)
-        {
-            continue;
-        }
-        PlanarSolveRing ring;
-        ring.reserve(path.size());
-        for (const PointD& point : path)
-        {
-            ring.push_back({point.x, point.y});
-        }
-        add_ring_segments(&outline_keys, ring, scale);
-    }
-
-    return geometry_from_keys(outline_keys, std::set<ArcKey>(), scale, pow10_int(6));
 }
 
 double floor_to_scale(double value, std::int64_t scale)
@@ -914,177 +436,6 @@ double elapsed_ms(const std::chrono::high_resolution_clock::time_point& start)
     return std::chrono::duration<double, std::milli>(now - start).count();
 }
 
-ProjectedViewGeometry project_view_exact(const TopoDS_Shape& shape, const ProjectionViewSpec& view,
-                                         const HlrProjectionOptions& options, std::int64_t scale,
-                                         std::int64_t extent_scale, HlrProjectionTimings* timings)
-{
-    const auto hlr_start = std::chrono::high_resolution_clock::now();
-
-    Handle(HLRBRep_Algo) algorithm = new HLRBRep_Algo();
-    algorithm->Add(shape);
-    algorithm->Projector(HLRAlgo_Projector(make_view_axes(view)));
-    algorithm->Update();
-    algorithm->Hide();
-
-    HLRBRep_HLRToShape hlr_to_shape(algorithm);
-
-    if (timings != nullptr)
-    {
-        timings->hlr_ms += elapsed_ms(hlr_start);
-    }
-
-    const auto extract_start = std::chrono::high_resolution_clock::now();
-
-    std::set<SegmentKey> detail_segment_keys;
-    std::set<ArcKey> detail_arc_keys;
-    std::vector<ProjectedSegment> contour_source_segments;
-
-    // Detail respects the per-category checkboxes.
-    auto extract_detail = [&](bool enabled, TopoDS_Shape shape)
-    {
-        if (!enabled || shape.IsNull())
-            return;
-        add_edge_geometry(shape, options, &detail_segment_keys, &detail_arc_keys, nullptr, scale,
-                          extent_scale);
-    };
-    if (options.output_detail)
-    {
-        extract_detail(options.edge_v_sharp, hlr_to_shape.VCompound());
-        extract_detail(options.edge_v_outline, hlr_to_shape.OutLineVCompound());
-        extract_detail(options.edge_v_smooth, hlr_to_shape.Rg1LineVCompound());
-        extract_detail(options.edge_v_sewn, hlr_to_shape.RgNLineVCompound());
-        extract_detail(options.edge_v_iso, hlr_to_shape.IsoLineVCompound());
-        extract_detail(options.edge_h_sharp, hlr_to_shape.HCompound());
-        extract_detail(options.edge_h_outline, hlr_to_shape.OutLineHCompound());
-        extract_detail(options.edge_h_smooth, hlr_to_shape.Rg1LineHCompound());
-        extract_detail(options.edge_h_sewn, hlr_to_shape.RgNLineHCompound());
-        extract_detail(options.edge_h_iso, hlr_to_shape.IsoLineHCompound());
-    }
-
-    // The outline always consumes the COMPLETE visible outline (sharp +
-    // outline + smooth + sewn, V and H), independent of the detail checkboxes, so
-    // the morphological close has a closed body to reconstruct. Iso lines are
-    // isoparametric construction lines, not real boundary edges, so are excluded.
-    auto extract_contour = [&](TopoDS_Shape shape)
-    {
-        if (shape.IsNull())
-            return;
-        add_edge_geometry(shape, options, nullptr, nullptr, &contour_source_segments, scale,
-                          extent_scale);
-    };
-    if (options.output_outline)
-    {
-        extract_contour(hlr_to_shape.VCompound());
-        extract_contour(hlr_to_shape.OutLineVCompound());
-        extract_contour(hlr_to_shape.Rg1LineVCompound());
-        extract_contour(hlr_to_shape.RgNLineVCompound());
-        extract_contour(hlr_to_shape.HCompound());
-        extract_contour(hlr_to_shape.OutLineHCompound());
-        extract_contour(hlr_to_shape.Rg1LineHCompound());
-        extract_contour(hlr_to_shape.RgNLineHCompound());
-    }
-
-    ProjectedViewGeometry projected;
-    projected.view = view;
-    projected.detail =
-        geometry_from_keys(detail_segment_keys, detail_arc_keys, scale, extent_scale);
-    projected.outline = outline_geometry_from_segments(contour_source_segments, options, scale);
-
-    if (timings != nullptr)
-    {
-        timings->extract_ms += elapsed_ms(extract_start);
-    }
-    return projected;
-}
-
-ProjectedViewGeometry project_view_poly(const TopoDS_Shape& shape, const ProjectionViewSpec& view,
-                                        const HlrProjectionOptions& options, std::int64_t scale,
-                                        std::int64_t extent_scale, HlrProjectionTimings* timings)
-{
-    const auto hlr_start = std::chrono::high_resolution_clock::now();
-
-    Handle(HLRBRep_PolyAlgo) algorithm = new HLRBRep_PolyAlgo();
-    algorithm->Load(shape);
-    algorithm->Projector(HLRAlgo_Projector(make_view_axes(view)));
-    if (options.hlr_angle_tolerance > 0.0)
-    {
-        // PolyAlgo uses TolAngular() for the silhouette/sharp-edge classification
-        // tolerance (radians). HLRBRep_Algo uses Angle() with the same intent.
-        algorithm->TolAngular(options.hlr_angle_tolerance);
-    }
-    algorithm->Update();
-
-    HLRBRep_PolyHLRToShape poly_to_shape;
-    poly_to_shape.Update(algorithm);
-
-    if (timings != nullptr)
-    {
-        timings->hlr_ms += elapsed_ms(hlr_start);
-    }
-
-    const auto extract_start = std::chrono::high_resolution_clock::now();
-
-    // PolyAlgo emits tessellated line segments; force polyline treatment so we
-    // do not try to interpret any residual edge type as an analytic arc.
-    HlrProjectionOptions poly_options = options;
-    poly_options.curve_mode = ProjectionCurveMode::Polyline;
-
-    std::set<SegmentKey> detail_segment_keys;
-    std::set<ArcKey> detail_arc_keys;
-    std::vector<ProjectedSegment> contour_source_segments;
-
-    // HLRBRep_PolyHLRToShape only exposes V/H Compound + OutLine variants.
-    // The smooth/sewn/iso flags are accepted but silently ignored in poly mode.
-    //
-    // Detail respects the per-category checkboxes.
-    auto extract_detail = [&](bool enabled, TopoDS_Shape shape)
-    {
-        if (!enabled || shape.IsNull())
-            return;
-        add_edge_geometry(shape, poly_options, &detail_segment_keys, &detail_arc_keys, nullptr,
-                          scale, extent_scale);
-    };
-    if (poly_options.output_detail)
-    {
-        extract_detail(poly_options.edge_v_sharp, poly_to_shape.VCompound());
-        extract_detail(poly_options.edge_v_outline, poly_to_shape.OutLineVCompound());
-        extract_detail(poly_options.edge_h_sharp, poly_to_shape.HCompound());
-        extract_detail(poly_options.edge_h_outline, poly_to_shape.OutLineHCompound());
-    }
-
-    // The outline always consumes the COMPLETE visible outline (every
-    // sharp + outline edge, both V and H), independent of the detail checkboxes.
-    // Filtering by category leaves whole body edges missing, so the morphological
-    // close can never reconstruct a closed footprint.
-    auto extract_contour = [&](TopoDS_Shape shape)
-    {
-        if (shape.IsNull())
-            return;
-        add_edge_geometry(shape, poly_options, nullptr, nullptr, &contour_source_segments, scale,
-                          extent_scale);
-    };
-    if (poly_options.output_outline)
-    {
-        extract_contour(poly_to_shape.VCompound());
-        extract_contour(poly_to_shape.OutLineVCompound());
-        extract_contour(poly_to_shape.HCompound());
-        extract_contour(poly_to_shape.OutLineHCompound());
-    }
-
-    ProjectedViewGeometry projected;
-    projected.view = view;
-    projected.detail =
-        geometry_from_keys(detail_segment_keys, detail_arc_keys, scale, extent_scale);
-    projected.outline =
-        outline_geometry_from_segments(contour_source_segments, poly_options, scale);
-
-    if (timings != nullptr)
-    {
-        timings->extract_ms += elapsed_ms(extract_start);
-    }
-    return projected;
-}
-
 } // namespace
 
 int step_hlr_projection_from_bytes(const unsigned char* step_data, std::size_t step_size,
@@ -1138,26 +489,14 @@ int step_hlr_projection_from_bytes(const unsigned char* step_data, std::size_t s
         output.source_hash = fnv1a64_hex(step_data, step_size);
 
         const std::int64_t scale = pow10_int(options.round_digits);
-        const std::int64_t extent_scale = pow10_int(std::max(options.round_digits, 6));
         const std::vector<ProjectionViewSpec> views = effective_views(options);
         output.views.reserve(views.size());
 
-        const bool use_poly = options.projection_algorithm == ProjectionAlgorithm::Poly;
-        const bool use_fast = options.projection_algorithm == ProjectionAlgorithm::Fast;
-        const bool needs_classic_hlr =
-            (!use_fast && options.output_detail) ||
-            (options.output_outline &&
-             options.outline_algorithm == ProjectionOutlineAlgorithm::HlrClosedEdges);
-        const bool needs_fast_detail = use_fast && options.output_detail;
+        const bool needs_fast_detail = options.output_detail;
         const bool needs_fast_outline =
             options.output_outline &&
             options.outline_algorithm == ProjectionOutlineAlgorithm::FastMeshShadow;
-        const bool needs_poly_hlr = needs_classic_hlr && (use_poly || use_fast);
-        const bool needs_mesh =
-            needs_poly_hlr || needs_fast_detail || needs_fast_outline ||
-            (options.output_outline &&
-             options.outline_algorithm == ProjectionOutlineAlgorithm::MeshShadow);
-        if (needs_mesh)
+        if (needs_fast_detail || options.output_outline)
         {
             const auto mesh_start = std::chrono::high_resolution_clock::now();
             double linear_deflection = options.mesh_linear_deflection;
@@ -1205,21 +544,6 @@ int step_hlr_projection_from_bytes(const unsigned char* step_data, std::size_t s
         {
             ProjectedViewGeometry projected_view;
             projected_view.view = view;
-            if (needs_classic_hlr && (use_poly || use_fast))
-            {
-                HlrProjectionOptions classic_options = options;
-                if (use_fast)
-                {
-                    classic_options.output_detail = false;
-                }
-                projected_view =
-                    project_view_poly(shape, view, classic_options, scale, extent_scale, &timings);
-            }
-            else if (needs_classic_hlr)
-            {
-                projected_view =
-                    project_view_exact(shape, view, options, scale, extent_scale, &timings);
-            }
             if (needs_fast_detail)
             {
                 const auto fast_start = std::chrono::high_resolution_clock::now();
@@ -1242,8 +566,7 @@ int step_hlr_projection_from_bytes(const unsigned char* step_data, std::size_t s
                 {
                     add_segment(&fast_segment_keys, segment, scale);
                 }
-                projected_view.detail =
-                    geometry_from_keys(fast_segment_keys, std::set<ArcKey>(), scale, extent_scale);
+                projected_view.detail = geometry_from_keys(fast_segment_keys, scale);
                 timings.hlr_ms += elapsed_ms(fast_start);
             }
             if (options.output_outline &&

@@ -53,7 +53,7 @@ Restore accepts both declared STEP media types, binds exact attachment
 descriptors to bytes, and validates the reported source and replayed transaction
 count against the request preconditions.
 
-Every variant fixes the attachment name, media type, format string, byte limit,
+Every variant fixes the attachment name, admitted media spelling, format string, byte limit,
 and SHA-256 descriptor. A capability record reports save, restore, authored
 payload, and topology-link posture independently as supported, experimental,
 or unsupported. This prevents successful file creation from being interpreted
@@ -131,3 +131,6 @@ reports any admission evictions. The real Node flow then mutates the restored
 authored group to prove replayed state without reusing old topology handles.
 
 No Appz files are changed by this slice.
+## STEP MIME compatibility
+
+The STEP source input follows the [STEP media policy](../geometer/adr/geometer-adr-020-standard-step-media-types.md); journal descriptor/digest matching remains exact. Structural AP242 artifact readers accept bare `application/step` and `model/step`, while new producers emit `model/step`. Parameterized/case-varied output descriptors are not admitted. Save remains structural-only; this correction adds no executable capability.

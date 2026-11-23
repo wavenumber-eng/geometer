@@ -358,7 +358,8 @@
       "enum": [
         "application/step",
         "model/step"
-      ]
+      ],
+      "description": "New producers emit model_step. The legacy application_step spelling remains decodable; output descriptors contain bare canonical tokens, never input parameters."
     },
     "NormalizedHalfSpacePlane": {
       "type": "object",

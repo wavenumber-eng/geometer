@@ -1,10 +1,7 @@
 # Geometer
 
-This is Geometer's public distribution repository. Active development is
-maintained in [Appz](https://github.com/wavenumber-eng/appz) under
-`cad/geometer/`. Existing public PyPI wheels, releases and package interfaces
-remain available and unchanged. Development fixes belong in the Appz copy;
-public distribution and release updates are handled separately.
+This is Geometer's public distribution repository. Active development lives in
+[Appz](https://github.com/wavenumber-eng/appz) under `cad/geometer/`.
 
 Geometer is a generic C++ geometry library with an executable, Python package,
 and browser WASM interfaces. It provides STEP conversion, hidden-line projection
@@ -18,12 +15,9 @@ application rendering decisions belong to callers, not the geometry kernel.
 | STEP bounds, GLB conversion, HLR, planar STEP synthesis | Supported geometry APIs. Model bounds has promoted generated contracts; HLR's generated contracts remain pilots. |
 | Clipper2 Boolean/offset, planar batch solve and triangulation | Supported polygonized planar workflows; packed interfaces remain handwritten. |
 | Fast vector HLR, colored STEP tessellation and mesh illustration | Browser APIs plus direct C++, native IPC, Rust and Python illustration since 2026.9.6; see the [STEP-to-SVG guide](docs/design/mesh-illustration-native.md). Demo applications are evaluation tools, not production renderers. |
-| Analytic line/arc planar Boolean | Experimental, not production-ready. May fail closed on valid inputs. Not the dependable whole-board/layer copper-union path; prefer Clipper2 when polygonized output is suitable. |
 | Persistent STEP-topology sessions | Experimental native-only subset. Structural declarations do not imply runtime availability. |
 
-Contract promotion and solver production readiness are separate. See
-[contract authority](docs/contracts/README.md) and
-[the analytic decision](docs/geometer/adr/geometer-adr-017-retain_analytic_planar_boolean_as_experimental.md).
+See [contract authority](docs/contracts/README.md) for API maturity.
 
 ## Choose An Interface
 
@@ -72,15 +66,13 @@ or use the authored Markdown sources below.
 
 - [Interface specifications](docs/design/README.md)
 - [TypeSpec, contract authority and generated reference](docs/contracts/README.md)
-- [Examples and demo status](examples/README.md)
-- [Research and historical evidence](docs/research/README.md)
+- [Examples](examples/README.md)
 - [Requirements](docs/geometer/requirements/README.md) and [decisions](docs/geometer/adr/README.md)
 - [Developer setup, builds, tests and releases](docs/developer/README.md)
 - [Release notes](docs/releases/README.md)
 
-Start with the headless Python example or HLR Lab. Analytic and topology demos
-remain experimental; retention does not imply production support. See the
-[demo audit](docs/developer/demo-status.md) for verification limits.
+Start with the headless Python example or HLR Lab. The topology example uses
+the experimental native topology API.
 
 ## Contributing And License
 

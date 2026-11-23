@@ -97,19 +97,6 @@
     }
     .advanced-settings :disabled { opacity: 0.45; cursor: not-allowed; }
 
-    .backend-toggle {
-      display: inline-flex;
-      gap: 5px;
-      align-items: center;
-      min-height: 24px;
-      padding: 2px 7px;
-      background: #fff;
-      color: #17202a;
-      font-weight: 700;
-      cursor: pointer;
-      user-select: none;
-    }
-    .backend-toggle input { margin: 0; }
     .backend-settings { border-top: 1px solid #dfe3e8; }
     .backend-settings[hidden] { display: none; }
     .backend-heading {
@@ -144,7 +131,6 @@
       font-size: 11px;
       color: #4a5565;
     }
-    .edge-preset-row { margin-bottom: 8px; }
     .edge-group + .edge-group { margin-top: 8px; }
     .edge-row .group-label {
       display: block;
@@ -153,7 +139,6 @@
       color: #344154;
     }
     .edge-flags { display: flex; flex-wrap: wrap; gap: 4px; }
-    .edge-row .legend { color: #647184; margin-left: 6px; font-size: 10px; }
     .edge-row label.flag {
       display: inline-flex;
       gap: 3px;
@@ -163,9 +148,7 @@
       cursor: pointer;
       user-select: none;
     }
-    .edge-row label.flag.disabled { opacity: 0.45; cursor: not-allowed; }
     .edge-row input[type=checkbox] { margin: 0; }
-    .edge-row select { height: 22px; font-size: 11px; }
 
     .select-wrap { display: inline-flex; gap: 4px; align-items: center; min-width: 0; }
     .label { color: #4a5565; font-size: 11px; line-height: 1; }
@@ -417,13 +400,9 @@
     <details class="advanced-settings" open>
       <summary>Geometry settings</summary>
       <div class="tunables">
-        <label class="backend-toggle" title="Switch the Detail layer between the selected OCCT engine and Geometer's Fast triangle HLR evaluation backend.">
-          <input id="fastBackendInput" type="checkbox">
-          <span>Fast detail HLR</span>
-        </label>
         <label class="control" title="Geometer outline_algorithm. This builds the independent Outline layer and is unrelated to the Detail edge checkboxes.">
           <span>Silhouette source</span>
-          <select id="outlineAlgoSelect"><option value="mesh-shadow">Mesh shadow</option><option value="fast-mesh-shadow">Fast</option><option value="hlr-close">Closed HLR edges</option></select>
+          <select id="outlineAlgoSelect"><option value="mesh-shadow">Mesh shadow</option><option value="fast-mesh-shadow">Fast</option></select>
         </label>
         <label class="control" title="Geometer mesh_deflection_mode. Model-relative multiplies the largest model dimension by the quality coefficient.">
           <span>Tessellation</span>
@@ -443,53 +422,7 @@
         </label>
         <button type="button" class="toolbar-action secondary" id="resetGeometryButton">Reset geometry defaults</button>
       </div>
-      <div class="backend-settings" id="occtSettings">
-        <div class="backend-heading">OCCT detail settings</div>
-        <div class="tunables">
-          <label class="control" title="Select the OCCT detail engine used while Fast detail HLR is off.">
-            <span>OCCT engine</span>
-            <select id="algoSelect"><option value="poly">Polygonal</option><option value="exact">Exact curves</option></select>
-          </label>
-          <label class="control" title="hlr_angle_tolerance in radians. Used by polygonal HLR for silhouette/sharp-edge classification; ignored by Exact.">
-            <span>Edge angle (rad)</span>
-            <input id="hlrTolInput" type="number" min="0.0001" step="0.001" value="0.0174533">
-          </label>
-        </div>
-        <div class="edge-row" id="edgeRow">
-        <div class="edge-preset-row">
-          <label class="control" title="A demo convenience preset for the OCCT edge categories that feed only the Detail layer.">
-            <span>Detail edge set</span>
-            <select id="edgePresetSelect">
-              <option value="detail">Sharp + silhouettes</option>
-              <option value="all-visible">All visible (exact)</option>
-              <option value="visible+hidden">Visible + hidden</option>
-              <option value="custom">Custom categories</option>
-            </select>
-          </label>
-        </div>
-        <div class="edge-group">
-          <span class="group-label">Visible</span>
-          <div class="edge-flags">
-            <label class="flag" title="OCCT VCompound: visible sharp edges. Feeds Detail only." data-algo-poly="ok"><input type="checkbox" data-edge="edge_v_sharp" checked><span>Sharp edges</span></label>
-            <label class="flag" title="OCCT OutLineVCompound: visible silhouette edges. Despite the OCCT name, this feeds Detail—not Geometer's Outline layer." data-algo-poly="ok"><input type="checkbox" data-edge="edge_v_outline" checked><span>Silhouette edges</span></label>
-            <label class="flag" title="OCCT Rg1LineVCompound: visible tangent edges. Exact only; feeds Detail." data-algo-poly="no"><input type="checkbox" data-edge="edge_v_smooth"><span>Tangent edges</span></label>
-            <label class="flag" title="OCCT RgNLineVCompound: visible sewn/manifold edges. Exact only; feeds Detail." data-algo-poly="no"><input type="checkbox" data-edge="edge_v_sewn"><span>Seam edges</span></label>
-            <label class="flag" title="OCCT IsoLineVCompound: visible parametric isolines. Exact only; feeds Detail." data-algo-poly="no"><input type="checkbox" data-edge="edge_v_iso"><span>Isolines</span></label>
-          </div>
-        </div>
-        <div class="edge-group">
-          <span class="group-label">Hidden</span>
-          <div class="edge-flags">
-            <label class="flag" title="OCCT HCompound: hidden sharp edges. Feeds Detail only." data-algo-poly="ok"><input type="checkbox" data-edge="edge_h_sharp"><span>Sharp edges</span></label>
-            <label class="flag" title="OCCT OutLineHCompound: hidden silhouette edges. Feeds Detail only." data-algo-poly="ok"><input type="checkbox" data-edge="edge_h_outline"><span>Silhouette edges</span></label>
-            <label class="flag" title="OCCT Rg1LineHCompound: hidden tangent edges. Exact only; feeds Detail." data-algo-poly="no"><input type="checkbox" data-edge="edge_h_smooth"><span>Tangent edges</span></label>
-            <label class="flag" title="OCCT RgNLineHCompound: hidden sewn/manifold edges. Exact only; feeds Detail." data-algo-poly="no"><input type="checkbox" data-edge="edge_h_sewn"><span>Seam edges</span></label>
-            <label class="flag" title="OCCT IsoLineHCompound: hidden parametric isolines. Exact only; feeds Detail." data-algo-poly="no"><input type="checkbox" data-edge="edge_h_iso"><span>Isolines</span></label>
-          </div>
-        </div>
-        </div>
-      </div>
-      <div class="backend-settings" id="fastSettings" hidden>
+      <div class="backend-settings" id="fastSettings">
         <div class="backend-heading">Fast detail settings</div>
         <div class="tunables">
           <label class="control" title="Minimum angle in degrees between adjacent triangle normals for a shared edge to become a crease candidate. The UI converts this to radians for Geometer.">
@@ -522,7 +455,7 @@
           </div>
         </div>
       </div>
-      <div class="setting-help">The Fast detail HLR checkbox switches only the raw Detail layer. The Silhouette source remains independently selectable for the Outline layer. Use Detail or Outline to inspect either result alone, and Both to compose them without merging.</div>
+      <div class="setting-help">Silhouette source controls the Outline layer. Use Both to view it with Fast HLR detail.</div>
     </details>
         </div>
         <div class="three-settings" id="threePanelContent">

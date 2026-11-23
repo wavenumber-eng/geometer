@@ -77,7 +77,7 @@ impl GeometerDirectClient {
         &self,
         operation: &str,
         request_json: &[u8],
-        attachments: Vec<Attachment>,
+        mut attachments: Vec<Attachment>,
     ) -> Result<OperationResponse, GeometerClientError> {
         let declaration = self
             .catalog
@@ -92,7 +92,7 @@ impl GeometerDirectClient {
         let request = crate::operation_validation::decode_and_validate_request(
             declaration,
             request_json,
-            &attachments,
+            &mut attachments,
         )?;
         let canonical_request = crate::operation_validation::encode_direct_request(&request)?;
         let (response, receiver) = oneshot::channel();

@@ -174,10 +174,6 @@ const declarations = {
             },
         },
     },
-    "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrCurveMode": {
-        kind: "enum",
-        values: ["native_arcs", "polyline"],
-    },
     "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrMatrix4x4": {
         kind: "array",
         element: { kind: "primitive", name: "float64" },
@@ -189,7 +185,7 @@ const declarations = {
     },
     "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrOutlineAlgorithm": {
         kind: "enum",
-        values: ["hlr-close", "mesh-shadow", "fast-mesh-shadow"],
+        values: ["mesh-shadow", "fast-mesh-shadow"],
     },
     "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectedView": {
         kind: "object",
@@ -227,7 +223,7 @@ const declarations = {
     },
     "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionAlgorithm": {
         kind: "enum",
-        values: ["poly", "exact", "fast"],
+        values: ["fast"],
     },
     "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrProjectionModes": {
         kind: "object",
@@ -300,70 +296,10 @@ const declarations = {
                 optional: true,
                 constraints: {},
             },
-            curve_mode: {
-                type: {
-                    kind: "reference",
-                    target: "Wavenumber.Geometer.Contracts.HlrProjectionA0.HlrCurveMode",
-                },
-                optional: true,
-                constraints: {},
-            },
-            samples_per_curve: {
-                type: { kind: "primitive", name: "uint32" },
-                optional: true,
-                constraints: { min_value: 1, max_value: 100000 },
-            },
             round_digits: {
                 type: { kind: "primitive", name: "uint32" },
                 optional: true,
                 constraints: { min_value: 0, max_value: 9 },
-            },
-            edge_v_sharp: {
-                type: { kind: "primitive", name: "boolean" },
-                optional: true,
-                constraints: {},
-            },
-            edge_v_outline: {
-                type: { kind: "primitive", name: "boolean" },
-                optional: true,
-                constraints: {},
-            },
-            edge_v_smooth: {
-                type: { kind: "primitive", name: "boolean" },
-                optional: true,
-                constraints: {},
-            },
-            edge_v_sewn: {
-                type: { kind: "primitive", name: "boolean" },
-                optional: true,
-                constraints: {},
-            },
-            edge_v_iso: { type: { kind: "primitive", name: "boolean" }, optional: true, constraints: {} },
-            edge_h_sharp: {
-                type: { kind: "primitive", name: "boolean" },
-                optional: true,
-                constraints: {},
-            },
-            edge_h_outline: {
-                type: { kind: "primitive", name: "boolean" },
-                optional: true,
-                constraints: {},
-            },
-            edge_h_smooth: {
-                type: { kind: "primitive", name: "boolean" },
-                optional: true,
-                constraints: {},
-            },
-            edge_h_sewn: {
-                type: { kind: "primitive", name: "boolean" },
-                optional: true,
-                constraints: {},
-            },
-            edge_h_iso: { type: { kind: "primitive", name: "boolean" }, optional: true, constraints: {} },
-            union_outline_polygons: {
-                type: { kind: "primitive", name: "boolean" },
-                optional: true,
-                constraints: {},
             },
             projection_algorithm: {
                 type: {
@@ -408,11 +344,6 @@ const declarations = {
                 },
                 optional: true,
                 constraints: {},
-            },
-            hlr_angle_tolerance: {
-                type: { kind: "primitive", name: "float64" },
-                optional: true,
-                constraints: { min_value: 0, max_value: Math.PI },
             },
             fast: {
                 type: {
@@ -3898,12 +3829,12 @@ const declarations = {
             max_visibility_candidate_pairs: {
                 type: { kind: "primitive", name: "uint32" },
                 optional: true,
-                constraints: { min_value: 1, max_value: 100000000 },
+                constraints: { min_value: 1 },
             },
             max_drawing_commands: {
                 type: { kind: "primitive", name: "uint32" },
                 optional: true,
-                constraints: { min_value: 1, max_value: 2000000 },
+                constraints: { min_value: 1 },
             },
         },
     },
@@ -6664,6 +6595,10 @@ const declarations = {
             },
         },
     },
+    "Wavenumber.Geometer.Contracts.StepTopologyA0.StepAp242MediaType": {
+        kind: "enum",
+        values: ["model/step", "application/step"],
+    },
     "Wavenumber.Geometer.Contracts.StepTopologyA0.StepAp242PersistenceArtifact": {
         kind: "object",
         properties: {
@@ -6678,7 +6613,10 @@ const declarations = {
                 constraints: {},
             },
             media_type: {
-                type: { kind: "literal", value_type: "string", value: "application/step" },
+                type: {
+                    kind: "reference",
+                    target: "Wavenumber.Geometer.Contracts.StepTopologyA0.StepAp242MediaType",
+                },
                 optional: false,
                 constraints: {},
             },

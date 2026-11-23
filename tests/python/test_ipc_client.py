@@ -12,29 +12,14 @@ import pytest
 import geometer
 from geometer._generated.contracts.codecs import encode_ipc_shutdown_ack_a0_json, encode_operation_outcome_a0_json
 from geometer._generated.contracts.models import (
-    AnalyticPlanarBooleanJob,
-    AnalyticPlanarBooleanBatchRequestA0,
-    AnalyticPlanarBooleanStage,
-    DiskOperand,
     DiagnosticA0,
     DiagnosticCategory,
     OperationFailureA0,
-    OperationSuccessA0,
-    PackedAttachmentProjectionA0,
-    PackedAttachmentReferenceA0,
-    PointNm,
-    StageOperation,
     IpcShutdownAckA0,
     HlrProjectionOptionsA0,
 )
 from geometer._ipc_a0 import Attachment, Frame, FrameKind, IpcFrameError, read_frame, write_frame
 from geometer._ipc_client import (
-    ANALYTIC_OPERATION,
-    ANALYTIC_PACKET_FORMAT,
-    ANALYTIC_REQUEST_ATTACHMENT,
-    ANALYTIC_REQUEST_CONTRACT,
-    ANALYTIC_RESULT_ATTACHMENT,
-    ANALYTIC_RESULT_CONTRACT,
     GeometerIpcClient,
     GeometerIpcError,
     GeometerIpcProcessError,
@@ -213,59 +198,15 @@ def test_persistent_client_rejects_missing_named_attachment_before_write() -> No
     executable = executable_path()
     if not executable.is_file():
         pytest.skip("native Geometer executable is unavailable")
-    projection = PackedAttachmentProjectionA0(
-        schema=ANALYTIC_REQUEST_CONTRACT,
-        packet=PackedAttachmentReferenceA0(
-            attachment=ANALYTIC_REQUEST_ATTACHMENT,
-            format=ANALYTIC_PACKET_FORMAT,
-        ),
-    )
     with GeometerIpcClient(executable, client_name="python-ipc-test", client_version="a0") as client:
         with pytest.raises(GeometerIpcProtocolError, match="missing required attachments"):
-            client.execute(ANALYTIC_OPERATION, projection)
+            client.execute("geometry.model_hlr_projection.a0", HlrProjectionOptionsA0())
 
 
 @pytest.mark.parametrize("timeout", [0, -1, float("inf"), float("nan")])
 def test_client_rejects_invalid_local_deadline(timeout: float) -> None:
     with pytest.raises(ValueError, match="finite positive"):
         GeometerIpcClient(startup_timeout=timeout)
-
-
-def test_friendly_analytic_call_round_trips_empty_batch() -> None:
-    executable = executable_path()
-    if not executable.is_file():
-        pytest.skip("native Geometer executable is unavailable")
-    request = AnalyticPlanarBooleanBatchRequestA0(jobs=(), relationship_queries=())
-    with GeometerIpcClient(executable, client_name="python-ipc-test", client_version="a0") as client:
-        result = client.analytic_planar_boolean_batch(request)
-    assert result.job_results == ()
-    assert result.relationship_results == ()
-
-
-def _nonempty_request() -> AnalyticPlanarBooleanBatchRequestA0:
-    return AnalyticPlanarBooleanBatchRequestA0(
-        jobs=(
-            AnalyticPlanarBooleanJob(
-                job_id=1,
-                stages=(
-                    AnalyticPlanarBooleanStage(
-                        stage_id=1,
-                        operation=StageOperation.UNION_STAGE,
-                        operands=(
-                            DiskOperand(
-                                operand_id=1,
-                                kind="disk",
-                                feature_id=1,
-                                center=PointNm(x=0, y=0),
-                                radius_nm=1_000_000,
-                            ),
-                        ),
-                    ),
-                ),
-            ),
-        ),
-        relationship_queries=(),
-    )
 
 
 def _native_test_server(
@@ -311,23 +252,14 @@ def test_native_qualification_requires_fake_servers(tmp_path: Path, monkeypatch:
         _native_test_server("missing_server", root=tmp_path, platform_tag="fixture-x64")
 
 
-def test_persistent_client_repeats_nonempty_solve_on_one_connection() -> None:
-    executable = executable_path()
-    if not executable.is_file():
-        pytest.skip("native Geometer executable is unavailable")
-    with GeometerIpcClient(executable, client_name="python-ipc-test", client_version="a0") as client:
-        first = client.analytic_planar_boolean_batch(_nonempty_request(), timeout=5)
-        second = client.analytic_planar_boolean_batch(_nonempty_request(), timeout=5)
-    assert first == second
-
-
 def test_public_c_bootstrap_serves_the_existing_ipc_protocol() -> None:
     server = _native_test_server("geometer_c_api_stdio_test_server")
     if not server.is_file():
         pytest.skip("native C bootstrap test server is unavailable")
     with GeometerIpcClient(server, client_name="python-c-bootstrap-test") as client:
-        result = client.analytic_planar_boolean_batch(_nonempty_request(), timeout=5)
-        assert result.job_results
+        step = (ROOT / "tests/fixtures/step/embedded_models/SOT-23.STEP").read_bytes()
+        result = client.model_hlr_projection(step, timeout=5)
+        assert result.views
         assert client.welcome.catalog_sha256 == NORMALIZED_CATALOG_SHA256
 
 
@@ -337,10 +269,10 @@ def test_timeout_is_typed_and_prevents_reuse_while_native_fake_server_drains() -
         pytest.skip("native deadline fake server is unavailable")
     client = GeometerIpcClient(server, client_name="python-timeout-test", shutdown_timeout=0.25)
     with pytest.raises(GeometerIpcTimeoutError, match="does not prove interruption") as caught:
-        client.analytic_planar_boolean_batch(_nonempty_request(), timeout=0.05)
+        client.model_hlr_projection(b"STEP fixture", timeout=0.05)
     assert caught.value.request_id == 1
     with pytest.raises(GeometerIpcError, match="still draining"):
-        client.analytic_planar_boolean_batch(_nonempty_request(), timeout=0.05)
+        client.model_hlr_projection(b"STEP fixture", timeout=0.05)
     started = time.monotonic()
     with pytest.raises(GeometerIpcError):
         client.close()
@@ -353,9 +285,9 @@ def test_process_crash_poison_connection_with_native_fake_server() -> None:
         pytest.skip("native unexpected-exit fake server is unavailable")
     client = GeometerIpcClient(server, client_name="python-crash-test")
     with pytest.raises(GeometerIpcProcessError, match="closed stdout"):
-        client.analytic_planar_boolean_batch(_nonempty_request(), timeout=2)
+        client.model_hlr_projection(b"STEP fixture", timeout=2)
     with pytest.raises(GeometerIpcProcessError, match="closed"):
-        client.analytic_planar_boolean_batch(_nonempty_request(), timeout=1)
+        client.model_hlr_projection(b"STEP fixture", timeout=1)
 
 
 @pytest.mark.parametrize(
@@ -376,17 +308,17 @@ def test_post_write_protocol_faults_are_typed_and_poison_connection(
     client = GeometerIpcClient(executable, client_name="python-protocol-test")
     client._stdout_queue.put(injected)
     with pytest.raises(GeometerIpcProtocolError, match=message):
-        client.analytic_planar_boolean_batch(_nonempty_request(), timeout=2)
+        client.model_hlr_projection(b"STEP fixture", timeout=2)
     with pytest.raises(GeometerIpcProcessError, match="closed"):
-        client.analytic_planar_boolean_batch(_nonempty_request(), timeout=1)
+        client.model_hlr_projection(b"STEP fixture", timeout=1)
 
 
-def test_friendly_analytic_call_raises_typed_operation_failure() -> None:
+def test_model_hlr_call_raises_typed_operation_failure() -> None:
     executable = executable_path()
     if not executable.is_file():
         pytest.skip("native Geometer executable is unavailable")
     failure = OperationFailureA0(
-        operation=ANALYTIC_OPERATION,
+        operation="geometry.model_hlr_projection.a0",
         ok=False,
         diagnostics=(
             DiagnosticA0(
@@ -394,7 +326,7 @@ def test_friendly_analytic_call_raises_typed_operation_failure() -> None:
                 category=DiagnosticCategory.OPERATION,
                 message="fixture",
                 retryable=False,
-                operation=ANALYTIC_OPERATION,
+                operation="geometry.model_hlr_projection.a0",
             ),
         ),
     )
@@ -403,7 +335,7 @@ def test_friendly_analytic_call_raises_typed_operation_failure() -> None:
         Frame(kind=FrameKind.RESPONSE, request_id=1, json=encode_operation_outcome_a0_json(failure))
     )
     with pytest.raises(GeometerOperationError) as caught:
-        client.analytic_planar_boolean_batch(_nonempty_request(), timeout=2)
+        client.model_hlr_projection(b"STEP fixture", timeout=2)
     assert caught.value.diagnostics == failure.diagnostics
     client._terminate()
 
@@ -437,57 +369,3 @@ def test_shutdown_ack_must_reconcile_with_no_pending_request(acknowledgment: Ipc
     )
     with pytest.raises(GeometerIpcProtocolError, match="contradicts observed"):
         client.close()
-
-
-@pytest.mark.parametrize("invalid_packet", [False, True])
-def test_analytic_projection_or_packet_protocol_fault_poisons_connection(invalid_packet: bool) -> None:
-    executable = executable_path()
-    if not executable.is_file():
-        pytest.skip("native Geometer executable is unavailable")
-    projection = PackedAttachmentProjectionA0(
-        schema=ANALYTIC_RESULT_CONTRACT if invalid_packet else "fixture.wrong.result",
-        packet=PackedAttachmentReferenceA0(
-            attachment=ANALYTIC_RESULT_ATTACHMENT,
-            format=ANALYTIC_PACKET_FORMAT,
-        ),
-    )
-    success = OperationSuccessA0(operation=ANALYTIC_OPERATION, ok=True, result=projection)
-    client = GeometerIpcClient(executable, client_name="python-analytic-fault-test")
-    client._stdout_queue.put(
-        Frame(
-            kind=FrameKind.RESPONSE,
-            request_id=1,
-            json=encode_operation_outcome_a0_json(success),
-            attachments=(
-                Attachment(
-                    name=ANALYTIC_RESULT_ATTACHMENT,
-                    media_type="application/vnd.wavenumber.geometer.analytic-planar-boolean-result",
-                    data=b"invalid packet",
-                ),
-            ),
-        )
-    )
-    with pytest.raises(GeometerIpcProtocolError):
-        client.analytic_planar_boolean_batch(_nonempty_request(), timeout=2)
-    with pytest.raises(GeometerIpcProcessError, match="closed"):
-        client.analytic_planar_boolean_batch(_nonempty_request(), timeout=1)
-
-
-def test_public_package_exports_client_and_analytic_construction_surface() -> None:
-    assert geometer.GeometerClient is GeometerIpcClient
-    assert geometer.GeometerIpcTimeoutError is GeometerIpcTimeoutError
-    assert callable(geometer.encode_analytic_planar_boolean_batch_request_a0_packet)
-    assert callable(geometer.decode_analytic_planar_boolean_batch_result_a0_packet)
-    assert geometer.AnalyticPlanarBooleanBatchRequestA0 is AnalyticPlanarBooleanBatchRequestA0
-    assert geometer.AnalyticPointNm(x=1, y=-1).x == 1
-    assert geometer.StageOperation.UNION_STAGE.value == "union"
-    assert (
-        geometer.DiskOperand(
-            operand_id=1,
-            kind="disk",
-            feature_id=1,
-            center=geometer.AnalyticPointNm(x=0, y=0),
-            radius_nm=1,
-        ).kind
-        == "disk"
-    )

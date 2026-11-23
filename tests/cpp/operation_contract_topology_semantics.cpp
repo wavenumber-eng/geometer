@@ -13,6 +13,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
@@ -20,6 +21,23 @@
 
 namespace
 {
+
+std::string_view artifact_media_type(const std::string& value)
+{
+    return value;
+}
+
+std::string_view artifact_media_type(geometer::contracts::StepAp242MediaType value)
+{
+    switch (value)
+    {
+    case geometer::contracts::StepAp242MediaType::model_step:
+        return "model/step";
+    case geometer::contracts::StepAp242MediaType::application_step:
+        return "application/step";
+    }
+    return {};
+}
 
 void require(bool condition, const std::string& message)
 {
@@ -716,7 +734,8 @@ std::optional<bool> validate_persistence_oracle(const std::string& oracle,
             [&](const auto& artifact)
             {
                 return artifact.name == attachment["name"].GetString() &&
-                       artifact.media_type == attachment["media_type"].GetString() &&
+                       artifact_media_type(artifact.media_type) ==
+                           attachment["media_type"].GetString() &&
                        artifact.bytes == bytes.size() && valid_lowercase_sha256(artifact.sha256) &&
                        artifact.sha256 == geometer::sha256_hex(bytes.data(), bytes.size());
             },
@@ -762,7 +781,8 @@ std::optional<bool> validate_persistence_oracle(const std::string& oracle,
                 const bool matches = std::visit(
                     [&](const auto& artifact)
                     {
-                        return artifact.name == name && artifact.media_type == media &&
+                        return artifact.name == name &&
+                               artifact_media_type(artifact.media_type) == media &&
                                artifact.bytes == bytes.size() &&
                                valid_lowercase_sha256(artifact.sha256) &&
                                artifact.sha256 == geometer::sha256_hex(bytes.data(), bytes.size());

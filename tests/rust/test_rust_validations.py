@@ -8,7 +8,6 @@ import subprocess
 import sys
 from pathlib import Path, PurePosixPath
 
-import pytest
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -22,6 +21,7 @@ PRODUCTION_TEST_TARGETS = (
     "generated_dispatch",
     "illustration_composition",
     "logical_dtos",
+    "runtime",
 )
 WN_DEV_STD = ("uvx", "--from", "wn-dev-std==2026.9.8", "wn-dev-std")
 
@@ -42,6 +42,8 @@ def test_rust_format_lint_and_live_conformance() -> None:
         str(MANIFEST),
         "--all-targets",
         "--locked",
+        "--features",
+        "disk-cache",
         "--",
         "-D",
         "warnings",
@@ -50,12 +52,19 @@ def test_rust_format_lint_and_live_conformance() -> None:
         for target in PRODUCTION_TEST_TARGETS:
             run("cargo", "test", "--manifest-path", str(MANIFEST), "--locked", "--test", target)
     else:
-        run("cargo", "test", "--manifest-path", str(MANIFEST), "--locked")
+        run(
+            "cargo",
+            "test",
+            "--manifest-path",
+            str(MANIFEST),
+            "--locked",
+            "--features",
+            "disk-cache",
+        )
     run(*WN_DEV_STD, "audit", str(MANIFEST.parent), "--scope", "language")
 
 
-@pytest.mark.skipif(TEST_PROFILE == "production", reason="combined analytic consumer is experimental")
-def test_clean_staged_source_consumer_runs_analytic_and_illustration_ipc(tmp_path: Path) -> None:
+def test_clean_staged_source_consumer_runs_illustration_ipc(tmp_path: Path) -> None:
     crate = MANIFEST.parent
     package_dir = tmp_path / "package"
     package_dir.mkdir()
@@ -78,36 +87,14 @@ def test_clean_staged_source_consumer_runs_analytic_and_illustration_ipc(tmp_pat
     }
     (consumer / "Cargo.toml").write_text(_toml(cargo_toml), encoding="utf-8")
     (consumer / "src" / "main.rs").write_text(
-        "use geometer_client::contracts::{self, AnalyticPlanarBooleanBatchRequestA0, "
-        "AnalyticPlanarBooleanJobResult, JobId, ModelBoundsOptionsA0, PointNm};\n"
+        "use geometer_client::contracts::ModelBoundsOptionsA0;\n"
         "use geometer_client::GeometerClient;\n"
         "#[tokio::main]\n"
         "async fn main() { "
         'let executable = std::env::args_os().nth(1).expect("missing geometer executable"); '
         "let value = ModelBoundsOptionsA0 { format: None, model_transform: None }; "
         "let _ = geometer_client::contracts::encode_model_bounds_options_a0_json(&value).unwrap(); "
-        "let id = JobId::new(1).unwrap(); let point = PointNm { x: i64::MIN, y: i64::MAX }; "
-        "let empty = AnalyticPlanarBooleanBatchRequestA0 { jobs: vec![], relationship_queries: vec![] }; "
-        "let packet = geometer_client::encode_analytic_planar_boolean_batch_request_a0_packet(&empty).unwrap(); "
-        "let error = geometer_client::decode_analytic_planar_boolean_batch_result_a0_packet(&packet).unwrap_err(); "
-        "assert_eq!((id.get(), point.x), (1, i64::MIN)); "
-        "assert_eq!(error.kind(), geometer_client::AnalyticPacketErrorKind::InvalidPacket); "
-        "let request = contracts::AnalyticPlanarBooleanBatchRequestA0 { "
-        "jobs: vec![contracts::AnalyticPlanarBooleanJob { job_id: contracts::JobId::new(1).unwrap(), "
-        "stages: vec![contracts::AnalyticPlanarBooleanStage { stage_id: contracts::StageId::new(1).unwrap(), "
-        "operation: contracts::StageOperation::UnionStage, "
-        "operands: vec![contracts::AnalyticPlanarOperand::Disk(contracts::DiskOperand { "
-        'operand_id: contracts::OperandId::new(1).unwrap(), kind: "disk".to_owned(), '
-        "feature_id: contracts::FeatureId::new(1).unwrap(), "
-        "center: contracts::PointNm { x: 0, y: 0 }, radius_nm: 1_000_000 })] }] }], "
-        "relationship_queries: vec![] }; "
         'let client = GeometerClient::spawn(executable, "staged-source-consumer", "a0").await.unwrap(); '
-        "let empty_result = client.analytic_planar_boolean_batch(&empty).await.unwrap(); "
-        "assert!(empty_result.job_results.is_empty()); "
-        "let result = client.analytic_planar_boolean_batch(&request).await.unwrap(); "
-        "let AnalyticPlanarBooleanJobResult::Success(job) = &result.job_results[0] else { "
-        'panic!("packaged client returned a job-local failure"); }; '
-        "assert!(!job.result_regions.is_empty()); assert_eq!(job.digest_sha256.len(), 64); "
         "client.close().await.unwrap(); }\n",
         encoding="utf-8",
     )

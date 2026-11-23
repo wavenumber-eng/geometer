@@ -4,24 +4,18 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { applyProjectionDeferrals } from "./contract-projection-deferral.mjs";
-
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const catalogText = await readFile(
   join(root, "contracts/geometer/generated/wn_geometer_contract_catalog.a0.json"),
   "utf8",
 );
 const contractCatalog = JSON.parse(catalogText);
-const modelCatalog = await applyProjectionDeferrals(contractCatalog, "rust", {
-  retainLogicalDtos: true,
-});
-const codecCatalog = await applyProjectionDeferrals(contractCatalog, "rust");
 const packedContracts = new Set(
   contractCatalog.operations
     .filter((operation) => operation.runtime_dispatch === "packed_attachment")
     .flatMap((operation) => [operation.request_contract, operation.result_contract]),
 );
-const codecRoots = codecCatalog.roots.filter(
+const codecRoots = contractCatalog.roots.filter(
   (rootRecord) => !packedContracts.has(rootRecord.contract_identity),
 );
 const catalogSha256 = createHash("sha256").update(catalogText).digest("hex");
@@ -31,10 +25,10 @@ if (process.argv.length > (check ? 3 : 2)) {
   throw new Error("Usage: node scripts/generate-rust-contracts.mjs [--check]");
 }
 
-const declarations = new Map(modelCatalog.declarations.map((item) => [item.name, item]));
+const declarations = new Map(contractCatalog.declarations.map((item) => [item.name, item]));
 const codecDeclarations = reachableNames(codecRoots);
 const roots = new Set(codecRoots.map((item) => item.name));
-const ordered = topologicalOrder(modelCatalog.declarations);
+const ordered = topologicalOrder(contractCatalog.declarations);
 const emittedArrayValidation = new Set();
 const source = formatRust(
   `${generateHeader()}\n${ordered.map((item) => generateDeclaration(item, codecDeclarations.has(item.name))).join("\n\n")}\n\n${generateRootCodecs()}\n`,
@@ -71,7 +65,7 @@ async function emit(name, content) {
 // of supported logical DTOs in the handwritten client.
 function generateDispatch() {
   const variantsFor = (unionName) => {
-    const union = modelCatalog.declarations.find((item) => shortName(item.name) === unionName);
+    const union = contractCatalog.declarations.find((item) => shortName(item.name) === unionName);
     if (union?.kind !== "union") throw new Error(`Missing IPC union ${unionName}`);
     return union.variants.map((variant) => {
       const rootRecord = codecRoots.find((item) => item.name === variant.type.target);
@@ -202,15 +196,9 @@ where
 
 function generateOperations() {
   const runtimeCatalog = operationCatalogTemplate();
-  const analytic = contractCatalog.operations.find(
-    (operation) => operation.identity === "geometry.analytic_planar_boolean_batch.a0",
-  );
-  if (!analytic) throw new Error("Analytic operation is absent from the normalized catalog.");
   return `// Generated from wn_geometer_contract_catalog.a0.json. Do not edit.
 
 use super::contracts::{self, IpcOperationCatalogA0};
-
-pub const ANALYTIC_PLANAR_BOOLEAN_BATCH_A0_IDENTITY: &str = ${JSON.stringify(analytic.identity)};
 
 const OPERATION_CATALOG_TEMPLATE: &str = r#"${JSON.stringify(runtimeCatalog)}"#;
 

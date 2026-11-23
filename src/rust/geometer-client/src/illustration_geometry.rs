@@ -71,6 +71,7 @@ macro_rules! impl_illustration_geometry_client {
 }
 
 impl_illustration_geometry_client!(GeometerClient);
+impl_illustration_geometry_client!(crate::runtime::WorkerClient<'_>);
 #[cfg(feature = "direct-static")]
 impl_illustration_geometry_client!(GeometerDirectClient);
 

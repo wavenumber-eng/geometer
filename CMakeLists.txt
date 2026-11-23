@@ -4,9 +4,9 @@ if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin" AND NOT CMAKE_OSX_DEPLOYMENT_TARGET)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum macOS deployment target")
 endif()
 
-set(GEOMETER_RELEASE_DATE "2026-09-19" CACHE STRING "Geometer UTC release date" FORCE)
-set(GEOMETER_RELEASE_VERSION "2026.9.19" CACHE STRING "Geometer package/build version" FORCE)
-set(GEOMETER_ABI_VERSION "20260919" CACHE STRING "Geometer C ABI generation date" FORCE)
+set(GEOMETER_RELEASE_DATE "2026-11-22" CACHE STRING "Geometer UTC release date" FORCE)
+set(GEOMETER_RELEASE_VERSION "2026.11.22" CACHE STRING "Geometer package/build version" FORCE)
+set(GEOMETER_ABI_VERSION "20261122" CACHE STRING "Geometer C ABI generation date" FORCE)
 set(GEOMETER_MSVC_RUNTIME "Dynamic" CACHE STRING "MSVC runtime profile: Dynamic or Static")
 set_property(CACHE GEOMETER_MSVC_RUNTIME PROPERTY STRINGS Dynamic Static)
 if(WIN32)
@@ -24,35 +24,6 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-set(GEOMETER_BOOST_ROOT "${CMAKE_SOURCE_DIR}/.deps/boost_1_92_0"
-    CACHE PATH "Pinned header-only Boost source root")
-if(GEOMETER_BOOST_ROOT STREQUAL "${CMAKE_SOURCE_DIR}/.deps/boost_1_92_0")
-    find_package(Python3 REQUIRED COMPONENTS Interpreter)
-    execute_process(
-        COMMAND ${Python3_EXECUTABLE} "${CMAKE_SOURCE_DIR}/scripts/build_boost.py"
-        RESULT_VARIABLE _boost_restore_result
-        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-    )
-    if(NOT _boost_restore_result EQUAL 0)
-        message(FATAL_ERROR "Failed to restore pinned Boost headers with scripts/build_boost.py")
-    endif()
-    execute_process(
-        COMMAND ${Python3_EXECUTABLE} "${CMAKE_SOURCE_DIR}/scripts/build_boost.py" --verify
-        RESULT_VARIABLE _boost_verify_result
-        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-    )
-    if(NOT _boost_verify_result EQUAL 0)
-        message(FATAL_ERROR "Pinned Boost source/archive verification failed")
-    endif()
-elseif(NOT EXISTS "${GEOMETER_BOOST_ROOT}/boost/multiprecision/cpp_int.hpp")
-    message(FATAL_ERROR "GEOMETER_BOOST_ROOT does not contain boost/multiprecision/cpp_int.hpp")
-endif()
-file(STRINGS "${GEOMETER_BOOST_ROOT}/boost/version.hpp" _geometer_boost_version
-    REGEX "^#define BOOST_VERSION [0-9]+$" LIMIT_COUNT 1)
-if(NOT _geometer_boost_version STREQUAL "#define BOOST_VERSION 109200")
-    message(FATAL_ERROR "GEOMETER_BOOST_ROOT must contain pinned Boost 1.92.0 headers")
-endif()
 
 if(WIN32)
     set(_geometer_dist_os "windows")

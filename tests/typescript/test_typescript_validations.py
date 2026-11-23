@@ -17,21 +17,7 @@ REQUIRE_NATIVE_TEST_SERVERS = os.environ.get("GEOMETER_REQUIRE_NATIVE_TEST_SERVE
 NATIVE_PROCESS_SCRIPTS = frozenset({"node_process_a0_validation.mjs", "native_illustration_parity.mjs"})
 TEST_PROFILE = os.environ.get("GEOMETER_TEST_PROFILE", "all")
 TYPESCRIPT_SCOPE = os.environ.get("GEOMETER_TYPESCRIPT_SCOPE", "all")
-EXPERIMENTAL_SCRIPTS = frozenset(
-    {
-        "analytic_arc_render_validation.mjs",
-        "analytic_cpp_vector_validation.mjs",
-        "analytic_packet_codec_validation.mjs",
-        "analytic_self_contained_demo_validation.mjs",
-        "analytic_static_site_validation.mjs",
-    }
-)
 VALIDATION_SCRIPTS = (
-    "analytic_arc_render_validation.mjs",
-    "analytic_self_contained_demo_validation.mjs",
-    "analytic_static_site_validation.mjs",
-    "analytic_packet_codec_validation.mjs",
-    "analytic_cpp_vector_validation.mjs",
     "contract_codec_validation.mjs",
     "demo_tooling_validation.mjs",
     "documentation_reference_validation.mjs",
@@ -44,8 +30,6 @@ VALIDATION_SCRIPTS = (
     "package_consumer_validation.mjs",
     "mesh_illustration_validation.mjs",
     "native_illustration_parity.mjs",
-    "pcb_polygon_pour_artifact_validation.mjs",
-    "pcb_polygon_pour_model_validation.mjs",
     "shared_demo_theme_validation.mjs",
     "wasm_client_validation.mjs",
     "worker_client_validation.mjs",
@@ -88,8 +72,6 @@ def test_generated_typescript_package(script: str) -> None:
         pytest.skip("WASM-package validation runs against the candidate WASM build")
     if TYPESCRIPT_SCOPE == "wasm" and script not in WASM_SCRIPTS:
         pytest.skip("host and native-process validation runs in the Linux client lane")
-    if TEST_PROFILE == "production" and script in EXPERIMENTAL_SCRIPTS:
-        pytest.skip("experimental analytic validation is opt-in")
     if script in NATIVE_PROCESS_SCRIPTS and not REQUIRE_NATIVE_TEST_SERVERS:
         pytest.skip("native-process validation runs after the current platform executable is built")
     completed = subprocess.run(

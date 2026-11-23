@@ -80,9 +80,6 @@ geometer::HlrProjectionOptions projection_options(std::vector<geometer::Projecti
 {
     geometer::HlrProjectionOptions options;
     options.views = std::move(views);
-    options.curve_mode = geometer::ProjectionCurveMode::Polyline;
-    options.projection_algorithm = geometer::ProjectionAlgorithm::Poly;
-    options.outline_algorithm = geometer::ProjectionOutlineAlgorithm::HlrClosedEdges;
     options.round_digits = 3;
     return options;
 }
@@ -150,52 +147,6 @@ std::size_t non_degree_two_endpoint_count(const geometer::ProjectedModeGeometry&
         }
     }
     return count;
-}
-
-void representative_outlines_are_closed()
-{
-    const geometer::HlrProjectionOptions options =
-        projection_options({view_spec("top"), view_spec("front")});
-
-    struct Case
-    {
-        const char* fixture;
-        const char* view;
-        std::size_t expected_segments;
-    };
-    const Case cases[] = {
-        {"TSOT-23-5.STEP", "top", 94},
-        {"TSOT-23-5.STEP", "front", 73},
-        {"SOT-23.STEP", "front", 16},
-        {"sot223.stp", "front", 20},
-    };
-
-    for (const Case& test_case : cases)
-    {
-        const geometer::HlrProjectionResult result = project_or_throw(test_case.fixture, options);
-        const geometer::ProjectedModeGeometry& outline = find_view(result, test_case.view).outline;
-        require(outline.segments.size() == test_case.expected_segments,
-                std::string(test_case.fixture) + " " + test_case.view +
-                    " outline segment count changed");
-        require(non_degree_two_endpoint_count(outline) == 0, std::string(test_case.fixture) + " " +
-                                                                 test_case.view +
-                                                                 " outline should be closed");
-    }
-}
-
-void raw_outline_option_is_still_observable()
-{
-    geometer::HlrProjectionOptions closed_options = projection_options({view_spec("top")});
-    geometer::HlrProjectionOptions raw_options = closed_options;
-    raw_options.union_outline_polygons = false;
-
-    const geometer::HlrProjectionResult closed = project_or_throw("TSOT-23-5.STEP", closed_options);
-    const geometer::HlrProjectionResult raw = project_or_throw("TSOT-23-5.STEP", raw_options);
-
-    const geometer::ProjectedModeGeometry& closed_outline = find_view(closed, "top").outline;
-    const geometer::ProjectedModeGeometry& raw_outline = find_view(raw, "top").outline;
-    require(closed_outline.segments.size() != raw_outline.segments.size(),
-            "union_outline_polygons=false should expose raw contour segments");
 }
 
 void json_and_svg_use_outline_bbox_modes()
@@ -400,62 +351,6 @@ void fast_detail_projects_real_step_mesh()
     require(result.timings.hlr_ms > 0.0, "fast detail should report visibility time");
 }
 
-void fast_hlr_close_outline_can_run_without_detail()
-{
-    geometer::HlrProjectionOptions options = projection_options({view_spec("top")});
-    options.projection_algorithm = geometer::ProjectionAlgorithm::Fast;
-    options.outline_algorithm = geometer::ProjectionOutlineAlgorithm::HlrClosedEdges;
-    options.output_detail = false;
-    options.output_bbox = false;
-
-    const geometer::HlrProjectionResult result = project_or_throw("SOT-23.STEP", options);
-    const geometer::ProjectedViewGeometry& view = find_view(result, "top");
-    require(!view.outline.segments.empty() || !view.outline.arcs.empty(),
-            "fast plus HLR-close should delegate a nonempty outline without detail");
-    require(view.detail.segments.empty() && view.detail.arcs.empty(),
-            "outline-only fast request should keep detail empty");
-}
-
-void native_arc_orientation_is_expressed_in_each_view_plane()
-{
-    geometer::HlrProjectionOptions options =
-        projection_options({view_spec("top"), view_spec("bottom")});
-    options.projection_algorithm = geometer::ProjectionAlgorithm::Exact;
-    options.curve_mode = geometer::ProjectionCurveMode::NativeArcs;
-    options.output_outline = false;
-    options.output_bbox = false;
-    options.round_digits = 6;
-
-    const geometer::HlrProjectionResult result = project_or_throw("SOT-23.STEP", options);
-    for (const char* view_id : {"top", "bottom"})
-    {
-        const geometer::ProjectedModeGeometry& detail = find_view(result, view_id).detail;
-        std::size_t checked = 0;
-        for (const geometer::ProjectedArc& arc : detail.arcs)
-        {
-            if (arc.full_circle || arc.extent_rad >= 3.0)
-            {
-                continue;
-            }
-            const double start_x = arc.start[0] - arc.center[0];
-            const double start_y = arc.start[1] - arc.center[1];
-            const double end_x = arc.end[0] - arc.center[0];
-            const double end_y = arc.end[1] - arc.center[1];
-            const double cross = start_x * end_y - start_y * end_x;
-            if (std::fabs(cross) <= 1.0e-9)
-            {
-                continue;
-            }
-            require(arc.ccw == (cross > 0.0),
-                    std::string(view_id) +
-                        " native partial-arc orientation should match emitted view-plane XY");
-            ++checked;
-        }
-        require(checked > 0,
-                std::string(view_id) + " projection should expose a partial native arc");
-    }
-}
-
 void root_placement_stripping_matches_step_to_glb_definition_frame()
 {
     const std::vector<unsigned char> step_bytes =
@@ -507,15 +402,11 @@ int main()
 {
     try
     {
-        representative_outlines_are_closed();
-        raw_outline_option_is_still_observable();
         json_and_svg_use_outline_bbox_modes();
         mesh_shadow_outline_avoids_side_view_edge_explosion();
         fast_mesh_shadow_matches_triangle_union();
         output_layers_are_independently_selectable();
         fast_detail_projects_real_step_mesh();
-        fast_hlr_close_outline_can_run_without_detail();
-        native_arc_orientation_is_expressed_in_each_view_plane();
         root_placement_stripping_matches_step_to_glb_definition_frame();
     }
     catch (const std::exception& e)

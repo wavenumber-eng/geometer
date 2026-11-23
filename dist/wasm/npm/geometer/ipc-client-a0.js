@@ -2,6 +2,7 @@ import { decodeIpcCancelledA0Json, decodeIpcCancelRejectedA0Json, decodeIpcProto
 import { NORMALIZED_CONTRACT_CATALOG_SHA256, operationCatalog, } from "./generated/operations.js";
 import { encodeIndexedTriangleMeshA0Packet, INDEXED_TRIANGLE_MESH_MEDIA_TYPE, } from "./indexed-mesh-packet-a0.js";
 import { encodeGeometerIpcFrame, GEOMETER_IPC_A0_LIMITS, GeometerIpcFrameDecoder, GeometerIpcProtocolError, validateIpcOutcomeOperationPair, validateIpcRequestOperationPair, } from "./ipc-a0.js";
+import { STEP_MEDIA_TYPE, StepMediaTypeError, stepInputMatchesDeclaration, stepInputMediaType, } from "./step-media-type.js";
 const requiredCapabilities = [
     "serialized_execution",
     "queue_only_cancellation",
@@ -87,6 +88,18 @@ export class GeometerIpcClientA0 {
         else if (request.schema !== declaration.request_contract) {
             throw new GeometerIpcClientError("B0 request payload contract does not match the negotiated operation declaration.");
         }
+        try {
+            attachments = attachments.map((attachment) => ({
+                ...attachment,
+                mediaType: stepInputMediaType(attachment.mediaType, declaration.input_attachments.find((item) => item.name === attachment.name)
+                    ?.media_types ?? []),
+            }));
+        }
+        catch (error) {
+            if (!(error instanceof StepMediaTypeError))
+                throw error;
+            throw new GeometerIpcProtocolError("request STEP attachment has invalid media type.");
+        }
         validateAttachments(attachments, declaration.input_attachments, "request");
         const requestId = this.allocateRequestId();
         const frame = {
@@ -117,7 +130,7 @@ export class GeometerIpcClientA0 {
         return this.start(operation, request, attachments).response;
     }
     async modelHlrProjection(request) {
-        return this.hlrProjection("geometry.model_hlr_projection.a0", "model", request.mediaType ?? "application/step", request.model, request.options);
+        return this.hlrProjection("geometry.model_hlr_projection.a0", "model", request.mediaType ?? STEP_MEDIA_TYPE, request.model, request.options);
     }
     async meshHlrProjection(request) {
         const response = await this.execute("geometry.mesh_hlr_projection.b0", { ...request.request, output_detail: request.request.output_detail ?? true }, [
@@ -489,7 +502,10 @@ function validateAttachments(attachments, declarations, direction) {
         if (declaration === undefined) {
             throw new GeometerIpcProtocolError(`Undeclared ${direction} attachment ${attachment.name}.`);
         }
-        if (!declaration.media_types.includes(attachment.mediaType)) {
+        const compatible = direction === "request"
+            ? stepInputMatchesDeclaration(attachment.mediaType, declaration.media_types)
+            : declaration.media_types.includes(attachment.mediaType);
+        if (!compatible) {
             throw new GeometerIpcProtocolError(`${direction} attachment media type is not declared.`);
         }
         if (attachment.data.byteLength > declaration.max_bytes) {

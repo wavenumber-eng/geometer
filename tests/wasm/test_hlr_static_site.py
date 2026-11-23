@@ -107,7 +107,6 @@ async function main() {
           paths: document.querySelector("#projectionSvg")?.childElementCount,
           cameraActive: document.querySelector('button[data-view="camera"]')?.classList.contains("active"),
           bothActive: document.querySelector('button[data-mode="both"]')?.classList.contains("active"),
-          fastBackend: document.querySelector("#fastBackendInput")?.checked,
           outlineAlgorithm: document.querySelector("#outlineAlgoSelect")?.value,
           lens: document.querySelector("#cameraLensSelect")?.value,
           canvasLens: document.querySelector("#modelCanvas")?.dataset.cameraLens,
@@ -383,9 +382,6 @@ async function main() {
     await waitForReady("top");
     document.querySelector('button[data-view="front"]').click();
     await waitForReady("front");
-    const fastToggle = document.querySelector("#fastBackendInput");
-    fastToggle.checked = true;
-    fastToggle.dispatchEvent(new Event("change", { bubbles: true }));
     set("#fastCreaseAngleInput", "30");
     set("#outlineAlgoSelect", "fast-mesh-shadow");
     await waitForReady("front", "fast");
@@ -412,7 +408,6 @@ async function main() {
     };
     const result = {
       algorithm: svg.dataset.projectionAlgorithm,
-      fastBackend: fastToggle.checked,
       creaseAngleDegrees: document.querySelector("#fastCreaseAngleInput").value,
       detailAt30Degrees,
       detailAt10Degrees: document.querySelectorAll("#projectionSvg .detail").length,
@@ -420,7 +415,6 @@ async function main() {
       view: document.querySelector('button[data-view="front"]').classList.contains("active") ? "front" : "other",
       outlineAlgorithm: document.querySelector("#outlineAlgoSelect").value,
       metric: document.querySelector("#projectionMetric").textContent,
-      occtSettingsHidden: document.querySelector("#occtSettings").hidden,
       fastSettingsHidden: document.querySelector("#fastSettings").hidden,
       detailOnly: layerCounts("detail"),
       outlineOnly: layerCounts("outline"),
@@ -436,17 +430,11 @@ async function main() {
       control.value = value;
       control.dispatchEvent(new Event("change", { bubbles: true }));
     };
-    set("#algoSelect", "exact");
-    const fastToggle = document.querySelector("#fastBackendInput");
-    fastToggle.checked = true;
-    fastToggle.dispatchEvent(new Event("change", { bubbles: true }));
-    set("#outlineAlgoSelect", "hlr-close");
+    set("#outlineAlgoSelect", "mesh-shadow");
     set("#meshDeflectionModeSelect", "absolute");
     set("#linDeflInput", "0.25");
     set("#angDeflInput", "0.2");
     set("#deflCoeffInput", "0.02");
-    set("#hlrTolInput", "0.1");
-    document.querySelector('input[data-edge="edge_h_sharp"]').checked = true;
     document.querySelector("#resetGeometryButton").click();
     const deadline = Date.now() + 120000;
     while (Date.now() < deadline) {
@@ -454,17 +442,12 @@ async function main() {
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
     return {
-      fastBackend: fastToggle.checked,
       fastCreaseAngleDegrees: document.querySelector("#fastCreaseAngleInput").value,
-      algorithm: document.querySelector("#algoSelect").value,
       outlineAlgorithm: document.querySelector("#outlineAlgoSelect").value,
       meshMode: document.querySelector("#meshDeflectionModeSelect").value,
       coefficient: document.querySelector("#deflCoeffInput").value,
       linear: document.querySelector("#linDeflInput").value,
       angular: document.querySelector("#angDeflInput").value,
-      angle: document.querySelector("#hlrTolInput").value,
-      edgePreset: document.querySelector("#edgePresetSelect").value,
-      hiddenSharp: document.querySelector('input[data-edge="edge_h_sharp"]').checked,
       linearDisabled: document.querySelector("#linDeflInput").disabled,
       coefficientDisabled: document.querySelector("#deflCoeffInput").disabled,
     };
@@ -650,7 +633,6 @@ def _wait_for_server(url: str) -> None:
 def _assert_fast_selection(result: dict[str, Any]) -> None:
     selection = result["fastSelection"]
     assert selection["algorithm"] == "fast"
-    assert selection["fastBackend"] is True
     assert selection["creaseAngleDegrees"] == "10"
     assert selection["detailAt10Degrees"] > selection["detailAt30Degrees"]
     assert selection["model"] == "sot223.stp"
@@ -658,7 +640,6 @@ def _assert_fast_selection(result: dict[str, Any]) -> None:
     assert selection["outlineAlgorithm"] == "fast-mesh-shadow"
     assert " detail " in selection["metric"]
     assert " outline " in selection["metric"]
-    assert selection["occtSettingsHidden"] is True
     assert selection["fastSettingsHidden"] is False
     assert selection["detailOnly"]["detail"] > 0
     assert selection["detailOnly"]["outline"] == 0
@@ -672,7 +653,6 @@ def _assert_hlr_site_result(result: dict[str, Any], exported_svg: str) -> None:
     assert result["initial"]["paths"] > 1
     assert result["initial"]["cameraActive"] is True
     assert result["initial"]["bothActive"] is True
-    assert result["initial"]["fastBackend"] is True
     assert result["initial"]["outlineAlgorithm"] == "fast-mesh-shadow"
     assert result["initial"]["projection"].startswith("camera ")
     assert result["initial"]["lens"] == "orthographic"
@@ -738,17 +718,12 @@ def _assert_hlr_site_result(result: dict[str, Any], exported_svg: str) -> None:
     }
     _assert_fast_selection(result)
     assert result["geometryReset"] == {
-        "fastBackend": True,
         "fastCreaseAngleDegrees": "30",
-        "algorithm": "poly",
         "outlineAlgorithm": "fast-mesh-shadow",
         "meshMode": "bbox-relative",
         "coefficient": "0.004",
         "linear": "0.01",
         "angular": "0.5",
-        "angle": "0.0174533",
-        "edgePreset": "detail",
-        "hiddenSharp": False,
         "linearDisabled": True,
         "coefficientDisabled": False,
     }

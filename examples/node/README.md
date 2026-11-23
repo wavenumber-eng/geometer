@@ -32,9 +32,6 @@ source and artifact digests plus stable authored ids, but does not serialize
 session handles, topology handles, Three.js object ids, or triangle indexes as
 durable annotation identity.
 
-The example is a Geometer transport/research reference, not an Appz annotation
-domain contract. See the
-[Annotation Lab handoff](../../docs/research/step-topology/step-topology-appz-annotation-lab-handoff.md)
-before adapting the flow in Appz. General save/export and changed-source
+The example exercises the [experimental topology interface](../../docs/design/step-topology-contract-a0.md). General save/export and changed-source
 recovery analysis are intentionally absent because those operations are not yet
 advertised by the native runtime.

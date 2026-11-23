@@ -85,20 +85,12 @@ available. The C++ STEP names remain the current compiled API for this release.
 Defined in `src/cpp/lib/geometer/projection.h`.
 
 ```cpp
-enum class ProjectionCurveMode {
-    NativeArcs,
-    Polyline
-};
-
 enum class ProjectionAlgorithm {
-    Poly,
-    Exact,
-    Fast
+    Fast = 2
 };
 
 enum class ProjectionOutlineAlgorithm {
-    HlrClosedEdges,
-    MeshShadow,
+    MeshShadow = 1,
     FastMeshShadow
 };
 
@@ -147,20 +139,7 @@ struct HlrProjectionOptions {
         0.0, 0.0, 0.0, 1.0,
     };
     bool strip_root_placement = false;
-    ProjectionCurveMode curve_mode = ProjectionCurveMode::NativeArcs;
-    int samples_per_curve = 24;
     int round_digits = 3;
-    bool edge_v_sharp = true;
-    bool edge_v_outline = true;
-    bool edge_v_smooth = false;
-    bool edge_v_sewn = false;
-    bool edge_v_iso = false;
-    bool edge_h_sharp = false;
-    bool edge_h_outline = false;
-    bool edge_h_smooth = false;
-    bool edge_h_sewn = false;
-    bool edge_h_iso = false;
-    bool union_outline_polygons = true;
     ProjectionAlgorithm projection_algorithm = ProjectionAlgorithm::Fast;
     double mesh_linear_deflection = 0.01;
     double mesh_angular_deflection = 0.5;
@@ -168,7 +147,6 @@ struct HlrProjectionOptions {
     MeshDeflectionMode mesh_deflection_mode = MeshDeflectionMode::BboxRelative;
     double mesh_deflection_coefficient = 0.004;
     ProjectionOutlineAlgorithm outline_algorithm = ProjectionOutlineAlgorithm::FastMeshShadow;
-    double hlr_angle_tolerance = 0.0174533;
 };
 ```
 
@@ -179,11 +157,11 @@ request does not construct an outline. A combined request never merges outline
 and detail geometry, allowing downstream renderers to composite them with
 different presentation choices.
 
-`Fast` is an additive versioned backend. It tessellates through OCCT, builds a
+Fast HLR tessellates through OCCT, builds a
 central C++ triangle/edge incidence graph, activates boundary, crease, and
 view-dependent silhouette candidates, and classifies visibility against a
 projected-triangle spatial index. Its controls are isolated in the
-`fast` member rather than reinterpreting exact/poly edge flags. It currently
+`fast` member. It
 emits straight segments and joins only exact-collinear, unbranched fragments
 that share topology, visibility, edge category, and source-face provenance.
 Occlusion-created endpoints are never eligible joins. The existing
@@ -211,10 +189,6 @@ Fast-option behavior is intentionally explicit in A0:
 | nested `fast` controls and limits | Supported by the fast detail and fast mesh-shadow engines |
 | `outline_algorithm=mesh-shadow` | Delegated to the independent Clipper2 triangle-union outline |
 | `outline_algorithm=fast-mesh-shadow` | Reconstructs projected CAD-face loops when possible, falls back to per-face triangle unions, then unions the reduced contours |
-| `outline_algorithm=hlr-close` | Delegated to the existing poly HLR-close outline path |
-| exact/poly `edge_*` flags | Not interpreted by fast detail; nested `fast` candidate flags apply instead |
-| `curve_mode`, `samples_per_curve`, native-arc behavior | Fast detail emits segments only and does not fit arcs |
-| `union_outline_polygons`, `hlr_angle_tolerance` | Apply only in the delegated outline path where applicable |
 
 The removed WebGL depth-pass prototype is not part of the production package.
 Any future raster-HLR surface requires its own contract and design decision;

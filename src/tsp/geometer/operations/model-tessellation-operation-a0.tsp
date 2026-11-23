@@ -5,7 +5,7 @@ using Wavenumber.Geometer.ContractMetadata;
 
 namespace Wavenumber.Geometer.Contracts.Operations;
 
-/** Tessellate STEP bytes to bounded colored meshes for native GPU and illustration consumers. */
+/** Tessellate STEP bytes to bounded colored meshes for native GPU and illustration consumers. STEP input uses RFC 2045 MIME-value parsing, ignores valid unknown parameters, and retains application/step compatibility; new producers use model/step. */
 @operationIdentity("geometry.model_tessellation.a0")
 @inputAttachment("model", true, "application/step,model/step", 268435456)
 @outputAttachment("mesh_collection", true, "application/vnd.wavenumber.geometer.mesh-collection+json", 268435456)

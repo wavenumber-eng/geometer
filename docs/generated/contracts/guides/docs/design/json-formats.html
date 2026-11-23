@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
+  <meta name="wn-catalog-sha256" content="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032">
   <title>JSON Formats — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/json-formats.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="json-formats">JSON Formats</h1></header>
 <h2 id="model-bounds-options-json">Model Bounds Options JSON</h2>
@@ -68,8 +68,6 @@ array of 16 numbers is also accepted.</li>
 placements before projection, matching STEP-to-GLB's definition-local frame;
 assembly-child placements remain intact. Defaults to <code>false</code> for backward
 compatibility.</li>
-<li><code>curve_mode</code> or <code>curveMode</code>: <code>native_arcs</code>, <code>native-arcs</code>, or <code>polyline</code>.</li>
-<li><code>samples_per_curve</code> or <code>samples</code>.</li>
 <li><code>round_digits</code> or <code>roundDigits</code>.</li>
 <li><code>output_outline</code> or <code>outputOutline</code>: emit the independently composable
 outline layer; defaults to <code>true</code>.</li>
@@ -77,25 +75,14 @@ outline layer; defaults to <code>true</code>.</li>
 layer; defaults to <code>true</code>.</li>
 <li><code>output_bbox</code> or <code>outputBbox</code>: emit the projected bounding-box layer;
 defaults to <code>true</code>.</li>
-<li><code>projection_algorithm</code> or <code>projectionAlgorithm</code>: <code>poly</code>, <code>exact</code>, or the
-additive versioned backend <code>fast</code>.</li>
+<li><code>projection_algorithm</code> or <code>projectionAlgorithm</code>: <code>fast</code>.</li>
 <li><code>mesh_linear_deflection</code> or <code>meshLinearDeflection</code>.</li>
 <li><code>mesh_angular_deflection</code> or <code>meshAngularDeflection</code>.</li>
 <li><code>mesh_relative</code> or <code>meshRelative</code>.</li>
 <li><code>mesh_deflection_mode</code> or <code>meshDeflectionMode</code>: <code>absolute</code> or
 <code>bbox-relative</code>.</li>
 <li><code>mesh_deflection_coefficient</code> or <code>meshDeflectionCoefficient</code>.</li>
-<li><code>outline_algorithm</code> or <code>outlineAlgorithm</code>: <code>hlr-close</code>, <code>mesh-shadow</code>, or
-the additive versioned backend <code>fast-mesh-shadow</code>.</li>
-<li><code>hlr_angle_tolerance</code> or <code>hlrAngleTolerance</code>.</li>
-<li><code>edge_v_sharp</code>, <code>edge_v_outline</code>, <code>edge_v_smooth</code>, <code>edge_v_sewn</code>,
-<code>edge_v_iso</code>, <code>edge_h_sharp</code>, <code>edge_h_outline</code>, <code>edge_h_smooth</code>,
-<code>edge_h_sewn</code>, and <code>edge_h_iso</code> plus camelCase aliases.</li>
-<li>legacy <code>include_visible</code> or <code>includeVisible</code>, which toggles visible sharp
-and visible outline edges together.</li>
-<li>legacy <code>include_outline</code> or <code>includeOutline</code>, which toggles visible outline
-edges.</li>
-<li><code>union_outline_polygons</code>, <code>unionOutlinePolygons</code>, or <code>unionPolygons</code>.</li>
+<li><code>outline_algorithm</code> or <code>outlineAlgorithm</code>: <code>fast-mesh-shadow</code> (default) or <code>mesh-shadow</code>.</li>
 <li><code>fast</code>: A0 options used by <code>projection_algorithm=fast</code> and
 <code>outline_algorithm=fast-mesh-shadow</code>:
 <code>include_boundaries</code>, <code>include_creases</code>, <code>include_silhouettes</code>,
@@ -108,20 +95,13 @@ nested <code>limits</code> object accepts <code>max_vertices</code>, <code>max_t
 <code>max_output_segments</code>, also with camelCase aliases.</li>
 </ul>
 <p>The <code>fast</code> option block is governed by <code>geometry.hlr_projection.options.a0</code>.
-Future incompatible controls require a new contract generation; A0 cannot
-change the meaning of the OCCT-specific exact/poly flags.</p>
-<p>The browser test pages currently use the viz-compatible setting set:</p>
+The browser test pages currently use the viz-compatible setting set:</p>
 <pre><code class="language-json">{
-  &quot;curve_mode&quot;: &quot;polyline&quot;,
-  &quot;samples_per_curve&quot;: 24,
   &quot;round_digits&quot;: 3,
-  &quot;projection_algorithm&quot;: &quot;poly&quot;,
+  &quot;projection_algorithm&quot;: &quot;fast&quot;,
   &quot;outline_algorithm&quot;: &quot;mesh-shadow&quot;,
   &quot;mesh_deflection_mode&quot;: &quot;bbox-relative&quot;,
-  &quot;mesh_deflection_coefficient&quot;: 0.004,
-  &quot;edge_v_sharp&quot;: true,
-  &quot;edge_v_outline&quot;: true,
-  &quot;union_outline_polygons&quot;: true
+  &quot;mesh_deflection_coefficient&quot;: 0.004
 }
 </code></pre>
 <h2 id="hlr-projection-result-json">HLR Projection Result JSON</h2>

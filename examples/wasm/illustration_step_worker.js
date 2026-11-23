@@ -65,7 +65,6 @@ function projectMeshShadow(module, stepBytes, view, modelTransform, hlrOptions =
     views: [{ id: "illustration", direction: view.direction, up: view.up }],
     model_transform: modelTransform,
     strip_root_placement: true,
-    curve_mode: "polyline",
     round_digits: 6,
     projection_algorithm: "fast",
     outline_algorithm: "fast-mesh-shadow",
@@ -75,7 +74,6 @@ function projectMeshShadow(module, stepBytes, view, modelTransform, hlrOptions =
     mesh_deflection_mode: "bbox-relative",
     mesh_angular_deflection: hlrOptions.angularDeflectionRad ?? 0.5,
     mesh_deflection_coefficient: hlrOptions.deflectionCoefficient ?? 0.004,
-    union_outline_polygons: true,
     fast: {
       include_boundaries: true,
       include_creases: true,
@@ -87,22 +85,12 @@ function projectMeshShadow(module, stepBytes, view, modelTransform, hlrOptions =
       coplanar_seam_depth_tolerance: hlrOptions.coplanarSeamDepthTolerance ?? 0.001,
     },
     // Match the HLR Lab's Detail preset: visible sharp edges plus silhouettes.
-    edge_v_sharp: true,
-    edge_v_outline: true,
-    edge_v_smooth: false,
-    edge_v_sewn: false,
-    edge_v_iso: false,
-    edge_h_sharp: false,
-    edge_h_outline: false,
-    edge_h_smooth: false,
-    edge_h_sewn: false,
-    edge_h_iso: false,
   };
   return self.GeometerOperationWorker.executeOneAttachment(
     module,
     "geometry.model_hlr_projection.a0",
     options,
-    { name: "model", mediaType: "application/step", data: stepBytes },
+    { name: "model", mediaType: "model/step", data: stepBytes },
   );
 }
 
@@ -172,7 +160,7 @@ function illustrateModel(
     module,
     "geometry.model_illustration_geometry.b0",
     request,
-    { name: "model", mediaType: "application/step", data: stepBytes },
+    { name: "model", mediaType: "model/step", data: stepBytes },
   );
   const attachment = response.attachments.find((item) => item.name === "illustration_geometry");
   if (!attachment) throw new Error("Model illustration returned no drawing geometry.");

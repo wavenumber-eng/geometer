@@ -152,10 +152,6 @@ mode before the handshake.
 
 ### Review gate
 
-The original independent review gate was satisfied on 2026-08-12 with no
-blocking findings. The promotion manifest records the reviewed revision,
-review head, reviewer identity, date, and artifact digests.
-
 The 2026-09-18 amendment review approved the native/portable catalog
 projections, common dispatcher gate, direct Rust executor lifecycle,
 process-terminal embedded server contract, transport-local cancellation model,

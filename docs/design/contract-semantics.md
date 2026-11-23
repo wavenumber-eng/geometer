@@ -102,3 +102,11 @@ Every vector lists fields excluded from semantic comparison. Nondeterministic
 timings such as `model_read_ms`, `bounds_ms`, and `elapsed_ms` are excluded by
 that explicit projection, never by a global ignore rule.
 
+
+## STEP attachment MIME values
+
+The [STEP media policy](../geometer/adr/geometer-adr-020-standard-step-media-types.md) applies RFC 2045 value syntax to input slots declared for STEP. A complete bounded parser accepts ASCII type/subtype tokens case-insensitively, spaces/tabs, comments and token/escaped-quoted parameters; valid unknown parameters are ignored. `model/step` is canonical and `application/step` is a compatibility spelling. The 128-byte framed-value bound remains; NUL, CR/LF, malformed or trailing syntax are rejected. These are attachment values, not folded mail headers.
+
+Maintained clients normalize accepted STEP requests before transport. Direct native admission independently accepts the same values. STEP parameters do not supply compression, units, placement or schema; actual byte parsing and existing operation checks remain authoritative. Other attachment identities remain exact. Existing input declaration lists/order are unchanged.
+
+New produced descriptors contain bare `model/step`. Legacy bare saved descriptor tokens remain decodable where explicitly admitted by the owning contract. Output validation does not apply input normalization: undeclared parameters, comments or capitalization are rejected. Client/runtime catalogs must remain matched after regeneration. Operation availability, dispatch and maturity remain unchanged apart from the reviewed MIME declarations and catalog digest.

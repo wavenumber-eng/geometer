@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="generator" content="wn.geometer.contract_docs:a0">
-  <meta name="wn-catalog-sha256" content="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed">
+  <meta name="wn-catalog-sha256" content="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032">
   <title>Python Package Interface — Geometer</title>
   <link rel="stylesheet" href="../../../../../design/styles.css">
 </head>
-<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="8b356cc06d4df779de363d1290e1c5bcc848434b8337922b128c0555483727ed" data-page-kind="guide" data-authority="authored-markdown">
+<body class="generated-model-doc" data-doc-status="generated" data-generated="true" data-wn-watermark="true" data-source-catalog-sha256="c1c690a58bcc3bacfcc832c57068ae0bb07edda89a64abced6d0c99d42df5032" data-page-kind="guide" data-authority="authored-markdown">
 <main>
 <nav class="nav"><a href="../../../guides.html">Documentation index</a></nav><aside class="callout">Generated presentation of authored documentation. Edit Markdown source <code>docs/design/python-package.md</code>, not this HTML. Contract structure remains governed separately by TypeSpec and its promotion manifest.</aside><header><h1 id="python-package-interface">Python Package Interface</h1></header>
 <h2 id="python-interface">Python Interface</h2>
@@ -119,8 +119,7 @@ batch = runner.run(
 </code></pre>
 <p>The Python package intentionally uses the executable backend only for now.
 Existing file-oriented helpers use the JSON batch CLI, while <code>GeometerClient</code>
-holds one <code>geometer serve --stdio</code> process for typed model/mesh HLR and
-analytic packed requests.
+holds one <code>geometer serve --stdio</code> process for typed model/mesh HLR and illustration.
 Both paths discover the Geometer executable in this order:</p>
 <ul>
 <li><code>GEOMETER_EXE</code>;</li>
@@ -134,8 +133,7 @@ Both paths discover the Geometer executable in this order:</p>
 <p>The package contains generated dependency-free dataclasses, enums, and strict
 JSON codecs under <code>geometer._generated.contracts</code>. They are the structural
 authority. Most generated declarations remain an internal compatibility
-boundary; the selected analytic request/result construction types are
-re-exported from <code>geometer</code> for the typed packed client. The generator reads
+boundary. The generator reads
 the normalized TypeSpec catalog and is part of the ordinary freshness gate.</p>
 <p><code>model_bounds</code> is the first operation integrated through this boundary. The
 public compatibility adapter continues to accept <code>model_format</code>,
@@ -167,32 +165,9 @@ with geometer.GeometerClient() as client:
 </code></pre>
 <p>The indexed-mesh compatibility signature remains available only as
 <code>client.mesh_hlr_projection_a0(mesh, options)</code>.</p>
-<p>The analytic planar Boolean candidate is integrated through the same
-executable-backed lane:</p>
-<blockquote>
-<p>This method is experimental and not production-ready. It may fail closed on
-valid inputs and is not the dependable path for whole-board or whole-layer
-copper union. Prefer the Clipper2-backed planar APIs when polygonized output
-is suitable.</p>
-</blockquote>
-<pre><code class="language-python">import geometer
-
-request = geometer.AnalyticPlanarBooleanBatchRequestA0(jobs=(), relationship_queries=())
-with geometer.GeometerClient() as client:
-    result = client.analytic_planar_boolean_batch(request, timeout=10)
-</code></pre>
-<p>Consumers that need a governed artifact rather than an immediate solve may
-call <code>encode_analytic_planar_boolean_batch_request_a0_packet(request)</code>. The
-matching <code>decode_analytic_planar_boolean_batch_result_a0_packet(packet)</code>
-strictly validates and projects a packed result. These are the same codec
-functions used by <code>GeometerClient</code>; they do not create a second JSON or binary
-authority.</p>
 <p><code>GeometerClient</code> performs the A0 handshake, validates the generated operation
 catalog and negotiated limits, and sends raw named attachments over binary
-frames. <code>_analytic_packet_a0.py</code> is the strict little-endian codec for the
-logical analytic DTOs; no JSON geometry is placed on the hot path. It enforces
-the canonical packet graph and the batch-wide 1,048,576 logical
-source-reference expansion limit before materializing result DTOs. Protocol,
+frames. Protocol,
 process, timeout, and typed operation failures have distinct public exception
 classes. The client is synchronous and serialized, uses queue-only
 cancellation after a local timeout, drains terminal responses before reuse,
@@ -200,9 +175,7 @@ and treats malformed negotiated responses as connection-fatal.</p>
 <p>The runtime uses only the Python standard library. This adds no wheel runtime
 dependency and supports the package's existing Python 3.10 floor. Generated
 source is included by normal setuptools package discovery. Clean-wheel tests
-prove public analytic DTO/client imports, empty and nontrivial packed analytic
-IPC calls against the bundled executable, and a live public model-bounds round
-trip.</p>
+exercise the bundled executable and a live public model-bounds round trip.</p>
 <p>Published wheels are platform wheels because they bundle the native executable.
 Linux wheels must be repaired/tagged with <code>auditwheel</code> before PyPI upload; the
 wheel contents install under <code>platlib</code>, not <code>purelib</code>, so auditwheel can inspect
@@ -235,7 +208,7 @@ files and calls:</p>
 <pre><code class="language-powershell">geometer run request.json response.json
 </code></pre>
 <p>and returns the requested JSON text or GLB bytes to the Python caller. The
-analytic client instead uses the persistent binary <code>serve --stdio</code> protocol;
+typed IPC client instead uses the persistent binary <code>serve --stdio</code> protocol;
 it does not write geometry packets to temporary files.</p>
 <p><code>GEOMETER_BACKEND=exe</code> and <code>GEOMETER_BACKEND=cli</code> are accepted explicit names.
 Other backend names are rejected by the public Python API.</p>
@@ -249,6 +222,8 @@ can project or convert multiple STEP files before exiting. An optional top-level
 object is parsed afterwards and overrides those defaults.
 <code>version</code> and <code>abi</code> fields in a request are metadata written by <code>init-request</code>;
 <code>run</code> only requires the <code>jobs</code> array.</p>
+<h2 id="step-mime-inputs-and-defaults">STEP MIME inputs and defaults</h2>
+<p>Executable-backed STEP methods default to <code>model/step</code>. Valid parameterized MIME values and the legacy <code>application/step</code> spelling normalize at input; response and unrelated attachment checks stay exact. See the <a href="../geometer/adr/geometer-adr-020-standard-step-media-types.html">STEP media policy</a>.</p>
 
 </main>
 </body>

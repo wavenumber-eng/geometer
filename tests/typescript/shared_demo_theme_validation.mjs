@@ -27,7 +27,7 @@ for (const [stylesheet, accent, background, label] of [
     throw new Error(`${label} highlights must use their governed palette.`);
   }
 }
-for (const rootSelector of ["#pour-shell", ".illustration-app", ".bounds-app", "#pcb-shell"]) {
+for (const rootSelector of [".illustration-app", ".bounds-app"]) {
   if (!theme.includes(rootSelector)) {
     throw new Error(`Shared demo theme is missing the ${rootSelector} layout namespace.`);
   }

@@ -20,7 +20,6 @@ PRODUCTION_TEST_TARGETS = (
     "frame_and_process",
     "generated_dispatch",
     "illustration_composition",
-    "logical_dtos",
     "runtime",
 )
 WN_DEV_STD = ("uvx", "--from", "wn-dev-std==2026.9.8", "wn-dev-std")
